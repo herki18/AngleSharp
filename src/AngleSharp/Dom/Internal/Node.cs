@@ -7,6 +7,7 @@ namespace AngleSharp.Dom
     using Html.Construction;
     using Html.Parser.Tokens;
     using Html.Parser.Tokens.Struct;
+    using ViewSync;
 
     /// <summary>
     /// Represents a node in the generated tree.
@@ -14,6 +15,8 @@ namespace AngleSharp.Dom
     public abstract class Node : EventTarget, INode, IEquatable<INode>, IConstructableNode
     {
         #region Fields
+
+        private IViewSynchronizer? _viewSync;
 
         private readonly NodeType _type;
         private readonly String _name;
@@ -29,18 +32,24 @@ namespace AngleSharp.Dom
         #region ctor
 
         /// <inheritdoc />
-        public Node(Document? owner, String name, NodeType type = NodeType.Element, NodeFlags flags = NodeFlags.None)
+        public Node(Document? owner, String name, NodeType type = NodeType.Element, NodeFlags flags = NodeFlags.None, IViewSynchronizer? view = null)
         {
             _owner = owner;
             _name = name ?? String.Empty;
             _type = type;
             _children = this.IsEndPoint() ? NodeList.Empty : [];
             _flags = flags;
+            _viewSync = view;
         }
 
         #endregion
 
         #region Public Properties
+
+        /// <summary>
+        /// Gets or sets the view synchronizer.
+        /// </summary>
+        public IViewSynchronizer? ViewSync => _viewSync;
 
         /// <inheritdoc />
         public Boolean HasChildNodes => _children.Length != 0;

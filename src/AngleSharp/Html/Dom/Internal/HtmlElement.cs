@@ -6,6 +6,7 @@ namespace AngleSharp.Html.Dom
     using AngleSharp.Text;
     using System;
     using System.Threading.Tasks;
+    using ViewSync;
 
     /// <summary>
     /// Represents a standard HTML element in the node tree.
@@ -433,8 +434,8 @@ namespace AngleSharp.Html.Dom
         #region ctor
 
         /// <inheritdoc />
-        public HtmlElement(Document owner, String localName, String? prefix = null, NodeFlags flags = NodeFlags.None)
-            : base(owner, Combine(prefix, localName), localName, prefix, NamespaceNames.HtmlUri, flags | NodeFlags.HtmlMember)
+        public HtmlElement(Document owner, String localName, String? prefix = null, NodeFlags flags = NodeFlags.None, IViewSynchronizer? view = null)
+            : base(owner, Combine(prefix, localName), localName, prefix, NamespaceNames.HtmlUri, flags | NodeFlags.HtmlMember, view)
         {
         }
 
