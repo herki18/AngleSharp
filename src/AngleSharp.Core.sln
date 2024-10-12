@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AngleSharp.Core.Tests", "An
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_build", "..\nuke\_build.csproj", "{C5A6C092-A03A-47FB-B260-F1F87564F020}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Run", "Run\Run.csproj", "{9A08E0EE-9E7A-498C-837F-FAABFBBD06D7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{C3074D7E-CA6C-4F2C-813D-BD97462DC3EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C3074D7E-CA6C-4F2C-813D-BD97462DC3EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C3074D7E-CA6C-4F2C-813D-BD97462DC3EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9A08E0EE-9E7A-498C-837F-FAABFBBD06D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9A08E0EE-9E7A-498C-837F-FAABFBBD06D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9A08E0EE-9E7A-498C-837F-FAABFBBD06D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9A08E0EE-9E7A-498C-837F-FAABFBBD06D7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
