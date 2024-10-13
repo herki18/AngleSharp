@@ -601,7 +601,6 @@ namespace AngleSharp.Dom
             {
                 for (var i = 0; i < parent.ChildNodes.Length; i++)
                 {
-
                     if (parent.ChildNodes[i] is TNode child)
                     {
                         return child;

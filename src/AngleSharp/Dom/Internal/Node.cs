@@ -49,7 +49,11 @@ namespace AngleSharp.Dom
         /// <summary>
         /// Gets or sets the view synchronizer.
         /// </summary>
-        public IViewSynchronizer? ViewSync => _viewSync;
+        public IViewSynchronizer? ViewSync
+        {
+            get { return _viewSync; }
+            protected set { _viewSync = value; }
+        }
 
         /// <inheritdoc />
         public Boolean HasChildNodes => _children.Length != 0;

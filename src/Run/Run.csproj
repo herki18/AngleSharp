@@ -4,10 +4,15 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <TargetFrameworks>net8.0;net6.0;net7.0;netstandard2.0;net461</TargetFrameworks>
+        <OutputType>Exe</OutputType>
     </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\AngleSharp\AngleSharp.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="AngleSharp.Css" Version="1.0.0-beta.144" />
     </ItemGroup>
 
 </Project>

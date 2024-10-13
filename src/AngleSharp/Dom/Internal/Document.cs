@@ -724,8 +724,13 @@ namespace AngleSharp.Dom
                 {
                     foreach (var child in root.ChildNodes)
                     {
+                        // if (child is IHtmlElement htmlElement
+                        //     && htmlElement.LocalName.IsOneOf(TagNames.Body, TagNames.Frameset))
+                        // {
+                        //     return htmlElement;
+                        // }
 
-                        if (child is HtmlBodyElement body)
+                        if (child is IHtmlBodyElement body)
                         {
                             return body;
                         }
@@ -1603,9 +1608,9 @@ namespace AngleSharp.Dom
             set => QuirksMode = value;
         }
 
-        IConstructableElement? IConstructableDocument.Head => DocumentElement.FindChild<HtmlHeadElement>();
+        IConstructableElement? IConstructableDocument.Head => DocumentElement.FindChild<Element>(TagNames.Head);
 
-        IConstructableElement IConstructableDocument.DocumentElement => this.FindChild<HtmlHtmlElement>()!;
+        IConstructableElement IConstructableDocument.DocumentElement => this.FindChild<Element>(TagNames.Html)!;
 
         void IConstructableDocument.PerformMicrotaskCheckpoint()
         {

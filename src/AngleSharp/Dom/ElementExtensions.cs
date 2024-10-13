@@ -23,6 +23,26 @@ namespace AngleSharp.Dom
     public static class ElementExtensions
     {
         /// <summary>
+        ///
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="tagName"></param>
+        /// <returns></returns>
+        public static TNode? FindChild<TNode>(this INode parent, String tagName)
+            where TNode : class, IElement
+        {
+            foreach (var childNode in parent.ChildNodes)
+            {
+                if (childNode is TNode child && child.LocalName.Is(tagName))
+                {
+                    return child;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Locates the prefix of the given namespace.
         /// </summary>
         /// <param name="element">The element that might contain the namespace information.</param>

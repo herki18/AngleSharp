@@ -40,7 +40,8 @@ namespace AngleSharp.Html.Dom
 
         #region Properties
 
-        public override IElement DocumentElement => this.FindChild<HtmlHtmlElement>()!;
+        // public override IElement DocumentElement => this.FindChild<Element>(TagNames.Html)!;
+        public override IElement DocumentElement => this.FindChild<IHtmlHtmlElement>()!;
 
         public override IEntityProvider Entities => Context.GetProvider<IEntityProvider>() ?? HtmlEntityProvider.Resolver;
 
