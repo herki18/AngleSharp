@@ -415,10 +415,11 @@ public struct StructHtmlToken
     public void CleanStart()
     {
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1_OR_GREATER
-        var newData = _name.Memory.TrimStart(Spaces);
-        if (newData.Length != _name.Length)
+        var span = _name.Memory.Span;
+        var trimmedSpan = span.TrimStart(Spaces);
+        if (trimmedSpan.Length != span.Length)
         {
-            _name = new StringOrMemory(newData);
+            _name = new StringOrMemory(new ReadOnlyMemory<Char>(trimmedSpan.ToArray()));
         }
 #else
         var i = 0;
