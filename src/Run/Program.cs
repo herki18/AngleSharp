@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Reflection;
 using System.Threading;
 using Microsoft.ClearScript;
 using Microsoft.ClearScript.V8;
@@ -8,6 +9,7 @@ public class CustomConsole
 {
     private readonly Dictionary<string, Stopwatch> timers = new Dictionary<string, Stopwatch>();
 
+    [JsExport("time")]
     public void Time(string label)
     {
         if (!timers.ContainsKey(label))
@@ -22,6 +24,7 @@ public class CustomConsole
         }
     }
 
+    [JsExport("timeEnd")]
     public void TimeEnd(string label)
     {
         if (timers.ContainsKey(label))
@@ -43,11 +46,15 @@ public class CustomConsole
         }
     }
 
-    public void Log(string message)
+    // Update Log method to accept any type (not just string)
+    [JsExport("log")]
+    public void Log(params object[] messages)
     {
-        Console.WriteLine(message);
+        var formattedMessage = string.Join(" ", messages);
+        Console.WriteLine(formattedMessage);
     }
 }
+
 
 public class BenchmarkObject
 {
@@ -123,14 +130,28 @@ public class BenchmarkExecutor
     {
         using (var engine = new V8ScriptEngine(V8ScriptEngineFlags.DisableGlobalMembers))
         {
+            HostSettings.CustomAttributeLoader = new MyAttributeLoader();
             engine.Execute("1 + 1;");
             var customConsole = new CustomConsole();
-            engine.Script.console = new
-            {
-                time = new Action<string>(customConsole.Time),
-                timeEnd = new Action<string>(customConsole.TimeEnd),
-                log = new Action<string>(customConsole.Log)
-            };
+            engine.AddHostObject("console", customConsole);
+            // JsMethodExporter.ExportMethods(engine, customConsole);
+            // engine.Script.console = new
+            // {
+            //     time = new Action<string>(customConsole.Time),
+            //     timeEnd = new Action<string>(customConsole.TimeEnd),
+            //     log = new Action<object>((arg) =>
+            //     {
+            //         if (arg is object[] argsArray)
+            //         {
+            //             var formattedMessage = string.Join(" ", argsArray.Select(a => a?.ToString() ?? "null"));
+            //             customConsole.Log(formattedMessage);
+            //         }
+            //         else
+            //         {
+            //             customConsole.Log(arg?.ToString() ?? "null");
+            //         }
+            //     })
+            // };
 
             engine.AddHostType("BenchmarkObject", typeof(BenchmarkObject));
             var initializedObject = new BenchmarkObject(0);
@@ -156,6 +177,27 @@ public class BenchmarkExecutor
                     }
                     return true;
                 }
+
+                function createNewBenchmarkObject() {
+                    console.time('Create BenchmarkObject');
+                    var myBenchmarkObject = new BenchmarkObject(0);
+                    console.timeEnd('Create BenchmarkObject');
+
+                    // Log the initial value
+                    console.log('Initial Value:', myBenchmarkObject.Value);
+
+                    // Increment value 10 times
+                    console.time('Increment Benchmark');
+                    for (let i = 0; i < 10; i++) {
+                        myBenchmarkObject.IncrementValue();
+                    }
+                    console.timeEnd('Increment Benchmark');
+
+                    // Log final value
+                    console.log('Final Value after incrementing:', myBenchmarkObject.Value);
+                }
+
+                createNewBenchmarkObject();
             ";
             engine.Execute(script);
             dynamic jsCallback = engine.Script.jsCallback;
@@ -244,5 +286,36 @@ public class BenchmarkExecutor
 
             Thread.Sleep(1);
         }
+    }
+}
+
+[AttributeUsage(AttributeTargets.Method)]
+public class JsExportAttribute : Attribute
+{
+    public string JsName { get; }
+
+    public JsExportAttribute(string jsName)
+    {
+        JsName = jsName;
+    }
+}
+
+class MyAttributeLoader : CustomAttributeLoader
+{
+    public override T[]? LoadCustomAttributes<T>(ICustomAttributeProvider resource, bool inherit)
+    {
+        var declaredAttributes = base.LoadCustomAttributes<T>(resource, inherit);
+
+        // Check if the method has JsExportAttribute
+        if (!declaredAttributes.Any() && typeof(T) == typeof(ScriptMemberAttribute) && resource is MethodInfo method)
+        {
+            var jsExportAttribute = method.GetCustomAttribute<JsExportAttribute>();
+            if (jsExportAttribute != null)
+            {
+                return new[] { new ScriptMemberAttribute(jsExportAttribute.JsName) } as T[];
+            }
+        }
+
+        return declaredAttributes;
     }
 }
