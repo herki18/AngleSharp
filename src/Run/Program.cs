@@ -1,187 +1,248 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
+using Microsoft.ClearScript;
+using Microsoft.ClearScript.V8;
 
-namespace Run
+public class CustomConsole
 {
-    using AngleSharp;
-    using AngleSharp.Dom;
-    using AngleSharp.Html.Dom;
-    using System.Threading.Tasks;
-    using AngleSharp.ViewSync;
+    private readonly Dictionary<string, Stopwatch> timers = new Dictionary<string, Stopwatch>();
 
-    // Observable class representing the subject (DOM or VisualElement)
-    public class Observable<T> : IObservable<T>
+    public void Time(string label)
     {
-        private readonly List<IObserver<T>> observers = new List<IObserver<T>>();
-
-        public IDisposable Subscribe(IObserver<T> observer)
+        if (!timers.ContainsKey(label))
         {
-            if (!observers.Contains(observer))
-                observers.Add(observer);
-            return new Unsubscriber(observers, observer);
+            var stopwatch = new Stopwatch();
+            timers[label] = stopwatch;
+            stopwatch.Start();
         }
-
-        public void Notify(T value)
+        else
         {
-            foreach (var observer in observers)
+            Console.WriteLine($"Timer '{label}' is already running.");
+        }
+    }
+
+    public void TimeEnd(string label)
+    {
+        if (timers.ContainsKey(label))
+        {
+            var stopwatch = timers[label];
+            stopwatch.Stop();
+
+            // Calculate elapsed time in seconds for higher precision
+            double elapsedSeconds = stopwatch.ElapsedTicks / (double)Stopwatch.Frequency;
+
+            // Output the elapsed time with precision (up to microseconds)
+            Console.WriteLine($"{label}: {elapsedSeconds * 1000:0.000000} ms");
+
+            timers.Remove(label);
+        }
+        else
+        {
+            Console.WriteLine($"No timer found for label '{label}'.");
+        }
+    }
+
+    public void Log(string message)
+    {
+        Console.WriteLine(message);
+    }
+}
+
+public class BenchmarkObject
+{
+    public int Value { get; set; }
+
+    public BenchmarkObject(int initialValue)
+    {
+        Value = initialValue;
+    }
+
+    public static int Add(int a, int b)
+    {
+        return a + b;
+    }
+
+    public static void BatchAdd(int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            var result = Add(i, i);
+        }
+    }
+
+    public static void BatchProcessParallel(int count)
+    {
+        Parallel.For(0, count, i =>
+        {
+            var result = Add(i, i);
+        });
+    }
+
+    public void IncrementValue()
+    {
+        Value++;
+    }
+
+    public static void BatchDelegate(Func<int, int, int> addFunc, int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            var result = addFunc(i, i);
+        }
+    }
+
+    public static void BatchAction(Action<int, int> action, int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            action(i, i);
+        }
+    }
+
+    public static void LoopWithCallback(Action<int> jsCallback, int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            jsCallback(i);
+        }
+    }
+}
+
+public class OptimizedJavaScriptBenchmark
+{
+    public static void Main(string[] args)
+    {
+        new BenchmarkExecutor().RunBenchmark();
+    }
+}
+
+public class BenchmarkExecutor
+{
+    public void RunBenchmark()
+    {
+        using (var engine = new V8ScriptEngine(V8ScriptEngineFlags.DisableGlobalMembers))
+        {
+            engine.Execute("1 + 1;");
+            var customConsole = new CustomConsole();
+            engine.Script.console = new
             {
-                observer.OnNext(value);
-            }
-        }
+                time = new Action<string>(customConsole.Time),
+                timeEnd = new Action<string>(customConsole.TimeEnd),
+                log = new Action<string>(customConsole.Log)
+            };
 
-        public void Complete()
+            engine.AddHostType("BenchmarkObject", typeof(BenchmarkObject));
+            var initializedObject = new BenchmarkObject(0);
+            engine.AddHostObject("initializedObject", initializedObject);
+
+            Func<int, int, int> addDelegate = BenchmarkObject.Add;
+            Action<int, int> addAction = (a, b) => BenchmarkObject.Add(a, b);
+
+            engine.AddHostObject("addDelegate", addDelegate);
+            engine.AddHostObject("addAction", addAction);
+
+            string script = @"
+                var jsCallback = function(i) {
+                    if (i % 1000000 === 0) console.log('Callback from C# with i:', i);
+                };
+
+                var tickCount = 0;
+                function tick() {
+                    tickCount++;
+                    console.log('Tick called: ' + tickCount);
+                    if (tickCount >= 10) {
+                        return false;
+                    }
+                    return true;
+                }
+            ";
+            engine.Execute(script);
+            dynamic jsCallback = engine.Script.jsCallback;
+
+            script = @"
+                function benchmarkWithCSharp() {
+                    console.time('With C# Interaction');
+                    BenchmarkObject.BatchAdd(10000000);
+                    console.timeEnd('With C# Interaction');
+                }
+
+                function benchmarkWithParallelCSharp() {
+                    console.time('Parallel C# Interaction');
+                    BenchmarkObject.BatchProcessParallel(10000000);
+                    console.timeEnd('Parallel C# Interaction');
+                }
+
+                function benchmarkWithoutCSharp() {
+                    console.time('Without C# Interaction');
+                    for (let i = 0; i < 10000000; i++) {
+                        let result = i + i;
+                    }
+                    console.timeEnd('Without C# Interaction');
+                }
+
+                function benchmarkInitializedObject() {
+                    console.time('Initialized Object Interaction');
+                    for (let i = 0; i < 10000000; i++) {
+                        initializedObject.IncrementValue();
+                    }
+                    console.timeEnd('Initialized Object Interaction');
+                }
+
+                function benchmarkWithDelegate() {
+                    console.time('With Delegate');
+                    BenchmarkObject.BatchDelegate(addDelegate, 10000000);
+                    console.timeEnd('With Delegate');
+                }
+
+                function benchmarkWithAction() {
+                    console.time('With Action');
+                    BenchmarkObject.BatchAction(addAction, 10000000);
+                    console.timeEnd('With Action');
+                }
+
+                benchmarkWithCSharp();
+                benchmarkWithParallelCSharp();
+                benchmarkWithoutCSharp();
+                benchmarkInitializedObject();
+                benchmarkWithDelegate();
+                benchmarkWithAction();
+            ";
+            var compiledScript = engine.Compile(script);
+            engine.Execute(compiledScript);
+
+            customConsole.Log("Running C# loop calling JS callback...");
+            Stopwatch sw = Stopwatch.StartNew();
+            BenchmarkObject.LoopWithCallback(new Action<int>(i => jsCallback(i)), 10000000);
+            sw.Stop();
+            customConsole.Log($"C# Loop with JS Callback: {sw.ElapsedMilliseconds} ms");
+
+            // customConsole.Log("Running Tick loop...");
+            // StartTickLoop(engine.Script.tick, 500);
+        }
+    }
+
+    private static void StartTickLoop(Func<bool> tickFunc, int intervalMs)
+    {
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+
+        while (true)
         {
-            foreach (var observer in observers)
+            if (sw.ElapsedMilliseconds >= intervalMs)
             {
-                observer.OnCompleted();
-            }
-        }
+                bool continueTicking = tickFunc();
 
-        private class Unsubscriber : IDisposable
-        {
-            private List<IObserver<T>> _observers;
-            private IObserver<T> _observer;
+                if (!continueTicking)
+                {
+                    Console.WriteLine("Stopping Tick loop.");
+                    break;
+                }
 
-            public Unsubscriber(List<IObserver<T>> observers, IObserver<T> observer)
-            {
-                this._observers = observers;
-                this._observer = observer;
+                sw.Restart();
             }
 
-            public void Dispose()
-            {
-                if (_observers.Contains(_observer))
-                    _observers.Remove(_observer);
-            }
-        }
-    }
-
-    // Observer for DOM changes
-    public class DomObserver : IObserver<VisualElement>
-    {
-        private IElement _domElement;
-
-        public DomObserver(IElement domElement)
-        {
-            _domElement = domElement;
-        }
-
-        // Update DOM when VisualElement changes
-        public void OnNext(VisualElement visualElement)
-        {
-            _domElement.SetAttribute("value", visualElement.text);
-            Console.WriteLine($"DOM updated with new value: {_domElement.GetAttribute("value")}");
-        }
-
-        public void OnCompleted() { }
-        public void OnError(Exception error) { }
-    }
-
-    // Observer for VisualElement changes
-    public class VisualElementObserver : IObserver<IElement>
-    {
-        private VisualElement _visualElement;
-
-        public VisualElementObserver(VisualElement visualElement)
-        {
-            _visualElement = visualElement;
-        }
-
-        // Update VisualElement when DOM changes
-        public void OnNext(IElement domElement)
-        {
-            _visualElement.text = domElement.GetAttribute("value")!;
-            Console.WriteLine($"VisualElement updated with new text: {_visualElement.text}");
-        }
-
-        public void OnCompleted() { }
-        public void OnError(Exception error) { }
-    }
-
-    // Example class for VisualElement (placeholder for actual Unity VisualElement)
-    public class VisualElement
-    {
-        public string text = "";
-        public string style = "";
-        public Observable<VisualElement> TextChanged { get; } = new Observable<VisualElement>();
-
-        public void SetText(string newText)
-        {
-            text = newText;
-            TextChanged.Notify(this); // Notify all observers that text changed
-        }
-    }
-
-    // Core part: UnityViewSynchronizer tied to the Node (DOM)
-    public class UnityViewSynchronizer : IViewSynchronizer
-    {
-        private VisualElement _visualElement;
-        private IElement _domElement;
-        private DomObserver _domObserver;
-        private VisualElementObserver _visualObserver;
-
-        // Initialization with bidirectional observers
-        public UnityViewSynchronizer(VisualElement visualElement, IElement domElement)
-        {
-            _visualElement = visualElement;
-            _domElement = domElement;
-
-            // Initialize observers
-            _domObserver = new DomObserver(_domElement);
-            _visualObserver = new VisualElementObserver(_visualElement);
-
-            // Subscribe observers
-            _visualElement.TextChanged.Subscribe(_domObserver); // VisualElement updates DOM
-            var domObservable = new Observable<IElement>();
-            domObservable.Subscribe(_visualObserver); // DOM updates VisualElement
-
-            // Simulate DOM event subscription
-            domElement.SetAttribute("value", "Initial value");
-            domObservable.Notify(domElement); // Initial synchronization
-        }
-
-        public void SyncDomToVisual()
-        {
-            // Additional method to trigger sync from DOM to VisualElement when needed
-            _visualObserver.OnNext(_domElement);
-        }
-
-        public void SyncVisualToDom()
-        {
-            // Additional method to trigger sync from VisualElement to DOM when needed
-            _domObserver.OnNext(_visualElement);
-        }
-    }
-
-    // Main Program to test the bidirectional observer pattern
-    class Program
-    {
-        static async Task Main(string[] args)
-        {
-            // Create a new browsing context
-            var config = Configuration.Default.WithCss();
-            var context = BrowsingContext.New(config);
-
-            // Create a new document
-            var document = await context.OpenNewAsync();
-
-            // Create VisualElement and DOM element (Input field)
-            var visualElement = new VisualElement();
-            var domElement = document.CreateElement(TagNames.Input);
-
-            // Initialize UnityViewSynchronizer for bidirectional sync
-            var sync = new UnityViewSynchronizer(visualElement, domElement);
-
-            // Simulate VisualElement update (e.g., user input in UI)
-            visualElement.SetText("User input text");
-            sync.SyncVisualToDom(); // Sync VisualElement changes to DOM
-
-            // Simulate DOM change (e.g., programmatic change in DOM)
-            domElement.SetAttribute("value", "Updated from DOM");
-            sync.SyncDomToVisual(); // Sync DOM changes to VisualElement
-
-            // Output the modified HTML
-            Console.WriteLine(document.DocumentElement.OuterHtml);
+            Thread.Sleep(1);
         }
     }
 }
