@@ -45,14 +45,15 @@ namespace AngleSharp.ViewSync
         /// <summary>
         ///
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="handler"></param>
-        void SyncEvent(String type, DomEventHandler handler);
+        /// <param name="sender"></param>
+        /// <param name="eventSyncedArgs"></param>
+        void SyncEvent(Object sender, EventSyncedArgs eventSyncedArgs);
 
         /// <summary>
         ///
         /// </summary>
-        /// <param name="type"></param>
-        void UnregisterEvent(String type);
+        /// <param name="sender"></param>
+        /// <param name="eventUnregisteredArgs"></param>
+        void UnregisterEvent(Object sender, EventUnregisteredArgs eventUnregisteredArgs);
     }
 }

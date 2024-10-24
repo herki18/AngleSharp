@@ -185,6 +185,16 @@ namespace Run
             throw new NotImplementedException();
         }
 
+        public void SyncEvent(object sender, EventSyncedArgs eventSyncedArgs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void UnregisterEvent(object sender, EventUnregisteredArgs eventUnregisteredArgs)
+        {
+            throw new NotImplementedException();
+        }
+
         public void SyncEvent(string type, DomEventHandler handler)
         {
             throw new NotImplementedException();
