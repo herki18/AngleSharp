@@ -160,12 +160,37 @@ namespace Run
             throw new NotImplementedException();
         }
 
-        public void UpdateParent(INode? currentNode, INode childNode)
+        public void AddNode(INode? currentNode, INode childNode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void InsertNode(int index, INode currentNode, INode childNode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void InsertNode(int index, INode node)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void RemoveNode(INode node)
         {
             throw new NotImplementedException();
         }
 
         public void UpdateText(INode currentNode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SyncEvent(string type, DomEventHandler handler)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void UnregisterEvent(string type)
         {
             throw new NotImplementedException();
         }

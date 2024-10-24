@@ -14,9 +14,7 @@ namespace AngleSharp.Dom
     {
         #region Fields
 
-        private IViewSynchronizer? _viewSync;
         private List<RegisteredEventListener>? _listeners;
-
         #endregion
 
         #region Properties
@@ -28,12 +26,10 @@ namespace AngleSharp.Dom
         #region Events
 
         /// <inheritdoc />
+        public event EventHandler<EventSyncedArgs>? EventSynced;
+
         /// <inheritdoc />
-        public IViewSynchronizer? ViewSync
-        {
-            get { return _viewSync; }
-            protected set { _viewSync = value; }
-        }
+        public event EventHandler<EventUnregisteredArgs>? EventUnregistered;
 
         /// <summary>
         /// Register an event handler of a specific event type on the Node.
@@ -58,6 +54,8 @@ namespace AngleSharp.Dom
             if (callback != null)
             {
                 Listeners.Add(new RegisteredEventListener(type, callback, capture));
+
+                EventSynced?.Invoke(this, new EventSyncedArgs(type, callback));
             }
         }
 
@@ -80,6 +78,8 @@ namespace AngleSharp.Dom
             if (callback != null)
             {
                 _listeners?.Remove(new RegisteredEventListener(type, callback, capture));
+
+                EventUnregistered?.Invoke(this, new EventUnregisteredArgs(type));;
             }
         }
 

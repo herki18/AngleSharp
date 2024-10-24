@@ -13,11 +13,6 @@ namespace AngleSharp.Dom
     public interface IEventTarget
     {
         /// <summary>
-        ///
-        /// </summary>
-        IViewSynchronizer? ViewSync { get; }
-
-        /// <summary>
         /// Register an event handler of a specific event type on the
         /// EventTarget.
         /// </summary>
@@ -72,5 +67,62 @@ namespace AngleSharp.Dom
         /// </returns>
         [DomName("dispatchEvent")]
         Boolean Dispatch(Event ev);
+
+        /// <summary>
+        /// An event triggered when an event is synced (added) for synchronization purposes.
+        /// </summary>
+        event EventHandler<EventSyncedArgs>? EventSynced;
+
+        /// <summary>
+        /// An event triggered when an event is unregistered (removed) from synchronization.
+        /// </summary>
+        event EventHandler<EventUnregisteredArgs>? EventUnregistered;
+    }
+
+    /// <summary>
+    /// Event arguments for the EventSynced event, providing the event type and callback.
+    /// </summary>
+    public class EventSyncedArgs : EventArgs
+    {
+        /// <summary>
+        /// Gets the event type that was synced.
+        /// </summary>
+        public String EventType { get; }
+
+        /// <summary>
+        /// Gets the callback function associated with the synced event.
+        /// </summary>
+        public DomEventHandler Callback { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EventSyncedArgs"/> class.
+        /// </summary>
+        /// <param name="eventType">The event type that was synced.</param>
+        /// <param name="callback">The callback function associated with the synced event.</param>
+        public EventSyncedArgs(String eventType, DomEventHandler callback)
+        {
+            EventType = eventType;
+            Callback = callback;
+        }
+    }
+
+    /// <summary>
+    /// Event arguments for the EventUnregistered event, providing the event type.
+    /// </summary>
+    public class EventUnregisteredArgs : EventArgs
+    {
+        /// <summary>
+        /// Gets the event type that was unregistered.
+        /// </summary>
+        public string EventType { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EventUnregisteredArgs"/> class.
+        /// </summary>
+        /// <param name="eventType">The event type that was unregistered.</param>
+        public EventUnregisteredArgs(String eventType)
+        {
+            EventType = eventType;
+        }
     }
 }

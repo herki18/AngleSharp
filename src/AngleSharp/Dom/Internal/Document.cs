@@ -18,6 +18,7 @@ namespace AngleSharp.Dom
     using Html.Construction;
     using Html.Parser;
     using Html.Parser.Tokens.Struct;
+    using ViewSync;
 
     /// <summary>
     /// Represents a document node.
@@ -506,6 +507,12 @@ namespace AngleSharp.Dom
             _loop = context.GetService<IEventLoop>()!;
             _mutations = new MutationHost(_loop);
             _statusCode = HttpStatusCode.OK;
+
+            var viewFactory = context.GetService<IViewFactory>();
+            if (viewFactory != null)
+            {
+                ViewSync = viewFactory.Create("Document", this);
+            }
         }
 
         #endregion

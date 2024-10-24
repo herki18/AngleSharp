@@ -1,5 +1,6 @@
 namespace AngleSharp.ViewSync
 {
+    using System;
     using Dom;
 
     /// <summary>
@@ -19,12 +20,39 @@ namespace AngleSharp.ViewSync
         /// </summary>
         /// <param name="currentNode"></param>
         /// <param name="childNode"></param>
-        void UpdateParent(INode? currentNode, INode childNode);
+        void AddNode(INode? currentNode, INode childNode);
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="currentNode"></param>
+        /// <param name="childNode"></param>
+        void InsertNode(Int32 index, INode currentNode, INode childNode);
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="node"></param>
+        void RemoveNode(INode node);
 
         /// <summary>
         ///
         /// </summary>
         /// <param name="currentNode"></param>
         void UpdateText(INode currentNode);
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="handler"></param>
+        void SyncEvent(String type, DomEventHandler handler);
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="type"></param>
+        void UnregisterEvent(String type);
     }
 }

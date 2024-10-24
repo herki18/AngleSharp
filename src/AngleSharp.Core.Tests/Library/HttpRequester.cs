@@ -369,6 +369,18 @@ namespace AngleSharp.Core.Tests.Library
                 return true;
             }
 
+            public event EventHandler<EventSyncedArgs> EventSynced
+            {
+                add { throw new NotImplementedException(); }
+                remove { throw new NotImplementedException(); }
+            }
+
+            public event EventHandler<EventUnregisteredArgs> EventUnregistered
+            {
+                add { throw new NotImplementedException(); }
+                remove { throw new NotImplementedException(); }
+            }
+
             public void InvokeEventListener(Event ev)
             {
             }

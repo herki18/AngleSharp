@@ -13,6 +13,11 @@ namespace AngleSharp.Dom
     public interface INode : IEventTarget, IMarkupFormattable
     {
         /// <summary>
+        ///
+        /// </summary>
+        IViewSynchronizer? ViewSync { get; }
+
+        /// <summary>
         /// Gets a string representing the base URL.
         /// </summary>
         [DomName("baseURI")]

@@ -44,6 +44,12 @@ namespace AngleSharp.Dom
             _prefix = prefix;
             _namespace = namespaceUri;
             _attributes = new NamedNodeMap(this);
+
+            var viewFactory = owner?.Context.GetService<IViewFactory>();
+            if (viewFactory != null && ViewSync == null)
+            {
+                ViewSync = viewFactory.Create(localName, this);
+            }
         }
 
         #endregion

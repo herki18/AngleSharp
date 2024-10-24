@@ -72,13 +72,6 @@ namespace AngleSharp.Dom
         #endregion
 
         #region Properties
-        // TODO: This needs to be removed. WE need to crete additional interface in Node class to just handle SYNC
-        /// <inheritdoc />
-        public IViewSynchronizer? ViewSync
-        {
-            get;
-            set;
-        }
 
         /// <summary>
         /// Gets always true.
@@ -163,6 +156,7 @@ namespace AngleSharp.Dom
         INode? INode.NextSibling => null;
 
         INode? INode.PreviousSibling => null;
+        IViewSynchronizer? INode.ViewSync => throw new NotImplementedException();
 
         NodeType INode.NodeType => NodeType.Attribute;
 
@@ -245,6 +239,17 @@ namespace AngleSharp.Dom
         void IEventTarget.InvokeEventListener(Event ev) => throw new DomException(DomError.NotSupported);
 
         Boolean IEventTarget.Dispatch(Event ev) => throw new DomException(DomError.NotSupported);
+        event EventHandler<EventSyncedArgs>? IEventTarget.EventSynced
+        {
+            add { throw new NotImplementedException(); }
+            remove { throw new NotImplementedException(); }
+        }
+
+        event EventHandler<EventUnregisteredArgs>? IEventTarget.EventUnregistered
+        {
+            add { throw new NotImplementedException(); }
+            remove { throw new NotImplementedException(); }
+        }
 
         void IMarkupFormattable.ToHtml(TextWriter writer, IMarkupFormatter formatter) {}
 

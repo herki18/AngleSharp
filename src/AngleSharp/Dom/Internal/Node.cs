@@ -25,6 +25,8 @@ namespace AngleSharp.Dom
         private NodeList _children;
         private Document? _owner;
 
+        private IViewSynchronizer? _viewSync;
+
         #endregion
 
         #region ctor
@@ -43,6 +45,13 @@ namespace AngleSharp.Dom
         #endregion
 
         #region Public Properties
+
+        /// <inheritdoc />
+        public IViewSynchronizer? ViewSync
+        {
+            get { return _viewSync; }
+            protected set { _viewSync = value; }
+        }
 
         /// <inheritdoc />
         public Boolean HasChildNodes => _children.Length != 0;
@@ -508,7 +517,7 @@ namespace AngleSharp.Dom
         {
             node.Parent = this;
             _children.Insert(index, node);
-            ViewSync?.UpdateParent(this, node);
+            ViewSync?.InsertNode(index, this, node);
         }
 
         /// <inheritdoc />
@@ -516,7 +525,7 @@ namespace AngleSharp.Dom
         {
             node.Parent = this;
             _children.Add(node);
-            ViewSync?.UpdateParent(this, node);
+            ViewSync?.AddNode(this, node);
         }
 
         /// <inheritdoc />
@@ -524,7 +533,7 @@ namespace AngleSharp.Dom
         {
             node.Parent = null;
             _children.RemoveAt(index);
-            ViewSync?.UpdateParent(null, node); // TODO: This needs more testing
+            ViewSync?.RemoveNode(node);
         }
 
         /// <inheritdoc />
