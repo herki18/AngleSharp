@@ -5,7 +5,7 @@ namespace AngleSharp.Dom
     /// <summary>
     /// The base class for all characterdata implementations.
     /// </summary>
-    abstract class CharacterData : Node, ICharacterData
+    public abstract class CharacterData : Node, ICharacterData
     {
         #region Fields
 
@@ -30,6 +30,7 @@ namespace AngleSharp.Dom
 
         #region Properties
 
+        /// <inheritdoc />
         public IElement? PreviousElementSibling
         {
             get
@@ -57,6 +58,7 @@ namespace AngleSharp.Dom
             }
         }
 
+        /// <inheritdoc />
         public IElement? NextElementSibling
         {
             get
@@ -106,20 +108,24 @@ namespace AngleSharp.Dom
             }
         }
 
+        /// <inheritdoc />
         public Int32 Length => _content.Length;
 
+        /// <inheritdoc />
         public sealed override String NodeValue
         {
             get => Data;
             set => Data = value;
         }
 
+        /// <inheritdoc />
         public sealed override String TextContent
         {
             get => Data;
             set => Data = value;
         }
 
+        /// <inheritdoc />
         public String Data
         {
             get => _content;
@@ -130,6 +136,7 @@ namespace AngleSharp.Dom
 
         #region Methods
 
+        /// <inheritdoc />
         public String Substring(Int32 offset, Int32 count)
         {
             var length = _content.Length;
@@ -147,12 +154,16 @@ namespace AngleSharp.Dom
             return _content.Substring(offset, count);
         }
 
+        /// <inheritdoc />
         public void Append(String value) => Replace(_content.Length, 0, value);
 
+        /// <inheritdoc />
         public void Insert(Int32 offset, String data) => Replace(offset, 0, data);
 
+        /// <inheritdoc />
         public void Delete(Int32 offset, Int32 count) => Replace(offset, count, String.Empty);
 
+        /// <inheritdoc />
         public void Replace(Int32 offset, Int32 count, String data)
         {
             var owner = Owner;
@@ -197,14 +208,20 @@ namespace AngleSharp.Dom
                     m.EndWith(this, m.End + data.Length - count);
                 }
             }
+
+            ViewSync?.UpdateText(this);
         }
 
+        /// <inheritdoc />
         public void Before(params INode[] nodes) => this.InsertBefore(nodes);
 
+        /// <inheritdoc />
         public void After(params INode[] nodes) => this.InsertAfter(nodes);
 
+        /// <inheritdoc />
         public void Replace(params INode[] nodes) => this.ReplaceWith(nodes);
 
+        /// <inheritdoc />
         public void Remove() => this.RemoveFromParent();
 
         #endregion

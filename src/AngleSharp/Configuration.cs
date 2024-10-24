@@ -48,6 +48,7 @@ namespace AngleSharp
                 Instance<IElementFactory<Document, HtmlElement>>(new HtmlElementFactory()),
                 Instance<IElementFactory<Document, MathElement>>(new MathElementFactory()),
                 Instance<IElementFactory<Document, SvgElement>>(new SvgElementFactory()),
+                Instance<ITextNodeFactory<Document, IText>>(new TextNodeFactory()),
                 Instance<IEventFactory>(new DefaultEventFactory()),
                 Instance<IInputTypeFactory>(new DefaultInputTypeFactory()),
                 Instance<IAttributeSelectorFactory>(new DefaultAttributeSelectorFactory()),

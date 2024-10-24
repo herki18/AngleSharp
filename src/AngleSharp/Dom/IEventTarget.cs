@@ -3,6 +3,7 @@ namespace AngleSharp.Dom
     using AngleSharp.Attributes;
     using AngleSharp.Dom.Events;
     using System;
+    using ViewSync;
 
     /// <summary>
     /// EventTarget is a DOM interface implemented by objects that can receive
@@ -11,6 +12,11 @@ namespace AngleSharp.Dom
     [DomName("EventTarget")]
     public interface IEventTarget
     {
+        /// <summary>
+        ///
+        /// </summary>
+        IViewSynchronizer? ViewSync { get; }
+
         /// <summary>
         /// Register an event handler of a specific event type on the
         /// EventTarget.

@@ -6,6 +6,7 @@ namespace AngleSharp.Dom
     using System.IO;
     using Common;
     using Html.Construction;
+    using ViewSync;
 
     /// <summary>
     /// Represents a generic node attribute.
@@ -71,6 +72,13 @@ namespace AngleSharp.Dom
         #endregion
 
         #region Properties
+        // TODO: This needs to be removed. WE need to crete additional interface in Node class to just handle SYNC
+        /// <inheritdoc />
+        public IViewSynchronizer? ViewSync
+        {
+            get;
+            set;
+        }
 
         /// <summary>
         /// Gets always true.

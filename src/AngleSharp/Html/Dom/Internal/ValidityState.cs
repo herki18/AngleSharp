@@ -5,7 +5,7 @@
     /// <summary>
     /// A class for representing the current validity state.
     /// </summary>
-    sealed class ValidityState : IValidityState
+    public class ValidityState : IValidityState
     {
         #region Fields
 
@@ -126,6 +126,10 @@
 
         #region Methods
 
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="err"></param>
         public void Reset(ValidationErrors err = ValidationErrors.None)
         {
             _err = err;

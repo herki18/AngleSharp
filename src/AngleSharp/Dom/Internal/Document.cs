@@ -1144,7 +1144,13 @@ namespace AngleSharp.Dom
         }
 
         /// <inheritdoc />
-        public IText CreateTextNode(String data) => new TextNode(this, data);
+        public IText CreateTextNode(String data)
+        {
+            var factory = _context.GetFactory<ITextNodeFactory<Document, IText>>();
+            var textNode = factory.CreateTextNode(this, data);
+            return textNode;
+            // return new TextNode(this, data);
+        }
 
         /// <inheritdoc />
         public IElement? GetElementById(String elementId) => ChildNodes.GetElementById(elementId);

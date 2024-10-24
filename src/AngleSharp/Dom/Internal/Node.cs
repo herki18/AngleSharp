@@ -16,8 +16,6 @@ namespace AngleSharp.Dom
     {
         #region Fields
 
-        private IViewSynchronizer? _viewSync;
-
         private readonly NodeType _type;
         private readonly String _name;
         private readonly NodeFlags _flags;
@@ -39,21 +37,12 @@ namespace AngleSharp.Dom
             _type = type;
             _children = this.IsEndPoint() ? NodeList.Empty : [];
             _flags = flags;
-            _viewSync = view;
+            ViewSync = view;
         }
 
         #endregion
 
         #region Public Properties
-
-        /// <summary>
-        /// Gets or sets the view synchronizer.
-        /// </summary>
-        public IViewSynchronizer? ViewSync
-        {
-            get { return _viewSync; }
-            protected set { _viewSync = value; }
-        }
 
         /// <inheritdoc />
         public Boolean HasChildNodes => _children.Length != 0;
@@ -485,13 +474,14 @@ namespace AngleSharp.Dom
         /// <inheritdoc />
         public void AppendText(String s)
         {
-            if (LastChild is TextNode lastChild)
+            if (LastChild is IText lastChild)
             {
                 lastChild.Append(s);
             }
             else
             {
-                AddNode(new TextNode(Owner, s));
+                var textNodeFactory = Owner.Context.GetService<ITextNodeFactory<Document, IText>>();
+                AddNode((Node)textNodeFactory?.CreateTextNode(Owner, s)!);
             }
         }
 
@@ -508,7 +498,8 @@ namespace AngleSharp.Dom
             }
             else
             {
-                InsertNode(index, new TextNode(Owner, s));
+                var textNodeFactory = Owner.Context.GetService<ITextNodeFactory<Document, IText>>();
+                InsertNode(index, (Node)textNodeFactory?.CreateTextNode(Owner, s)!);
             }
         }
 
@@ -517,6 +508,7 @@ namespace AngleSharp.Dom
         {
             node.Parent = this;
             _children.Insert(index, node);
+            ViewSync?.UpdateParent(this, node);
         }
 
         /// <inheritdoc />
@@ -524,6 +516,7 @@ namespace AngleSharp.Dom
         {
             node.Parent = this;
             _children.Add(node);
+            ViewSync?.UpdateParent(this, node);
         }
 
         /// <inheritdoc />
@@ -531,6 +524,7 @@ namespace AngleSharp.Dom
         {
             node.Parent = null;
             _children.RemoveAt(index);
+            ViewSync?.UpdateParent(null, node); // TODO: This needs more testing
         }
 
         /// <inheritdoc />
@@ -657,13 +651,13 @@ namespace AngleSharp.Dom
         {
             for (var i = 0; i < _children.Length; i++)
             {
-                if (_children[i] is TextNode text)
+                if (_children[i] is IText text)
                 {
                     var length = text.Length;
 
                     if (length == 0)
                     {
-                        RemoveChild(text, false);
+                        RemoveChild((Node)text, false);
                         i--;
                     }
                     else
@@ -673,7 +667,7 @@ namespace AngleSharp.Dom
                         var end = i;
                         var owner = Owner;
 
-                        while ((sibling = sibling.NextSibling as TextNode) != null)
+                        while ((sibling = sibling.NextSibling as IText) != null)
                         {
                             sb.Append(sibling.Data);
                             end++;

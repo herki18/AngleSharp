@@ -6,16 +6,18 @@ namespace AngleSharp.Dom
     /// <summary>
     /// Represents a text node.
     /// </summary>
-    sealed class TextNode : CharacterData, IText
+    public class TextNode : CharacterData, IText
     {
         #region ctor
 
-        internal TextNode(Document owner)
+        /// <inheritdoc />
+        public TextNode(Document owner)
             : this(owner, String.Empty)
         {
         }
 
-        internal TextNode(Document owner, String text)
+        /// <inheritdoc />
+        public TextNode(Document owner, String text)
             : base(owner, "#text", NodeType.Text, text)
         {
         }
@@ -40,6 +42,7 @@ namespace AngleSharp.Dom
             }
         }
 
+        /// <inheritdoc />
         public String Text
         {
             get
@@ -65,6 +68,7 @@ namespace AngleSharp.Dom
             }
         }
 
+        /// <inheritdoc />
         public IElement? AssignedSlot
         {
             get
@@ -85,6 +89,7 @@ namespace AngleSharp.Dom
 
         #region Methods
 
+        /// <inheritdoc />
         public IText Split(Int32 offset)
         {
             var length = Length;
@@ -149,6 +154,7 @@ namespace AngleSharp.Dom
             return newNode;
         }
 
+        /// <inheritdoc />
         public override Node Clone(Document owner, Boolean deep)
         {
             var node = new TextNode(owner, Data);

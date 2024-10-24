@@ -100,8 +100,15 @@ namespace AngleSharp.Dom
             }
             set
             {
-                var node = !String.IsNullOrEmpty(value) ? new TextNode(Owner, value) : null;
-                ReplaceAll(node, false);
+                if (!String.IsNullOrEmpty(value))
+                {
+                    var textNodeFactory = Owner.Context.GetService<ITextNodeFactory<Document, IText>>();
+                    ReplaceAll((Node?)textNodeFactory?.CreateTextNode(Owner, value), false);
+                }
+                else
+                {
+                    ReplaceAll(null, false);
+                }
             }
         }
 

@@ -3,6 +3,7 @@ namespace AngleSharp.Dom
     using AngleSharp.Attributes;
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using ViewSync;
 
     /// <summary>
     /// A Node is an interface from which a number of DOM types inherit, and
@@ -12,7 +13,7 @@ namespace AngleSharp.Dom
     public interface INode : IEventTarget, IMarkupFormattable
     {
         /// <summary>
-        /// Gets a string representing the base URL. 
+        /// Gets a string representing the base URL.
         /// </summary>
         [DomName("baseURI")]
         String BaseUri { get; }
@@ -24,7 +25,7 @@ namespace AngleSharp.Dom
 
         /// <summary>
         /// Gets a string containing the name of the Node. The structure of the
-        /// name will differ with the name type. 
+        /// name will differ with the name type.
         /// </summary>
         [DomName("nodeName")]
         String NodeName { get; }
@@ -175,7 +176,7 @@ namespace AngleSharp.Dom
         String? LookupPrefix(String? namespaceUri);
 
         /// <summary>
-        /// Gets an unsigned short representing the type of the node. 
+        /// Gets an unsigned short representing the type of the node.
         /// </summary>
         [DomName("nodeType")]
         NodeType NodeType { get; }

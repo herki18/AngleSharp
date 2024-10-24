@@ -9,7 +9,7 @@ namespace AngleSharp.Html.Dom
     /// <summary>
     /// Represents an HTML button element.
     /// </summary>
-    sealed class HtmlButtonElement : HtmlFormControlElement, IHtmlButtonElement
+    public class HtmlButtonElement : HtmlFormControlElement, IHtmlButtonElement
     {
         #region ctor
 
@@ -120,6 +120,7 @@ namespace AngleSharp.Html.Dom
 
         #region Methods
 
+        /// <inheritdoc />
         public override async void DoClick()
         {
             var cancelled = await IsClickedCancelled().ConfigureAwait(false);
@@ -144,6 +145,7 @@ namespace AngleSharp.Html.Dom
 
         #region Helper
 
+        /// <inheritdoc />
         protected override Boolean CanBeValidated()
         {
             return Type.Is(InputTypeNames.Submit) && !this.HasDataListAncestor();

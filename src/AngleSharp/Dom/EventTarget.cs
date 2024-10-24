@@ -5,6 +5,7 @@ namespace AngleSharp.Dom
     using AngleSharp.Text;
     using System;
     using System.Collections.Generic;
+    using ViewSync;
 
     /// <summary>
     /// Event target base of all DOM nodes.
@@ -13,6 +14,7 @@ namespace AngleSharp.Dom
     {
         #region Fields
 
+        private IViewSynchronizer? _viewSync;
         private List<RegisteredEventListener>? _listeners;
 
         #endregion
@@ -24,6 +26,14 @@ namespace AngleSharp.Dom
         #endregion
 
         #region Events
+
+        /// <inheritdoc />
+        /// <inheritdoc />
+        public IViewSynchronizer? ViewSync
+        {
+            get { return _viewSync; }
+            protected set { _viewSync = value; }
+        }
 
         /// <summary>
         /// Register an event handler of a specific event type on the Node.
