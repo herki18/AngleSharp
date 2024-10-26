@@ -6,6 +6,7 @@ namespace AngleSharp.Html.Dom
     using AngleSharp.Text;
     using System;
     using System.Threading.Tasks;
+    using Css.Dom;
     using ViewSync;
 
     /// <summary>
@@ -442,6 +443,12 @@ namespace AngleSharp.Html.Dom
         #endregion
 
         #region Properties
+
+        /// <inheritdoc />
+        public ICssStyleDeclarationBase Style
+        {
+            get => throw new NotImplementedException();
+        }
 
         /// <inheritdoc />
         public Boolean IsHidden

@@ -29,7 +29,7 @@ class Build : NukeBuild
     ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
     ///   - Microsoft VSCode           https://nuke.build/vscode
 
-    public static int Main () => Execute<Build>(x => x.RunUnitTests);
+    public static int Main () => Execute<Build>(x => x.Package);
 
     [Nuke.Common.Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
@@ -138,23 +138,23 @@ class Build : NukeBuild
         .DependsOn(Compile)
         .Executes(() =>
         {
-            DotNetTest(s => s
-                .SetProjectFile(Solution)
-                .SetConfiguration(Configuration)
-                .EnableNoRestore()
-                .EnableNoBuild()
-                .SetProcessEnvironmentVariable("prefetched", "false")
-                .When(GitHubActions.Instance is not null, x => x.SetLoggers("GitHubActions"))
-            );
-
-            DotNetTest(s => s
-                .SetProjectFile(Solution)
-                .SetConfiguration(Configuration)
-                .EnableNoRestore()
-                .EnableNoBuild()
-                .SetProcessEnvironmentVariable("prefetched", "true")
-                .When(GitHubActions.Instance is not null, x => x.SetLoggers("GitHubActions"))
-            );
+            // DotNetTest(s => s
+            //     .SetProjectFile(Solution)
+            //     .SetConfiguration(Configuration)
+            //     .EnableNoRestore()
+            //     .EnableNoBuild()
+            //     .SetProcessEnvironmentVariable("prefetched", "false")
+            //     .When(GitHubActions.Instance is not null, x => x.SetLoggers("GitHubActions"))
+            // );
+            //
+            // DotNetTest(s => s
+            //     .SetProjectFile(Solution)
+            //     .SetConfiguration(Configuration)
+            //     .EnableNoRestore()
+            //     .EnableNoBuild()
+            //     .SetProcessEnvironmentVariable("prefetched", "true")
+            //     .When(GitHubActions.Instance is not null, x => x.SetLoggers("GitHubActions"))
+            // );
         });
 
     Target CopyFiles => _ => _

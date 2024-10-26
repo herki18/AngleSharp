@@ -4,6 +4,7 @@ namespace AngleSharp.Html.Dom
     using AngleSharp.Dom;
     using AngleSharp.Dom.Events;
     using System;
+    using Css.Dom;
 
     /// <summary>
     /// The HTMLElement interface represents any HTML element. Some elements directly
@@ -12,6 +13,13 @@ namespace AngleSharp.Html.Dom
     [DomName("HTMLElement")]
     public interface IHtmlElement : IElement, IGlobalEventHandlers
     {
+
+        /// <summary>
+        /// Gets or sets the value of the Style attribute.
+        /// </summary>
+        [DomName("style")]
+        ICssStyleDeclarationBase Style { get; }
+
         /// <summary>
         /// Gets or sets the value of the lang attribute.
         /// </summary>
