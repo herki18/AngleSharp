@@ -6,6 +6,7 @@ namespace AngleSharp.Html.Dom
     using AngleSharp.Text;
     using System;
     using System.Threading.Tasks;
+    using Attributes;
     using Css.Dom;
     using ViewSync;
 
@@ -20,6 +21,7 @@ namespace AngleSharp.Html.Dom
         private IHtmlMenuElement? _menu;
         private SettableTokenList? _dropZone;
 
+        private ICssInlineStyleService? _cssService;
         #endregion
 
         #region Events
@@ -438,6 +440,7 @@ namespace AngleSharp.Html.Dom
         public HtmlElement(Document owner, String localName, String? prefix = null, NodeFlags flags = NodeFlags.None, IViewSynchronizer? view = null)
             : base(owner, Combine(prefix, localName), localName, prefix, NamespaceNames.HtmlUri, flags | NodeFlags.HtmlMember, view)
         {
+            _cssService = owner.Context.GetService<ICssInlineStyleService>();
         }
 
         #endregion
@@ -445,9 +448,11 @@ namespace AngleSharp.Html.Dom
         #region Properties
 
         /// <inheritdoc />
+        [DomName("style")]
         public ICssStyleDeclarationBase Style
         {
-            get => throw new NotImplementedException();
+            get => _cssService!.GetStyle(this);
+            // set => _cssService!.SetStyle(this, value);
         }
 
         /// <inheritdoc />

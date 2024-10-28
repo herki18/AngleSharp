@@ -3,6 +3,7 @@ namespace AngleSharp
     using AngleSharp.Css;
     using AngleSharp.Css.Parser;
     using System;
+    using Css.Dom;
 
     /// <summary>
     /// Extensions for the configuration.
@@ -18,7 +19,7 @@ namespace AngleSharp
         /// <returns>The new instance with the service.</returns>
         public static IConfiguration WithCss(this IConfiguration configuration, CssParserOptions options = default)
         {
-            configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));            
+            configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             var service = new CssStylingService();
 
             if (!configuration.Has<ICssDefaultStyleSheetProvider>())
@@ -49,6 +50,11 @@ namespace AngleSharp
             if (!configuration.Has<ICssParser>())
             {
                 configuration = configuration.With<ICssParser>(context => new CssParser(options, context));
+            }
+
+            if (!configuration.Has<ICssInlineStyleService>())
+            {
+                configuration = configuration.With(new CssInlineStyleService());
             }
 
             return configuration
