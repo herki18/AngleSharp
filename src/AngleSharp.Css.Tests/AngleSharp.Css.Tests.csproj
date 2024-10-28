@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net6.0</TargetFrameworks>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>Key.snk</AssemblyOriginatorKeyFile>
+    <IsPackable>false</IsPackable>
+    <LangVersion>9</LangVersion>
+    <AssemblyName>AngleSharp.Css.Tests</AssemblyName>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies> <!-- https://github.com/Tyrrrz/GitHubActionsTestLogger/issues/5 -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AngleSharp.Css\AngleSharp.Css.csproj">
+      <TargetFramework>netstandard2.0</TargetFramework>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AngleSharp.Xml" Version="1.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="NUnit" Version="3.13.2" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.2.0" />
+    <PackageReference Include="GitHubActionsTestLogger" Version="2.0.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
+  </ItemGroup>
+</Project>

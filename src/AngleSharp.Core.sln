@@ -21,6 +21,16 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_build", "..\nuke\_build.cs
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Run", "Run\Run.csproj", "{9A08E0EE-9E7A-498C-837F-FAABFBBD06D7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AngleSharp.Css", "AngleSharp.Css\AngleSharp.Css.csproj", "{0F54F0A0-B23E-427B-A7B3-F556901BB4EF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AngleSharp.Css.Tests", "AngleSharp.Css.Tests\AngleSharp.Css.Tests.csproj", "{6CCC908F-C69E-49DA-A32A-7E80E2D23CCF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AngleSharp.Performance.Common", "AngleSharp.Performance.Common\AngleSharp.Performance.Common.csproj", "{517F9FB0-1A85-4C3B-AC46-EBED53238D72}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AngleSharp.Performance.Css", "AngleSharp.Performance.Css\AngleSharp.Performance.Css.csproj", "{F8BCBC95-21C6-42C0-8B96-8763FB15252E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AngleSharp.Performance.Utilities", "AngleSharp.Performance.Utilities\AngleSharp.Performance.Utilities.csproj", "{A947272E-478C-45A4-99E1-3A47F12C9091}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +55,26 @@ Global
 		{9A08E0EE-9E7A-498C-837F-FAABFBBD06D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9A08E0EE-9E7A-498C-837F-FAABFBBD06D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9A08E0EE-9E7A-498C-837F-FAABFBBD06D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F54F0A0-B23E-427B-A7B3-F556901BB4EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F54F0A0-B23E-427B-A7B3-F556901BB4EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F54F0A0-B23E-427B-A7B3-F556901BB4EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F54F0A0-B23E-427B-A7B3-F556901BB4EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6CCC908F-C69E-49DA-A32A-7E80E2D23CCF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CCC908F-C69E-49DA-A32A-7E80E2D23CCF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CCC908F-C69E-49DA-A32A-7E80E2D23CCF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CCC908F-C69E-49DA-A32A-7E80E2D23CCF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{517F9FB0-1A85-4C3B-AC46-EBED53238D72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{517F9FB0-1A85-4C3B-AC46-EBED53238D72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{517F9FB0-1A85-4C3B-AC46-EBED53238D72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{517F9FB0-1A85-4C3B-AC46-EBED53238D72}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F8BCBC95-21C6-42C0-8B96-8763FB15252E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8BCBC95-21C6-42C0-8B96-8763FB15252E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8BCBC95-21C6-42C0-8B96-8763FB15252E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8BCBC95-21C6-42C0-8B96-8763FB15252E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A947272E-478C-45A4-99E1-3A47F12C9091}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A947272E-478C-45A4-99E1-3A47F12C9091}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A947272E-478C-45A4-99E1-3A47F12C9091}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A947272E-478C-45A4-99E1-3A47F12C9091}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

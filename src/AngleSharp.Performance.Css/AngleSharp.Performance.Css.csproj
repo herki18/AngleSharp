@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <ApplicationIcon />
+    <OutputType>Exe</OutputType>
+    <StartupObject />
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <LangVersion>9</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AngleSharp.Performance.Common\AngleSharp.Performance.Common.csproj" />
+    <ProjectReference Include="..\AngleSharp.Performance.Utilities\AngleSharp.Performance.Utilities.csproj" />
+    <ProjectReference Include="..\AngleSharp.Css\AngleSharp.Css.csproj">
+      <TargetFramework>netstandard2.1</TargetFramework>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ExCSS" version="4.3.0" />
+  </ItemGroup>
+</Project>
