@@ -1,7 +1,9 @@
 namespace AngleSharp.Css.Dom;
 
+using System;
 using System.Runtime.CompilerServices;
 using AngleSharp.Dom;
+using Parser;
 
 /// <summary>
 ///
@@ -14,13 +16,26 @@ public class CssInlineStyleService : ICssInlineStyleService
     /// <inheritdoc />
     public ICssStyleDeclarationBase CreateStyle(IElement element)
     {
-        throw new System.NotImplementedException();
+        return CreateStyle(element, null);
     }
 
     /// <inheritdoc />
-    public ICssStyleDeclarationBase CreateStyle(IElement element, string source)
+    public ICssStyleDeclarationBase CreateStyle(IElement element, String source)
     {
-        throw new System.NotImplementedException();
+        var document = element.Owner;
+        var context = document.Context;
+        var parser = context?.GetService<ICssParser>();
+
+        // Seems to be run from a context with CSS
+        if (parser != null)
+        {
+            var style = new CssStyleDeclaration(context);
+            style.Update(source ?? element.GetAttribute(AttributeNames.Style));
+            style.Changed += value => element.SetAttribute(AttributeNames.Style, value);
+            return style;
+        }
+
+        return null;
     }
 
     /// <inheritdoc />
