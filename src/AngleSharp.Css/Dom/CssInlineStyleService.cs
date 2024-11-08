@@ -11,7 +11,7 @@ using Parser;
 public class CssInlineStyleService : ICssInlineStyleService
 {
     /// <inheritdoc />
-    public ConditionalWeakTable<IElement, ICssStyleDeclarationBase> Styles { get; }
+    public ConditionalWeakTable<IElement, ICssStyleDeclarationBase> Styles { get; } = new ();
 
     /// <inheritdoc />
     public ICssStyleDeclarationBase CreateStyle(IElement element)
@@ -41,18 +41,18 @@ public class CssInlineStyleService : ICssInlineStyleService
     /// <inheritdoc />
     public ICssStyleDeclarationBase GetStyle(IElement element)
     {
-        throw new System.NotImplementedException();
+        return Styles.GetValue(element, CreateStyle);
     }
 
     /// <inheritdoc />
-    public void SetStyle(IElement element, string value)
+    public void SetStyle(IElement element, String value)
     {
-        throw new System.NotImplementedException();
+        element.SetAttribute(AttributeNames.Style, value);
     }
 
     /// <inheritdoc />
     public void UpdateStyle(IElement element, string value)
     {
-        throw new System.NotImplementedException();
+        element.GetStyle()?.Update(value);
     }
 }
