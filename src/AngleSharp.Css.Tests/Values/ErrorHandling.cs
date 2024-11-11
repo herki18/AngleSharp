@@ -22,7 +22,7 @@ namespace AngleSharp.Css.Tests.Values
             var div = document.QuerySelector<IHtmlElement>("div");
             Assert.AreEqual(1, div.GetStyle().Length);
             Assert.AreEqual("background-image", div.GetStyle()[0]);
-            Assert.AreEqual("url(\"javascript:alert(1)\")", div.GetStyle().GetBackgroundImage());
+            Assert.AreEqual("url(\"javascript:alert(1)\")", div.GetStyle().BackgroundImage);
         }
 
         [Test]

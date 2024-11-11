@@ -133,7 +133,7 @@
             Assert.AreEqual(1, style.Length);
             var bottom = style.Declarations.First();
             Assert.AreEqual("bottom", bottom.Name);
-            Assert.AreEqual("50%", ((ICssStyleDeclaration)style).GetBottom());
+            Assert.AreEqual("50%", ((ICssStyleDeclaration)style).Bottom);
         }
 
         [Test]

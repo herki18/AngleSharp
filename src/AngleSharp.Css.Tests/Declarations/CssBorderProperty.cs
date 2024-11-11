@@ -255,10 +255,10 @@ namespace AngleSharp.Css.Tests.Declarations
 </html>";
             var document = source.ToHtmlDocument(Configuration.Default.WithCss());
             var styleDeclaration = document.Body.ComputeCurrentStyle();
-            Assert.AreEqual("hidden", styleDeclaration.GetBorderTopStyle());
-            Assert.AreEqual("double", styleDeclaration.GetBorderLeftStyle());
-            Assert.AreEqual("double", styleDeclaration.GetBorderRightStyle());
-            Assert.AreEqual("dashed", styleDeclaration.GetBorderBottomStyle());
+            Assert.AreEqual("hidden", styleDeclaration.BorderTopStyle);
+            Assert.AreEqual("double", styleDeclaration.BorderLeftStyle);
+            Assert.AreEqual("double", styleDeclaration.BorderRightStyle);
+            Assert.AreEqual("dashed", styleDeclaration.BorderBottomStyle);
         }
 
         [Test]
@@ -581,9 +581,9 @@ namespace AngleSharp.Css.Tests.Declarations
             var expectedCss = "border: 1px solid rgba(0, 0, 0, 1)";
             var context = BrowsingContext.New(Configuration.Default.WithCss());
             var style = new CssStyleDeclaration(context);
-            style.SetBorderWidth("1px");
-            style.SetBorderStyle("solid");
-            style.SetBorderColor("black");
+            style.BorderWidth = "1px";
+            style.BorderStyle = "solid";
+            style.BorderColor = "black";
             Assert.AreEqual(expectedCss, style.CssText);
         }
     }

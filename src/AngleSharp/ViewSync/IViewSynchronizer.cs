@@ -55,5 +55,20 @@ namespace AngleSharp.ViewSync
         /// <param name="sender"></param>
         /// <param name="eventUnregisteredArgs"></param>
         void UnregisterEvent(Object sender, EventUnregisteredArgs eventUnregisteredArgs);
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="attributeName"></param>
+        /// <param name="currentNode"></param>
+        void UpdateAttribute(String attributeName, INode currentNode);
+
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="attributeName"></param>
+        /// <param name="currentNode"></param>
+        void RemoveAttribute(String attributeName, INode currentNode);
     }
 }

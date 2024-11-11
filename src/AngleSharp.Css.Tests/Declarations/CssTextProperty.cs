@@ -207,8 +207,8 @@ namespace AngleSharp.Css.Tests.Declarations
 </html>";
             var document = source.ToHtmlDocument(Configuration.Default.WithCss());
             var styleDeclaration = document.Body.ComputeCurrentStyle();
-            Assert.AreEqual("dotted", styleDeclaration.GetTextDecorationStyle());
-            Assert.AreEqual("underline", styleDeclaration.GetTextDecorationLine());
+            Assert.AreEqual("dotted", styleDeclaration.TextDecorationStyle);
+            Assert.AreEqual("underline", styleDeclaration.TextDecorationLine);
         }
 
         [Test]

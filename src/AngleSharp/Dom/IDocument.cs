@@ -242,6 +242,17 @@ namespace AngleSharp.Dom
         IElement CreateElement(String? namespaceUri, String name);
 
         /// <summary>
+        /// Creates a new element with the given tag name.
+        /// </summary>
+        /// <param name="name">
+        /// A string that specifies the type of element to be created.
+        /// </param>
+        /// <param name="options"></param>
+        /// <returns>The created element object.</returns>
+        [DomName("createElement")]
+        IElement CreateElement(String name, ElementCreationOptions? options);
+
+        /// <summary>
         /// Creates an Attr of the given name.
         /// </summary>
         /// <param name="name">

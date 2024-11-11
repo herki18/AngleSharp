@@ -477,10 +477,13 @@ namespace AngleSharp.Dom
                 }
 
                 this.SetOwnAttribute(name, value);
+
+                ViewSync?.UpdateAttribute(name, this);
             }
             else
             {
                 RemoveAttribute(name);
+                ViewSync?.RemoveAttribute(name, this);
             }
         }
 

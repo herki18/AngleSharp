@@ -20,7 +20,7 @@ namespace AngleSharp.Css.RenderTree
         /// Downloads the referenced resources from the node if visible.
         ///
         /// Included resources:
-        /// 
+        ///
         /// - Background images
         /// </summary>
         /// <param name="node">The node to use as a starting base.</param>
@@ -69,11 +69,11 @@ namespace AngleSharp.Css.RenderTree
                     {
                         return false;
                     }
-                    else if (style.GetDisplay() == CssKeywords.None)
+                    else if (style.Display == CssKeywords.None)
                     {
                         return false;
                     }
-                    else if (style.GetVisibility() == CssKeywords.Hidden)
+                    else if (style.Visibility == CssKeywords.Hidden)
                     {
                         return false;
                     }

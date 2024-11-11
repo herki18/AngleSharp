@@ -212,7 +212,7 @@ namespace AngleSharp.Css.Tests.Library
             var window = document.DefaultView;
             var tree = window.Render();
             var label = tree.Find(document.QuerySelector("label"));
-            var minWidth = window.GetComputedStyle(label.Ref as IHtmlElement).GetMinWidth();
+            var minWidth = window.GetComputedStyle(label.Ref as IHtmlElement).MinWidth;
 
             Assert.AreEqual("50px", minWidth);
         }

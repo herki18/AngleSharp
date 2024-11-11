@@ -23,8 +23,8 @@ h1 {
             Assert.IsInstanceOf<CssStyleRule>(sheet.Rules[0]);
             var h1 = sheet.Rules[0] as ICssStyleRule;
             Assert.AreEqual("h1", h1.SelectorText);
-            Assert.AreEqual("rgba(255, 0, 0, 1)", h1.Style.GetColor());
-            Assert.AreEqual("bold", h1.Style.GetFontWeight());
+            Assert.AreEqual("rgba(255, 0, 0, 1)", h1.Style.Color);
+            Assert.AreEqual("bold", h1.Style.FontWeight);
         }
 
         [Test]
@@ -145,8 +145,8 @@ h1 {
             Assert.AreEqual(1, p.Style.Length);
             Assert.AreEqual("p", p.SelectorText);
             Assert.AreEqual("color", p.Style[0]);
-            Assert.AreEqual("rgba(0, 128, 0, 1)", p.Style.GetColor());
-            Assert.AreEqual("", p.Style.GetFontFamily());
+            Assert.AreEqual("rgba(0, 128, 0, 1)", p.Style.Color);
+            Assert.AreEqual("", p.Style.FontFamily);
         }
 
         [Test]
@@ -159,7 +159,7 @@ h1 {
             Assert.IsInstanceOf<CssStyleRule>(sheet.Rules[0]);
             var id = sheet.Rules[0] as ICssStyleRule;
             Assert.AreEqual("#something", id.SelectorText);
-            Assert.AreEqual("\"hi there\"", id.Style.GetContent());
+            Assert.AreEqual("\"hi there\"", id.Style.Content);
         }
 
         [Test]
@@ -175,7 +175,7 @@ h1 {
             Assert.IsInstanceOf<CssStyleRule>(media.Rules[0]);
             var p = media.Rules[0] as ICssStyleRule;
             Assert.AreEqual("p:before", p.SelectorText);
-            Assert.AreEqual("\"Hello\"", p.Style.GetContent());
+            Assert.AreEqual("\"Hello\"", p.Style.Content);
         }
 
         [Test]
@@ -188,7 +188,7 @@ h1 {
             Assert.AreEqual("h1", h1.SelectorText);
             Assert.AreEqual(1, h1.Style.Length);
             Assert.AreEqual("color", h1.Style[0]);
-            Assert.AreEqual("rgba(255, 0, 0, 1)", h1.Style.GetColor());
+            Assert.AreEqual("rgba(255, 0, 0, 1)", h1.Style.Color);
         }
 
         [Test]
@@ -204,7 +204,7 @@ h1 {
             Assert.AreEqual("h1", h1.SelectorText);
             Assert.AreEqual(2, h1.Style.Length);
             Assert.AreEqual("color", h1.Style[0]);
-            Assert.AreEqual("rgba(255, 0, 0, 1)", h1.Style.GetColor());
+            Assert.AreEqual("rgba(255, 0, 0, 1)", h1.Style.Color);
             Assert.AreEqual("rotation", h1.Style[1]);
         }
 
@@ -240,7 +240,7 @@ h1 {
             Assert.NotNull(style);
             Assert.AreEqual("#hi", style.SelectorText);
             Assert.AreEqual(1, style.Style.Length);
-            Assert.AreEqual("rgba(0, 128, 0, 1)", style.Style.GetColor());
+            Assert.AreEqual("rgba(0, 128, 0, 1)", style.Style.Color);
         }
 
         [Test]
@@ -259,7 +259,7 @@ h1 {
             Assert.NotNull(style);
             Assert.AreEqual("p", style.SelectorText);
             Assert.AreEqual(1, style.Style.Length);
-            Assert.AreEqual("rgba(0, 128, 0, 1)", style.Style.GetColor());
+            Assert.AreEqual("rgba(0, 128, 0, 1)", style.Style.Color);
         }
 
         [Test]
@@ -279,7 +279,7 @@ h1 { color: blue }");
             Assert.AreEqual("h1", h1.SelectorText);
             Assert.AreEqual(1, h1.Style.Length);
             Assert.AreEqual("color", h1.Style[0]);
-            Assert.AreEqual("rgba(0, 0, 255, 1)", h1.Style.GetColor());
+            Assert.AreEqual("rgba(0, 0, 255, 1)", h1.Style.Color);
         }
 
         [Test]
@@ -292,7 +292,7 @@ h1 { color: blue }");
             Assert.AreEqual("img", img.SelectorText);
             Assert.AreEqual(1, img.Style.Length);
             Assert.AreEqual("float", img.Style[0]);
-            Assert.AreEqual("left", img.Style.GetFloat());
+            Assert.AreEqual("left", img.Style.CssFloat);
         }
 
         [Test]
@@ -304,7 +304,7 @@ h1 { color: blue }");
             var img = sheet.Rules[0] as ICssStyleRule;
             Assert.AreEqual("img", img.SelectorText);
             Assert.AreEqual(0, img.Style.Length);
-            Assert.AreEqual("", img.Style.GetFloat());
+            Assert.AreEqual("", img.Style.CssFloat);
         }
 
         [Test]
@@ -316,7 +316,7 @@ h1 { color: blue }");
             var img = sheet.Rules[0] as ICssStyleRule;
             Assert.AreEqual("img", img.SelectorText);
             Assert.AreEqual(0, img.Style.Length);
-            Assert.AreEqual("", img.Style.GetBackground());
+            Assert.AreEqual("", img.Style.Background);
         }
 
         [Test]
@@ -340,7 +340,7 @@ h1 { color: blue }");
             Assert.AreEqual("p", p.SelectorText);
             Assert.AreEqual(1, p.Style.Length);
             Assert.AreEqual("color", p.Style[0]);
-            Assert.AreEqual("rgba(0, 128, 0, 1)", p.Style.GetColor());
+            Assert.AreEqual("rgba(0, 128, 0, 1)", p.Style.Color);
         }
 
         [Test]
@@ -353,7 +353,7 @@ h1 { color: blue }");
             Assert.AreEqual("p", p.SelectorText);
             Assert.AreEqual(1, p.Style.Length);
             Assert.AreEqual("color", p.Style[0]);
-            Assert.AreEqual("rgba(0, 128, 0, 1)", p.Style.GetColor());
+            Assert.AreEqual("rgba(0, 128, 0, 1)", p.Style.Color);
         }
 
         [Test]
@@ -366,7 +366,7 @@ h1 { color: blue }");
             Assert.AreEqual("p", p.SelectorText);
             Assert.AreEqual(1, p.Style.Length);
             Assert.AreEqual("color", p.Style[0]);
-            Assert.AreEqual("rgba(0, 128, 0, 1)", p.Style.GetColor());
+            Assert.AreEqual("rgba(0, 128, 0, 1)", p.Style.Color);
         }
 
         [Test]
@@ -379,7 +379,7 @@ h1 { color: blue }");
             Assert.AreEqual("p", p.SelectorText);
             Assert.AreEqual(1, p.Style.Length);
             Assert.AreEqual("color", p.Style[0]);
-            Assert.AreEqual("rgba(0, 128, 0, 1)", p.Style.GetColor());
+            Assert.AreEqual("rgba(0, 128, 0, 1)", p.Style.Color);
         }
 
         [Test]
@@ -392,7 +392,7 @@ h1 { color: blue }");
             Assert.AreEqual("p", p.SelectorText);
             Assert.AreEqual(1, p.Style.Length);
             Assert.AreEqual("color", p.Style[0]);
-            Assert.AreEqual("rgba(0, 128, 0, 1)", p.Style.GetColor());
+            Assert.AreEqual("rgba(0, 128, 0, 1)", p.Style.Color);
         }
 
         [Test]
@@ -405,7 +405,7 @@ h1 { color: blue }");
             Assert.AreEqual("p", p.SelectorText);
             Assert.AreEqual(1, p.Style.Length);
             Assert.AreEqual("color", p.Style[0]);
-            Assert.AreEqual("rgba(0, 128, 0, 1)", p.Style.GetColor());
+            Assert.AreEqual("rgba(0, 128, 0, 1)", p.Style.Color);
         }
 
         [Test]
@@ -690,10 +690,10 @@ h1 { color: blue }");
             Assert.AreEqual(5, rule.Style.Length);
             Assert.AreEqual(".App_Header_ .logo", rule.SelectorText);
             var decl = rule.Style as ICssStyleDeclaration;
-            Assert.AreEqual("url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEcAAAAcCAMAAAAEJ1IZAAAABGdBTUEAALGPC/xhBQAAVAI/VAI/VAI/VAI/VAI/VAI/VAAAA////AI/VRZ0U8AAAAFJ0Uk5TYNV4S2UbgT/Gk6uQt585w2wGXS0zJO2lhGttJK6j4YqZSobH1AAAAAElFTkSuQmCC\")", decl.GetBackgroundImage());
-            Assert.AreEqual("71px 28px", decl.GetBackgroundSize());
-            Assert.AreEqual("0 19px", decl.GetBackgroundPosition());
-            Assert.AreEqual("71px", decl.GetWidth());
+            Assert.AreEqual("url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEcAAAAcCAMAAAAEJ1IZAAAABGdBTUEAALGPC/xhBQAAVAI/VAI/VAI/VAI/VAI/VAI/VAAAA////AI/VRZ0U8AAAAFJ0Uk5TYNV4S2UbgT/Gk6uQt585w2wGXS0zJO2lhGttJK6j4YqZSobH1AAAAAElFTkSuQmCC\")", decl.BackgroundImage);
+            Assert.AreEqual("71px 28px", decl.BackgroundSize);
+            Assert.AreEqual("0 19px", decl.BackgroundPosition);
+            Assert.AreEqual("71px", decl.Width);
         }
 
         [Test]
@@ -916,13 +916,13 @@ font-weight:bold;}";
             var body = sheet.Rules[0] as ICssStyleRule;
             Assert.AreEqual("body", body.SelectorText);
             Assert.AreEqual(1, body.Style.Length);
-            Assert.AreEqual("Verdana", body.Style.GetFontFamily());
+            Assert.AreEqual("Verdana", body.Style.FontFamily);
 
             Assert.AreEqual(CssRuleType.Style, sheet.Rules[1].Type);
             var div = sheet.Rules[1] as ICssStyleRule;
             Assert.AreEqual("div.hidden", div.SelectorText);
             Assert.AreEqual(1, div.Style.Length);
-            Assert.AreEqual("none", div.Style.GetDisplay());
+            Assert.AreEqual("none", div.Style.Display);
         }
 
         [Test]
@@ -937,11 +937,11 @@ font-weight:bold;}";
 
             var body = sheet.Rules[0] as ICssStyleRule;
             Assert.AreEqual("border-color: rgba(255, 0, 0, 1)", body.Style.CssText);
-            Assert.AreEqual("rgba(255, 0, 0, 1)", body.Style.GetBorderColor());
-            Assert.AreEqual("rgba(255, 0, 0, 1)", body.Style.GetBorderLeftColor());
-            Assert.AreEqual("rgba(255, 0, 0, 1)", body.Style.GetBorderRightColor());
-            Assert.AreEqual("rgba(255, 0, 0, 1)", body.Style.GetBorderTopColor());
-            Assert.AreEqual("rgba(255, 0, 0, 1)", body.Style.GetBorderBottomColor());
+            Assert.AreEqual("rgba(255, 0, 0, 1)", body.Style.BorderColor);
+            Assert.AreEqual("rgba(255, 0, 0, 1)", body.Style.BorderLeftColor);
+            Assert.AreEqual("rgba(255, 0, 0, 1)", body.Style.BorderRightColor);
+            Assert.AreEqual("rgba(255, 0, 0, 1)", body.Style.BorderTopColor);
+            Assert.AreEqual("rgba(255, 0, 0, 1)", body.Style.BorderBottomColor);
         }
 
         [Test]
@@ -952,14 +952,14 @@ font-weight:bold;}";
             var sheet = parser.ParseStyleSheet(source);
 
             var body = sheet.Rules[0] as ICssStyleRule;
-            body.Style.SetBorderLeftColor("blue");
-            body.Style.SetBorderRightColor("blue");
+            body.Style.BorderLeftColor = "blue";
+            body.Style.BorderRightColor = "blue";
             Assert.AreEqual("border-color: rgba(255, 0, 0, 1) rgba(0, 0, 255, 1)", body.Style.CssText);
-            Assert.AreEqual("rgba(255, 0, 0, 1) rgba(0, 0, 255, 1)", body.Style.GetBorderColor());
-            Assert.AreEqual("rgba(0, 0, 255, 1)", body.Style.GetBorderLeftColor());
-            Assert.AreEqual("rgba(0, 0, 255, 1)", body.Style.GetBorderRightColor());
-            Assert.AreEqual("rgba(255, 0, 0, 1)", body.Style.GetBorderTopColor());
-            Assert.AreEqual("rgba(255, 0, 0, 1)", body.Style.GetBorderBottomColor());
+            Assert.AreEqual("rgba(255, 0, 0, 1) rgba(0, 0, 255, 1)", body.Style.BorderColor);
+            Assert.AreEqual("rgba(0, 0, 255, 1)", body.Style.BorderLeftColor);
+            Assert.AreEqual("rgba(0, 0, 255, 1)", body.Style.BorderRightColor);
+            Assert.AreEqual("rgba(255, 0, 0, 1)", body.Style.BorderTopColor);
+            Assert.AreEqual("rgba(255, 0, 0, 1)", body.Style.BorderBottomColor);
         }
 
         [Test]
@@ -971,12 +971,12 @@ font-weight:bold;}";
 
             var body = sheet.Rules[0] as ICssStyleRule;
             Assert.AreEqual("border: 1px solid rgba(255, 0, 0, 1)", body.Style.CssText);
-            body.Style.SetBorderLeftColor("blue");
-            body.Style.SetBorderTopWidth("medium");
+            body.Style.BorderLeftColor = "blue";
+            body.Style.BorderTopWidth = "medium";
             Assert.AreEqual("border-top: 3px solid rgba(255, 0, 0, 1); border-right: 1px solid rgba(255, 0, 0, 1); border-bottom: 1px solid rgba(255, 0, 0, 1); border-left: 1px solid rgba(0, 0, 255, 1)", body.Style.CssText);
-            Assert.AreEqual("rgba(255, 0, 0, 1) rgba(255, 0, 0, 1) rgba(255, 0, 0, 1) rgba(0, 0, 255, 1)", body.Style.GetBorderColor());
-            Assert.AreEqual("3px 1px 1px", body.Style.GetBorderWidth());
-            Assert.AreEqual("solid", body.Style.GetBorderStyle());
+            Assert.AreEqual("rgba(255, 0, 0, 1) rgba(255, 0, 0, 1) rgba(255, 0, 0, 1) rgba(0, 0, 255, 1)", body.Style.BorderColor);
+            Assert.AreEqual("3px 1px 1px", body.Style.BorderWidth);
+            Assert.AreEqual("solid", body.Style.BorderStyle);
         }
 
         [Test]
@@ -1028,21 +1028,21 @@ font-weight:bold;}";
             var sheet = parser.ParseStyleSheet(source);
             Assert.AreEqual(15, sheet.Rules.Length);
 
-            var rgbNumber = (sheet.Rules[0] as ICssStyleRule).Style.GetColor();
-            var rgbPercent = (sheet.Rules[1] as ICssStyleRule).Style.GetColor();
-            var rgbaNumber = (sheet.Rules[2] as ICssStyleRule).Style.GetColor();
-            var rgbaPercent = (sheet.Rules[3] as ICssStyleRule).Style.GetColor();
-            var hsl = (sheet.Rules[4] as ICssStyleRule).Style.GetColor();
-            var hslAngle = (sheet.Rules[5] as ICssStyleRule).Style.GetColor();
-            var hsla = (sheet.Rules[6] as ICssStyleRule).Style.GetColor();
-            var hslaAngle = (sheet.Rules[7] as ICssStyleRule).Style.GetColor();
-            var grayNumber = (sheet.Rules[8] as ICssStyleRule).Style.GetColor();
-            var grayPercent = (sheet.Rules[9] as ICssStyleRule).Style.GetColor();
-            var grayPercentAlpha = (sheet.Rules[10] as ICssStyleRule).Style.GetColor();
-            var hwb = (sheet.Rules[11] as ICssStyleRule).Style.GetColor();
-            var hwbAngle = (sheet.Rules[12] as ICssStyleRule).Style.GetColor();
-            var hwbAlpha = (sheet.Rules[13] as ICssStyleRule).Style.GetColor();
-            var hwbAngleAlpha = (sheet.Rules[14] as ICssStyleRule).Style.GetColor();
+            var rgbNumber = (sheet.Rules[0] as ICssStyleRule).Style.Color;
+            var rgbPercent = (sheet.Rules[1] as ICssStyleRule).Style.Color;
+            var rgbaNumber = (sheet.Rules[2] as ICssStyleRule).Style.Color;
+            var rgbaPercent = (sheet.Rules[3] as ICssStyleRule).Style.Color;
+            var hsl = (sheet.Rules[4] as ICssStyleRule).Style.Color;
+            var hslAngle = (sheet.Rules[5] as ICssStyleRule).Style.Color;
+            var hsla = (sheet.Rules[6] as ICssStyleRule).Style.Color;
+            var hslaAngle = (sheet.Rules[7] as ICssStyleRule).Style.Color;
+            var grayNumber = (sheet.Rules[8] as ICssStyleRule).Style.Color;
+            var grayPercent = (sheet.Rules[9] as ICssStyleRule).Style.Color;
+            var grayPercentAlpha = (sheet.Rules[10] as ICssStyleRule).Style.Color;
+            var hwb = (sheet.Rules[11] as ICssStyleRule).Style.Color;
+            var hwbAngle = (sheet.Rules[12] as ICssStyleRule).Style.Color;
+            var hwbAlpha = (sheet.Rules[13] as ICssStyleRule).Style.Color;
+            var hwbAngleAlpha = (sheet.Rules[14] as ICssStyleRule).Style.Color;
 
             Assert.IsNotNull(rgbNumber);
             Assert.IsNotNull(rgbPercent);

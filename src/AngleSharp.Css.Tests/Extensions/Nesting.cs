@@ -22,7 +22,7 @@ namespace AngleSharp.Css.Tests.Extensions
             var element = document.QuerySelector(".bar");
             var style = window.GetComputedStyle(element);
 
-            Assert.AreEqual("22.4px", style.GetFontSize());
+            Assert.AreEqual("22.4px", style.FontSize);
         }
 
         [Test]
@@ -40,7 +40,7 @@ namespace AngleSharp.Css.Tests.Extensions
             var styleCollection = window.GetStyleCollection();
             var style = styleCollection.GetDeclarations(element);
 
-            Assert.AreEqual("1.4rem", style.GetFontSize());
+            Assert.AreEqual("1.4rem", style.FontSize);
         }
 
         [Test]
@@ -57,7 +57,7 @@ namespace AngleSharp.Css.Tests.Extensions
             var element = document.QuerySelector(".bar");
             var style = window.GetComputedStyle(element);
 
-            Assert.AreEqual("22.4px", style.GetFontSize());
+            Assert.AreEqual("22.4px", style.FontSize);
         }
 
         [Test]
@@ -78,7 +78,7 @@ namespace AngleSharp.Css.Tests.Extensions
             var element = document.QuerySelector(".bar");
             var style = window.GetComputedStyle(element);
 
-            Assert.AreEqual("22.4px", style.GetFontSize());
+            Assert.AreEqual("22.4px", style.FontSize);
         }
 
         [Test]
@@ -95,7 +95,7 @@ namespace AngleSharp.Css.Tests.Extensions
             var element = document.QuerySelector(".bar");
             var style = window.GetComputedStyle(element);
 
-            Assert.AreEqual("rgba(0, 128, 0, 1)", style.GetColor());
+            Assert.AreEqual("rgba(0, 128, 0, 1)", style.Color);
         }
 
         [Test]
@@ -112,7 +112,7 @@ namespace AngleSharp.Css.Tests.Extensions
             var element = document.QuerySelector("li");
             var style = window.GetComputedStyle(element);
 
-            Assert.AreEqual("rgba(0, 128, 0, 1)", style.GetColor());
+            Assert.AreEqual("rgba(0, 128, 0, 1)", style.Color);
         }
     }
 }

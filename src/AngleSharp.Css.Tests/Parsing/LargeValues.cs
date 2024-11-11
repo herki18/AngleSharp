@@ -17,7 +17,7 @@ namespace AngleSharp.Css.Tests.Parsing
             var sheet = ParseStyleSheet(source);
             Assert.AreEqual(1, sheet.Rules.Length);
             var style = sheet.Rules[0] as ICssStyleRule;
-            Assert.AreEqual("2147483647", style.Style.GetZIndex());
+            Assert.AreEqual("2147483647", style.Style.ZIndex);
         }
 
         [Test]
@@ -29,7 +29,7 @@ namespace AngleSharp.Css.Tests.Parsing
             var sheet = ParseStyleSheet(source);
             Assert.AreEqual(1, sheet.Rules.Length);
             var style = sheet.Rules[0] as ICssStyleRule;
-            Assert.AreEqual("-2147483648", style.Style.GetZIndex());
+            Assert.AreEqual("-2147483648", style.Style.ZIndex);
         }
 
         [Test]

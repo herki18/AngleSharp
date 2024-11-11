@@ -228,7 +228,7 @@ namespace AngleSharp.Css.Tests.Styling
             Assert.AreEqual("display: none;", styleAttribute.Value);
 
             var style = ((IHtmlElement)dochtml0body1table0tbody0tr0).GetStyle();
-            Assert.AreEqual("none", style.GetDisplay());
+            Assert.AreEqual("none", style.Display);
         }
 
         [Test]
@@ -268,10 +268,10 @@ namespace AngleSharp.Css.Tests.Styling
 
             var tr = (IHtmlElement)tableRow;
             var style = tr.GetStyle();
-            Assert.AreEqual("none", style.GetDisplay());
+            Assert.AreEqual("none", style.Display);
 
-            style.SetDisplay("block");
-            Assert.AreEqual("block", style.GetDisplay());
+            style.Display = "block";
+            Assert.AreEqual("block", style.Display);
         }
 
         [Test]
@@ -312,8 +312,8 @@ namespace AngleSharp.Css.Tests.Styling
             var tr = (IHtmlElement)tableRow;
             var style = tr.GetStyle();
 
-            style.SetDisplay("none");
-            Assert.AreEqual("none", style.GetDisplay());
+            style.Display = "none";
+            Assert.AreEqual("none", style.Display);
         }
 
         [Test]
@@ -326,7 +326,7 @@ namespace AngleSharp.Css.Tests.Styling
             // hang occurs only if this line is executed prior to setting the attribute
             // hang occurs when executing next line
             div.SetAttribute("style", "background-color: http://www.codeplex.com?url=&lt;SCRIPT&gt;a=/XSS/alert(a.source)&lt;/SCRIPT&gt;");
-            Assert.AreEqual("", div.GetStyle().GetBackgroundColor());
+            Assert.AreEqual("", div.GetStyle().BackgroundColor);
         }
 
         [Test]
@@ -340,7 +340,7 @@ namespace AngleSharp.Css.Tests.Styling
             Assert.AreEqual(1, style.Length);
 
             Assert.AreEqual("color", style[0]);
-            Assert.AreEqual("rgba(255, 0, 0, 1)", style.GetColor());
+            Assert.AreEqual("rgba(255, 0, 0, 1)", style.Color);
         }
 
         [Test]
@@ -358,11 +358,11 @@ namespace AngleSharp.Css.Tests.Styling
 
             var style = (elements[0] as IHtmlElement).GetStyle();
 
-            Assert.AreEqual("rgba(255, 0, 0, 1)", style.GetColor());
-            Assert.AreEqual("rgba(0, 128, 0, 1)", style.GetBackgroundColor());
-            Assert.AreEqual("\"Tahoma\"", style.GetFontFamily());
-            Assert.AreEqual("10px", style.GetFontSize());
-            Assert.AreEqual("0.5", style.GetOpacity());
+            Assert.AreEqual("rgba(255, 0, 0, 1)", style.Color);
+            Assert.AreEqual("rgba(0, 128, 0, 1)", style.BackgroundColor);
+            Assert.AreEqual("\"Tahoma\"", style.FontFamily);
+            Assert.AreEqual("10px", style.FontSize);
+            Assert.AreEqual("0.5", style.Opacity);
         }
 
         [Test]
@@ -434,10 +434,10 @@ namespace AngleSharp.Css.Tests.Styling
             var expected = "<button style=\"pointer-events: auto; border: 1px solid rgba(0, 0, 0, 1)\"></button>";
             var document = ParseDocument("");
             var element = document.CreateElement("button");
-            element.GetStyle().SetPointerEvents("auto");
-            element.GetStyle().SetBorderWidth("1px");
-            element.GetStyle().SetBorderStyle("solid");
-            element.GetStyle().SetBorderColor("black");
+            element.GetStyle().PointerEvents = "auto";
+            element.GetStyle().BorderWidth = "1px";
+            element.GetStyle().BorderStyle = "solid";
+            element.GetStyle().BorderColor = "black";
             Assert.AreEqual(expected, element.ToHtml());
         }
 
@@ -448,7 +448,7 @@ namespace AngleSharp.Css.Tests.Styling
             var htmlParser = browsingContext.GetService<IHtmlParser>();
             var document = htmlParser.ParseDocument("<html><body><b>Hello, World!</b></body></html>");
             var boldStyle = document.Body.FirstElementChild.ComputeCurrentStyle();
-            Assert.AreEqual("bolder", boldStyle.GetFontWeight());
+            Assert.AreEqual("bolder", boldStyle.FontWeight);
         }
 
         [Test]
@@ -474,7 +474,7 @@ namespace AngleSharp.Css.Tests.Styling
             var htmlParser = browsingContext.GetService<IHtmlParser>();
             var document = htmlParser.ParseDocument("<html><head><style>body { color: red } @media only screen and (min-width: 600px) { body { color: green } }</style></head><body></body></html>");
             var style = document.Body.ComputeCurrentStyle();
-            Assert.AreEqual("rgba(0, 128, 0, 1)", style.GetColor());
+            Assert.AreEqual("rgba(0, 128, 0, 1)", style.Color);
         }
 
         [Test]
@@ -490,7 +490,7 @@ namespace AngleSharp.Css.Tests.Styling
             var htmlParser = browsingContext.GetService<IHtmlParser>();
             var document = htmlParser.ParseDocument("<html><head><style>body { color: red } @media only screen and (min-width: 600px) { body { color: green } }</style></head><body></body></html>");
             var style = document.Body.ComputeCurrentStyle();
-            Assert.AreEqual("rgba(255, 0, 0, 1)", style.GetColor());
+            Assert.AreEqual("rgba(255, 0, 0, 1)", style.Color);
         }
     }
 }

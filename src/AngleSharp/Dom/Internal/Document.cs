@@ -1134,6 +1134,12 @@ namespace AngleSharp.Dom
         }
 
         /// <inheritdoc />
+        public IElement CreateElement(String localName, ElementCreationOptions? options)
+        {
+            return CreateElement(localName);
+        }
+
+        /// <inheritdoc />
         public IComment CreateComment(String data) => new Comment(this, data);
 
         /// <inheritdoc />

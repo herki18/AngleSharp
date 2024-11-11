@@ -51,9 +51,9 @@ namespace AngleSharp.Dom
             {
                 var css = element.ComputeCurrentStyle();
 
-                if (!String.IsNullOrEmpty(css?.GetDisplay()))
+                if (!String.IsNullOrEmpty(css?.Display))
                 {
-                    hidden = css.GetDisplay() == CssKeywords.None;
+                    hidden = css.Display == CssKeywords.None;
                 }
             }
 
@@ -165,14 +165,14 @@ namespace AngleSharp.Dom
 
             if (elementStyle is not null)
             {
-                if (!String.IsNullOrEmpty(elementStyle.GetDisplay()))
+                if (!String.IsNullOrEmpty(elementStyle.Display))
                 {
-                    elementHidden = elementStyle.GetDisplay() == CssKeywords.None;
+                    elementHidden = elementStyle.Display == CssKeywords.None;
                 }
 
-                if (!String.IsNullOrEmpty(elementStyle.GetVisibility()) && elementHidden != true)
+                if (!String.IsNullOrEmpty(elementStyle.Visibility) && elementHidden != true)
                 {
-                    elementHidden = elementStyle.GetVisibility() != CssKeywords.Visible;
+                    elementHidden = elementStyle.Visibility != CssKeywords.Visible;
                 }
             }
 
@@ -202,25 +202,25 @@ namespace AngleSharp.Dom
                 {
                     sb.Append(Symbols.LineFeed);
                 }
-                else if (elementStyle is not null && ((node is IHtmlTableCellElement && String.IsNullOrEmpty(elementStyle.GetDisplay())) || elementStyle.GetDisplay() == CssKeywords.TableCell))
+                else if (elementStyle is not null && ((node is IHtmlTableCellElement && String.IsNullOrEmpty(elementStyle.Display) || elementStyle.Display == CssKeywords.TableCell)))
                 {
                     if (node.NextSibling is IElement nextSibling)
                     {
                         var nextSiblingCss = nextSibling.ComputeCurrentStyle();
 
-                        if (nextSibling is IHtmlTableCellElement && String.IsNullOrEmpty(nextSiblingCss.GetDisplay()) || nextSiblingCss.GetDisplay() == CssKeywords.TableCell)
+                        if (nextSibling is IHtmlTableCellElement && String.IsNullOrEmpty(nextSiblingCss.Display) || nextSiblingCss.Display == CssKeywords.TableCell)
                         {
                             sb.Append(Symbols.Tab);
                         }
                     }
                 }
-                else if (elementStyle is not null && ((node is IHtmlTableRowElement && String.IsNullOrEmpty(elementStyle.GetDisplay())) || elementStyle.GetDisplay() == CssKeywords.TableRow))
+                else if (elementStyle is not null && ((node is IHtmlTableRowElement && String.IsNullOrEmpty(elementStyle.Display)) || elementStyle.Display == CssKeywords.TableRow))
                 {
                     if (node.NextSibling is IElement nextSibling)
                     {
                         var nextSiblingCss = nextSibling.ComputeCurrentStyle();
 
-                        if (nextSibling is IHtmlTableRowElement && String.IsNullOrEmpty(nextSiblingCss.GetDisplay()) || nextSiblingCss.GetDisplay() == CssKeywords.TableRow)
+                        if (nextSibling is IHtmlTableRowElement && String.IsNullOrEmpty(nextSiblingCss.Display) || nextSiblingCss.Display == CssKeywords.TableRow)
                         {
                             sb.Append(Symbols.LineFeed);
                         }
@@ -245,7 +245,7 @@ namespace AngleSharp.Dom
 
                 if (elementStyle is not null)
                 {
-                    if (IsBlockLevelDisplay(elementStyle.GetDisplay()))
+                    if (IsBlockLevelDisplay(elementStyle.Display))
                     {
                         isBlockLevel = true;
                     }
@@ -330,8 +330,8 @@ namespace AngleSharp.Dom
         private static void ProcessText(String text, StringBuilder sb, ICssStyleDeclaration style, Boolean lastLine, Dictionary<Int32, Int32> requiredLineBreakCounts)
         {
             var startIndex = sb.Length;
-            var whiteSpace = style?.GetWhiteSpace();
-            var textTransform = style?.GetTextTransform();
+            var whiteSpace = style?.WhiteSpace;
+            var textTransform = style?.TextTransform;
             var isWhiteSpace = startIndex <= 0 || IsWhiteSpace(sb[startIndex - 1]) || (requiredLineBreakCounts.ContainsKey(startIndex) && IsWhiteSpace(text[0]));
 
             for (var i = 0; i < text.Length; i++)

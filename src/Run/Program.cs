@@ -195,6 +195,16 @@ namespace Run
             throw new NotImplementedException();
         }
 
+        public void UpdateAttribute(string attributeName, INode currentNode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void RemoveAttribute(string attributeName, INode currentNode)
+        {
+            throw new NotImplementedException();
+        }
+
         public void SyncEvent(string type, DomEventHandler handler)
         {
             throw new NotImplementedException();

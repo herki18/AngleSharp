@@ -12,7 +12,7 @@ namespace AngleSharp.Css.Tests.Declarations
         {
             var source = "a{content:\"\\\"\"}";
             var parsed = ParseStyle(source);
-            Assert.AreEqual("\"\\\"\"", parsed.Style.GetContent());
+            Assert.AreEqual("\"\\\"\"", parsed.Style.Content);
         }
 
         [Test]
@@ -20,7 +20,7 @@ namespace AngleSharp.Css.Tests.Declarations
         {
             var source = "a{content:'\\''}";
             var parsed = ParseStyle(source);
-            Assert.AreEqual("\"'\"", parsed.Style.GetContent());
+            Assert.AreEqual("\"'\"", parsed.Style.Content);
         }
 
         [Test]
@@ -28,7 +28,7 @@ namespace AngleSharp.Css.Tests.Declarations
         {
             var source = "a{content:\"abc\\\"\\\"d\\\"ef\"}";
             var parsed = ParseStyle(source);
-            Assert.AreEqual("\"abc\\\"\\\"d\\\"ef\"", parsed.Style.GetContent());
+            Assert.AreEqual("\"abc\\\"\\\"d\\\"ef\"", parsed.Style.Content);
         }
 
         [Test]
@@ -36,7 +36,7 @@ namespace AngleSharp.Css.Tests.Declarations
         {
             var source = "a{content:'abc\\'\\'d\\'ef'}";
             var parsed = ParseStyle(source);
-            Assert.AreEqual("\"abc''d'ef\"", parsed.Style.GetContent());
+            Assert.AreEqual("\"abc''d'ef\"", parsed.Style.Content);
         }
 
         [Test]
@@ -44,7 +44,7 @@ namespace AngleSharp.Css.Tests.Declarations
         {
             var source = "a{content: counter(h1) \".\\00A0\"}";
             var parsed = ParseStyle(source);
-            Assert.AreEqual("counter(h1) \". \"", parsed.Style.GetContent());
+            Assert.AreEqual("counter(h1) \". \"", parsed.Style.Content);
         }
     }
 }

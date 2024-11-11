@@ -64,8 +64,8 @@ namespace AngleSharp.Css.Tests.Extensions
             Assert.AreEqual("bold", element.ClassName);
 
             var computedStyle = window.GetComputedStyle(element);
-            Assert.AreEqual("rgba(255, 0, 0, 1)", computedStyle.GetColor());
-            Assert.AreEqual("bold", computedStyle.GetFontWeight());
+            Assert.AreEqual("rgba(255, 0, 0, 1)", computedStyle.Color);
+            Assert.AreEqual("bold", computedStyle.FontWeight);
             Assert.AreEqual(3, computedStyle.Length);
         }
 
@@ -104,7 +104,7 @@ namespace AngleSharp.Css.Tests.Extensions
             Assert.AreEqual("prioOne", prioOne.Id);
 
             var computePrioOneStyle = window.GetComputedStyle(prioOne);
-            Assert.AreEqual("rgba(0, 0, 0, 1)", computePrioOneStyle.GetColor());
+            Assert.AreEqual("rgba(0, 0, 0, 1)", computePrioOneStyle.Color);
         }
 
         [Test]
@@ -133,7 +133,7 @@ namespace AngleSharp.Css.Tests.Extensions
             Assert.AreEqual("span", element.LocalName);
 
             var computedStyle = window.GetComputedStyle(element);
-            Assert.AreEqual("rgba(255, 0, 0, 1)", computedStyle.GetColor());
+            Assert.AreEqual("rgba(255, 0, 0, 1)", computedStyle.Color);
             Assert.AreEqual(1, computedStyle.Length);
         }
 
@@ -143,7 +143,7 @@ namespace AngleSharp.Css.Tests.Extensions
             var sourceCode = @"<!doctype html>
 <head>
 <style>
-p > span { color: blue; } 
+p > span { color: blue; }
 span.bold { font-weight: bold; }
 </style>
 <style>
@@ -174,11 +174,11 @@ em { font-style: italic !important; }
             Assert.IsNotNull(style);
             Assert.AreEqual(8, style.Length);
 
-            Assert.AreEqual("0", style.GetMargin());
-            Assert.AreEqual("rgba(255, 0, 0, 1)", style.GetColor());
-            Assert.AreEqual("bold", style.GetFontWeight());
-            Assert.AreEqual("italic", style.GetFontStyle());
-            Assert.AreEqual("20px", style.GetFontSize());
+            Assert.AreEqual("0", style.Margin);
+            Assert.AreEqual("rgba(255, 0, 0, 1)", style.Color);
+            Assert.AreEqual("bold", style.FontWeight);
+            Assert.AreEqual("italic", style.FontStyle);
+            Assert.AreEqual("20px", style.FontSize);
         }
 
         [Test]
@@ -259,7 +259,7 @@ em { font-style: italic !important; }
 
             var styleNormal = window.GetComputedStyle(element);
             Assert.IsNotNull(styleNormal);
-            Assert.AreEqual("uppercase", styleNormal.GetTextTransform());
+            Assert.AreEqual("uppercase", styleNormal.TextTransform);
         }
 
         [Test]
@@ -276,7 +276,7 @@ em { font-style: italic !important; }
 
             var styleNormal = window.GetComputedStyle(element);
             Assert.IsNotNull(styleNormal);
-            Assert.AreEqual("uppercase", styleNormal.GetTextTransform());
+            Assert.AreEqual("uppercase", styleNormal.TextTransform);
         }
 
         [Test]
@@ -288,7 +288,7 @@ em { font-style: italic !important; }
             var element = document.QuerySelector("span");
             var styleNormal = element.ComputeStyle();
             Assert.IsNotNull(styleNormal);
-            Assert.AreEqual("uppercase", styleNormal.GetTextTransform());
+            Assert.AreEqual("uppercase", styleNormal.TextTransform);
         }
 
         [Test]
@@ -308,7 +308,7 @@ em { font-style: italic !important; }
             var document = await sheet.Context.OpenAsync(res => res.Content(@"<h3 id='target'>Test</h3>"));
             var sc = new StyleCollection(new[] { sheet }, new DefaultRenderDevice());
             var style = sc.ComputeCascadedStyle(document.QuerySelector("h3"));
-            Assert.AreEqual("rgba(0, 0, 255, 1)", style.GetColor());
+            Assert.AreEqual("rgba(0, 0, 255, 1)", style.Color);
         }
 
         [Test]
@@ -318,7 +318,7 @@ em { font-style: italic !important; }
             var document = await sheet.Context.OpenAsync(res => res.Content(@"<p>This is <span>only</span> a test.</p>"));
             var sc = new StyleCollection(new[] { sheet }, new DefaultRenderDevice());
             var style = sc.ComputeDeclarations(document.QuerySelector("span"));
-            Assert.AreEqual("24px", style.GetFontSize());
+            Assert.AreEqual("24px", style.FontSize);
         }
 
         [Test]
@@ -335,7 +335,7 @@ em { font-style: italic !important; }
             var document = await sheet.Context.OpenAsync(res => res.Content(@"<p>This is a test</p>"));
             var sc = new StyleCollection(new[] { sheet }, new DefaultRenderDevice());
             var style = sc.ComputeDeclarations(document.QuerySelector("p"));
-            Assert.AreEqual("rgba(255, 255, 255, 1)", style.GetColor());
+            Assert.AreEqual("rgba(255, 255, 255, 1)", style.Color);
         }
 
         [Test]
@@ -352,7 +352,7 @@ em { font-style: italic !important; }
             var document = await sheet.Context.OpenAsync(res => res.Content(@"<p>This is a test</p>"));
             var sc = new StyleCollection(new[] { sheet }, new DefaultRenderDevice());
             var style = sc.ComputeDeclarations(document.QuerySelector("p"));
-            Assert.AreEqual("rgba(255, 255, 255, 1)", style.GetColor());
+            Assert.AreEqual("rgba(255, 255, 255, 1)", style.Color);
         }
 
         [Test]
@@ -367,7 +367,7 @@ em { font-style: italic !important; }
             var document = await sheet.Context.OpenAsync(res => res.Content(@"<p>This is a test</p>"));
             var sc = new StyleCollection(new[] { sheet }, new DefaultRenderDevice());
             var style = sc.ComputeDeclarations(document.QuerySelector("p"));
-            Assert.AreEqual("rgba(0, 128, 0, 1)", style.GetColor());
+            Assert.AreEqual("rgba(0, 128, 0, 1)", style.Color);
         }
 
         [Test]
@@ -384,7 +384,7 @@ em { font-style: italic !important; }
             var document = await sheet.Context.OpenAsync(res => res.Content(@"<p>This is a test</p>"));
             var sc = new StyleCollection(new[] { sheet }, new DefaultRenderDevice());
             var style = sc.ComputeDeclarations(document.QuerySelector("p"));
-            Assert.AreEqual("rgba(0, 128, 0, 1)", style.GetColor());
+            Assert.AreEqual("rgba(0, 128, 0, 1)", style.Color);
         }
 
         [Test]
@@ -406,7 +406,7 @@ em { font-style: italic !important; }
             var document = await sheet.Context.OpenAsync(res => res.Content(@"<p>This is a test</p>"));
             var sc = new StyleCollection(new[] { sheet }, new DefaultRenderDevice());
             var style = sc.ComputeDeclarations(document.QuerySelector("p"));
-            Assert.AreEqual("rgba(0, 128, 0, 1)", style.GetColor());
+            Assert.AreEqual("rgba(0, 128, 0, 1)", style.Color);
         }
     }
 }
