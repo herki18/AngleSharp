@@ -20,7 +20,7 @@ namespace AngleSharp.Css.Dom
         /// <returns>The computed style of the element.</returns>
         public static ICssStyleDeclaration ComputeStyle(this IElement element, String pseudo = null)
         {
-            var window = element?.Owner?.DefaultView;
+            var window = element?.OwnerDocument?.DefaultView;
             return window?.GetComputedStyle(element, pseudo);
         }
 

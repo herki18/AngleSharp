@@ -27,7 +27,7 @@ namespace AngleSharp.Dom
         [DomName("pseudo")]
         public static IPseudoElement Pseudo(this IElement element, String pseudoElement)
         {
-            var factory = element.Owner?.Context.GetService<IPseudoElementFactory>();
+            var factory = element.OwnerDocument?.Context.GetService<IPseudoElementFactory>();
             return factory?.Create(element, pseudoElement);
         }
 
@@ -42,7 +42,7 @@ namespace AngleSharp.Dom
         {
             var hidden = new Nullable<Boolean>();
 
-            if (element.Owner == null)
+            if (element.OwnerDocument == null)
             {
                 hidden = true;
             }
@@ -103,7 +103,7 @@ namespace AngleSharp.Dom
             }
             else
             {
-                var document = element.Owner;
+                var document = element.OwnerDocument;
                 var fragment = document.CreateDocumentFragment();
                 var sb = StringBuilderPool.Obtain();
 

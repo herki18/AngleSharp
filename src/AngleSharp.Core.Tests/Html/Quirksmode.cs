@@ -25,7 +25,7 @@
             var x = document.CreateElement("P");
             Assert.IsNotNull(x);
             Assert.IsTrue(x is HtmlParagraphElement);
-            Assert.AreEqual(document, x.Owner);
+            Assert.AreEqual(document, x.OwnerDocument);
         }
 
         [Test]
@@ -43,7 +43,7 @@
             Assert.AreEqual(0, testEl.Children.Length);
             testEl.AppendChild(test as TextNode);
             Assert.AreEqual(text, testEl.InnerHtml);
-            Assert.AreEqual(document, test.Owner);
+            Assert.AreEqual(document, test.OwnerDocument);
         }
 
         [Test]
@@ -51,7 +51,7 @@
         {
             var x = document.GetElementById("test");
             Assert.AreEqual("p", x.LocalName);
-            Assert.AreEqual(document, x.Owner);
+            Assert.AreEqual(document, x.OwnerDocument);
         }
 
         [Test]

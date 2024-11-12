@@ -79,7 +79,7 @@ namespace AngleSharp.Html.Dom
                 }
                 else if (createMissing)
                 {
-                    var newInput = form.Owner!.CreateElement<IHtmlInputElement>();
+                    var newInput = form.OwnerDocument!.CreateElement<IHtmlInputElement>();
                     newInput.Type = InputTypeNames.Hidden;
                     newInput.Name = field.Key;
                     newInput.Value = field.Value;

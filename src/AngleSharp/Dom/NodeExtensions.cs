@@ -365,7 +365,7 @@ namespace AngleSharp.Dom
         {
             if (node is IDocumentFragment)
             {
-                return node.Owner?.All.OfType<IHtmlTemplateElement>().FirstOrDefault(m => m.Content == node);
+                return node.OwnerDocument?.All.OfType<IHtmlTemplateElement>().FirstOrDefault(m => m.Content == node);
             }
 
             return null;
@@ -475,7 +475,7 @@ namespace AngleSharp.Dom
                     referenceChild = newNode.NextSibling;
                 }
 
-                var document = parent.Owner ?? parent as IDocument;
+                var document = parent.OwnerDocument ?? parent as IDocument;
                 document!.AdoptNode(node);
                 parentNode.InsertBefore(newNode, referenceChild, false);
                 return node;

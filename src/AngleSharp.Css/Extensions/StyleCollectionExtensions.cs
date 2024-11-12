@@ -43,7 +43,7 @@ namespace AngleSharp.Css
         /// <returns>The style declaration containing all the declarations.</returns>
         public static ICssStyleDeclaration ComputeDeclarations(this IStyleCollection styles, IElement element, String pseudoSelector = null)
         {
-            var ctx = element.Owner?.Context;
+            var ctx = element.OwnerDocument?.Context;
             var declarations = GetDeclarations(styles, element, pseudoSelector);
             var context = new CssComputeContext(styles.Device, ctx, declarations);
 
@@ -60,7 +60,7 @@ namespace AngleSharp.Css
         /// <returns>The style declaration containing all the declarations.</returns>
         public static ICssStyleDeclaration GetDeclarations(this IStyleCollection styles, IElement element, String pseudoSelector = null)
         {
-            var ctx = element.Owner?.Context;
+            var ctx = element.OwnerDocument?.Context;
             var computedStyle = new CssStyleDeclaration(ctx);
             var nodes = element.GetAncestors().OfType<IElement>();
 
@@ -95,7 +95,7 @@ namespace AngleSharp.Css
         /// <returns>Returns the cascaded read-only style declaration.</returns>
         public static ICssStyleDeclaration ComputeCascadedStyle(this IStyleCollection styles, IElement element, ICssStyleDeclaration parent = null)
         {
-            var ctx = element.Owner?.Context;
+            var ctx = element.OwnerDocument?.Context;
             var computedStyle = new CssStyleDeclaration(ctx);
             var rules = styles.SortBySpecificity(element);
 

@@ -93,7 +93,7 @@ namespace AngleSharp.Css.Dom
         public Boolean TryMatch(IElement element, IElement scope, out Priority specificity)
         {
             specificity = Priority.Zero;
-            scope ??= element?.Owner!.DocumentElement;
+            scope ??= element?.OwnerDocument!.DocumentElement;
 
             if (!_nested && Parent is CssStyleRule parent)
             {

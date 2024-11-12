@@ -124,7 +124,8 @@ namespace AngleSharp.Dom
 
         INode? INode.LastChild => LastChild;
 
-        IDocument INode.Owner => Owner;
+        /// <inheritdoc />
+        public IDocument OwnerDocument => Owner;
 
         INode? INode.Parent => _parent;
 
@@ -631,7 +632,7 @@ namespace AngleSharp.Dom
             {
                 return DocumentPositions.Same;
             }
-            else if (!Object.ReferenceEquals(Owner, otherNode.Owner))
+            else if (!Object.ReferenceEquals(Owner, otherNode.OwnerDocument))
             {
                 var relative = otherNode.GetHashCode() > GetHashCode() ? DocumentPositions.Following : DocumentPositions.Preceding;
                 return DocumentPositions.Disconnected | DocumentPositions.ImplementationSpecific | relative;

@@ -90,7 +90,7 @@ namespace AngleSharp.Dom
         /// associated with it, returns null.
         /// </summary>
         [DomName("ownerDocument")]
-        IDocument? Owner { get; }
+        IDocument? OwnerDocument { get; }
 
         /// <summary>
         /// Gets an Element that is the parent of this node. If the node has no

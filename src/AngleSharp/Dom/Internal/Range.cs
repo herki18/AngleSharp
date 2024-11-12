@@ -335,7 +335,7 @@ namespace AngleSharp.Dom
 
         public IDocumentFragment ExtractContent()
         {
-            var fragment = _start.Node.Owner!.CreateDocumentFragment();
+            var fragment = _start.Node.OwnerDocument!.CreateDocumentFragment();
 
             if (!_start.Equals(_end))
             {
@@ -436,7 +436,7 @@ namespace AngleSharp.Dom
 
         public IDocumentFragment CopyContent()
         {
-            var fragment = _start.Node.Owner!.CreateDocumentFragment();
+            var fragment = _start.Node.OwnerDocument!.CreateDocumentFragment();
 
             if (!_start.Equals(_end))
             {

@@ -1241,10 +1241,10 @@ namespace AngleSharp.Core.Tests.Library
             var newDocument = (IDocument)originalDocument.Clone(true);
 
             var div = newDocument.QuerySelector("div");
-            Assert.AreSame(newDocument, div.Owner);
+            Assert.AreSame(newDocument, div.OwnerDocument);
 
             div.TextContent = "cloned document";
-            var newHtml = div.Owner.DocumentElement.OuterHtml;
+            var newHtml = div.OwnerDocument.DocumentElement.OuterHtml;
             Assert.True(newHtml.Contains("cloned document"));
         }
 
@@ -1256,10 +1256,10 @@ namespace AngleSharp.Core.Tests.Library
             var newBody = (IElement)originalDocument.Body.Clone(true);
 
             var div = newBody.QuerySelector("div");
-            Assert.AreSame(originalDocument, div.Owner);
+            Assert.AreSame(originalDocument, div.OwnerDocument);
 
             div.TextContent = "cloned document";
-            var newHtml = div.Owner.DocumentElement.OuterHtml;
+            var newHtml = div.OwnerDocument.DocumentElement.OuterHtml;
             Assert.True(newHtml.Contains("document"));
         }
 

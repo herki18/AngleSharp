@@ -26,7 +26,7 @@ namespace AngleSharp.Browser
 
             if (encoding != null)
             {
-                var document = element.Owner!;
+                var document = element.OwnerDocument!;
                 document.Source.CurrentEncoding = encoding;
             }
         }

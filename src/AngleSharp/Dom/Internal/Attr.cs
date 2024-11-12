@@ -143,7 +143,8 @@ namespace AngleSharp.Dom
 
         INodeList INode.ChildNodes => NodeList.Empty;
 
-        IDocument? INode.Owner => OwnerElement?.Owner;
+        /// <inheritdoc />
+        public IDocument? OwnerDocument => OwnerElement?.OwnerDocument;
 
         IElement? INode.ParentElement => null;
 

@@ -93,7 +93,7 @@ namespace AngleSharp.Css.Dom
 
         public INodeList ChildNodes => _host.ChildNodes;
 
-        public IDocument Owner => _host.Owner;
+        public IDocument OwnerDocument => _host.OwnerDocument;
 
         public IElement ParentElement => _host.ParentElement;
 

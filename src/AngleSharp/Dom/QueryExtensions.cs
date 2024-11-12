@@ -421,7 +421,7 @@ namespace AngleSharp.Dom
 
             if (node != null)
             {
-                var parser = node.Owner!.Context.GetService<ICssSelectorParser>()!;
+                var parser = node.OwnerDocument!.Context.GetService<ICssSelectorParser>()!;
                 sg = parser.ParseSelector(selectorText) ?? throw new DomException(DomError.Syntax);
             }
 

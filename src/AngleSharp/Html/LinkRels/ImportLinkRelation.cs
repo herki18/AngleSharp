@@ -20,7 +20,7 @@ namespace AngleSharp.Html.LinkRels
         #region ctor
 
         public ImportLinkRelation(IHtmlLinkElement link)
-            : base(link, new DocumentRequestProcessor(link?.Owner!.Context!))
+            : base(link, new DocumentRequestProcessor(link?.OwnerDocument!.Context!))
         {
         }
 
@@ -42,7 +42,7 @@ namespace AngleSharp.Html.LinkRels
         public override Task LoadAsync()
         {
             var link = Link;
-            var document = link.Owner;
+            var document = link.OwnerDocument;
             //var list = ImportLists.GetOrCreateValue(document!);
             var location = Url;
             var processor = Processor;

@@ -20,13 +20,13 @@ namespace AngleSharp.Dom
         public static ICssStyleDeclaration ComputeCurrentStyle(this IElement element)
         {
             element = element ?? throw new ArgumentNullException(nameof(element));
-            var document = element.Owner;
+            var document = element.OwnerDocument;
             var window = document?.DefaultView;
             return window?.GetComputedStyle(element);
         }
 
         /// <summary>
-        /// Extends the CSS of the given elements with the specified 
+        /// Extends the CSS of the given elements with the specified
         /// declarations.
         /// </summary>
         /// <typeparam name="T">The type of element collection.</typeparam>
@@ -51,7 +51,7 @@ namespace AngleSharp.Dom
         }
 
         /// <summary>
-        /// Extends the CSS of the given elements with the specified 
+        /// Extends the CSS of the given elements with the specified
         /// declarations.
         /// </summary>
         /// <typeparam name="T">The type of element collection.</typeparam>

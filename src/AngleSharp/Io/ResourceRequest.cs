@@ -19,7 +19,7 @@ namespace AngleSharp.Io
         {
             Source = source;
             Target = target;
-            Origin = source.Owner!.Origin;
+            Origin = source.OwnerDocument!.Origin;
             IsManualRedirectDesired = false;
             IsSameOriginForced = false;
             IsCookieBlocked = false;

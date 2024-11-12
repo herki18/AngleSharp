@@ -14,7 +14,7 @@ namespace AngleSharp.Css
     {
         private readonly Dictionary<String, ISelector> _selectors = new(StringComparer.OrdinalIgnoreCase)
         {
-            { PseudoClassNames.Root, new PseudoClassSelector(el => el.Owner!.DocumentElement == el, PseudoClassNames.Root) },
+            { PseudoClassNames.Root, new PseudoClassSelector(el => el.OwnerDocument!.DocumentElement == el, PseudoClassNames.Root) },
             { PseudoClassNames.Scope, ScopePseudoClassSelector.Instance },
             { PseudoClassNames.OnlyType, new PseudoClassSelector(el => el.IsOnlyOfType(), PseudoClassNames.OnlyType) },
             { PseudoClassNames.FirstOfType, new PseudoClassSelector(el => el.IsFirstOfType(), PseudoClassNames.FirstOfType) },

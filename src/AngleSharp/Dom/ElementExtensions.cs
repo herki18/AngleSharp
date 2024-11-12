@@ -203,7 +203,7 @@ namespace AngleSharp.Dom
         /// <param name="el">The element that is connected to a doc.</param>
         /// <param name="prefix">The prefix to lookup.</param>
         /// <returns>The namespace url for the prefix.</returns>
-        public static String? GetCssNamespace(this IElement el, String prefix) => el.Owner?.StyleSheets.LocateNamespace(prefix) ?? el.LocateNamespaceFor(prefix);
+        public static String? GetCssNamespace(this IElement el, String prefix) => el.OwnerDocument?.StyleSheets.LocateNamespace(prefix) ?? el.LocateNamespaceFor(prefix);
 
         /// <summary>
         /// Checks if the element is currently hovered. Not implemented, and
@@ -296,7 +296,7 @@ namespace AngleSharp.Dom
         public static Boolean IsTarget(this IElement element)
         {
             var id = element.Id;
-            var hash = element.Owner?.Location.Hash;
+            var hash = element.OwnerDocument?.Location.Hash;
             return id != null && hash != null && String.Compare(id, 0, hash, hash.Length > 0 ? 1 : 0, Int32.MaxValue) == 0;
         }
 
@@ -1367,7 +1367,7 @@ namespace AngleSharp.Dom
             where TElement : class, IUrlUtilities, IElement
         {
             element = element ?? throw new ArgumentNullException(nameof(element));
-            var document = element.Owner!;
+            var document = element.OwnerDocument!;
             var address = element.Href;
             var url = Url.Create(address);
             var request = DocumentRequest.Get(url, source: element, referer: document.DocumentUri);
@@ -1571,7 +1571,7 @@ namespace AngleSharp.Dom
             do
             {
                 // Set if node has id attribute set...
-                hasId = !String.IsNullOrEmpty(element.Id) && element.Owner?.QuerySelectorAll($"[id='{element.Id}']").Length == 1;
+                hasId = !String.IsNullOrEmpty(element.Id) && element.OwnerDocument?.QuerySelectorAll($"[id='{element.Id}']").Length == 1;
 
                 // Get parent element of the node
                 var parent = element.ParentElement;

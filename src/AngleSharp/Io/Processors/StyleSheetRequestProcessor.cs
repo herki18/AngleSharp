@@ -66,7 +66,7 @@ namespace AngleSharp.Io.Processors
         protected override async Task ProcessResponseAsync(IResponse response)
         {
             var cancel = CancellationToken.None;
-            var options = new StyleOptions(_link.Owner!)
+            var options = new StyleOptions(_link.OwnerDocument!)
             {
                 Element = _link,
                 IsDisabled = _link.IsDisabled,

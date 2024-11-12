@@ -17,6 +17,6 @@ namespace AngleSharp.Css.Dom
 
         public void Accept(ISelectorVisitor visitor) => visitor.Type(Text);
 
-        public Boolean Match(IElement element, IElement? scope) => element.Owner!.DocumentElement == element;
+        public Boolean Match(IElement element, IElement? scope) => element.OwnerDocument!.DocumentElement == element;
     }
 }

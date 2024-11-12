@@ -27,7 +27,7 @@ namespace AngleSharp.Css.RenderTree
         /// <param name="cancellationToken">The cancellation token to use, if any.</param>
         public static Task DownloadResources(this IRenderNode node, CancellationToken cancellationToken = default)
         {
-            var context = node.Ref.Owner?.Context ?? throw new InvalidOperationException("The node needs to be inside a browsing context.");
+            var context = node.Ref.OwnerDocument?.Context ?? throw new InvalidOperationException("The node needs to be inside a browsing context.");
             var loader = context.GetService<IResourceLoader>() ?? throw new InvalidOperationException("A resource loader is required. Check your configuration.");
             var tasks = new List<Task>();
 
@@ -57,7 +57,7 @@ namespace AngleSharp.Css.RenderTree
         /// <returns>True if its visible, otherwise false.</returns>
         public static Boolean IsVisible(this IRenderNode node)
         {
-            var hasOwner = node.Ref.Owner != null;
+            var hasOwner = node.Ref.OwnerDocument != null;
 
             if (hasOwner)
             {

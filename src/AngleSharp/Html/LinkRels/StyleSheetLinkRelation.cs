@@ -10,7 +10,7 @@ namespace AngleSharp.Html.LinkRels
         #region ctor
 
         public StyleSheetLinkRelation(IHtmlLinkElement link)
-            : base(link, new StyleSheetRequestProcessor(link.Owner!.Context, link))
+            : base(link, new StyleSheetRequestProcessor(link.OwnerDocument!.Context, link))
         {
         }
 

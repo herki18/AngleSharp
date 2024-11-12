@@ -12,7 +12,7 @@ namespace AngleSharp.Dom
     public static class SelectorExtensions
     {
         #region General Methods
-        
+
         /// <summary>
         /// Reduces the elements to the one at the given index, if any.
         /// </summary>
@@ -393,7 +393,7 @@ namespace AngleSharp.Dom
 
                 if (element != null)
                 {
-                    var parser = element.Owner!.Context.GetService<ICssSelectorParser>()!;
+                    var parser = element.OwnerDocument!.Context.GetService<ICssSelectorParser>()!;
                     return parser.ParseSelector(selector);
                 }
             }

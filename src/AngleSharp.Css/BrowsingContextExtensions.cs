@@ -43,7 +43,7 @@ namespace AngleSharp.Css
 
                 using (var response = await download.Task.ConfigureAwait(false))
                 {
-                    var options = new StyleOptions(element?.Owner ?? context.Active) { Element = element };
+                    var options = new StyleOptions(element?.OwnerDocument ?? context.Active) { Element = element };
                     return await service.ParseStylesheetAsync(response, options, cancel).ConfigureAwait(false);
                 }
             }

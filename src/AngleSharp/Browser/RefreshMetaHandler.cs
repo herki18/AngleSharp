@@ -28,7 +28,7 @@ namespace AngleSharp.Browser
 
             if (metaValue.Isi("refresh"))
             {
-                var document = element.Owner!;
+                var document = element.OwnerDocument!;
                 var content = element.Content!;
                 var baseUrl = new Url(document.DocumentUri);
                 var redirectUrl = baseUrl;

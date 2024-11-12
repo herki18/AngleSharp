@@ -22,7 +22,7 @@ public class CssInlineStyleService : ICssInlineStyleService
     /// <inheritdoc />
     public ICssStyleDeclarationBase CreateStyle(IElement element, String source)
     {
-        var document = element.Owner;
+        var document = element.OwnerDocument;
         var context = document.Context;
         var parser = context?.GetService<ICssParser>();
 

@@ -20,7 +20,7 @@ namespace AngleSharp.Dom
         {
             if (nodes.Length > 1)
             {
-                var node = parent.Owner!.CreateDocumentFragment();
+                var node = parent.OwnerDocument!.CreateDocumentFragment();
 
                 for (var i = 0; i < nodes.Length; i++)
                 {

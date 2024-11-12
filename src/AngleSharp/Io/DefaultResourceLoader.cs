@@ -39,7 +39,7 @@ namespace AngleSharp.Io
                 Method = HttpMethod.Get,
                 Headers = new Dictionary<String, String>
                 {
-                    [HeaderNames.Referer] = request.Source?.Owner?.DocumentUri ?? String.Empty,
+                    [HeaderNames.Referer] = request.Source?.OwnerDocument?.DocumentUri ?? String.Empty,
                 },
             };
 

@@ -19,7 +19,7 @@ namespace AngleSharp.Css.Dom
 
         public Boolean Match(IElement element, IElement? scope)
         {
-            var realScope = scope ?? element.Owner!.DocumentElement;
+            var realScope = scope ?? element.OwnerDocument!.DocumentElement;
             return Object.ReferenceEquals(element, realScope);
         }
     }
