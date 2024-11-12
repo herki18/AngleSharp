@@ -1,3 +1,4 @@
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 namespace AngleSharp.Dom
 {
     using AngleSharp.Browser;
@@ -13,7 +14,7 @@ namespace AngleSharp.Dom
     /// Represents a sample browsing Window implementation for automated tests,
     /// analysis and as a useful playground.
     /// </summary>
-    sealed class Window : EventTarget, IWindow
+    public class Window : EventTarget, IWindow
     {
         #region Fields
 
@@ -84,7 +85,7 @@ namespace AngleSharp.Dom
         }
 
         /// <summary>
-        /// Gets or sets the horizontal distance of the left border of the 
+        /// Gets or sets the horizontal distance of the left border of the
         /// user's browser from the left side of the screen.
         /// </summary>
         public Int32 ScreenX
