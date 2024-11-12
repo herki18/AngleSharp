@@ -18,7 +18,7 @@ namespace AngleSharp.Dom
         #region ctor
 
         internal DocumentFragment(Document owner)
-            : base(owner, "#document-fragment", NodeType.DocumentFragment)
+            : base(owner, "#document-fragment", Dom.NodeType.DocumentFragment)
         {
         }
 

@@ -15,7 +15,7 @@ namespace AngleSharp.Dom
         /// Creates a new notation node.
         /// </summary>
         public Notation(Document owner, String name)
-            : base(owner, name, NodeType.Notation)
+            : base(owner, name, Dom.NodeType.Notation)
         {
         }
 

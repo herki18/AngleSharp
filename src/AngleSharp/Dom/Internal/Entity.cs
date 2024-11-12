@@ -35,7 +35,7 @@ namespace AngleSharp.Dom
         /// Creates a new entity node.
         /// </summary>
         public Entity(Document owner, String name)
-            : base(owner, name, NodeType.Entity)
+            : base(owner, name, Dom.NodeType.Entity)
         {
         }
 

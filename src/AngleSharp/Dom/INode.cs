@@ -184,7 +184,7 @@ namespace AngleSharp.Dom
         /// Gets an unsigned short representing the type of the node.
         /// </summary>
         [DomName("nodeType")]
-        NodeType NodeType { get; }
+        Int32 NodeType { get; }
 
         /// <summary>
         /// Gets or sets a string representing the value of an object. For most

@@ -122,7 +122,7 @@ namespace AngleSharp.Css.Dom
             {
                 var child = st.Pop();
 
-                if (child.NodeType == NodeType.Element)
+                if (child.NodeType == (Int32)NodeType.Element)
                 {
                     if (child is ILinkStyle linkStyle)
                     {

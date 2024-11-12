@@ -107,7 +107,7 @@ namespace AngleSharp.Css.Dom
 
         public INode PreviousSibling => _host.PreviousSibling;
 
-        public NodeType NodeType => NodeType.Element;
+        public Int32 NodeType => (Int32)AngleSharp.Dom.NodeType.Element;
 
         public String NodeValue
         {

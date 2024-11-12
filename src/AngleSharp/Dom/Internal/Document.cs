@@ -484,7 +484,7 @@ namespace AngleSharp.Dom
 
         /// <inheritdoc />
         public Document(IBrowsingContext context, TextSource source)
-            : base(null, "#document", NodeType.Document)
+            : base(null, "#document", Dom.NodeType.Document)
         {
             Referrer = String.Empty;
             ContentType = MimeTypeNames.ApplicationXml;
@@ -1037,7 +1037,7 @@ namespace AngleSharp.Dom
         /// <inheritdoc />
         public INode Import(INode externalNode, Boolean deep = true)
         {
-            if (externalNode.NodeType == NodeType.Document)
+            if (externalNode.NodeType == (Int32)Dom.NodeType.Document)
             {
                 throw new DomException(DomError.NotSupported);
             }
@@ -1048,7 +1048,7 @@ namespace AngleSharp.Dom
         /// <inheritdoc />
         public INode Adopt(INode externalNode)
         {
-            if (externalNode.NodeType == NodeType.Document)
+            if (externalNode.NodeType == (Int32)Dom.NodeType.Document)
             {
                 throw new DomException(DomError.NotSupported);
             }

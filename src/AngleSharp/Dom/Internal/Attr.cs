@@ -158,7 +158,7 @@ namespace AngleSharp.Dom
         INode? INode.PreviousSibling => null;
         IViewSynchronizer? INode.ViewSync => throw new NotImplementedException();
 
-        NodeType INode.NodeType => NodeType.Attribute;
+        Int32 INode.NodeType => (Int32)NodeType.Attribute;
 
         String INode.NodeValue
         {

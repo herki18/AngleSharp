@@ -76,7 +76,7 @@ namespace AngleSharp.Dom
                 throw new ArgumentNullException(nameof(refNode));
             }
 
-            if (refNode.NodeType == NodeType.DocumentType)
+            if (refNode.NodeType == (Int32)NodeType.DocumentType)
             {
                 throw new DomException(DomError.InvalidNodeType);
             }
@@ -109,7 +109,7 @@ namespace AngleSharp.Dom
                 throw new ArgumentNullException(nameof(refNode));
             }
 
-            if (refNode.NodeType == NodeType.DocumentType)
+            if (refNode.NodeType == (Int32)NodeType.DocumentType)
             {
                 throw new DomException(DomError.InvalidNodeType);
             }
@@ -261,7 +261,7 @@ namespace AngleSharp.Dom
                 throw new ArgumentNullException(nameof(refNode));
             }
 
-            if (refNode.NodeType == NodeType.DocumentType)
+            if (refNode.NodeType == (Int32)NodeType.DocumentType)
             {
                 throw new DomException(DomError.InvalidNodeType);
             }
@@ -526,9 +526,9 @@ namespace AngleSharp.Dom
 
             var snode = _start.Node;
             var type = snode.NodeType;
-            var istext = type == NodeType.Text;
+            var istext = type == (Int32)NodeType.Text;
 
-            if (type == NodeType.ProcessingInstruction || type == NodeType.Comment || (istext && snode.Parent is null))
+            if (type == (Int32)NodeType.ProcessingInstruction || type == (Int32)NodeType.Comment || (istext && snode.Parent is null))
             {
                 throw new DomException(DomError.HierarchyRequest);
             }
@@ -550,7 +550,7 @@ namespace AngleSharp.Dom
 
             node.Parent?.RemoveChild(node);
             var newOffset = referenceNode is null ? parent!.ChildNodes.Length : parent!.ChildNodes.Index(referenceNode);
-            newOffset += node.NodeType == NodeType.DocumentFragment ? node.ChildNodes.Length : 1;
+            newOffset += node.NodeType == (Int32)NodeType.DocumentFragment ? node.ChildNodes.Length : 1;
             parent.PreInsert(node, referenceNode);
 
             if (_start.Equals(_end))
@@ -566,14 +566,14 @@ namespace AngleSharp.Dom
                 throw new ArgumentNullException(nameof(newParent));
             }
 
-            if (Nodes.Any(m => m.NodeType != NodeType.Text && IsPartiallyContained(m)))
+            if (Nodes.Any(m => m.NodeType != (Int32)NodeType.Text && IsPartiallyContained(m)))
             {
                 throw new DomException(DomError.InvalidState);
             }
 
             var type = newParent.NodeType;
 
-            if (type == NodeType.Document || type == NodeType.DocumentType || type == NodeType.DocumentFragment)
+            if (type == (Int32)NodeType.Document || type == (Int32)NodeType.DocumentType || type == (Int32)NodeType.DocumentFragment)
             {
                 throw new DomException(DomError.InvalidNodeType);
             }
@@ -609,7 +609,7 @@ namespace AngleSharp.Dom
 
             if (node.GetRoot() == Root)
             {
-                if (node.NodeType == NodeType.DocumentType)
+                if (node.NodeType == (Int32)NodeType.DocumentType)
                 {
                     throw new DomException(DomError.InvalidNodeType);
                 }
@@ -681,7 +681,7 @@ namespace AngleSharp.Dom
                 throw new DomException(DomError.WrongDocument);
             }
 
-            if (node.NodeType == NodeType.DocumentType)
+            if (node.NodeType == (Int32)NodeType.DocumentType)
             {
                 throw new DomException(DomError.InvalidNodeType);
             }

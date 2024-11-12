@@ -32,7 +32,7 @@ namespace AngleSharp.Dom
         #region ctor
 
         /// <inheritdoc />
-        public Node(Document? owner, String name, NodeType type = NodeType.Element, NodeFlags flags = NodeFlags.None, IViewSynchronizer? view = null)
+        public Node(Document? owner, String name, NodeType type = AngleSharp.Dom.NodeType.Element, NodeFlags flags = NodeFlags.None, IViewSynchronizer? view = null)
         {
             _owner = owner;
             _name = name ?? String.Empty;
@@ -85,7 +85,7 @@ namespace AngleSharp.Dom
                 {
                     return document._baseUri ?? document.DocumentUrl;
                 }
-                else if (_type == NodeType.Document)
+                else if (_type == Dom.NodeType.Document)
                 {
                     document = (Document)this;
                     return document.DocumentUrl;
@@ -97,7 +97,7 @@ namespace AngleSharp.Dom
         }
 
         /// <inheritdoc />
-        public NodeType NodeType => _type;
+        public Int32 NodeType => (int)_type;
 
         /// <inheritdoc />
         public NodeFlags Flags => _flags;
@@ -202,7 +202,7 @@ namespace AngleSharp.Dom
         {
             get
             {
-                if (_type == NodeType.Document)
+                if (_type == Dom.NodeType.Document)
                 {
                     return default!; // Supress to avoid common case where this is non-null
                 }
@@ -248,7 +248,7 @@ namespace AngleSharp.Dom
 
             if (node is not null)
             {
-                if (node.NodeType == NodeType.DocumentFragment)
+                if (node.NodeType == (Int32)Dom.NodeType.DocumentFragment)
                 {
                     addedNodes.AddRange(node._children);
                 }
@@ -282,7 +282,7 @@ namespace AngleSharp.Dom
         internal INode InsertBefore(Node newElement, Node? referenceElement, Boolean suppressObservers)
         {
             var document = Owner;
-            var count = newElement.NodeType == NodeType.DocumentFragment ? newElement.ChildNodes.Length : 1;
+            var count = newElement.NodeType == (Int32)Dom.NodeType.DocumentFragment ? newElement.ChildNodes.Length : 1;
 
             if (referenceElement is not null && document is not null)
             {
@@ -300,7 +300,7 @@ namespace AngleSharp.Dom
                 }
             }
 
-            if (newElement.NodeType == NodeType.Document || newElement.Contains(this))
+            if (newElement.NodeType == (Int32)Dom.NodeType.Document || newElement.Contains(this))
             {
                 throw new DomException(DomError.HierarchyRequest);
             }
@@ -313,7 +313,7 @@ namespace AngleSharp.Dom
                 n = _children.Length;
             }
 
-            if (newElement._type == NodeType.DocumentFragment)
+            if (newElement._type == Dom.NodeType.DocumentFragment)
             {
                 var end = n;
                 var start = n;
@@ -434,7 +434,7 @@ namespace AngleSharp.Dom
                 InsertBefore(node, referenceChild, true);
                 removedNodes.Add(child);
 
-                if (node._type == NodeType.DocumentFragment)
+                if (node._type == Dom.NodeType.DocumentFragment)
                 {
                     addedNodes.AddRange(node._children);
                 }
@@ -780,13 +780,13 @@ namespace AngleSharp.Dom
         {
             switch (node._type)
             {
-                case NodeType.DocumentType:
+                case Dom.NodeType.DocumentType:
                     return parent.Doctype != child || child.IsPrecededByElement();
 
-                case NodeType.Element:
+                case Dom.NodeType.Element:
                     return parent.DocumentElement != child || child.IsFollowedByDoctype();
 
-                case NodeType.DocumentFragment:
+                case Dom.NodeType.DocumentFragment:
                     var elements = node.GetElementCount();
                     return elements > 1 || node.HasTextNodes() || (elements == 1 && (parent.DocumentElement != child || child.IsFollowedByDoctype()));
 

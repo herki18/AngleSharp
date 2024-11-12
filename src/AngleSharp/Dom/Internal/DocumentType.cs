@@ -14,7 +14,7 @@ namespace AngleSharp.Dom
         /// Creates a new document type node.
         /// </summary>
         internal DocumentType(Document owner, String name)
-            : base(owner, name, NodeType.DocumentType)
+            : base(owner, name, Dom.NodeType.DocumentType)
         {
             PublicIdentifier = String.Empty;
             SystemIdentifier = String.Empty;

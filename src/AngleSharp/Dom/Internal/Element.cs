@@ -38,7 +38,7 @@ namespace AngleSharp.Dom
 
         /// <inheritdoc />
         public Element(Document owner, String name, String localName, String? prefix, String namespaceUri, NodeFlags flags = NodeFlags.None, IViewSynchronizer? view = null)
-            : base(owner, name, NodeType.Element, flags, view)
+            : base(owner, name, Dom.NodeType.Element, flags, view)
         {
             _localName = localName;
             _prefix = prefix;
@@ -220,7 +220,7 @@ namespace AngleSharp.Dom
 
                 for (var i = 0; i < n; i++)
                 {
-                    if (children[i].NodeType == NodeType.Element)
+                    if (children[i].NodeType == (Int32)Dom.NodeType.Element)
                     {
                         count++;
                     }
@@ -292,9 +292,9 @@ namespace AngleSharp.Dom
                 {
                     switch (parentNode.NodeType)
                     {
-                        case NodeType.Document:
+                        case (Int32)Dom.NodeType.Document:
                             throw new DomException(DomError.NoModificationAllowed);
-                        case NodeType.DocumentFragment:
+                        case (Int32)Dom.NodeType.DocumentFragment:
                             parentNode = new Html.Dom.HtmlBodyElement(Owner);
                             break;
                     }

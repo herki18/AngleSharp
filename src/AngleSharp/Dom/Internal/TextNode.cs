@@ -18,7 +18,7 @@ namespace AngleSharp.Dom
 
         /// <inheritdoc />
         public TextNode(Document owner, String text)
-            : base(owner, "#text", NodeType.Text, text)
+            : base(owner, "#text", Dom.NodeType.Text, text)
         {
         }
 

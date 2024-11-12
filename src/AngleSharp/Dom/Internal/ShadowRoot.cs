@@ -24,7 +24,7 @@ namespace AngleSharp.Dom
         #region ctor
 
         internal ShadowRoot(Element host, ShadowRootMode mode)
-            : base(host.Owner, "#shadow-root", NodeType.DocumentFragment)
+            : base(host.Owner, "#shadow-root", Dom.NodeType.DocumentFragment)
         {
             _host = host;
             _styleSheets = this.CreateStyleSheets();

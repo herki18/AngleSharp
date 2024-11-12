@@ -20,8 +20,8 @@ namespace AngleSharp.Css
             { PseudoElementNames.Selection, new PseudoElementSelector(_ => false, PseudoElementNames.Selection) },
             { PseudoElementNames.FootnoteCall, new PseudoElementSelector(_ => false, PseudoElementNames.FootnoteCall) },
             { PseudoElementNames.FootnoteMarker, new PseudoElementSelector(_ => false, PseudoElementNames.FootnoteMarker) },
-            { PseudoElementNames.FirstLine, new PseudoElementSelector(el => el.HasChildNodes && el.ChildNodes[0].NodeType == NodeType.Text, PseudoElementNames.FirstLine) },
-            { PseudoElementNames.FirstLetter, new PseudoElementSelector(el => el.HasChildNodes && el.ChildNodes[0].NodeType == NodeType.Text && el.ChildNodes[0].TextContent.Length > 0, PseudoElementNames.FirstLetter) },
+            { PseudoElementNames.FirstLine, new PseudoElementSelector(el => el.HasChildNodes && el.ChildNodes[0].NodeType == (Int32)NodeType.Text, PseudoElementNames.FirstLine) },
+            { PseudoElementNames.FirstLetter, new PseudoElementSelector(el => el.HasChildNodes && el.ChildNodes[0].NodeType == (Int32)NodeType.Text && el.ChildNodes[0].TextContent.Length > 0, PseudoElementNames.FirstLetter) },
             { PseudoElementNames.Content, new PseudoElementSelector(_ => false, PseudoElementNames.Content) },
         };
 

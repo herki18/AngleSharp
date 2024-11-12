@@ -23,7 +23,7 @@ namespace AngleSharp.Dom
         /// <param name="owner">The initial owner.</param>
         /// <param name="name">Name of the entity reference.</param>
         internal EntityReference(Document owner, String name)
-            : base(owner, name, NodeType.EntityReference)
+            : base(owner, name, Dom.NodeType.EntityReference)
         {
         }
 

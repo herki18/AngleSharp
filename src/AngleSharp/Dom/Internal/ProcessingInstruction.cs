@@ -10,7 +10,7 @@ namespace AngleSharp.Dom
         #region ctor
 
         internal ProcessingInstruction(Document owner, String name)
-            : base(owner, name, NodeType.ProcessingInstruction)
+            : base(owner, name, Dom.NodeType.ProcessingInstruction)
         {
         }
 

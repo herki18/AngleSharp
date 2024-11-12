@@ -91,18 +91,18 @@ namespace AngleSharp.Dom
         {
             return node.NodeType switch
             {
-                NodeType.Attribute              => (filter & FilterSettings.Attribute) == FilterSettings.Attribute,
-                NodeType.CharacterData          => (filter & FilterSettings.CharacterData) == FilterSettings.CharacterData,
-                NodeType.Comment                => (filter & FilterSettings.Comment) == FilterSettings.Comment,
-                NodeType.Document               => (filter & FilterSettings.Document) == FilterSettings.Document,
-                NodeType.DocumentFragment       => (filter & FilterSettings.DocumentFragment) == FilterSettings.DocumentFragment,
-                NodeType.DocumentType           => (filter & FilterSettings.DocumentType) == FilterSettings.DocumentType,
-                NodeType.Element                => (filter & FilterSettings.Element) == FilterSettings.Element,
-                NodeType.Entity                 => (filter & FilterSettings.Entity) == FilterSettings.Entity,
-                NodeType.EntityReference        => (filter & FilterSettings.EntityReference) == FilterSettings.EntityReference,
-                NodeType.ProcessingInstruction  => (filter & FilterSettings.ProcessingInstruction) == FilterSettings.ProcessingInstruction,
-                NodeType.Notation               => (filter & FilterSettings.Notation) == FilterSettings.Notation,
-                NodeType.Text                   => (filter & FilterSettings.Text) == FilterSettings.Text,
+                (Int32)NodeType.Attribute              => (filter & FilterSettings.Attribute) == FilterSettings.Attribute,
+                (Int32)NodeType.CharacterData          => (filter & FilterSettings.CharacterData) == FilterSettings.CharacterData,
+                (Int32)NodeType.Comment                => (filter & FilterSettings.Comment) == FilterSettings.Comment,
+                (Int32)NodeType.Document               => (filter & FilterSettings.Document) == FilterSettings.Document,
+                (Int32)NodeType.DocumentFragment       => (filter & FilterSettings.DocumentFragment) == FilterSettings.DocumentFragment,
+                (Int32)NodeType.DocumentType           => (filter & FilterSettings.DocumentType) == FilterSettings.DocumentType,
+                (Int32)NodeType.Element                => (filter & FilterSettings.Element) == FilterSettings.Element,
+                (Int32)NodeType.Entity                 => (filter & FilterSettings.Entity) == FilterSettings.Entity,
+                (Int32)NodeType.EntityReference        => (filter & FilterSettings.EntityReference) == FilterSettings.EntityReference,
+                (Int32)NodeType.ProcessingInstruction  => (filter & FilterSettings.ProcessingInstruction) == FilterSettings.ProcessingInstruction,
+                (Int32)NodeType.Notation               => (filter & FilterSettings.Notation) == FilterSettings.Notation,
+                (Int32)NodeType.Text                   => (filter & FilterSettings.Text) == FilterSettings.Text,
                 _                               => filter == FilterSettings.All
             };
         }

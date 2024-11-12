@@ -67,8 +67,8 @@ namespace AngleSharp.Html.Dom
         {
             return node.NodeType switch
             {
-                NodeType.Text    => ((IText)node).AssignedSlot,
-                NodeType.Element => ((IElement)node).AssignedSlot,
+                (Int32)AngleSharp.Dom.NodeType.Text    => ((IText)node).AssignedSlot,
+                (Int32)AngleSharp.Dom.NodeType.Element => ((IElement)node).AssignedSlot,
                 _                => default(IElement)
             };
         }

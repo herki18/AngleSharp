@@ -16,7 +16,7 @@ namespace AngleSharp.Dom
         }
 
         internal Comment(Document owner, String data)
-            : base(owner, "#comment", NodeType.Comment, data)
+            : base(owner, "#comment", Dom.NodeType.Comment, data)
         {
         }
 

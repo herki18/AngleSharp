@@ -37,9 +37,9 @@ namespace AngleSharp.Dom
         public static Boolean IsEndPoint(this INode node)
         {
             var type = node.NodeType;
-            return type != NodeType.Document &&
-                   type != NodeType.DocumentFragment &&
-                   type != NodeType.Element;
+            return type != (Int32)NodeType.Document &&
+                   type != (Int32)NodeType.DocumentFragment &&
+                   type != (Int32)NodeType.Element;
         }
 
         /// <summary>
@@ -64,9 +64,9 @@ namespace AngleSharp.Dom
         public static Boolean IsInsertable(this INode node)
         {
             var type = node.NodeType;
-            return type == NodeType.Element || type == NodeType.Comment ||
-                   type == NodeType.Text || type == NodeType.ProcessingInstruction ||
-                   type == NodeType.DocumentFragment || type == NodeType.DocumentType;
+            return type == (Int32)NodeType.Element || type == (Int32)NodeType.Comment ||
+                   type == (Int32)NodeType.Text || type == (Int32)NodeType.ProcessingInstruction ||
+                   type == (Int32)NodeType.DocumentFragment || type == (Int32)NodeType.DocumentType;
         }
 
         /// <summary>
@@ -428,17 +428,17 @@ namespace AngleSharp.Dom
 
                 switch (node.NodeType)
                 {
-                    case NodeType.Element:
+                    case (Int32)NodeType.Element:
                         forbidden = document.DocumentElement is not null || child is IDocumentType || child.IsFollowedByDoctype();
                         break;
-                    case NodeType.DocumentFragment:
+                    case (Int32)NodeType.DocumentFragment:
                         var elements = node.GetElementCount();
                         forbidden = elements > 1 || node.HasTextNodes() || (elements == 1 && document.DocumentElement is not null) || child is IDocumentType || child.IsFollowedByDoctype();
                         break;
-                    case NodeType.DocumentType:
+                    case (Int32)NodeType.DocumentType:
                         forbidden = document.Doctype is not null || (child is not null && child.IsPrecededByElement()) || (child is null && document.DocumentElement is not null);
                         break;
-                    case NodeType.Text:
+                    case (Int32)NodeType.Text:
                         forbidden = true;
                         break;
                 }
@@ -534,7 +534,7 @@ namespace AngleSharp.Dom
                     {
                         before = node != child;
                     }
-                    else if (node.NodeType == NodeType.DocumentType)
+                    else if (node.NodeType == (Int32)NodeType.DocumentType)
                     {
                         return true;
                     }
@@ -559,7 +559,7 @@ namespace AngleSharp.Dom
                 {
                     break;
                 }
-                else if (node.NodeType == NodeType.Element)
+                else if (node.NodeType == (Int32)NodeType.Element)
                 {
                     return true;
                 }
@@ -579,7 +579,7 @@ namespace AngleSharp.Dom
 
             foreach (var node in parent.ChildNodes)
             {
-                if (node.NodeType == NodeType.Element)
+                if (node.NodeType == (Int32)NodeType.Element)
                 {
                     count++;
                 }
