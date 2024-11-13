@@ -1,3 +1,4 @@
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 namespace AngleSharp.Html.Dom
 {
     using AngleSharp.Dom;
@@ -7,7 +8,7 @@ namespace AngleSharp.Html.Dom
     /// <summary>
     /// Represents the base class for frame owned elements.
     /// </summary>
-    abstract class HtmlFrameOwnerElement : HtmlElement
+    public abstract class HtmlFrameOwnerElement : HtmlElement
     {
         #region ctor
 

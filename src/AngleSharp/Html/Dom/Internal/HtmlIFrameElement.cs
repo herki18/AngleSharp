@@ -1,22 +1,25 @@
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 namespace AngleSharp.Html.Dom
 {
     using AngleSharp.Dom;
     using AngleSharp.Text;
     using System;
+    using Attributes;
 
     /// <summary>
     /// Represents the HTML iframe element.
     /// </summary>
-    sealed class HtmlIFrameElement : HtmlFrameElementBase, IHtmlInlineFrameElement
+    [DomName("HTMLIFrameElement")]
+    public class HtmlIFrameElement : HtmlFrameElementBase, IHtmlInlineFrameElement
     {
         #region Fields
 
         private SettableTokenList? _sandbox;
-        
+
         #endregion
 
         #region ctor
-        
+
         public HtmlIFrameElement(Document owner, String? prefix = null)
             : base(owner, TagNames.Iframe, prefix, NodeFlags.LiteralText)
         {
@@ -41,7 +44,7 @@ namespace AngleSharp.Html.Dom
         public ISettableTokenList Sandbox
         {
             get
-            { 
+            {
                 if (_sandbox is null)
                 {
                     _sandbox = new SettableTokenList(this.GetOwnAttribute(AttributeNames.Sandbox));
@@ -90,7 +93,7 @@ namespace AngleSharp.Html.Dom
         internal override void SetupElement()
         {
             base.SetupElement();
-            
+
             if (this.GetOwnAttribute(AttributeNames.SrcDoc) != null)
             {
                 UpdateSource();
