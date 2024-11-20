@@ -1525,8 +1525,11 @@ namespace AngleSharp.Dom
         /// <param name="name">The name of the attribute.</param>
         /// <param name="value">The attribute's value.</param>
         /// <param name="suppressCallbacks">Flag to suppress callbacks.</param>
-        internal static void SetOwnAttribute(this Element element, String name, String? value, Boolean suppressCallbacks = false) =>
+        internal static void SetOwnAttribute(this Element element, String name, String? value, Boolean suppressCallbacks = false)
+        {
             element.Attributes.SetNamedItemWithNamespaceUri(new Attr(name, value!), suppressCallbacks);
+            element.ViewSync?.UpdateAttribute(name, element);
+        }
 
         private static IDocumentFragment CreateFragment(this IElement context, String html)
         {

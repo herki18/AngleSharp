@@ -478,12 +478,12 @@ namespace AngleSharp.Dom
 
                 this.SetOwnAttribute(name, value);
 
-                ViewSync?.UpdateAttribute(name, this);
+                // ViewSync?.UpdateAttribute(name, this);
             }
             else
             {
                 RemoveAttribute(name);
-                ViewSync?.RemoveAttribute(name, this);
+                // ViewSync?.RemoveAttribute(name, this);
             }
         }
 
@@ -519,7 +519,14 @@ namespace AngleSharp.Dom
                 name = name.HtmlLower();
             }
 
-            return _attributes.RemoveNamedItemOrDefault(name) != null;
+            if (_attributes.RemoveNamedItemOrDefault(name) == null)
+            {
+                return false;
+            }
+
+            ViewSync?.RemoveAttribute(name, this);
+            return true;
+
         }
 
         /// <inheritdoc />
