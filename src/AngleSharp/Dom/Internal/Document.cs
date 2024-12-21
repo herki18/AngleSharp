@@ -1134,6 +1134,12 @@ namespace AngleSharp.Dom
         }
 
         /// <inheritdoc />
+        public IElement CreateElement(String? namespaceUri, String qualifiedName, ElementCreationOptions? options)
+        {
+            return CreateElement(namespaceUri, qualifiedName);
+        }
+
+        /// <inheritdoc />
         public IElement CreateElement(String localName, ElementCreationOptions? options)
         {
             return CreateElement(localName);
