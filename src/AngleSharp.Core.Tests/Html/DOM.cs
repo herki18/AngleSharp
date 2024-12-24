@@ -516,20 +516,20 @@ namespace AngleSharp.Core.Tests.Html
 
             var docType = doc.ChildNodes[0] as DocumentType;
             Assert.IsNotNull(docType);
-            Assert.AreEqual(NodeType.DocumentType, docType.NodeType);
+            Assert.AreEqual(NodeType.DocumentType, (NodeType)docType.NodeType);
             Assert.AreEqual(@"html", docType.Name);
 
             var html = doc.DocumentElement;
             Assert.AreEqual(2, html.ChildNodes.Length);
             Assert.AreEqual(2, html.Attributes.Count());
-            Assert.AreEqual(NodeType.Element, html.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)html.NodeType);
             Assert.AreEqual(@"html", html.GetTagName());
 
             var head = doc.Head;
             Assert.AreEqual(19, head.ChildNodes.Length);
             Assert.AreEqual(0, head.Attributes.Count());
             Assert.AreEqual("head", head.GetTagName());
-            Assert.AreEqual(NodeType.Element, head.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)head.NodeType);
         }
 
         [Test]

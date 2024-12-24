@@ -54,7 +54,7 @@
             Assert.AreEqual(4, nodes.Length);
             Assert.AreEqual(NodeType.Text, nodes[0].NodeType);
             Assert.AreEqual(NodeType.Text, nodes[1].NodeType);
-            Assert.AreEqual(NodeType.Element, nodes[2].NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)nodes[2].NodeType);
             Assert.AreEqual(NodeType.Text, nodes[3].NodeType);
             Assert.AreEqual(document.QuerySelector("#host > span"), nodes[2]);
         }

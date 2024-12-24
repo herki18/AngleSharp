@@ -478,17 +478,17 @@
             Assert.AreEqual(1, childs.Length);
 
             var bold = childs[0];
-            Assert.AreEqual(NodeType.Element, bold.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)bold.NodeType);
             Assert.AreEqual("b", bold.GetTagName());
             Assert.AreEqual(1, bold.ChildNodes.Length);
 
             var italic = bold.ChildNodes[0];
-            Assert.AreEqual(NodeType.Element, italic.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)italic.NodeType);
             Assert.AreEqual("i", italic.GetTagName());
             Assert.AreEqual(1, italic.ChildNodes.Length);
 
             var text = italic.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, text.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)text.NodeType);
             Assert.AreEqual("Text", text.TextContent);
         }
 
@@ -504,17 +504,17 @@
                 Assert.AreEqual(1, elements[i].ChildNodes.Length);
 
                 var bold = elements[i].ChildNodes[0];
-                Assert.AreEqual(NodeType.Element, bold.NodeType);
+                Assert.AreEqual(NodeType.Element, (NodeType)bold.NodeType);
                 Assert.AreEqual("b", bold.GetTagName());
                 Assert.AreEqual(1, bold.ChildNodes.Length);
 
                 var italic = bold.ChildNodes[0];
-                Assert.AreEqual(NodeType.Element, italic.NodeType);
+                Assert.AreEqual(NodeType.Element, (NodeType)italic.NodeType);
                 Assert.AreEqual("i", italic.GetTagName());
                 Assert.AreEqual(1, italic.ChildNodes.Length);
 
                 var text = italic.ChildNodes[0];
-                Assert.AreEqual(NodeType.Text, text.NodeType);
+                Assert.AreEqual(NodeType.Text, (NodeType)text.NodeType);
                 Assert.AreEqual("Text", text.TextContent);
             }
         }
@@ -531,17 +531,17 @@
                 Assert.AreEqual(1, elements[i].ChildNodes.Length);
 
                 var bold = elements[i].ChildNodes[0];
-                Assert.AreEqual(NodeType.Element, bold.NodeType);
+                Assert.AreEqual(NodeType.Element, (NodeType)bold.NodeType);
                 Assert.AreEqual("b", bold.GetTagName());
                 Assert.AreEqual(1, bold.ChildNodes.Length);
 
                 var italic = bold.ChildNodes[0];
-                Assert.AreEqual(NodeType.Element, italic.NodeType);
+                Assert.AreEqual(NodeType.Element, (NodeType)italic.NodeType);
                 Assert.AreEqual("i", italic.GetTagName());
                 Assert.AreEqual(1, italic.ChildNodes.Length);
 
                 var text = italic.ChildNodes[0];
-                Assert.AreEqual(NodeType.Text, text.NodeType);
+                Assert.AreEqual(NodeType.Text, (NodeType)text.NodeType);
                 Assert.AreEqual("Text", text.TextContent);
             }
 
@@ -553,17 +553,17 @@
                 Assert.AreEqual(1, elements[i].ChildNodes.Length);
 
                 var bold = elements[i].ChildNodes[0];
-                Assert.AreEqual(NodeType.Element, bold.NodeType);
+                Assert.AreEqual(NodeType.Element, (NodeType)bold.NodeType);
                 Assert.AreEqual("b", bold.GetTagName());
                 Assert.AreEqual(1, bold.ChildNodes.Length);
 
                 var italic = bold.ChildNodes[0];
-                Assert.AreEqual(NodeType.Element, italic.NodeType);
+                Assert.AreEqual(NodeType.Element, (NodeType)italic.NodeType);
                 Assert.AreEqual("i", italic.GetTagName());
                 Assert.AreEqual(1, italic.ChildNodes.Length);
 
                 var text = italic.ChildNodes[0];
-                Assert.AreEqual(NodeType.Text, text.NodeType);
+                Assert.AreEqual(NodeType.Text, (NodeType)text.NodeType);
                 Assert.AreEqual("Text", text.TextContent);
             }
         }

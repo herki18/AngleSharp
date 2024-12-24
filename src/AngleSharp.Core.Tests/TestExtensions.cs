@@ -17,7 +17,7 @@ namespace AngleSharp.Core.Tests
         {
             var element = node as IElement;
 
-            Assert.AreEqual(NodeType.Element, node.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)node.NodeType);
             Assert.IsNotNull(element);
             Assert.IsNull(element.Prefix);
 

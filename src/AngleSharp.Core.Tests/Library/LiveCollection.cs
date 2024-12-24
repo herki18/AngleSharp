@@ -25,7 +25,7 @@
 
             var ul = body.ChildNodes[0];
             Assert.AreEqual("ul", ul.GetTagName());
-            Assert.AreEqual(NodeType.Element, ul.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)ul.NodeType);
 
             var live = ((Element)ul).Children;
             Assert.AreEqual(4, live.Length);
@@ -59,7 +59,7 @@
                 Assert.AreEqual("p", child.GetTagName());
                 Assert.AreEqual(0, child.ChildNodes.Length);
                 Assert.AreEqual(0, child.Attributes.Count());
-                Assert.AreEqual(NodeType.Element, child.NodeType);
+                Assert.AreEqual(NodeType.Element, (NodeType)child.NodeType);
                 Assert.AreEqual("", child.TextContent);
             }
 
@@ -75,7 +75,7 @@
                 Assert.AreEqual("p", child.GetTagName());
                 Assert.AreEqual(1, child.ChildNodes.Length);
                 Assert.AreEqual(0, child.Attributes.Count());
-                Assert.AreEqual(NodeType.Element, child.NodeType);
+                Assert.AreEqual(NodeType.Element, (NodeType)child.NodeType);
                 Assert.AreEqual(str[i++], child.TextContent);
             }
         }
@@ -97,7 +97,7 @@
                 Assert.AreEqual("p", child.GetTagName());
                 Assert.AreEqual(0, child.ChildNodes.Length);
                 Assert.AreEqual(0, child.Attributes.Count());
-                Assert.AreEqual(NodeType.Element, child.NodeType);
+                Assert.AreEqual(NodeType.Element, (NodeType)child.NodeType);
                 Assert.AreEqual("", child.TextContent);
             }
 
@@ -126,7 +126,7 @@
             {
                 Assert.AreEqual("a", child.GetTagName());
                 Assert.AreEqual(1, child.Attributes.Count());
-                Assert.AreEqual(NodeType.Element, child.NodeType);
+                Assert.AreEqual(NodeType.Element, (NodeType)child.NodeType);
                 Assert.IsNotNull(child.GetAttribute("name"));
             }
 

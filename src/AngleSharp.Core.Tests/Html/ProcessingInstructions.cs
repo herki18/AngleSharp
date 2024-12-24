@@ -1,6 +1,7 @@
 namespace AngleSharp.Core.Tests.Html
 {
     using AngleSharp.Html.Parser;
+    using Dom;
     using NUnit.Framework;
 
     [TestFixture]
@@ -15,7 +16,7 @@ namespace AngleSharp.Core.Tests.Html
                 IsSupportingProcessingInstructions = true
             });
             var document = parser.ParseDocument(source);
-            Assert.AreEqual(Dom.NodeType.ProcessingInstruction, document.ChildNodes[0].NodeType);
+            Assert.AreEqual(Dom.NodeType.ProcessingInstruction, (NodeType)document.ChildNodes[0].NodeType);
         }
 
         [Test]
@@ -27,7 +28,7 @@ namespace AngleSharp.Core.Tests.Html
                 IsSupportingProcessingInstructions = false
             });
             var document = parser.ParseDocument(source);
-            Assert.AreEqual(Dom.NodeType.Comment, document.ChildNodes[0].NodeType);
+            Assert.AreEqual(Dom.NodeType.Comment, (NodeType)document.ChildNodes[0].NodeType);
         }
     }
 }

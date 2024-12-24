@@ -191,37 +191,37 @@ namespace AngleSharp.Css.Tests.Styling
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as IElement;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as IElement;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1table0 = dochtml0body1.ChildNodes[0] as IElement;
             Assert.AreEqual(1, dochtml0body1table0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1table0.Attributes.Length);
             Assert.AreEqual("table", dochtml0body1table0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1table0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1table0.NodeType);
 
             var dochtml0body1table0tbody0 = dochtml0body1table0.ChildNodes[0] as IElement;
             Assert.AreEqual(1, dochtml0body1table0tbody0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1table0tbody0.Attributes.Length);
             Assert.AreEqual("tbody", dochtml0body1table0tbody0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1table0tbody0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1table0tbody0.NodeType);
 
             var dochtml0body1table0tbody0tr0 = dochtml0body1table0tbody0.ChildNodes[0] as IElement;
             Assert.AreEqual(0, dochtml0body1table0tbody0tr0.ChildNodes.Length);
             Assert.AreEqual(1, dochtml0body1table0tbody0tr0.Attributes.Length);
             Assert.AreEqual("tr", dochtml0body1table0tbody0tr0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1table0tbody0tr0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1table0tbody0tr0.NodeType);
 
             var styleAttribute = dochtml0body1table0tbody0tr0.Attributes[0];
             Assert.AreEqual("style", styleAttribute.Name);
@@ -240,31 +240,31 @@ namespace AngleSharp.Css.Tests.Styling
             Assert.AreEqual(2, html.ChildNodes.Length);
             Assert.AreEqual(0, html.Attributes.Length);
             Assert.AreEqual("html", html.GetTagName());
-            Assert.AreEqual(NodeType.Element, html.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)html.NodeType);
 
             var body = html.ChildNodes[1] as IElement;
             Assert.AreEqual(1, body.ChildNodes.Length);
             Assert.AreEqual(0, body.Attributes.Length);
             Assert.AreEqual("body", body.GetTagName());
-            Assert.AreEqual(NodeType.Element, body.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)body.NodeType);
 
             var table = body.ChildNodes[0] as IElement;
             Assert.AreEqual(1, table.ChildNodes.Length);
             Assert.AreEqual(0, table.Attributes.Length);
             Assert.AreEqual("table", table.GetTagName());
-            Assert.AreEqual(NodeType.Element, table.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)table.NodeType);
 
             var tableBody = table.ChildNodes[0] as IElement;
             Assert.AreEqual(1, tableBody.ChildNodes.Length);
             Assert.AreEqual(0, tableBody.Attributes.Length);
             Assert.AreEqual("tbody", tableBody.GetTagName());
-            Assert.AreEqual(NodeType.Element, tableBody.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)tableBody.NodeType);
 
             var tableRow = tableBody.ChildNodes[0] as IElement;
             Assert.AreEqual(0, tableRow.ChildNodes.Length);
             Assert.AreEqual(1, tableRow.Attributes.Length);
             Assert.AreEqual("tr", tableRow.GetTagName());
-            Assert.AreEqual(NodeType.Element, tableRow.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)tableRow.NodeType);
 
             var tr = (IHtmlElement)tableRow;
             var style = tr.GetStyle();
@@ -283,31 +283,31 @@ namespace AngleSharp.Css.Tests.Styling
             Assert.AreEqual(2, html.ChildNodes.Length);
             Assert.AreEqual(0, html.Attributes.Length);
             Assert.AreEqual("html", html.GetTagName());
-            Assert.AreEqual(NodeType.Element, html.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)html.NodeType);
 
             var body = html.ChildNodes[1] as IElement;
             Assert.AreEqual(1, body.ChildNodes.Length);
             Assert.AreEqual(0, body.Attributes.Length);
             Assert.AreEqual("body", body.GetTagName());
-            Assert.AreEqual(NodeType.Element, body.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)body.NodeType);
 
             var table = body.ChildNodes[0] as IElement;
             Assert.AreEqual(1, table.ChildNodes.Length);
             Assert.AreEqual(0, table.Attributes.Length);
             Assert.AreEqual("table", table.GetTagName());
-            Assert.AreEqual(NodeType.Element, table.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)table.NodeType);
 
             var tableBody = table.ChildNodes[0] as IElement;
             Assert.AreEqual(1, tableBody.ChildNodes.Length);
             Assert.AreEqual(0, tableBody.Attributes.Length);
             Assert.AreEqual("tbody", tableBody.GetTagName());
-            Assert.AreEqual(NodeType.Element, tableBody.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)tableBody.NodeType);
 
             var tableRow = tableBody.ChildNodes[0] as IElement;
             Assert.AreEqual(0, tableRow.ChildNodes.Length);
             Assert.AreEqual(0, tableRow.Attributes.Length);
             Assert.AreEqual("tr", tableRow.GetTagName());
-            Assert.AreEqual(NodeType.Element, tableRow.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)tableRow.NodeType);
 
             var tr = (IHtmlElement)tableRow;
             var style = tr.GetStyle();

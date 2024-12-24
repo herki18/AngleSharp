@@ -22,22 +22,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO>BAR", dochtml0body1Text0.TextContent);
         }
 
@@ -50,22 +50,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO>BAR", dochtml0body1Text0.TextContent);
 
         }
@@ -79,22 +79,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO> BAR", dochtml0body1Text0.TextContent);
         }
 
@@ -107,22 +107,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO>;;BAR", dochtml0body1Text0.TextContent);
         }
 
@@ -135,22 +135,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO& BAR", dochtml0body1Text0.TextContent);
         }
 
@@ -163,29 +163,29 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(2, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO&", dochtml0body1Text0.TextContent);
 
             var dochtml0body1bar1 = dochtml0body1.ChildNodes[1] as Element;
             Assert.AreEqual(0, dochtml0body1bar1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1bar1.Attributes.Length);
             Assert.AreEqual("bar", dochtml0body1bar1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1bar1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1bar1.NodeType);
         }
 
         [Test]
@@ -197,22 +197,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO)BAR", dochtml0body1Text0.TextContent);
 
         }
@@ -226,22 +226,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOOABAR", dochtml0body1Text0.TextContent);
         }
 
@@ -254,22 +254,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOOABAR", dochtml0body1Text0.TextContent);
         }
 
@@ -282,22 +282,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO&#BAR", dochtml0body1Text0.TextContent);
         }
 
@@ -310,22 +310,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO&#ZOO", dochtml0body1Text0.TextContent);
         }
 
@@ -338,22 +338,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOOºR", dochtml0body1Text0.TextContent);
         }
 
@@ -366,22 +366,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO&#xZOO", dochtml0body1Text0.TextContent);
 
         }
@@ -395,22 +395,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO)BAR", dochtml0body1Text0.TextContent);
         }
 
@@ -423,22 +423,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO䆺R", dochtml0body1Text0.TextContent);
         }
 
@@ -451,22 +451,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO�ZOO", dochtml0body1Text0.TextContent);
 
         }
@@ -480,22 +480,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOOxZOO", dochtml0body1Text0.TextContent);
 
         }
@@ -509,22 +509,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOOyZOO", dochtml0body1Text0.TextContent);
         }
 
@@ -537,22 +537,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOOŽZOO", dochtml0body1Text0.TextContent);
         }
 
@@ -565,22 +565,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOOŸZOO", dochtml0body1Text0.TextContent);
         }
 
@@ -593,22 +593,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO�ZOO", dochtml0body1Text0.TextContent);
         }
 
@@ -621,22 +621,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO􏿾ZOO", dochtml0body1Text0.TextContent);
         }
 
@@ -648,22 +648,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO􈟔ZOO", dochtml0body1Text0.TextContent);
 
         }
@@ -677,22 +677,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO�ZOO", dochtml0body1Text0.TextContent);
         }
 
@@ -705,22 +705,22 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1Text0 = dochtml0body1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, dochtml0body1Text0.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)dochtml0body1Text0.NodeType);
             Assert.AreEqual("FOO�ZOO", dochtml0body1Text0.TextContent);
         }
 
@@ -733,25 +733,25 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1div0 = dochtml0body1.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0body1div0.ChildNodes.Length);
             Assert.AreEqual(1, dochtml0body1div0.Attributes.Length);
             Assert.AreEqual("div", dochtml0body1div0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1div0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1div0.NodeType);
             Assert.AreEqual("ZZ>YY", dochtml0body1div0.GetAttribute("bar"));
         }
 
@@ -764,25 +764,25 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1div0 = dochtml0body1.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0body1div0.ChildNodes.Length);
             Assert.AreEqual(1, dochtml0body1div0.Attributes.Length);
             Assert.AreEqual("div", dochtml0body1div0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1div0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1div0.NodeType);
             Assert.AreEqual("ZZ&", dochtml0body1div0.GetAttribute("bar"));
         }
 
@@ -795,25 +795,25 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1div0 = dochtml0body1.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0body1div0.ChildNodes.Length);
             Assert.AreEqual(1, dochtml0body1div0.Attributes.Length);
             Assert.AreEqual("div", dochtml0body1div0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1div0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1div0.NodeType);
             Assert.AreEqual("ZZ&", dochtml0body1div0.GetAttribute("bar"));
         }
 
@@ -826,25 +826,25 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1div0 = dochtml0body1.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0body1div0.ChildNodes.Length);
             Assert.AreEqual(1, dochtml0body1div0.Attributes.Length);
             Assert.AreEqual("div", dochtml0body1div0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1div0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1div0.NodeType);
             Assert.AreEqual("ZZ&gt=YY", dochtml0body1div0.GetAttribute("bar"));
         }
 
@@ -857,25 +857,25 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1div0 = dochtml0body1.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0body1div0.ChildNodes.Length);
             Assert.AreEqual(1, dochtml0body1div0.Attributes.Length);
             Assert.AreEqual("div", dochtml0body1div0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1div0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1div0.NodeType);
             Assert.AreEqual("ZZ> YY", dochtml0body1div0.GetAttribute("bar"));
         }
 
@@ -888,25 +888,25 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1div0 = dochtml0body1.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0body1div0.ChildNodes.Length);
             Assert.AreEqual(1, dochtml0body1div0.Attributes.Length);
             Assert.AreEqual("div", dochtml0body1div0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1div0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1div0.NodeType);
             Assert.AreEqual("ZZ>", dochtml0body1div0.GetAttribute("bar"));
         }
 
@@ -919,25 +919,25 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1div0 = dochtml0body1.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0body1div0.ChildNodes.Length);
             Assert.AreEqual(1, dochtml0body1div0.Attributes.Length);
             Assert.AreEqual("div", dochtml0body1div0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1div0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1div0.NodeType);
             Assert.AreEqual("ZZ>", dochtml0body1div0.GetAttribute("bar"));
         }
 
@@ -950,25 +950,25 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1div0 = dochtml0body1.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0body1div0.ChildNodes.Length);
             Assert.AreEqual(1, dochtml0body1div0.Attributes.Length);
             Assert.AreEqual("div", dochtml0body1div0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1div0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1div0.NodeType);
             Assert.AreEqual("ZZ£_id=23", dochtml0body1div0.GetAttribute("bar"));
         }
 
@@ -981,25 +981,25 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1div0 = dochtml0body1.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0body1div0.ChildNodes.Length);
             Assert.AreEqual(1, dochtml0body1div0.Attributes.Length);
             Assert.AreEqual("div", dochtml0body1div0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1div0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1div0.NodeType);
             Assert.AreEqual("ZZ&prod_id=23", dochtml0body1div0.GetAttribute("bar"));
         }
 
@@ -1012,25 +1012,25 @@ namespace AngleSharp.Core.Tests.Html
             Assert.AreEqual(2, dochtml0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0.Attributes.Length);
             Assert.AreEqual("html", dochtml0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0.NodeType);
 
             var dochtml0head0 = dochtml0.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0head0.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0head0.Attributes.Length);
             Assert.AreEqual("head", dochtml0head0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0head0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0head0.NodeType);
 
             var dochtml0body1 = dochtml0.ChildNodes[1] as Element;
             Assert.AreEqual(1, dochtml0body1.ChildNodes.Length);
             Assert.AreEqual(0, dochtml0body1.Attributes.Length);
             Assert.AreEqual("body", dochtml0body1.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1.NodeType);
 
             var dochtml0body1div0 = dochtml0body1.ChildNodes[0] as Element;
             Assert.AreEqual(0, dochtml0body1div0.ChildNodes.Length);
             Assert.AreEqual(1, dochtml0body1div0.Attributes.Length);
             Assert.AreEqual("div", dochtml0body1div0.GetTagName());
-            Assert.AreEqual(NodeType.Element, dochtml0body1div0.NodeType);
+            Assert.AreEqual(NodeType.Element, (NodeType)dochtml0body1div0.NodeType);
             Assert.AreEqual("ZZ∏_id=23", dochtml0body1div0.GetAttribute("bar"));
         }
 
