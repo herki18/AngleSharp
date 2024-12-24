@@ -948,7 +948,7 @@
         [Test]
         public void GumboCommentInVerbatimMode()
         {
-            var doc = (@"<body> <div id='onegoogle'>Text</div>  </body><!-- comment
+            var doc = (@"<body> <div id='onegoogle'>Text</div>  </body><!-- comment 
 
 -->").ToHtmlDocument();
             var document = doc.DocumentElement;
@@ -1305,7 +1305,7 @@
             Assert.AreEqual(1, th1.ChildNodes.Length);
 
             var cell2 = th1.ChildNodes[0];
-            Assert.AreEqual(NodeType.Text, cell2.NodeType);
+            Assert.AreEqual(NodeType.Text, (NodeType)cell2.NodeType);
             Assert.AreEqual("Cell2", cell2.TextContent);
 
             var tr3 = tbody2.ChildNodes[1];

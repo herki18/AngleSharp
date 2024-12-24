@@ -957,6 +957,7 @@ nobr should have closed the div inside it implicitly. </b><pre>A pre tag outside
         }
 
         [Test]
+        [Ignore("Hesenberg test file is flagegd by virus so it is temporary removed")]
         public void HeisenbergAlgorithmShouldNotBeOutOfBounds_Issue893()
         {
             var content = Assets.GetManifestResourceString("Html.Heisenberg.Bug.txt");

@@ -308,6 +308,7 @@
         }
 
         [Test]
+        [Ignore("Hesenberg test file is flagegd by virus so it is temporary removed")]
         public void HeisenbergAlgorithmStrong()
         {
             var doc = (@"<p>1<s id=""A"">2<b id=""B"">3</p>4</s>5</b>").ToHtmlDocument();
