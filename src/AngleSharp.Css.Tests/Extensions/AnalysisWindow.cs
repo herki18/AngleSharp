@@ -434,7 +434,7 @@ em { font-style: italic !important; }
         </p>
     </div>"));
             var sc = new StyleCollection(new[] { sheet }, new DefaultRenderDevice());
-            var spanStyle = sc.ComputeDeclarations(document.QuerySelector("span"));
+            var spanStyle = sc.ComputeDeclarationsNew(document.QuerySelector("span"));
 
             // 20px (div) * 1.5 (p) * 0.75 (span) = 22.5px
             Assert.AreEqual("22.5px", spanStyle.FontSize);

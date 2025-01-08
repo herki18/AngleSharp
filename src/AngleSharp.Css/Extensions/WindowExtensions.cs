@@ -1,3 +1,4 @@
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 namespace AngleSharp.Dom
 {
     using AngleSharp.Attributes;
@@ -6,6 +7,7 @@ namespace AngleSharp.Dom
     using AngleSharp.Css.RenderTree;
     using System;
     using System.Linq;
+    using Css.Computation;
 
     /// <summary>
     /// A set of useful extension methods for the Window class.
@@ -73,8 +75,15 @@ namespace AngleSharp.Dom
         [DomName("getComputedStyle")]
         public static ICssStyleDeclaration GetComputedStyle(this IWindow window, IElement element, String pseudo = null)
         {
-            var styleCollection = window.GetStyleCollection();
+            IStyleCollection styleCollection = window.GetStyleCollection();
             return styleCollection.ComputeDeclarations(element, pseudo);
+        }
+
+        public static ICssStyleDeclaration GetComputedStyleNew(this IWindow window, IElement element,
+            String pseudo = null)
+        {
+            IStyleCollection styleCollection = window.GetStyleCollection();
+            return styleCollection.ComputeDeclarationsNew(element, pseudo);
         }
 
         /// <summary>

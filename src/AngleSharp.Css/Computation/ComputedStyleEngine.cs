@@ -1,62 +1,82 @@
-namespace AngleSharp.Css.RenderTree
+﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+namespace AngleSharp.Css.Computation
 {
-    using AngleSharp.Css.Dom;
-    using AngleSharp.Css.Values;
-    using AngleSharp.Dom;
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using AngleSharp.Css.Dom;
+    using AngleSharp.Css.Values;
+    using AngleSharp.Dom;
 
-    sealed class RenderTreeBuilder
+    public class ComputedStyleEngine
     {
         private readonly IBrowsingContext _context;
         private readonly IWindow _window;
-        private readonly IEnumerable<ICssStyleSheet> _defaultSheets;
         private readonly IRenderDevice _device;
+        private readonly IEnumerable<ICssStyleSheet> _defaultSheets;
 
-        public RenderTreeBuilder(IWindow window, IRenderDevice device = null)
+        public ComputedStyleEngine(
+            IWindow window,
+            IRenderDevice device)
         {
             var ctx = window.Document.Context;
             var defaultStyleSheetProvider = ctx.GetServices<ICssDefaultStyleSheetProvider>();
-            _context = ctx;
-            _device = device ?? ctx.GetService<IRenderDevice>() ?? throw new ArgumentNullException(nameof(device));
-            _defaultSheets = defaultStyleSheetProvider.Select(m => m.Default).Where(m => m is not null);
             _window = window;
+            // _device = device;
+            _context = window.Document.Context;
+            _device = device;
+            if (_device == null)
+            {
+                _device = ctx.GetService<IRenderDevice>();
+                if (_device == null)
+                {
+                    throw new ArgumentNullException(nameof(device));
+                }
+            }
+
+            _defaultSheets = defaultStyleSheetProvider.Select(m => m.Default).Where(m => m is not null);
         }
 
-        public IRenderNode RenderDocument()
+        public ICssStyleDeclaration ComputeElementStyles(IStyleCollection style, IElement element)
         {
-            var document = _window.Document;
-            var currentSheets = document.GetStyleSheets().OfType<ICssStyleSheet>();
-            var stylesheets = _defaultSheets.Concat(currentSheets).ToList();
-            var collection = new StyleCollection(stylesheets, _device);
-            var rootStyle = collection.ComputeCascadedStyle(document.DocumentElement);
+            var reverse = element.GetAncestors()
+                .OfType<IElement>()
+                .Reverse();
+
+            var rootElement = reverse.First();
+            var rootStyle = style.ComputeCascadedStyle(rootElement);
             var rootFontSize = ((CssLengthValue?)rootStyle.GetProperty(PropertyNames.FontSize)?.RawValue)?.Value ?? 16;
-            return RenderElement(rootFontSize, document.DocumentElement, collection);
+
+
+            ICssStyleDeclaration previousStyleDeclaration = null;
+            foreach (var node in reverse)
+            {
+                if(node.Parent == null)
+                {
+                    previousStyleDeclaration = RenderElement(rootFontSize, node, style);
+                }
+                else
+                {
+                    previousStyleDeclaration = RenderElement(rootFontSize, node, style, previousStyleDeclaration);
+                }
+            }
+
+            return RenderElement(rootFontSize, element, style, previousStyleDeclaration);
         }
 
-        private ElementRenderNode RenderElement(double rootFontSize,
-            IElement reference, StyleCollection collection,
+        private CssStyleDeclaration RenderElement(
+            double rootFontSize,
+            IElement element,
+            IStyleCollection collection,
             ICssStyleDeclaration parent = null)
         {
-            var style = collection.ComputeCascadedStyle(reference);
+            var style = collection.ComputeCascadedStyle(element);
+
             var computedStyle = Compute(rootFontSize, style, parent);
-            if (parent != null)
+
+            if(parent != null){}
             {
                 computedStyle.UpdateDeclarations(parent);
-            }
-            var children = new List<IRenderNode>();
-
-            foreach (var child in reference.ChildNodes)
-            {
-                if (child is IText text)
-                {
-                    children.Add(RenderText(text));
-                }
-                else if (child is IElement element)
-                {
-                    children.Add(RenderElement(rootFontSize, element, collection, computedStyle));
-                }
             }
 
             // compute unitless line-height after rendering children
@@ -72,28 +92,8 @@ namespace AngleSharp.Css.RenderTree
                 computedStyle.SetDeclarations(new[] { lineHeightProperty });
             }
 
-            var node = new ElementRenderNode(reference, children, style, computedStyle);
-
-            foreach (var child in children)
-            {
-                if (child is ElementRenderNode elementChild)
-                {
-                    elementChild.Parent = node;
-                }
-                else if (child is TextRenderNode textChild)
-                {
-                    textChild.Parent = node;
-                }
-                else
-                {
-                    throw new InvalidOperationException();
-                }
-            }
-
-            return node;
+            return computedStyle;
         }
-
-        private IRenderNode RenderText(IText text) => new TextRenderNode(text);
 
         private CssStyleDeclaration Compute(Double rootFontSize, ICssStyleDeclaration style, ICssStyleDeclaration parentStyle)
         {
@@ -105,7 +105,9 @@ namespace AngleSharp.Css.RenderTree
             {
                 fontSize = GetFontSizeInPixels(fontSizeProperty.RawValue);
             }
-            var declarations = style.OfType<CssProperty>().Select(property =>
+
+            var cssProperties = style.OfType<CssProperty>();
+            var declarations = cssProperties.Select(property =>
             {
                 var name = property.Name;
                 var value = property.RawValue;

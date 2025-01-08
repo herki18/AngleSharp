@@ -1,3 +1,4 @@
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 namespace AngleSharp.Css.Dom
 {
     using AngleSharp.Css.Parser;
@@ -22,6 +23,12 @@ namespace AngleSharp.Css.Dom
         {
             var window = element?.OwnerDocument?.DefaultView;
             return window?.GetComputedStyle(element, pseudo);
+        }
+
+        public static ICssStyleDeclaration ComputeStyleNew(this IElement element, String pseudo = null)
+        {
+            var window = element?.OwnerDocument?.DefaultView;
+            return window?.GetComputedStyleNew(element, pseudo);
         }
 
         /// <summary>
@@ -91,7 +98,8 @@ namespace AngleSharp.Css.Dom
 
             foreach (var property in style)
             {
-                computedStyle.AddProperty(property.Compute(context));
+                var computed = property.Compute(context);
+                computedStyle.AddProperty(computed);
             }
 
             return computedStyle;

@@ -1,3 +1,4 @@
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 namespace AngleSharp.Css
 {
     using AngleSharp.Css.Dom;
@@ -8,6 +9,8 @@ namespace AngleSharp.Css
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Runtime.CompilerServices;
+    using Computation;
 
     /// <summary>
     /// A set of useful extension methods for the StyleCollection class.
@@ -41,13 +44,23 @@ namespace AngleSharp.Css
         /// <param name="element">The element that is questioned.</param>
         /// <param name="pseudoSelector">The optional pseudo selector to use.</param>
         /// <returns>The style declaration containing all the declarations.</returns>
-        public static ICssStyleDeclaration ComputeDeclarations(this IStyleCollection styles, IElement element, String pseudoSelector = null)
+        public static ICssStyleDeclaration ComputeDeclarations(this IStyleCollection styles,
+            IElement element, String pseudoSelector = null)
         {
             var ctx = element.OwnerDocument?.Context;
             var declarations = GetDeclarations(styles, element, pseudoSelector);
             var context = new CssComputeContext(styles.Device, ctx, declarations);
 
             return declarations.Compute(context);
+        }
+
+        public static ICssStyleDeclaration ComputeDeclarationsNew(this IStyleCollection styles,
+            IElement element, String pseudoSelector = null)
+        {
+            var window = element.OwnerDocument?.DefaultView;
+            var computedStyle = new ComputedStyleEngine(window, styles.Device);
+            var computeElementStyles = computedStyle.ComputeElementStyles(styles, element);
+            return computeElementStyles;
         }
 
         /// <summary>
@@ -78,7 +91,8 @@ namespace AngleSharp.Css
 
             foreach (var node in nodes)
             {
-                computedStyle.UpdateDeclarations(styles.ComputeCascadedStyle(node));
+                ICssStyleDeclaration computeCascadedStyle = styles.ComputeCascadedStyle(node);
+                computedStyle.UpdateDeclarations(computeCascadedStyle);
             }
 
             return computedStyle;
