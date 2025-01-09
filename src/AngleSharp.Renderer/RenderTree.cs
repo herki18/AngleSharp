@@ -1,21 +1,23 @@
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-namespace AngleSharp.Css.RenderTree
+﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+namespace AngleSharp.Renderer
 {
-    using AngleSharp.Css.Dom;
-    using AngleSharp.Css.Values;
-    using AngleSharp.Dom;
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using AngleSharp.Css.Dom;
+    using AngleSharp.Css.Values;
+    using AngleSharp.Dom;
+    using Css;
+    using Css.RenderTree;
 
-    public class RenderTreeBuilder
+    public class RenderTree
     {
         private readonly IBrowsingContext _context;
         private readonly IWindow _window;
         private readonly IEnumerable<ICssStyleSheet> _defaultSheets;
         private readonly IRenderDevice _device;
 
-        public RenderTreeBuilder(IWindow window, IRenderDevice device = null)
+        public RenderTree(IWindow window, IRenderDevice? device = null)
         {
             var ctx = window.Document.Context;
             var defaultStyleSheetProvider = ctx.GetServices<ICssDefaultStyleSheetProvider>();
@@ -25,7 +27,7 @@ namespace AngleSharp.Css.RenderTree
             _window = window;
         }
 
-        public IRenderNode RenderDocument()
+        public IRenderNode? RenderDocument()
         {
             var document = _window.Document;
             var currentSheets = document.GetStyleSheets().OfType<ICssStyleSheet>();
@@ -36,17 +38,17 @@ namespace AngleSharp.Css.RenderTree
             return RenderElement(rootFontSize, document.DocumentElement, collection);
         }
 
-        private ElementRenderNode RenderElement(double rootFontSize,
+        private ElementRenderNode? RenderElement(double rootFontSize,
             IElement reference, StyleCollection collection,
-            ICssStyleDeclaration parent = null)
+            ICssStyleDeclaration? parent = null)
         {
             var style = collection.ComputeCascadedStyle(reference);
             var computedStyle = Compute(rootFontSize, style, parent);
             if (parent != null)
             {
-                computedStyle.UpdateDeclarations(parent);
+                computedStyle?.UpdateDeclarations(parent);
             }
-            var children = new List<IRenderNode>();
+            var children = new List<IRenderNode?>();
 
             foreach (var child in reference.ChildNodes)
             {
@@ -61,7 +63,7 @@ namespace AngleSharp.Css.RenderTree
             }
 
             // compute unitless line-height after rendering children
-            if (computedStyle.GetProperty(PropertyNames.LineHeight).RawValue is CssLengthValue { Type: CssLengthValue.Unit.None } unitlessLineHeight)
+            if (computedStyle?.GetProperty(PropertyNames.LineHeight).RawValue is CssLengthValue { Type: CssLengthValue.Unit.None } unitlessLineHeight)
             {
                 var fontSize = computedStyle.GetProperty(PropertyNames.FontSize).RawValue is CssLengthValue { Type: CssLengthValue.Unit.Px } fontSizeLength ? fontSizeLength.Value : rootFontSize;
                 var pixelValue = unitlessLineHeight.Value * fontSize;
@@ -94,9 +96,9 @@ namespace AngleSharp.Css.RenderTree
             return node;
         }
 
-        private IRenderNode RenderText(IText text) => new TextRenderNode(text);
+        private IRenderNode? RenderText(IText text) => new TextRenderNode(text);
 
-        private CssStyleDeclaration Compute(Double rootFontSize, ICssStyleDeclaration style, ICssStyleDeclaration parentStyle)
+        private CssStyleDeclaration? Compute(Double rootFontSize, ICssStyleDeclaration style, ICssStyleDeclaration? parentStyle)
         {
             var computedStyle = new CssStyleDeclaration(_context);
             var parentFontSize = ((CssLengthValue?)parentStyle?.GetProperty(PropertyNames.FontSize)?.RawValue)?.ToPixel(_device) ?? rootFontSize;

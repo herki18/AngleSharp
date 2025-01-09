@@ -151,7 +151,10 @@ body {
                 return string.Empty;
             });
 
-            var configuration = Configuration.Default.WithCss().WithMockRequester(requester);
+            var configuration = Configuration
+                .Default
+                .WithCss()
+                .WithMockRequester(requester);
             configuration = configuration.With(new DefaultRenderDevice());
 
             _context = BrowsingContext.New(configuration);

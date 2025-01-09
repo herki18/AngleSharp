@@ -1,3 +1,4 @@
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 namespace AngleSharp.Css
 {
     using AngleSharp.Css.Dom;
@@ -79,7 +80,7 @@ namespace AngleSharp.Css
             return factory.CreateProperties(info.Longhands, values, shorthand.IsImportant);
         }
 
-        internal static CssProperty CreateProperty(this IBrowsingContext context, String propertyName)
+        public static CssProperty CreateProperty(this IBrowsingContext context, String propertyName)
         {
             var info = context.GetDeclarationInfo(propertyName);
 

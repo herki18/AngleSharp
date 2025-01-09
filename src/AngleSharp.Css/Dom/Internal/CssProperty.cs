@@ -1,3 +1,4 @@
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 namespace AngleSharp.Css.Dom
 {
     using AngleSharp.Css;
@@ -11,7 +12,7 @@ namespace AngleSharp.Css.Dom
     /// Fore more information about CSS properties see:
     /// http://www.w3.org/TR/CSS21/propidx.html.
     /// </summary>
-    internal class CssProperty : ICssProperty
+    public class CssProperty : ICssProperty
     {
         #region Fields
 
@@ -26,7 +27,7 @@ namespace AngleSharp.Css.Dom
 
         #region ctor
 
-        internal CssProperty(String name, IValueConverter converter, PropertyFlags flags = PropertyFlags.None, ICssValue value = null, Boolean important = false)
+        public CssProperty(String name, IValueConverter converter, PropertyFlags flags = PropertyFlags.None, ICssValue value = null, Boolean important = false)
         {
             _name = name.StartsWith("--") ? name : name.ToLowerInvariant();
             _converter = converter;
@@ -83,7 +84,7 @@ namespace AngleSharp.Css.Dom
 
         internal Boolean CanBeUnitless => (_flags & PropertyFlags.Unitless) == PropertyFlags.Unitless;
 
-        internal IValueConverter Converter => _converter;
+        public IValueConverter Converter => _converter;
 
         #endregion
 

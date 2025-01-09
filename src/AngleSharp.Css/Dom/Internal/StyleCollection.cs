@@ -1,10 +1,11 @@
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 namespace AngleSharp.Css.Dom
 {
     using AngleSharp.Dom;
     using System.Collections;
     using System.Collections.Generic;
 
-    sealed class StyleCollection : IStyleCollection
+    public sealed class StyleCollection : IStyleCollection
     {
         #region Fields
 

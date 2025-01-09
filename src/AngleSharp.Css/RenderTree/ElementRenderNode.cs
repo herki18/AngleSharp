@@ -1,10 +1,11 @@
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 namespace AngleSharp.Css.RenderTree
 {
     using AngleSharp.Css.Dom;
     using AngleSharp.Dom;
     using System.Collections.Generic;
 
-    sealed class ElementRenderNode : IRenderNode
+    public sealed class ElementRenderNode : IRenderNode
     {
         public ElementRenderNode(IElement reference, IEnumerable<IRenderNode> children, ICssStyleDeclaration specifiedStyle, ICssStyleDeclaration computedStyle)
         {

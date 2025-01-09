@@ -10,7 +10,7 @@ namespace AngleSharp.Css.Tests
     using System.IO;
     using System.Reflection;
 
-    static class TestExtensions
+    public static class TestExtensions
     {
         public static String GetTagName(this INode node)
         {

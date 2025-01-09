@@ -8,7 +8,7 @@ namespace AngleSharp.Css.Tests
     using System;
     using System.IO;
 
-    static class CssConstructionFunctions
+    public static class CssConstructionFunctions
     {
         internal static IHtmlDocument ParseDocument(String source, CssParserOptions options = default)
         {
