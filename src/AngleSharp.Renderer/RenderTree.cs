@@ -195,4 +195,12 @@ namespace AngleSharp.Renderer
             }
         }
     }
+
+    public class StyleCompute
+    {
+        public void Comptue()
+        {
+            
+        }
+    }
 }
