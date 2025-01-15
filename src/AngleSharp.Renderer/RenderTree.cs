@@ -101,13 +101,8 @@ namespace AngleSharp.Renderer
         private CssStyleDeclaration? Compute(Double rootFontSize, ICssStyleDeclaration style, ICssStyleDeclaration? parentStyle)
         {
             var computedStyle = new CssStyleDeclaration(_context);
-            var parentFontSize = ((CssLengthValue?)parentStyle?.GetProperty(PropertyNames.FontSize)?.RawValue)?.ToPixel(_device) ?? rootFontSize;
-            var fontSize = parentFontSize;
-            // compute font-size first because other properties may depend on it
-            if (style.GetProperty(PropertyNames.FontSize) is { RawValue: not null } fontSizeProperty)
-            {
-                fontSize = GetFontSizeInPixels(fontSizeProperty.RawValue);
-            }
+            var fontSize = ComputeFontSize(rootFontSize, style, parentStyle);
+
             var declarations = style.OfType<CssProperty>().Select(property =>
             {
                 var name = property.Name;
@@ -151,56 +146,80 @@ namespace AngleSharp.Renderer
 
             return computedStyle;
 
-            Double GetFontSizeInPixels(ICssValue value) => value switch
+        }
+
+        private Double ComputeFontSize(double rootFontSize, ICssStyleDeclaration style, ICssStyleDeclaration? parentStyle)
+        {
+            var parentFontSize = ((CssLengthValue?)parentStyle?.GetProperty(PropertyNames.FontSize)?.RawValue)?.ToPixel(_device) ?? rootFontSize;
+            var fontSize = parentFontSize;
+            // compute font-size first because other properties may depend on it
+            if (style.GetProperty(PropertyNames.FontSize) is { RawValue: not null } fontSizeProperty)
             {
-                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.XxSmall => 9D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.XSmall => 10D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Small => 13D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Medium => 16D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Large => 18D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.XLarge => 24D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.XxLarge => 32D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.XxxLarge => 48D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Smaller => ComputeRelativeFontSize(constLength),
-                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Larger => ComputeRelativeFontSize(constLength),
+                fontSize = GetFontSizeInPixels(fontSizeProperty.RawValue, rootFontSize, parentFontSize, parentStyle);
+            }
+
+            return fontSize;
+        }
+
+        private Double GetFontSizeInPixels(ICssValue value, Double rootFontSize, Double parentFontSize, ICssStyleDeclaration? parentStyle)
+        {
+            return value switch
+            {
+                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.XxSmall => 9D /
+                    16 * rootFontSize,
+                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.XSmall => 10D /
+                    16 * rootFontSize,
+                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Small => 13D / 16 *
+                    rootFontSize,
+                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Medium => 16D /
+                    16 * rootFontSize,
+                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Large => 18D / 16 *
+                    rootFontSize,
+                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.XLarge => 24D /
+                    16 * rootFontSize,
+                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.XxLarge => 32D /
+                    16 * rootFontSize,
+                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.XxxLarge => 48D /
+                    16 * rootFontSize,
+                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Smaller =>
+                    ComputeRelativeFontSize(constLength, rootFontSize, parentStyle),
+                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Larger =>
+                    ComputeRelativeFontSize(constLength, rootFontSize, parentStyle),
                 CssLengthValue { Type: CssLengthValue.Unit.Px } length => length.Value,
                 CssLengthValue { IsAbsolute: true } length => length.ToPixel(_device),
-                CssLengthValue { Type: CssLengthValue.Unit.Vh or CssLengthValue.Unit.Vw or CssLengthValue.Unit.Vmax or CssLengthValue.Unit.Vmin } length => length.ToPixel(_device),
-                CssLengthValue { IsRelative: true } length => ComputeRelativeFontSize(length),
-                ICssSpecialValue specialValue when specialValue.CssText == CssKeywords.Inherit || specialValue.CssText == CssKeywords.Unset => parentFontSize,
+                CssLengthValue
+                {
+                    Type: CssLengthValue.Unit.Vh or CssLengthValue.Unit.Vw or CssLengthValue.Unit.Vmax
+                    or CssLengthValue.Unit.Vmin
+                } length => length.ToPixel(_device),
+                CssLengthValue { IsRelative: true } length => ComputeRelativeFontSize(length, rootFontSize, parentStyle),
+                ICssSpecialValue specialValue when specialValue.CssText == CssKeywords.Inherit ||
+                                                   specialValue.CssText == CssKeywords.Unset => parentFontSize,
                 ICssSpecialValue specialValue when specialValue.CssText == CssKeywords.Initial => rootFontSize,
                 _ => throw new InvalidOperationException("Font size must be a length"),
             };
-
-            Double ComputeRelativeFontSize(ICssValue value)
-            {
-                var ancestorValue = parentStyle?.GetProperty(PropertyNames.FontSize)?.RawValue;
-                var ancestorPixels = ancestorValue switch
-                {
-                    CssLengthValue { IsAbsolute: true } ancestorLength => ancestorLength.ToPixel(_device),
-                    null => rootFontSize,
-                    _ => throw new InvalidOperationException(),
-                };
-
-                // set a minimum size of 9px for relative sizes
-                return Math.Max(9, value switch
-                {
-                    CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Smaller => ancestorPixels / 1.2,
-                    CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Larger => ancestorPixels * 1.2,
-                    CssLengthValue { Type: CssLengthValue.Unit.Rem } length => length.Value * rootFontSize,
-                    CssLengthValue { Type: CssLengthValue.Unit.Em } length => length.Value * ancestorPixels,
-                    CssLengthValue { Type: CssLengthValue.Unit.Percent } length => length.Value / 100 * ancestorPixels,
-                    _ => throw new InvalidOperationException(),
-                });
-            }
         }
-    }
 
-    public class StyleCompute
-    {
-        public void Comptue()
+        private Double ComputeRelativeFontSize(ICssValue value, Double rootFontSize, ICssStyleDeclaration? parentStyle)
         {
-            
+            var ancestorValue = parentStyle?.GetProperty(PropertyNames.FontSize)?.RawValue;
+            var ancestorPixels = ancestorValue switch
+            {
+                CssLengthValue { IsAbsolute: true } ancestorLength => ancestorLength.ToPixel(_device),
+                null => rootFontSize,
+                _ => throw new InvalidOperationException(),
+            };
+
+            // set a minimum size of 9px for relative sizes
+            return Math.Max(9, value switch
+            {
+                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Smaller => ancestorPixels / 1.2,
+                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Larger => ancestorPixels * 1.2,
+                CssLengthValue { Type: CssLengthValue.Unit.Rem } length => length.Value * rootFontSize,
+                CssLengthValue { Type: CssLengthValue.Unit.Em } length => length.Value * ancestorPixels,
+                CssLengthValue { Type: CssLengthValue.Unit.Percent } length => length.Value / 100 * ancestorPixels,
+                _ => throw new InvalidOperationException(),
+            });
         }
     }
 }
