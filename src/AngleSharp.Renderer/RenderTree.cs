@@ -38,16 +38,20 @@ namespace AngleSharp.Renderer
             return RenderElement(rootFontSize, document.DocumentElement, collection);
         }
 
-        private ElementRenderNode? RenderElement(double rootFontSize,
-            IElement reference, StyleCollection collection,
+        private ElementRenderNode? RenderElement(
+            Double rootFontSize,
+            IElement reference,
+            StyleCollection collection,
             ICssStyleDeclaration? parent = null)
         {
             var style = collection.ComputeCascadedStyle(reference);
+
             var computedStyle = Compute(rootFontSize, style, parent);
             if (parent != null)
             {
                 computedStyle?.UpdateDeclarations(parent);
             }
+
             var children = new List<IRenderNode?>();
 
             foreach (var child in reference.ChildNodes)
