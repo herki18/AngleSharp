@@ -3,7 +3,6 @@
     using System.Collections.Generic;
     using System.Linq;
     using AngleSharp.Dom;
-    using Css.RenderTree;
 
     sealed class TextRenderNode : IRenderNode
     {
@@ -14,8 +13,9 @@
 
         public INode Ref { get; }
 
-        public IEnumerable<IRenderNode?> Children => Enumerable.Empty<IRenderNode>();
+        public IEnumerable<IRenderNode> Children => Enumerable.Empty<IRenderNode>();
 
         public IRenderNode? Parent { get; set; }
+        public LayoutBox? Layout { get; set; }
     }
 }

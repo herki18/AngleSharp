@@ -42,14 +42,15 @@ namespace AngleSharp.Renderer
             Double rootFontSize,
             IElement reference,
             StyleCollection collection,
-            ICssStyleDeclaration? parent = null)
+            ICssStyleDeclaration? parentComputedStyles = null)
         {
+            // Merge all stylesheets, including default stylesheets
             var style = collection.ComputeCascadedStyle(reference);
 
-            var computedStyle = Compute(rootFontSize, style, parent);
-            if (parent != null)
+            var computedStyle = Compute(rootFontSize, style, parentComputedStyles);
+            if (parentComputedStyles != null)
             {
-                computedStyle?.UpdateDeclarations(parent);
+                computedStyle?.UpdateDeclarations(parentComputedStyles);
             }
 
             var children = new List<IRenderNode?>();
@@ -79,7 +80,7 @@ namespace AngleSharp.Renderer
                 computedStyle.SetDeclarations(new[] { lineHeightProperty });
             }
 
-            var node = new ElementRenderNode(reference, children, style, computedStyle);
+            var node = new ElementRenderNode(reference, children!, style, computedStyle);
 
             foreach (var child in children)
             {
@@ -224,6 +225,129 @@ namespace AngleSharp.Renderer
                 CssLengthValue { Type: CssLengthValue.Unit.Percent } length => length.Value / 100 * ancestorPixels,
                 _ => throw new InvalidOperationException(),
             });
+        }
+    }
+
+    public interface ILayoutStrategy
+    {
+        /// <summary>
+        /// Return true if this strategy can handle the given element node's display type, etc.
+        /// </summary>
+        bool CanHandle(ElementRenderNode node);
+
+        /// <summary>
+        /// Perform the layout for this element node.
+        /// - parentX, parentY: the top-left of the containing block
+        /// - containerWidth: the width available for this node
+        /// - offsetYSoFar: how far we've already stacked in the parent (for block flow)
+        /// - engine: reference back to the layout engine (for child recursion, text layout, etc.)
+        /// Returns the new offset after placing this element.
+        /// </summary>
+        float LayoutNode(
+            ElementRenderNode node,
+            float parentX,
+            float parentY,
+            float containerWidth,
+            float offsetYSoFar,
+            LayoutEngine engine);
+    }
+
+    public sealed class LayoutEngine
+    {
+        private readonly List<ILayoutStrategy> _strategies;
+
+        public LayoutEngine()
+        {
+            // Initialize your known strategies:
+            _strategies = new List<ILayoutStrategy>
+            {
+                // new BlockLayoutStrategy(),
+                // new FlexLayoutStrategy()
+            };
+        }
+
+        /// <summary>
+        /// The top-level call, e.g. from your RenderDocument().
+        /// The user supplies a rootNode (often the html or body), plus a viewport width/height.
+        /// </summary>
+        public void LayoutDocument(IRenderNode? rootNode, float viewportWidth, float viewportHeight)
+        {
+            if (rootNode == null) return;
+
+            // Start layout at origin (0,0)
+            ComputeLayoutForNode(rootNode, 0f, 0f, viewportWidth, 0f);
+        }
+
+        /// <summary>
+        /// A recursive method that dispatches to the correct layout strategy or
+        /// handles text nodes directly.
+        /// </summary>
+        public float ComputeLayoutForNode(
+            IRenderNode node,
+            float parentX,
+            float parentY,
+            float containerWidth,
+            float offsetYSoFar)
+        {
+            // If it's an element node, pick the right strategy
+            if (node is ElementRenderNode elemNode)
+            {
+                // Attempt to find a matching layout strategy
+                var strategy = _strategies.FirstOrDefault(s => s.CanHandle(elemNode));
+                if (strategy != null)
+                {
+                    return strategy.LayoutNode(elemNode, parentX, parentY, containerWidth, offsetYSoFar, this);
+                }
+                else
+                {
+                    // If no strategy found, treat as block fallback
+                    return _strategies[0].LayoutNode(elemNode, parentX, parentY, containerWidth, offsetYSoFar, this);
+                }
+            }
+            else if (node is TextRenderNode textNode)
+            {
+                return LayoutTextNode(textNode, parentX, parentY, containerWidth, offsetYSoFar);
+            }
+
+            // Unknown node => do nothing
+            return offsetYSoFar;
+        }
+
+        /// <summary>
+        /// Very naive text layout (single line, no wrap).
+        /// </summary>
+        private float LayoutTextNode(
+            TextRenderNode textNode,
+            float parentX,
+            float parentY,
+            float containerWidth,
+            float offsetYSoFar)
+        {
+            var textContent = textNode.Ref.TextContent ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(textContent))
+            {
+                textNode.Layout = null;
+                return offsetYSoFar;
+            }
+
+            // A naive assumption: 7px per character, line height = 16px
+            float approxCharWidth = 7f;
+            float lineHeight = 16f;
+            float textWidth = textContent.Length * approxCharWidth;
+
+            if (textWidth > containerWidth)
+            {
+                // No wrapping => might overflow.
+                // Real approach: you'd split lines or clamp. We'll just let it overflow.
+            }
+
+            float x = parentX;
+            float y = parentY + offsetYSoFar;
+
+            textNode.Layout = new LayoutBox(x, y, textWidth, lineHeight);
+
+            // Increase offset so next sibling is below this line
+            return offsetYSoFar + lineHeight;
         }
     }
 }

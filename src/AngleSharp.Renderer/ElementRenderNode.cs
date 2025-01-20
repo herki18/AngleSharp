@@ -2,13 +2,12 @@
 namespace AngleSharp.Renderer
 {
     using System.Collections.Generic;
-    using AngleSharp.Css.Dom;
-    using AngleSharp.Dom;
-    using Css.RenderTree;
+    using Css.Dom;
+    using Dom;
 
     public sealed class ElementRenderNode : IRenderNode
     {
-        public ElementRenderNode(IElement reference, IEnumerable<IRenderNode?> children, ICssStyleDeclaration specifiedStyle, ICssStyleDeclaration? computedStyle)
+        public ElementRenderNode(IElement reference, IEnumerable<IRenderNode> children, ICssStyleDeclaration specifiedStyle, ICssStyleDeclaration? computedStyle)
         {
             Ref = reference;
             Children = children;
@@ -20,12 +19,33 @@ namespace AngleSharp.Renderer
 
         INode IRenderNode.Ref => Ref;
 
-        public IEnumerable<IRenderNode?> Children { get; }
+        public IEnumerable<IRenderNode> Children { get; }
 
         public IRenderNode? Parent { get; set; }
 
         public ICssStyleDeclaration SpecifiedStyle { get; }
 
         public ICssStyleDeclaration? ComputedStyle { get; }
+
+        public LayoutBox? Layout { get; set; }
+    }
+
+    /// <summary>
+    /// The final (used) layout geometry for an element or text node.
+    /// </summary>
+    public sealed class LayoutBox
+    {
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Width { get; set; }
+        public float Height { get; set; }
+
+        public LayoutBox(float x, float y, float width, float height)
+        {
+            X = x;
+            Y = y;
+            Width = width;
+            Height = height;
+        }
     }
 }
