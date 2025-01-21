@@ -28,6 +28,8 @@ namespace AngleSharp.Renderer
         public ICssStyleDeclaration? ComputedStyle { get; }
 
         public LayoutBox? Layout { get; set; }
+
+        public IElementWrapper? Wrapper { get; set; } // This is a Unity-specific field
     }
 
     /// <summary>

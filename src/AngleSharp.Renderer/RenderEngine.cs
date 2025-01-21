@@ -24,6 +24,17 @@
         public void Update()
         {
             _root = _builder.RenderDocument();
+
+            if (_root != null)
+            {
+                var layoutEngine = new LayoutEngine();
+
+                // Get device viewport or fallback to some defaults
+                float viewportWidth = 800f;
+                float viewportHeight = 600f;
+
+                layoutEngine.LayoutDocument(_root, viewportWidth, viewportHeight);
+            }
         }
 
         public IRenderNode GetRoot()

@@ -33,9 +33,15 @@ namespace AngleSharp.Renderer
             var currentSheets = document.GetStyleSheets().OfType<ICssStyleSheet>();
             var stylesheets = _defaultSheets.Concat(currentSheets).ToList();
             var collection = new StyleCollection(stylesheets, _device);
+
+            // 1. Compute root style
             var rootStyle = collection.ComputeCascadedStyle(document.DocumentElement);
             var rootFontSize = ((CssLengthValue?)rootStyle.GetProperty(PropertyNames.FontSize)?.RawValue)?.Value ?? 16;
-            return RenderElement(rootFontSize, document.DocumentElement, collection);
+
+            // 2. Build the render tree
+            var rootNode = RenderElement(rootFontSize, document.DocumentElement, collection);
+
+            return rootNode;
         }
 
         private ElementRenderNode? RenderElement(
@@ -261,7 +267,7 @@ namespace AngleSharp.Renderer
             // Initialize your known strategies:
             _strategies = new List<ILayoutStrategy>
             {
-                // new BlockLayoutStrategy(),
+                new BlockLayoutStrategy(),
                 // new FlexLayoutStrategy()
             };
         }
@@ -282,12 +288,12 @@ namespace AngleSharp.Renderer
         /// A recursive method that dispatches to the correct layout strategy or
         /// handles text nodes directly.
         /// </summary>
-        public float ComputeLayoutForNode(
+        public Single ComputeLayoutForNode(
             IRenderNode node,
-            float parentX,
-            float parentY,
-            float containerWidth,
-            float offsetYSoFar)
+            Single parentX,
+            Single parentY,
+            Single containerWidth,
+            Single offsetYSoFar)
         {
             // If it's an element node, pick the right strategy
             if (node is ElementRenderNode elemNode)
@@ -316,12 +322,12 @@ namespace AngleSharp.Renderer
         /// <summary>
         /// Very naive text layout (single line, no wrap).
         /// </summary>
-        private float LayoutTextNode(
+        private Single LayoutTextNode(
             TextRenderNode textNode,
-            float parentX,
-            float parentY,
-            float containerWidth,
-            float offsetYSoFar)
+            Single parentX,
+            Single parentY,
+            Single containerWidth,
+            Single offsetYSoFar)
         {
             var textContent = textNode.Ref.TextContent ?? string.Empty;
             if (string.IsNullOrWhiteSpace(textContent))
@@ -348,6 +354,114 @@ namespace AngleSharp.Renderer
 
             // Increase offset so next sibling is below this line
             return offsetYSoFar + lineHeight;
+        }
+    }
+
+    public sealed class BlockLayoutStrategy : ILayoutStrategy
+    {
+        public bool CanHandle(ElementRenderNode node)
+        {
+            if (node.ComputedStyle is null)
+                return false;
+
+            var display = node.ComputedStyle.GetPropertyValue("display");
+            // We'll handle "block", "inline", "inline-block", and fallback if missing
+            // (You could refine logic here if you have more display types.)
+            if (string.IsNullOrEmpty(display)) display = "inline";
+
+            return display == "block"
+                || display == "inline"
+                || display == "inline-block"
+                || display == "list-item"
+                || display == ""; // fallback
+        }
+
+        public float LayoutNode(
+            ElementRenderNode node,
+            float parentX,
+            float parentY,
+            float containerWidth,
+            float offsetYSoFar,
+            LayoutEngine engine)
+        {
+            var style = node.ComputedStyle;
+            if (style is null)
+            {
+                // No computed style => no layout
+                node.Layout = null;
+                return offsetYSoFar;
+            }
+
+            // 1. Read margins, borders, padding
+            float marginLeft   = ParsePx(style, "margin-left");
+            float marginRight  = ParsePx(style, "margin-right");
+            float marginTop    = ParsePx(style, "margin-top");
+            float marginBottom = ParsePx(style, "margin-bottom");
+
+            float borderLeft   = ParsePx(style, "border-left-width");
+            float borderRight  = ParsePx(style, "border-right-width");
+            float borderTop    = ParsePx(style, "border-top-width");
+            float borderBottom = ParsePx(style, "border-bottom-width");
+
+            float paddingLeft   = ParsePx(style, "padding-left");
+            float paddingRight  = ParsePx(style, "padding-right");
+            float paddingTop    = ParsePx(style, "padding-top");
+            float paddingBottom = ParsePx(style, "padding-bottom");
+
+            // 2. Resolve 'width'
+            float specifiedWidth = ParsePx(style, "width");
+            // If 0 or "auto", fill available space (minus total horizontal).
+            float totalHorizontalBox = marginLeft + borderLeft + paddingLeft
+                                     + paddingRight + borderRight + marginRight;
+            float contentWidth = specifiedWidth > 0
+                ? specifiedWidth
+                : (containerWidth - totalHorizontalBox);
+
+            if (contentWidth < 0) contentWidth = 0; // clamp
+
+            // 3. Compute final x, y
+            float x = parentX + marginLeft;
+            float y = parentY + offsetYSoFar + marginTop;
+
+            // 4. Layout children (vertical stacking)
+            float childOffsetY = 0f;
+            foreach (var child in node.Children)
+            {
+                if (child is null)
+                    continue;
+
+                childOffsetY = engine.ComputeLayoutForNode(
+                    child,
+                    x + borderLeft + paddingLeft, // child's parentX
+                    y + borderTop + paddingTop,   // child's parentY
+                    contentWidth,                 // child's container width
+                    childOffsetY
+                );
+            }
+
+            // childOffsetY is total child content height
+            float contentHeight = childOffsetY;
+
+            // 5. Final box height = border + padding + content
+            float finalHeight = borderTop + paddingTop + contentHeight + paddingBottom + borderBottom;
+
+            // 6. Assign LayoutBox
+            node.Layout = new LayoutBox(x, y, contentWidth, finalHeight);
+
+            // 7. Return new offset so next sibling (in the parent flow) stacks below
+            float totalElementHeight = marginTop + finalHeight + marginBottom;
+            return offsetYSoFar + totalElementHeight;
+        }
+
+        private float ParsePx(ICssStyleDeclaration style, string propName)
+        {
+            var raw = style.GetProperty(propName)?.RawValue;
+            if (raw is CssLengthValue lv && lv.Type == CssLengthValue.Unit.Px)
+            {
+                return (float)lv.Value;
+            }
+            // If not found or "auto", return 0.
+            return 0f;
         }
     }
 }
