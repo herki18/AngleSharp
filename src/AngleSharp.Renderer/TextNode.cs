@@ -4,9 +4,9 @@
     using System.Linq;
     using AngleSharp.Dom;
 
-    sealed class TextRenderNode : IRenderNode
+    sealed class TextNode : IRenderNode
     {
-        public TextRenderNode(INode reference)
+        public TextNode(INode reference)
         {
             Ref = reference;
         }

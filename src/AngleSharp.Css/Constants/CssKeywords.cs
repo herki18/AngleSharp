@@ -10,1821 +10,1821 @@ namespace AngleSharp.Css
         /// <summary>
         /// The distribute keyword.
         /// </summary>
-        public static readonly String Distribute = "distribute";
+        public const String Distribute = "distribute";
 
         /// <summary>
         /// The horizontal keyword.
         /// </summary>
-        public static readonly String Horizontal = "horizontal";
+        public const String Horizontal = "horizontal";
 
         /// <summary>
         /// The vertical keyword.
         /// </summary>
-        public static readonly String Vertical = "vertical";
+        public const String Vertical = "vertical";
 
         /// <summary>
         /// The clip keyword.
         /// </summary>
-        public static readonly String Clip = "clip";
+        public const String Clip = "clip";
 
         /// <summary>
         /// The cyclic keyword.
         /// </summary>
-        public static readonly String Cyclic = "cyclic";
+        public const String Cyclic = "cyclic";
 
         /// <summary>
         /// The numeric keyword.
         /// </summary>
-        public static readonly String Numeric = "numeric";
+        public const String Numeric = "numeric";
 
         /// <summary>
         /// The alphabetic keyword.
         /// </summary>
-        public static readonly String Alphabetic = "alphabetic";
+        public const String Alphabetic = "alphabetic";
 
         /// <summary>
         /// The symbolic keyword.
         /// </summary>
-        public static readonly String Symbolic = "symbolic";
+        public const String Symbolic = "symbolic";
 
         /// <summary>
         /// The legacy keyword.
         /// </summary>
-        public static readonly String Legacy = "legacy";
+        public const String Legacy = "legacy";
 
         /// <summary>
         /// The normal keyword.
         /// </summary>
-        public static readonly String Normal = "normal";
+        public const String Normal = "normal";
 
         /// <summary>
         /// The arabic-indic keyword.
         /// </summary>
-        public static readonly String ArabicIndic = "arabic-indic";
+        public const String ArabicIndic = "arabic-indic";
 
         /// <summary>
         /// The pre keyword.
         /// </summary>
-        public static readonly String Pre = "pre";
+        public const String Pre = "pre";
 
         /// <summary>
         /// The nowrap keyword.
         /// </summary>
-        public static readonly String Nowrap = "nowrap";
+        public const String Nowrap = "nowrap";
 
         /// <summary>
         /// The wrap keyword.
         /// </summary>
-        public static readonly String Wrap = "wrap";
+        public const String Wrap = "wrap";
 
         /// <summary>
         /// The wrap-reverse keyword.
         /// </summary>
-        public static readonly String WrapReverse = "wrap-reverse";
+        public const String WrapReverse = "wrap-reverse";
 
         /// <summary>
         /// The pre-wrap keyword.
         /// </summary>
-        public static readonly String PreWrap = "pre-wrap";
+        public const String PreWrap = "pre-wrap";
 
         /// <summary>
         /// The pre-line keyword.
         /// </summary>
-        public static readonly String PreLine = "pre-line";
+        public const String PreLine = "pre-line";
 
         /// <summary>
         /// The distribute-all-line keyword.
         /// </summary>
-        public static readonly String DistributeAllLines = "distribute-all-lines";
+        public const String DistributeAllLines = "distribute-all-lines";
 
         /// <summary>
         /// The distribute-center-last" keyword.
         /// </summary>
-        public static readonly String DistributeCenterLast = "distribute-center-last";
+        public const String DistributeCenterLast = "distribute-center-last";
 
         /// <summary>
         /// The inter-cluster keyword.
         /// </summary>
-        public static readonly String InterCluster = "inter-cluster";
+        public const String InterCluster = "inter-cluster";
 
         /// <summary>
         /// The inter-ideograph keyword.
         /// </summary>
-        public static readonly String InterIdeograph = "inter-ideograph";
+        public const String InterIdeograph = "inter-ideograph";
 
         /// <summary>
         /// The inter-word keyword.
         /// </summary>
-        public static readonly String InterWord = "inter-word";
+        public const String InterWord = "inter-word";
 
         /// <summary>
         /// The inter-character keyword.
         /// </summary>
-        public static readonly String InterCharacter = "inter-character";
+        public const String InterCharacter = "inter-character";
 
         /// <summary>
         /// The katakana keyword.
         /// </summary>
-        public static readonly String Katakana = "katakana";
+        public const String Katakana = "katakana";
 
         /// <summary>
         /// The katakana-iroha keyword.
         /// </summary>
-        public static readonly String KatakanaIroha = "katakana-iroha";
+        public const String KatakanaIroha = "katakana-iroha";
 
         /// <summary>
         /// The kashida keyword.
         /// </summary>
-        public static readonly String Kashida = "kashida";
+        public const String Kashida = "kashida";
 
         /// <summary>
         /// The newspaper keyword.
         /// </summary>
-        public static readonly String Newspaper = "newspaper";
+        public const String Newspaper = "newspaper";
 
         /// <summary>
 		/// The Butt keyword.
 		/// </summary>
-		public static readonly String Butt = "butt";
+		public const String Butt = "butt";
 
         /// <summary>
         /// The miter keyword.
         /// </summary>
-        public static readonly String Miter = "miter";
+        public const String Miter = "miter";
 
         /// <summary>
         /// The bevel keyword.
         /// </summary>
-        public static readonly String Bevel = "bevel";
+        public const String Bevel = "bevel";
 
         /// <summary>
         /// The break-all keyword.
         /// </summary>
-        public static readonly String BreakAll = "break-all";
+        public const String BreakAll = "break-all";
 
         /// <summary>
         /// The keep-all keyword.
         /// </summary>
-        public static readonly String KeepAll = "keep-all";
+        public const String KeepAll = "keep-all";
 
         /// <summary>
         /// The break-all keyword.
         /// </summary>
-        public static readonly String BreakWord = "break-word";
+        public const String BreakWord = "break-word";
 
         /// <summary>
         /// The important keyword.
         /// </summary>
-        public static readonly String Important = "important";
+        public const String Important = "important";
 
         /// <summary>
         /// The !important keyword.
         /// </summary>
-        public static readonly String BangImportant = "!important";
+        public const String BangImportant = "!important";
 
         /// <summary>
         /// The inherit keyword.
         /// </summary>
-        public static readonly String Inherit = "inherit";
+        public const String Inherit = "inherit";
 
         /// <summary>
         /// The initial keyword.
         /// </summary>
-        public static readonly String Initial = "initial";
+        public const String Initial = "initial";
 
         /// <summary>
         /// The unset keyword.
         /// </summary>
-        public static readonly String Unset = "unset";
+        public const String Unset = "unset";
 
         /// <summary>
         /// The none keyword.
         /// </summary>
-        public static readonly String None = "none";
+        public const String None = "none";
 
         /// <summary>
         /// The auto keyword.
         /// </summary>
-        public static readonly String Auto = "auto";
+        public const String Auto = "auto";
 
         /// <summary>
         /// The mixed keyword.
         /// </summary>
-        public static readonly String Mixed = "mixed";
+        public const String Mixed = "mixed";
 
         /// <summary>
         /// The auto-fill keyword.
         /// </summary>
-        public static readonly String AutoFill = "auto-fill";
+        public const String AutoFill = "auto-fill";
 
         /// <summary>
         /// The auto-fit keyword.
         /// </summary>
-        public static readonly String AutoFit = "auto-fit";
+        public const String AutoFit = "auto-fit";
 
         /// <summary>
         /// The auto-flow keyword.
         /// </summary>
-        public static readonly String AutoFlow = "auto-flow";
+        public const String AutoFlow = "auto-flow";
 
         /// <summary>
         /// The content keyword.
         /// </summary>
-        public static readonly String Content = "content";
+        public const String Content = "content";
 
         /// <summary>
         /// The min-content keyword.
         /// </summary>
-        public static readonly String MinContent = "min-content";
+        public const String MinContent = "min-content";
 
         /// <summary>
         /// The max-content keyword.
         /// </summary>
-        public static readonly String MaxContent = "max-content";
+        public const String MaxContent = "max-content";
 
         /// <summary>
         /// The format keyword.
         /// </summary>
-        public static readonly String Format = "format";
+        public const String Format = "format";
 
         /// <summary>
         /// The from keyword.
         /// </summary>
-        public static readonly String From = "from";
+        public const String From = "from";
 
         /// <summary>
         /// The to keyword.
         /// </summary>
-        public static readonly String To = "to";
+        public const String To = "to";
 
         /// <summary>
         /// The always keyword.
         /// </summary>
-        public static readonly String Always = "always";
+        public const String Always = "always";
 
         /// <summary>
         /// The avoid keyword.
         /// </summary>
-        public static readonly String Avoid = "avoid";
+        public const String Avoid = "avoid";
 
         /// <summary>
         /// The left keyword.
         /// </summary>
-        public static readonly String Left = "left";
+        public const String Left = "left";
 
         /// <summary>
         /// The right keyword.
         /// </summary>
-        public static readonly String Right = "right";
+        public const String Right = "right";
 
         /// <summary>
         /// The footnote keyword.
         /// </summary>
-        public static readonly String Footnote = "footnote";
+        public const String Footnote = "footnote";
 
         /// <summary>
         /// The both keyword.
         /// </summary>
-        public static readonly String Both = "both";
+        public const String Both = "both";
 
         /// <summary>
         /// The forwards keyword.
         /// </summary>
-        public static readonly String Forwards = "forwards";
+        public const String Forwards = "forwards";
 
         /// <summary>
         /// The backwards keyword.
         /// </summary>
-        public static readonly String Backwards = "backwards";
+        public const String Backwards = "backwards";
 
         /// <summary>
         /// The page keyword.
         /// </summary>
-        public static readonly String Page = "page";
+        public const String Page = "page";
 
         /// <summary>
         /// The dense keyword.
         /// </summary>
-        public static readonly String Dense = "dense";
+        public const String Dense = "dense";
 
         /// <summary>
         /// The column keyword.
         /// </summary>
-        public static readonly String Column = "column";
+        public const String Column = "column";
 
         /// <summary>
         /// The column-reverse keyword.
         /// </summary>
-        public static readonly String ColumnReverse = "column-reverse";
+        public const String ColumnReverse = "column-reverse";
 
         /// <summary>
         /// The row keyword.
         /// </summary>
-        public static readonly String Row = "row";
+        public const String Row = "row";
 
         /// <summary>
         /// The row-reverse keyword.
         /// </summary>
-        public static readonly String RowReverse = "row-reverse";
+        public const String RowReverse = "row-reverse";
 
         /// <summary>
         /// The avoid-page keyword.
         /// </summary>
-        public static readonly String AvoidPage = "avoid-page";
+        public const String AvoidPage = "avoid-page";
 
         /// <summary>
         /// The avoid-column keyword.
         /// </summary>
-        public static readonly String AvoidColumn = "avoid-column";
+        public const String AvoidColumn = "avoid-column";
 
         /// <summary>
         /// The avoid-region keyword.
         /// </summary>
-        public static readonly String AvoidRegion = "avoid-region";
+        public const String AvoidRegion = "avoid-region";
 
         /// <summary>
         /// The inset keyword.
         /// </summary>
-        public static readonly String Inset = "inset";
+        public const String Inset = "inset";
 
         /// <summary>
         /// The outset keyword.
         /// </summary>
-        public static readonly String Outset = "outset";
+        public const String Outset = "outset";
 
         /// <summary>
         /// The ridge keyword.
         /// </summary>
-        public static readonly String Ridge = "ridge";
+        public const String Ridge = "ridge";
 
         /// <summary>
         /// The groove keyword.
         /// </summary>
-        public static readonly String Groove = "groove";
+        public const String Groove = "groove";
 
         /// <summary>
         /// The fixed keyword.
         /// </summary>
-        public static readonly String Fixed = "fixed";
+        public const String Fixed = "fixed";
 
         /// <summary>
         /// The local keyword.
         /// </summary>
-        public static readonly String Local = "local";
+        public const String Local = "local";
 
         /// <summary>
         /// The scroll keyword.
         /// </summary>
-        public static readonly String Scroll = "scroll";
+        public const String Scroll = "scroll";
 
         /// <summary>
         /// The no-repeat keyword.
         /// </summary>
-        public static readonly String NoRepeat = "no-repeat";
+        public const String NoRepeat = "no-repeat";
 
         /// <summary>
         /// The repeat keyword.
         /// </summary>
-        public static readonly String Repeat = "repeat";
+        public const String Repeat = "repeat";
 
         /// <summary>
         /// The repeat-x keyword.
         /// </summary>
-        public static readonly String RepeatX = "repeat-x";
+        public const String RepeatX = "repeat-x";
 
         /// <summary>
         /// The repeat-y keyword.
         /// </summary>
-        public static readonly String RepeatY = "repeat-y";
+        public const String RepeatY = "repeat-y";
 
         /// <summary>
         /// The round keyword.
         /// </summary>
-        public static readonly String Round = "round";
+        public const String Round = "round";
 
         /// <summary>
         /// The span keyword.
         /// </summary>
-        public static readonly String Span = "span";
+        public const String Span = "span";
 
         /// <summary>
         /// The space keyword.
         /// </summary>
-        public static readonly String Space = "space";
+        public const String Space = "space";
 
         /// <summary>
         /// The space-around keyword.
         /// </summary>
-        public static readonly String SpaceAround = "space-around";
+        public const String SpaceAround = "space-around";
 
         /// <summary>
         /// The space-between keyword.
         /// </summary>
-        public static readonly String SpaceBetween = "space-between";
+        public const String SpaceBetween = "space-between";
 
         /// <summary>
         /// The stretch keyword.
         /// </summary>
-        public static readonly String Stretch = "stretch";
+        public const String Stretch = "stretch";
 
         /// <summary>
         /// The compact keyword.
         /// </summary>
-        public static readonly String Compact = "compact";
+        public const String Compact = "compact";
 
         /// <summary>
         /// The line keyword.
         /// </summary>
-        public static readonly String Line = "line";
+        public const String Line = "line";
 
         /// <summary>
         /// The inline keyword.
         /// </summary>
-        public static readonly String Inline = "inline";
+        public const String Inline = "inline";
 
         /// <summary>
         /// The block keyword.
         /// </summary>
-        public static readonly String Block = "block";
+        public const String Block = "block";
 
         /// <summary>
         /// The inline-block keyword.
         /// </summary>
-        public static readonly String InlineBlock = "inline-block";
+        public const String InlineBlock = "inline-block";
 
         /// <summary>
         /// The list-item keyword.
         /// </summary>
-        public static readonly String ListItem = "list-item";
+        public const String ListItem = "list-item";
 
         /// <summary>
         /// The inline-table keyword.
         /// </summary>
-        public static readonly String InlineTable = "inline-table";
+        public const String InlineTable = "inline-table";
 
         /// <summary>
         /// The table keyword.
         /// </summary>
-        public static readonly String Table = "table";
+        public const String Table = "table";
 
         /// <summary>
         /// The table-caption keyword.
         /// </summary>
-        public static readonly String TableCaption = "table-caption";
+        public const String TableCaption = "table-caption";
 
         /// <summary>
         /// The table-cell keyword.
         /// </summary>
-        public static readonly String TableCell = "table-cell";
+        public const String TableCell = "table-cell";
 
         /// <summary>
         /// The table-column keyword.
         /// </summary>
-        public static readonly String TableColumn = "table-column";
+        public const String TableColumn = "table-column";
 
         /// <summary>
         /// The table-column-group keyword.
         /// </summary>
-        public static readonly String TableColumnGroup = "table-column-group";
+        public const String TableColumnGroup = "table-column-group";
 
         /// <summary>
         /// The table-footer-group keyword.
         /// </summary>
-        public static readonly String TableFooterGroup = "table-footer-group";
+        public const String TableFooterGroup = "table-footer-group";
 
         /// <summary>
         /// The table-header-group keyword.
         /// </summary>
-        public static readonly String TableHeaderGroup = "table-header-group";
+        public const String TableHeaderGroup = "table-header-group";
 
         /// <summary>
         /// The table-row keyword.
         /// </summary>
-        public static readonly String TableRow = "table-row";
+        public const String TableRow = "table-row";
 
         /// <summary>
         /// The table-row-group keyword.
         /// </summary>
-        public static readonly String TableRowGroup = "table-row-group";
+        public const String TableRowGroup = "table-row-group";
 
         /// <summary>
         /// The flex keyword.
         /// </summary>
-        public static readonly String Flex = "flex";
+        public const String Flex = "flex";
 
         /// <summary>
         /// The inline-flex keyword.
         /// </summary>
-        public static readonly String InlineFlex = "inline-flex";
+        public const String InlineFlex = "inline-flex";
 
         /// <summary>
         /// The grid keyword.
         /// </summary>
-        public static readonly String Grid = "grid";
+        public const String Grid = "grid";
 
         /// <summary>
         /// The inline-grid keyword.
         /// </summary>
-        public static readonly String InlineGrid = "inline-grid";
+        public const String InlineGrid = "inline-grid";
 
         /// <summary>
         /// The visible keyword.
         /// </summary>
-        public static readonly String Visible = "visible";
+        public const String Visible = "visible";
 
         /// <summary>
         /// The hidden keyword.
         /// </summary>
-        public static readonly String Hidden = "hidden";
+        public const String Hidden = "hidden";
 
         /// <summary>
         /// The collapse keyword.
         /// </summary>
-        public static readonly String Collapse = "collapse";
+        public const String Collapse = "collapse";
 
         /// <summary>
         /// The static keyword.
         /// </summary>
-        public static readonly String Static = "static";
+        public const String Static = "static";
 
         /// <summary>
         /// The relative keyword.
         /// </summary>
-        public static readonly String Relative = "relative";
+        public const String Relative = "relative";
 
         /// <summary>
         /// The absolute keyword.
         /// </summary>
-        public static readonly String Absolute = "absolute";
+        public const String Absolute = "absolute";
 
         /// <summary>
         /// The sticky keyword.
         /// </summary>
-        public static readonly String Sticky = "sticky";
+        public const String Sticky = "sticky";
 
         /// <summary>
         /// The serif keyword.
         /// </summary>
-        public static readonly String Serif = "serif";
+        public const String Serif = "serif";
 
         /// <summary>
         /// The sans-serif keyword.
         /// </summary>
-        public static readonly String SansSerif = "sans-serif";
+        public const String SansSerif = "sans-serif";
 
         /// <summary>
         /// The monospace keyword.
         /// </summary>
-        public static readonly String Monospace = "monospace";
+        public const String Monospace = "monospace";
 
         /// <summary>
         /// The cursive keyword.
         /// </summary>
-        public static readonly String Cursive = "cursive";
+        public const String Cursive = "cursive";
 
         /// <summary>
         /// The fantasy keyword.
         /// </summary>
-        public static readonly String Fantasy = "fantasy";
+        public const String Fantasy = "fantasy";
 
         /// <summary>
         /// The caption keyword.
         /// </summary>
-        public static readonly String Caption = "caption";
+        public const String Caption = "caption";
 
         /// <summary>
         /// The icon keyword.
         /// </summary>
-        public static readonly String Icon = "icon";
+        public const String Icon = "icon";
 
         /// <summary>
         /// The menu keyword.
         /// </summary>
-        public static readonly String Menu = "menu";
+        public const String Menu = "menu";
 
         /// <summary>
         /// The message-box keyword.
         /// </summary>
-        public static readonly String MessageBox = "message-box";
+        public const String MessageBox = "message-box";
 
         /// <summary>
         /// The small-caption keyword.
         /// </summary>
-        public static readonly String SmallCaption = "small-caption";
+        public const String SmallCaption = "small-caption";
 
         /// <summary>
         /// The status-bar keyword.
         /// </summary>
-        public static readonly String StatusBar = "status-bar";
+        public const String StatusBar = "status-bar";
 
         /// <summary>
         /// The italic keyword.
         /// </summary>
-        public static readonly String Italic = "italic";
+        public const String Italic = "italic";
 
         /// <summary>
         /// The oblique keyword.
         /// </summary>
-        public static readonly String Oblique = "oblique";
+        public const String Oblique = "oblique";
 
         /// <summary>
         /// The ultra-condensed keyword.
         /// </summary>
-        public static readonly String UltraCondensed = "ultra-condensed";
+        public const String UltraCondensed = "ultra-condensed";
 
         /// <summary>
         /// The extra-condensed keyword.
         /// </summary>
-        public static readonly String ExtraCondensed = "extra-condensed";
+        public const String ExtraCondensed = "extra-condensed";
 
         /// <summary>
         /// The condensed keyword.
         /// </summary>
-        public static readonly String Condensed = "condensed";
+        public const String Condensed = "condensed";
 
         /// <summary>
         /// The semi-condensed keyword.
         /// </summary>
-        public static readonly String SemiCondensed = "semi-condensed";
+        public const String SemiCondensed = "semi-condensed";
 
         /// <summary>
         /// The semi-expanded keyword.
         /// </summary>
-        public static readonly String SemiExpanded = "semi-expanded";
+        public const String SemiExpanded = "semi-expanded";
 
         /// <summary>
         /// The expanded keyword.
         /// </summary>
-        public static readonly String Expanded = "expanded";
+        public const String Expanded = "expanded";
 
         /// <summary>
         /// The extra-expanded keyword.
         /// </summary>
-        public static readonly String ExtraExpanded = "extra-expanded";
+        public const String ExtraExpanded = "extra-expanded";
 
         /// <summary>
         /// The ultra-expanded keyword.
         /// </summary>
-        public static readonly String UltraExpanded = "ultra-expanded";
+        public const String UltraExpanded = "ultra-expanded";
 
         /// <summary>
         /// The bold keyword.
         /// </summary>
-        public static readonly String Bold = "bold";
+        public const String Bold = "bold";
 
         /// <summary>
         /// The bolder keyword.
         /// </summary>
-        public static readonly String Bolder = "bolder";
+        public const String Bolder = "bolder";
 
         /// <summary>
         /// The lighter keyword.
         /// </summary>
-        public static readonly String Lighter = "lighter";
+        public const String Lighter = "lighter";
 
         /// <summary>
         /// The center keyword.
         /// </summary>
-        public static readonly String Center = "center";
+        public const String Center = "center";
 
         /// <summary>
         /// The flex-start keyword.
         /// </summary>
-        public static readonly String FlexStart = "flex-start";
+        public const String FlexStart = "flex-start";
 
         /// <summary>
         /// The flex-end keyword.
         /// </summary>
-        public static readonly String FlexEnd = "flex-end";
+        public const String FlexEnd = "flex-end";
 
         /// <summary>
         /// The justify keyword.
         /// </summary>
-        public static readonly String Justify = "justify";
+        public const String Justify = "justify";
 
         /// <summary>
         /// The justify-all keyword.
         /// </summary>
-        public static readonly String JustifyAll = "justify-all";
+        public const String JustifyAll = "justify-all";
 
         /// <summary>
         /// The underline keyword.
         /// </summary>
-        public static readonly String Underline = "underline";
+        public const String Underline = "underline";
 
         /// <summary>
         /// The overline keyword.
         /// </summary>
-        public static readonly String Overline = "overline";
+        public const String Overline = "overline";
 
         /// <summary>
         /// The line-through keyword.
         /// </summary>
-        public static readonly String LineThrough = "line-through";
+        public const String LineThrough = "line-through";
 
         /// <summary>
         /// The blink keyword.
         /// </summary>
-        public static readonly String Blink = "blink";
+        public const String Blink = "blink";
 
         /// <summary>
         /// The solid keyword.
         /// </summary>
-        public static readonly String Solid = "solid";
+        public const String Solid = "solid";
 
         /// <summary>
         /// The double keyword.
         /// </summary>
-        public static readonly String Double = "double";
+        public const String Double = "double";
 
         /// <summary>
         /// The dotted keyword.
         /// </summary>
-        public static readonly String Dotted = "dotted";
+        public const String Dotted = "dotted";
 
         /// <summary>
         /// The dashed keyword.
         /// </summary>
-        public static readonly String Dashed = "dashed";
+        public const String Dashed = "dashed";
 
         /// <summary>
         /// The wavy keyword.
         /// </summary>
-        public static readonly String Wavy = "wavy";
+        public const String Wavy = "wavy";
 
         /// <summary>
         /// The capitalize keyword.
         /// </summary>
-        public static readonly String Capitalize = "capitalize";
+        public const String Capitalize = "capitalize";
 
         /// <summary>
         /// The uppercase keyword.
         /// </summary>
-        public static readonly String Uppercase = "uppercase";
+        public const String Uppercase = "uppercase";
 
         /// <summary>
         /// The lowercase keyword.
         /// </summary>
-        public static readonly String Lowercase = "lowercase";
+        public const String Lowercase = "lowercase";
 
         /// <summary>
         /// The full-width keyword.
         /// </summary>
-        public static readonly String FullWidth = "full-width";
+        public const String FullWidth = "full-width";
 
         /// <summary>
         /// The baseline keyword.
         /// </summary>
-        public static readonly String Baseline = "baseline";
+        public const String Baseline = "baseline";
 
         /// <summary>
         /// The sub keyword.
         /// </summary>
-        public static readonly String Sub = "sub";
+        public const String Sub = "sub";
 
         /// <summary>
         /// The super keyword.
         /// </summary>
-        public static readonly String Super = "super";
+        public const String Super = "super";
 
         /// <summary>
         /// The text-top keyword.
         /// </summary>
-        public static readonly String TextTop = "text-top";
+        public const String TextTop = "text-top";
 
         /// <summary>
         /// The text-bottom keyword.
         /// </summary>
-        public static readonly String TextBottom = "text-bottom";
+        public const String TextBottom = "text-bottom";
 
         /// <summary>
         /// The middle keyword.
         /// </summary>
-        public static readonly String Middle = "middle";
+        public const String Middle = "middle";
 
         /// <summary>
         /// The top keyword.
         /// </summary>
-        public static readonly String Top = "top";
+        public const String Top = "top";
 
         /// <summary>
         /// The bottom keyword.
         /// </summary>
-        public static readonly String Bottom = "bottom";
+        public const String Bottom = "bottom";
 
         /// <summary>
         /// The open-quote keyword.
         /// </summary>
-        public static readonly String OpenQuote = "open-quote";
+        public const String OpenQuote = "open-quote";
 
         /// <summary>
         /// The no-open-quote keyword.
         /// </summary>
-        public static readonly String NoOpenQuote = "no-open-quote";
+        public const String NoOpenQuote = "no-open-quote";
 
         /// <summary>
         /// The close-quote keyword.
         /// </summary>
-        public static readonly String CloseQuote = "close-quote";
+        public const String CloseQuote = "close-quote";
 
         /// <summary>
         /// The no-close-quote keyword.
         /// </summary>
-        public static readonly String NoCloseQuote = "no-close-quote";
+        public const String NoCloseQuote = "no-close-quote";
 
         /// <summary>
         /// The embed keyword.
         /// </summary>
-        public static readonly String Embed = "embed";
+        public const String Embed = "embed";
 
         /// <summary>
         /// The isolate keyword.
         /// </summary>
-        public static readonly String Isolate = "isolate";
+        public const String Isolate = "isolate";
 
         /// <summary>
         /// The isolate-override keyword.
         /// </summary>
-        public static readonly String IsolateOverride = "isolate-override";
+        public const String IsolateOverride = "isolate-override";
 
         /// <summary>
         /// The bidi-override keyword.
         /// </summary>
-        public static readonly String BidiOverride = "bidi-override";
+        public const String BidiOverride = "bidi-override";
 
         /// <summary>
         /// The plaintext keyword.
         /// </summary>
-        public static readonly String Plaintext = "plaintext";
+        public const String Plaintext = "plaintext";
 
         /// <summary>
         /// The default keyword.
         /// </summary>
-        public static readonly String Default = "default";
+        public const String Default = "default";
 
         /// <summary>
         /// The context-menu keyword.
         /// </summary>
-        public static readonly String ContextMenu = "context-menu";
+        public const String ContextMenu = "context-menu";
 
         /// <summary>
         /// The help keyword.
         /// </summary>
-        public static readonly String Help = "help";
+        public const String Help = "help";
 
         /// <summary>
         /// The pointer keyword.
         /// </summary>
-        public static readonly String Pointer = "pointer";
+        public const String Pointer = "pointer";
 
         /// <summary>
         /// The progress keyword.
         /// </summary>
-        public static readonly String Progress = "progress";
+        public const String Progress = "progress";
 
         /// <summary>
         /// The wait keyword.
         /// </summary>
-        public static readonly String Wait = "wait";
+        public const String Wait = "wait";
 
         /// <summary>
         /// The cell keyword.
         /// </summary>
-        public static readonly String Cell = "cell";
+        public const String Cell = "cell";
 
         /// <summary>
         /// The crosshair keyword.
         /// </summary>
-        public static readonly String Crosshair = "crosshair";
+        public const String Crosshair = "crosshair";
 
         /// <summary>
         /// The text keyword.
         /// </summary>
-        public static readonly String Text = "text";
+        public const String Text = "text";
 
         /// <summary>
         /// The vertical-text keyword.
         /// </summary>
-        public static readonly String VerticalText = "vertical-text";
+        public const String VerticalText = "vertical-text";
 
         /// <summary>
         /// The alias keyword.
         /// </summary>
-        public static readonly String Alias = "alias";
+        public const String Alias = "alias";
 
         /// <summary>
         /// The copy keyword.
         /// </summary>
-        public static readonly String Copy = "copy";
+        public const String Copy = "copy";
 
         /// <summary>
         /// The move keyword.
         /// </summary>
-        public static readonly String Move = "move";
+        public const String Move = "move";
 
         /// <summary>
         /// The no-drop keyword.
         /// </summary>
-        public static readonly String NoDrop = "no-drop";
+        public const String NoDrop = "no-drop";
 
         /// <summary>
         /// The not-allowed keyword.
         /// </summary>
-        public static readonly String NotAllowed = "not-allowed";
+        public const String NotAllowed = "not-allowed";
 
         /// <summary>
         /// The e-resize keyword.
         /// </summary>
-        public static readonly String EastResize = "e-resize";
+        public const String EastResize = "e-resize";
 
         /// <summary>
         /// The n-resize keyword.
         /// </summary>
-        public static readonly String NorthResize = "n-resize";
+        public const String NorthResize = "n-resize";
 
         /// <summary>
         /// The ne-resize keyword.
         /// </summary>
-        public static readonly String NorthEastResize = "ne-resize";
+        public const String NorthEastResize = "ne-resize";
 
         /// <summary>
         /// The nw-resize keyword.
         /// </summary>
-        public static readonly String NorthWestResize = "nw-resize";
+        public const String NorthWestResize = "nw-resize";
 
         /// <summary>
         /// The s-resize keyword.
         /// </summary>
-        public static readonly String SouthResize = "s-resize";
+        public const String SouthResize = "s-resize";
 
         /// <summary>
         /// The se-resize keyword.
         /// </summary>
-        public static readonly String SouthEastResize = "se-resize";
+        public const String SouthEastResize = "se-resize";
 
         /// <summary>
         /// The sw-resize keyword.
         /// </summary>
-        public static readonly String SouthWestResize = "sw-resize";
+        public const String SouthWestResize = "sw-resize";
 
         /// <summary>
         /// The w-resize keyword.
         /// </summary>
-        public static readonly String WestResize = "w-resize";
+        public const String WestResize = "w-resize";
 
         /// <summary>
         /// The ew-resize keyword.
         /// </summary>
-        public static readonly String EastWestResize = "ew-resize";
+        public const String EastWestResize = "ew-resize";
 
         /// <summary>
         /// The ns-resize keyword.
         /// </summary>
-        public static readonly String NorthSouthResize = "ns-resize";
+        public const String NorthSouthResize = "ns-resize";
 
         /// <summary>
         /// The nesw-resize keyword.
         /// </summary>
-        public static readonly String NorthEastSouthWestResize = "nesw-resize";
+        public const String NorthEastSouthWestResize = "nesw-resize";
 
         /// <summary>
         /// The nwse-resize keyword.
         /// </summary>
-        public static readonly String NorthWestSouthEastResize = "nwse-resize";
+        public const String NorthWestSouthEastResize = "nwse-resize";
 
         /// <summary>
         /// The col-resize keyword.
         /// </summary>
-        public static readonly String ColResize = "col-resize";
+        public const String ColResize = "col-resize";
 
         /// <summary>
         /// The row-resize keyword.
         /// </summary>
-        public static readonly String RowResize = "row-resize";
+        public const String RowResize = "row-resize";
 
         /// <summary>
         /// The all-scroll keyword.
         /// </summary>
-        public static readonly String AllScroll = "all-scroll";
+        public const String AllScroll = "all-scroll";
 
         /// <summary>
         /// The zoom-in keyword.
         /// </summary>
-        public static readonly String ZoomIn = "zoom-in";
+        public const String ZoomIn = "zoom-in";
 
         /// <summary>
         /// The zoom-out keyword.
         /// </summary>
-        public static readonly String ZoomOut = "zoom-out";
+        public const String ZoomOut = "zoom-out";
 
         /// <summary>
         /// The grab keyword.
         /// </summary>
-        public static readonly String Grab = "grab";
+        public const String Grab = "grab";
 
         /// <summary>
         /// The grabbing keyword.
         /// </summary>
-        public static readonly String Grabbing = "grabbing";
+        public const String Grabbing = "grabbing";
 
         /// <summary>
         /// The thin keyword.
         /// </summary>
-        public static readonly String Thin = "thin";
+        public const String Thin = "thin";
 
         /// <summary>
         /// The medium keyword.
         /// </summary>
-        public static readonly String Medium = "medium";
+        public const String Medium = "medium";
 
         /// <summary>
         /// The thick keyword.
         /// </summary>
-        public static readonly String Thick = "thick";
+        public const String Thick = "thick";
 
         /// <summary>
         /// The inside keyword.
         /// </summary>
-        public static readonly String Inside = "inside";
+        public const String Inside = "inside";
 
         /// <summary>
         /// The outside keyword.
         /// </summary>
-        public static readonly String Outside = "outside";
+        public const String Outside = "outside";
 
         /// <summary>
         /// The border-box keyword.
         /// </summary>
-        public static readonly String BorderBox = "border-box";
+        public const String BorderBox = "border-box";
 
         /// <summary>
         /// The padding-box keyword.
         /// </summary>
-        public static readonly String PaddingBox = "padding-box";
+        public const String PaddingBox = "padding-box";
 
         /// <summary>
         /// The content-box keyword.
         /// </summary>
-        public static readonly String ContentBox = "content-box";
+        public const String ContentBox = "content-box";
 
         /// <summary>
         /// The reverse keyword.
         /// </summary>
-        public static readonly String Reverse = "reverse";
+        public const String Reverse = "reverse";
 
         /// <summary>
         /// The alternate keyword.
         /// </summary>
-        public static readonly String Alternate = "alternate";
+        public const String Alternate = "alternate";
 
         /// <summary>
         /// The alternate-reverse keyword.
         /// </summary>
-        public static readonly String AlternateReverse = "alternate-reverse";
+        public const String AlternateReverse = "alternate-reverse";
 
         /// <summary>
         /// The ease keyword.
         /// </summary>
-        public static readonly String Ease = "ease";
+        public const String Ease = "ease";
 
         /// <summary>
         /// The ease-in keyword.
         /// </summary>
-        public static readonly String EaseIn = "ease-in";
+        public const String EaseIn = "ease-in";
 
         /// <summary>
         /// The ease-out keyword.
         /// </summary>
-        public static readonly String EaseOut = "ease-out";
+        public const String EaseOut = "ease-out";
 
         /// <summary>
         /// The ease-in-out keyword.
         /// </summary>
-        public static readonly String EaseInOut = "ease-in-out";
+        public const String EaseInOut = "ease-in-out";
 
         /// <summary>
         /// The linear keyword.
         /// </summary>
-        public static readonly String Linear = "linear";
+        public const String Linear = "linear";
 
         /// <summary>
         /// The step-start keyword.
         /// </summary>
-        public static readonly String StepStart = "step-start";
+        public const String StepStart = "step-start";
 
         /// <summary>
         /// The step-end keyword.
         /// </summary>
-        public static readonly String StepEnd = "step-end";
+        public const String StepEnd = "step-end";
 
         /// <summary>
         /// The disc keyword.
         /// </summary>
-        public static readonly String Disc = "disc";
+        public const String Disc = "disc";
 
         /// <summary>
         /// The circle keyword.
         /// </summary>
-        public static readonly String Circle = "circle";
+        public const String Circle = "circle";
 
         /// <summary>
         /// The square keyword.
         /// </summary>
-        public static readonly String Square = "square";
+        public const String Square = "square";
 
         /// <summary>
         /// The decimal keyword.
         /// </summary>
-        public static readonly String Decimal = "decimal";
+        public const String Decimal = "decimal";
 
         /// <summary>
         /// The decimal-leading-zero keyword.
         /// </summary>
-        public static readonly String DecimalLeadingZero = "decimal-leading-zero";
+        public const String DecimalLeadingZero = "decimal-leading-zero";
 
         /// <summary>
         /// The lower-roman keyword.
         /// </summary>
-        public static readonly String LowerRoman = "lower-roman";
+        public const String LowerRoman = "lower-roman";
 
         /// <summary>
         /// The upper-roman keyword.
         /// </summary>
-        public static readonly String UpperRoman = "upper-roman";
+        public const String UpperRoman = "upper-roman";
 
         /// <summary>
         /// The lower-greek keyword.
         /// </summary>
-        public static readonly String LowerGreek = "lower-greek";
+        public const String LowerGreek = "lower-greek";
 
         /// <summary>
         /// The lower-latin keyword.
         /// </summary>
-        public static readonly String LowerLatin = "lower-latin";
+        public const String LowerLatin = "lower-latin";
 
         /// <summary>
         /// The upper-latin keyword.
         /// </summary>
-        public static readonly String UpperLatin = "upper-latin";
+        public const String UpperLatin = "upper-latin";
 
         /// <summary>
         /// The malayalam keyword.
         /// </summary>
-        public static readonly String Malayalam = "malayalam";
+        public const String Malayalam = "malayalam";
 
         /// <summary>
         /// The myanmar keyword.
         /// </summary>
-        public static readonly String Myanmar = "myanmar";
+        public const String Myanmar = "myanmar";
 
         /// <summary>
         /// The mongolian keyword.
         /// </summary>
-        public static readonly String Mongolian = "mongolian";
+        public const String Mongolian = "mongolian";
 
         /// <summary>
         /// The oriya keyword.
         /// </summary>
-        public static readonly String Oriya = "oriya";
+        public const String Oriya = "oriya";
 
         /// <summary>
         /// The persian keyword.
         /// </summary>
-        public static readonly String Persian = "persian";
+        public const String Persian = "persian";
 
         /// <summary>
         /// The tamil keyword.
         /// </summary>
-        public static readonly String Tamil = "tamil";
+        public const String Tamil = "tamil";
 
         /// <summary>
         /// The thai keyword.
         /// </summary>
-        public static readonly String Thai = "thai";
+        public const String Thai = "thai";
 
         /// <summary>
         /// The telugu keyword.
         /// </summary>
-        public static readonly String Telugu = "telugu";
+        public const String Telugu = "telugu";
 
         /// <summary>
         /// The lao keyword.
         /// </summary>
-        public static readonly String Lao = "lao";
+        public const String Lao = "lao";
 
         /// <summary>
         /// The tibetan keyword.
         /// </summary>
-        public static readonly String Tibetan = "tibetan";
+        public const String Tibetan = "tibetan";
 
         /// <summary>
         /// The trad-chinese-formal keyword.
         /// </summary>
-        public static readonly String TradChineseFormal = "trad-chinese-formal";
+        public const String TradChineseFormal = "trad-chinese-formal";
 
         /// <summary>
         /// The trad-chinese-informal keyword.
         /// </summary>
-        public static readonly String TradChineseInformal = "trad-chinese-informal";
+        public const String TradChineseInformal = "trad-chinese-informal";
 
         /// <summary>
         /// The armenian keyword.
         /// </summary>
-        public static readonly String Armenian = "armenian";
+        public const String Armenian = "armenian";
 
         /// <summary>
         /// The lower-armenian keyword.
         /// </summary>
-        public static readonly String LowerArmenian = "lower-armenian";
+        public const String LowerArmenian = "lower-armenian";
 
         /// <summary>
         /// The upper-armenian keyword.
         /// </summary>
-        public static readonly String UpperArmenian = "upper-armenian";
+        public const String UpperArmenian = "upper-armenian";
 
         /// <summary>
         /// The georgian keyword.
         /// </summary>
-        public static readonly String Georgian = "georgian";
+        public const String Georgian = "georgian";
 
         /// <summary>
         /// The kannada keyword.
         /// </summary>
-        public static readonly String Kannada = "kannada";
+        public const String Kannada = "kannada";
 
         /// <summary>
         /// The disclosure-open keyword.
         /// </summary>
-        public static readonly String DisclosureOpen = "disclosure-open";
+        public const String DisclosureOpen = "disclosure-open";
 
         /// <summary>
         /// The disclosure-closed keyword.
         /// </summary>
-        public static readonly String DisclosureClosed = "disclosure-closed";
+        public const String DisclosureClosed = "disclosure-closed";
 
         /// <summary>
         /// The lower-alpha keyword.
         /// </summary>
-        public static readonly String LowerAlpha = "lower-alpha";
+        public const String LowerAlpha = "lower-alpha";
 
         /// <summary>
         /// The upper-alpha keyword.
         /// </summary>
-        public static readonly String UpperAlpha = "upper-alpha";
+        public const String UpperAlpha = "upper-alpha";
 
         /// <summary>
         /// The xx-small keyword.
         /// </summary>
-        public static readonly String XxSmall = "xx-small";
+        public const String XxSmall = "xx-small";
 
         /// <summary>
         /// The x-small keyword.
         /// </summary>
-        public static readonly String XSmall = "x-small";
+        public const String XSmall = "x-small";
 
         /// <summary>
         /// The small keyword.
         /// </summary>
-        public static readonly String Small = "small";
+        public const String Small = "small";
 
         /// <summary>
         /// The large keyword.
         /// </summary>
-        public static readonly String Large = "large";
+        public const String Large = "large";
 
         /// <summary>
         /// The x-large keyword.
         /// </summary>
-        public static readonly String XLarge = "x-large";
+        public const String XLarge = "x-large";
 
         /// <summary>
         /// The xx-large keyword.
         /// </summary>
-        public static readonly String XxLarge = "xx-large";
+        public const String XxLarge = "xx-large";
 
         /// <summary>
         /// The xxx-large keyword.
         /// </summary>
-        public static readonly String XxxLarge = "xxx-large";
+        public const String XxxLarge = "xxx-large";
 
         /// <summary>
         /// The larger keyword.
         /// </summary>
-        public static readonly String Larger = "larger";
+        public const String Larger = "larger";
 
         /// <summary>
         /// The smaller keyword.
         /// </summary>
-        public static readonly String Smaller = "smaller";
+        public const String Smaller = "smaller";
 
         /// <summary>
         /// The and keyword.
         /// </summary>
-        public static readonly String And = "and";
+        public const String And = "and";
 
         /// <summary>
         /// The or keyword.
         /// </summary>
-        public static readonly String Or = "or";
+        public const String Or = "or";
 
         /// <summary>
         /// The not keyword.
         /// </summary>
-        public static readonly String Not = "not";
+        public const String Not = "not";
 
         /// <summary>
         /// The only keyword.
         /// </summary>
-        public static readonly String Only = "only";
+        public const String Only = "only";
 
         /// <summary>
         /// The show keyword.
         /// </summary>
-        public static readonly String Show = "show";
+        public const String Show = "show";
 
         /// <summary>
         /// The hide keyword.
         /// </summary>
-        public static readonly String Hide = "hide";
+        public const String Hide = "hide";
 
         /// <summary>
         /// The invert keyword.
         /// </summary>
-        public static readonly String Invert = "invert";
+        public const String Invert = "invert";
 
         /// <summary>
         /// The flat keyword.
         /// </summary>
-        public static readonly String Flat = "flat";
+        public const String Flat = "flat";
 
         /// <summary>
         /// The preserve-3d keyword.
         /// </summary>
-        public static readonly String Preserve3d = "preserve-3d";
+        public const String Preserve3d = "preserve-3d";
 
         /// <summary>
         /// The small-caps keyword.
         /// </summary>
-        public static readonly String SmallCaps = "small-caps";
+        public const String SmallCaps = "small-caps";
 
         /// <summary>
         /// The slice keyword.
         /// </summary>
-        public static readonly String Slice = "slice";
+        public const String Slice = "slice";
 
         /// <summary>
         /// The clone keyword.
         /// </summary>
-        public static readonly String Clone = "clone";
+        public const String Clone = "clone";
 
         /// <summary>
         /// The running keyword.
         /// </summary>
-        public static readonly String Running = "running";
+        public const String Running = "running";
 
         /// <summary>
         /// The paused keyword.
         /// </summary>
-        public static readonly String Paused = "paused";
+        public const String Paused = "paused";
 
         /// <summary>
         /// The infinite keyword.
         /// </summary>
-        public static readonly String Infinite = "infinite";
+        public const String Infinite = "infinite";
 
         /// <summary>
         /// The cover keyword.
         /// </summary>
-        public static readonly String Cover = "cover";
+        public const String Cover = "cover";
 
         /// <summary>
         /// The contain keyword.
         /// </summary>
-        public static readonly String Contain = "contain";
+        public const String Contain = "contain";
 
         /// <summary>
         /// The ltr keyword.
         /// </summary>
-        public static readonly String Ltr = "ltr";
+        public const String Ltr = "ltr";
 
         /// <summary>
         /// The rtl keyword.
         /// </summary>
-        public static readonly String Rtl = "rtl";
+        public const String Rtl = "rtl";
 
         /// <summary>
         /// The all keyword.
         /// </summary>
-        public static readonly String All = "all";
+        public const String All = "all";
 
         /// <summary>
         /// The balance keyword.
         /// </summary>
-        public static readonly String Balance = "balance";
+        public const String Balance = "balance";
 
         /// <summary>
         /// The separate keyword.
         /// </summary>
-        public static readonly String Separate = "separate";
+        public const String Separate = "separate";
 
         /// <summary>
         /// The match-parent keyword.
         /// </summary>
-        public static readonly String MatchParent = "match-parent";
+        public const String MatchParent = "match-parent";
 
         /// <summary>
         /// The start keyword.
         /// </summary>
-        public static readonly String Start = "start";
+        public const String Start = "start";
 
         /// <summary>
         /// The end keyword.
         /// </summary>
-        public static readonly String End = "end";
+        public const String End = "end";
 
         /// <summary>
         /// The fill keyword.
         /// </summary>
-        public static readonly String Fill = "fill";
+        public const String Fill = "fill";
 
         /// <summary>
         /// The cjk-decimal keyword.
         /// </summary>
-        public static readonly String CjkDecimal = "cjk-decimal";
+        public const String CjkDecimal = "cjk-decimal";
 
         /// <summary>
         /// The cjk-earthly-branch keyword.
         /// </summary>
-        public static readonly String CjkEarthlyBranch = "cjk-earthly-branch";
+        public const String CjkEarthlyBranch = "cjk-earthly-branch";
 
         /// <summary>
         /// The cjk-heavenly-stem keyword.
         /// </summary>
-        public static readonly String CjkHeavenlyStem = "cjk-heavenly-stem";
+        public const String CjkHeavenlyStem = "cjk-heavenly-stem";
 
         /// <summary>
         /// The cjk-ideographic keyword.
         /// </summary>
-        public static readonly String CjkIdeographic = "cjk-ideographic";
+        public const String CjkIdeographic = "cjk-ideographic";
 
         /// <summary>
         /// The bengali keyword.
         /// </summary>
-        public static readonly String Bengali = "bengali";
+        public const String Bengali = "bengali";
 
         /// <summary>
         /// The cambodian keyword.
         /// </summary>
-        public static readonly String Cambodian = "cambodian";
+        public const String Cambodian = "cambodian";
 
         /// <summary>
         /// The devanagari keyword.
         /// </summary>
-        public static readonly String Devanagari = "devanagari";
+        public const String Devanagari = "devanagari";
 
         /// <summary>
         /// The ethiopic-numeric keyword.
         /// </summary>
-        public static readonly String EthiopicNumeric = "ethiopic-numeric";
+        public const String EthiopicNumeric = "ethiopic-numeric";
 
         /// <summary>
         /// The gurmukhi keyword.
         /// </summary>
-        public static readonly String Gurmukhi = "gurmukhi";
+        public const String Gurmukhi = "gurmukhi";
 
         /// <summary>
         /// The gujarati keyword.
         /// </summary>
-        public static readonly String Gujarati = "gujarati";
+        public const String Gujarati = "gujarati";
 
         /// <summary>
         /// The hebrew keyword.
         /// </summary>
-        public static readonly String Hebrew = "hebrew";
+        public const String Hebrew = "hebrew";
 
         /// <summary>
         /// The hiragana keyword.
         /// </summary>
-        public static readonly String Hiragana = "hiragana"; 
+        public const String Hiragana = "hiragana";
 
         /// <summary>
         /// The hiragana-iroha keyword.
         /// </summary>
-        public static readonly String HiraganaIroha = "hiragana-iroha";
+        public const String HiraganaIroha = "hiragana-iroha";
 
         /// <summary>
         /// The japanese-formal keyword.
         /// </summary>
-        public static readonly String JapaneseFormal = "japanese-formal";
+        public const String JapaneseFormal = "japanese-formal";
 
         /// <summary>
         /// The japanese-informal keyword.
         /// </summary>
-        public static readonly String JapaneseInformal = "japanese-informal";
+        public const String JapaneseInformal = "japanese-informal";
 
         /// <summary>
         /// The simp-chinese-informal keyword.
         /// </summary>
-        public static readonly String SimpChineseInformal = "simp-chinese-informal";
+        public const String SimpChineseInformal = "simp-chinese-informal";
 
         /// <summary>
         /// The simp-chinese-formal keyword.
         /// </summary>
-        public static readonly String SimpChineseFormal = "simp-chinese-formal";
+        public const String SimpChineseFormal = "simp-chinese-formal";
 
         /// <summary>
         /// The korean-hangul-formal keyword.
         /// </summary>
-        public static readonly String KoreanHangulFormal = "korean-hangul-formal";
+        public const String KoreanHangulFormal = "korean-hangul-formal";
 
         /// <summary>
         /// The korean-hanja-formal keyword.
         /// </summary>
-        public static readonly String KoreanHanjaFormal = "korean-hanja-formal";
+        public const String KoreanHanjaFormal = "korean-hanja-formal";
 
         /// <summary>
         /// The korean-hanja-informal keyword.
         /// </summary>
-        public static readonly String KoreanHanjaInformal = "korean-hanja-informal";
+        public const String KoreanHanjaInformal = "korean-hanja-informal";
 
         /// <summary>
         /// The screen keyword.
         /// </summary>
-        public static readonly String Screen = "screen";
+        public const String Screen = "screen";
 
         /// <summary>
         /// The print keyword.
         /// </summary>
-        public static readonly String Print = "print";
+        public const String Print = "print";
 
         /// <summary>
         /// The speech keyword.
         /// </summary>
-        public static readonly String Speech = "speech";
+        public const String Speech = "speech";
 
         /// <summary>
         /// The stylesheet keyword.
         /// </summary>
-        public static readonly String StyleSheet = "stylesheet";
+        public const String StyleSheet = "stylesheet";
 
         /// <summary>
         /// The portrait keyword.
         /// </summary>
-        public static readonly String Portrait = "portrait";
+        public const String Portrait = "portrait";
 
         /// <summary>
         /// The landscape keyword.
         /// </summary>
-        public static readonly String Landscape = "landscape";
+        public const String Landscape = "landscape";
 
         /// <summary>
         /// The progressive keyword.
         /// </summary>
-        public static readonly String Progressive = "progressive";
+        public const String Progressive = "progressive";
 
         /// <summary>
         /// The interlace keyword.
         /// </summary>
-        public static readonly String Interlace = "interlace";
+        public const String Interlace = "interlace";
 
         /// <summary>
         /// The at keyword.
         /// </summary>
-        public static readonly String At = "at";
+        public const String At = "at";
 
         /// <summary>
         /// The color keyword.
         /// </summary>
-        public static readonly String Color = "color";
+        public const String Color = "color";
 
         /// <summary>
         /// The color-burn keyword.
         /// </summary>
-        public static readonly String ColorBurn = "color-burn";
+        public const String ColorBurn = "color-burn";
 
         /// <summary>
         /// The color-dodge keyword.
         /// </summary>
-        public static readonly String ColorDodge = "color-dodge";
+        public const String ColorDodge = "color-dodge";
 
         /// <summary>
         /// The darken keyword.
         /// </summary>
-        public static readonly String Darken = "darken";
+        public const String Darken = "darken";
 
         /// <summary>
         /// The difference keyword.
         /// </summary>
-        public static readonly String Difference = "difference";
+        public const String Difference = "difference";
 
         /// <summary>
         /// The exclusion keyword.
         /// </summary>
-        public static readonly String Exclusion = "exclusion";
+        public const String Exclusion = "exclusion";
 
         /// <summary>
         /// The hard-light keyword.
         /// </summary>
-        public static readonly String HardLight = "hard-light";
+        public const String HardLight = "hard-light";
 
         /// <summary>
         /// The hue keyword.
         /// </summary>
-        public static readonly String Hue = "hue";
+        public const String Hue = "hue";
 
         /// <summary>
         /// The lighten keyword.
         /// </summary>
-        public static readonly String Lighten = "lighten";
+        public const String Lighten = "lighten";
 
         /// <summary>
         /// The luminosity keyword.
         /// </summary>
-        public static readonly String Luminosity = "luminosity";
+        public const String Luminosity = "luminosity";
 
         /// <summary>
         /// The multiply keyword.
         /// </summary>
-        public static readonly String Multiply = "multiply";
+        public const String Multiply = "multiply";
 
         /// <summary>
         /// The overlay keyword.
         /// </summary>
-        public static readonly String Overlay = "overlay";
+        public const String Overlay = "overlay";
 
         /// <summary>
         /// The saturation keyword.
         /// </summary>
-        public static readonly String Saturation = "saturation";
+        public const String Saturation = "saturation";
 
         /// <summary>
         /// The soft-light keyword.
         /// </summary>
-        public static readonly String SoftLight = "soft-light";
+        public const String SoftLight = "soft-light";
 
         /// <summary>
         /// The ellipse keyword.
         /// </summary>
-        public static readonly String Ellipse = "ellipse";
+        public const String Ellipse = "ellipse";
 
         /// <summary>
         /// The closest-side keyword.
         /// </summary>
-        public static readonly String ClosestSide = "closest-side";
+        public const String ClosestSide = "closest-side";
 
         /// <summary>
         /// The closest-corner keyword.
         /// </summary>
-        public static readonly String ClosestCorner = "closest-corner";
+        public const String ClosestCorner = "closest-corner";
 
         /// <summary>
         /// The farthest-side keyword.
         /// </summary>
-        public static readonly String FarthestSide = "farthest-side";
+        public const String FarthestSide = "farthest-side";
 
         /// <summary>
         /// The farthest-corner keyword.
         /// </summary>
-        public static readonly String FarthestCorner = "farthest-corner";
+        public const String FarthestCorner = "farthest-corner";
 
         /// <summary>
         /// The slow keyword.
         /// </summary>
-        public static readonly String Slow = "slow";
+        public const String Slow = "slow";
 
         /// <summary>
         /// The enabled keyword.
         /// </summary>
-        public static readonly String Enabled = "enabled";
+        public const String Enabled = "enabled";
 
         /// <summary>
         /// The disabled keyword.
         /// </summary>
-        public static readonly String Disabled = "disabled";
+        public const String Disabled = "disabled";
 
         /// <summary>
         /// The initial-only keyword.
         /// </summary>
-        public static readonly String InitialOnly = "initial-only";
+        public const String InitialOnly = "initial-only";
 
         /// <summary>
         /// The coarse keyword.
         /// </summary>
-        public static readonly String Coarse = "coarse";
+        public const String Coarse = "coarse";
 
         /// <summary>
         /// The fine keyword.
         /// </summary>
-        public static readonly String Fine = "fine";
+        public const String Fine = "fine";
 
         /// <summary>
         /// The on-demand keyword.
         /// </summary>
-        public static readonly String OnDemand = "on-demand";
+        public const String OnDemand = "on-demand";
 
         /// <summary>
         /// The over keyword.
         /// </summary>
-        public static readonly String Over = "over";
+        public const String Over = "over";
 
         /// <summary>
         /// The under keyword.
         /// </summary>
-        public static readonly String Under = "under";
+        public const String Under = "under";
 
         /// <summary>
         /// The hover keyword.
         /// </summary>
-        public static readonly String Hover = "hover";
+        public const String Hover = "hover";
 
         /// <summary>
         /// The scale-down keyword.
         /// </summary>
-        public static readonly String ScaleDown = "scale-down";
+        public const String ScaleDown = "scale-down";
 
         /// <summary>
         /// The currentColor keyword.
         /// </summary>
-        public static readonly String CurrentColor = "currentColor";
+        public const String CurrentColor = "currentColor";
 
         /// <summary>
         /// The left top keyword.
         /// </summary>
-        public static readonly String LeftTop = "left top";
+        public const String LeftTop = "left top";
 
         /// <summary>
         /// The right top keyword.
         /// </summary>
-        public static readonly String RightTop = "right top";
+        public const String RightTop = "right top";
 
         /// <summary>
         /// The left bottom keyword.
         /// </summary>
-        public static readonly String LeftBottom = "left bottom";
+        public const String LeftBottom = "left bottom";
 
         /// <summary>
         /// The right bottom keyword.
         /// </summary>
-        public static readonly String RightBottom = "right bottom";
+        public const String RightBottom = "right bottom";
 
         /// <summary>
         /// The stroke keyword.
         /// </summary>
-        public static readonly String Stroke = "stroke";
+        public const String Stroke = "stroke";
 
         /// <summary>
         /// The painted keyword.
         /// </summary>
-        public static readonly String Painted = "painted";
+        public const String Painted = "painted";
 
         /// <summary>
         /// The visibleStroke keyword.
         /// </summary>
-        public static readonly String VisibleStroke = "visibleStroke";
+        public const String VisibleStroke = "visibleStroke";
 
         /// <summary>
         /// The visibleFill keyword.
         /// </summary>
-        public static readonly String VisibleFill = "visibleFill";
+        public const String VisibleFill = "visibleFill";
 
         /// <summary>
         /// The visiblePainted keyword.
         /// </summary>
-        public static readonly String VisiblePainted = "visiblePainted";
+        public const String VisiblePainted = "visiblePainted";
 
         /// <summary>
         /// The open keyword.
         /// </summary>
-        public static readonly String Open = "open";
+        public const String Open = "open";
 
         /// <summary>
         /// The closed keyword.
         /// </summary>
-        public static readonly String Closed = "closed";
+        public const String Closed = "closed";
 
         /// <summary>
         /// The fit-content keyword.
         /// </summary>
-        public static readonly String FitContent = "fit-content";
+        public const String FitContent = "fit-content";
 
         /// <summary>
         /// The x keyword.
         /// </summary>
-        public static readonly String X = "x";
+        public const String X = "x";
 
         /// <summary>
         /// The y keyword.
         /// </summary>
-        public static readonly String Y = "y";
+        public const String Y = "y";
 
         /// <summary>
         /// The proximity keyword.
         /// </summary>
-        public static readonly String Proximity = "proximity";
+        public const String Proximity = "proximity";
 
         /// <summary>
         /// The mandatory keyword.
         /// </summary>
-        public static readonly String Mandatory = "mandatory";
+        public const String Mandatory = "mandatory";
     }
 }

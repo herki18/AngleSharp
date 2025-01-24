@@ -3,6 +3,7 @@ namespace AngleSharp.Renderer.Tests
     using Core.Tests.Mocks;
     using Css;
     using Dom;
+    using Mocks;
     using NUnit.Framework;
 
     public class Test1
@@ -57,8 +58,8 @@ test
         [Test]
         public void Test()
         {
-            var renderEngine = new RenderEngine(
-                _document!.DefaultView!, new DefaultRenderDevice());
+            var renderEngine = new DocumentRenderer(
+                _document!.DefaultView!, new DefaultRenderDevice(), new MockRenderer());
 
             renderEngine.Update();
 

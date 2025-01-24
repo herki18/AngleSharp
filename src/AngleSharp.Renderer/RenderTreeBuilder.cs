@@ -9,15 +9,16 @@ namespace AngleSharp.Renderer
     using AngleSharp.Dom;
     using Css;
     using Css.RenderTree;
+    using Html.Dom;
 
-    public class RenderTree
+    public class RenderTreeBuilder
     {
         private readonly IBrowsingContext _context;
         private readonly IWindow _window;
         private readonly IEnumerable<ICssStyleSheet> _defaultSheets;
         private readonly IRenderDevice _device;
 
-        public RenderTree(IWindow window, IRenderDevice? device = null)
+        public RenderTreeBuilder(IWindow window, IRenderDevice? device = null)
         {
             var ctx = window.Document.Context;
             var defaultStyleSheetProvider = ctx.GetServices<ICssDefaultStyleSheetProvider>();
@@ -44,7 +45,7 @@ namespace AngleSharp.Renderer
             return rootNode;
         }
 
-        private ElementRenderNode? RenderElement(
+        private ElementNode? RenderElement(
             Double rootFontSize,
             IElement reference,
             StyleCollection collection,
@@ -86,15 +87,15 @@ namespace AngleSharp.Renderer
                 computedStyle.SetDeclarations(new[] { lineHeightProperty });
             }
 
-            var node = new ElementRenderNode(reference, children!, style, computedStyle);
+            var node = new ElementNode(reference, children!, style, computedStyle);
 
             foreach (var child in children)
             {
-                if (child is ElementRenderNode elementChild)
+                if (child is ElementNode elementChild)
                 {
                     elementChild.Parent = node;
                 }
-                else if (child is TextRenderNode textChild)
+                else if (child is TextNode textChild)
                 {
                     textChild.Parent = node;
                 }
@@ -107,7 +108,7 @@ namespace AngleSharp.Renderer
             return node;
         }
 
-        private IRenderNode? RenderText(IText text) => new TextRenderNode(text);
+        private IRenderNode? RenderText(IText text) => new TextNode(text);
 
         private CssStyleDeclaration? Compute(Double rootFontSize, ICssStyleDeclaration style, ICssStyleDeclaration? parentStyle)
         {
@@ -239,7 +240,7 @@ namespace AngleSharp.Renderer
         /// <summary>
         /// Return true if this strategy can handle the given element node's display type, etc.
         /// </summary>
-        bool CanHandle(ElementRenderNode node);
+        bool CanHandle(ElementNode node);
 
         /// <summary>
         /// Perform the layout for this element node.
@@ -250,7 +251,7 @@ namespace AngleSharp.Renderer
         /// Returns the new offset after placing this element.
         /// </summary>
         float LayoutNode(
-            ElementRenderNode node,
+            ElementNode node,
             float parentX,
             float parentY,
             float containerWidth,
@@ -295,8 +296,14 @@ namespace AngleSharp.Renderer
             Single containerWidth,
             Single offsetYSoFar)
         {
+            if (node is ElementNode elementNode && elementNode.Ref is IHtmlHeadElement)
+            {
+                elementNode.Layout = null;
+                return offsetYSoFar;
+            }
+
             // If it's an element node, pick the right strategy
-            if (node is ElementRenderNode elemNode)
+            if (node is ElementNode elemNode)
             {
                 // Attempt to find a matching layout strategy
                 var strategy = _strategies.FirstOrDefault(s => s.CanHandle(elemNode));
@@ -310,7 +317,7 @@ namespace AngleSharp.Renderer
                     return _strategies[0].LayoutNode(elemNode, parentX, parentY, containerWidth, offsetYSoFar, this);
                 }
             }
-            else if (node is TextRenderNode textNode)
+            else if (node is TextNode textNode)
             {
                 return LayoutTextNode(textNode, parentX, parentY, containerWidth, offsetYSoFar);
             }
@@ -323,7 +330,7 @@ namespace AngleSharp.Renderer
         /// Very naive text layout (single line, no wrap).
         /// </summary>
         private Single LayoutTextNode(
-            TextRenderNode textNode,
+            TextNode textNode,
             Single parentX,
             Single parentY,
             Single containerWidth,
@@ -359,7 +366,7 @@ namespace AngleSharp.Renderer
 
     public sealed class BlockLayoutStrategy : ILayoutStrategy
     {
-        public bool CanHandle(ElementRenderNode node)
+        public bool CanHandle(ElementNode node)
         {
             if (node.ComputedStyle is null)
                 return false;
@@ -377,7 +384,7 @@ namespace AngleSharp.Renderer
         }
 
         public float LayoutNode(
-            ElementRenderNode node,
+            ElementNode node,
             float parentX,
             float parentY,
             float containerWidth,
@@ -462,6 +469,93 @@ namespace AngleSharp.Renderer
             }
             // If not found or "auto", return 0.
             return 0f;
+        }
+    }
+
+    public sealed class StyleResolver
+    {
+        private readonly IBrowsingContext _context;
+        private readonly IRenderDevice _device;
+        private readonly FontEngine _fontEngine;
+
+        public StyleResolver(IBrowsingContext context, IRenderDevice device)
+        {
+            _context = context;
+            _device = device;
+            _fontEngine = new FontEngine(context, device);
+        }
+
+        public ICssStyleDeclaration ComputeSpecifiedStyle(IElement element, StyleCollection collection)
+        {
+            return collection.ComputeCascadedStyle(element);
+        }
+
+        public ICssStyleDeclaration? ComputeComputedStyle(
+            ICssStyleDeclaration specifiedStyle,
+            ICssStyleDeclaration? parentComputedStyle,
+            double rootFontSize)
+        {
+            var computedStyle = new CssStyleDeclaration(_context);
+            // ... (existing Compute() logic from RenderTree)
+            // Use _fontEngine for font-size calculations
+            return computedStyle;
+        }
+    }
+
+    public sealed class FontEngine
+    {
+        private readonly IRenderDevice _device;
+        private readonly IBrowsingContext _context;
+
+        public FontEngine(IBrowsingContext context, IRenderDevice device)
+        {
+            _context = context;
+            _device = device;
+        }
+
+        public double ComputeFontSize(
+            ICssStyleDeclaration style,
+            ICssStyleDeclaration? parentStyle,
+            double rootFontSize)
+        {
+            if (style.GetProperty(PropertyNames.FontSize)?.RawValue is not ICssValue value)
+                return parentStyle?.GetProperty(PropertyNames.FontSize)?.RawValue switch
+                {
+                    CssLengthValue parentLength => parentLength.Value,
+                    _ => rootFontSize
+                };
+
+            return value switch
+            {
+                CssLengthValue length => length.ToPixel(_device),
+                _ => GetKeywordFontSize(value.CssText, rootFontSize)
+            };
+        }
+
+        public ICssValue? ConvertUnits(
+            ICssValue value,
+            double currentFontSize,
+            double rootFontSize,
+            ICssStyleDeclaration? parentStyle)
+        {
+            // Handle unit conversions (em, rem, %, etc.)
+            return null;
+        }
+
+        private Double GetKeywordFontSize(String keyword, Double rootFontSize)
+        {
+            return keyword switch
+            {
+                CssKeywords.XxSmall => 9,
+                CssKeywords.XSmall => 10,
+                CssKeywords.Small => 13,
+                CssKeywords.Medium => 16,
+                CssKeywords.Large => 18,
+                CssKeywords.XLarge => 24,
+                CssKeywords.XxLarge => 32,
+                CssKeywords.XxxLarge => 48,
+                _ => rootFontSize
+            };
         }
     }
 }

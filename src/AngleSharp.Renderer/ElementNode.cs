@@ -1,13 +1,14 @@
 ﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 namespace AngleSharp.Renderer
 {
+    using System;
     using System.Collections.Generic;
     using Css.Dom;
     using Dom;
 
-    public sealed class ElementRenderNode : IRenderNode
+    public sealed class ElementNode : IRenderNode
     {
-        public ElementRenderNode(IElement reference, IEnumerable<IRenderNode> children, ICssStyleDeclaration specifiedStyle, ICssStyleDeclaration? computedStyle)
+        public ElementNode(IElement reference, IEnumerable<IRenderNode> children, ICssStyleDeclaration specifiedStyle, ICssStyleDeclaration? computedStyle)
         {
             Ref = reference;
             Children = children;
@@ -29,7 +30,7 @@ namespace AngleSharp.Renderer
 
         public LayoutBox? Layout { get; set; }
 
-        public IElementWrapper? Wrapper { get; set; } // This is a Unity-specific field
+        public IRenderElement? Wrapper { get; set; } // This is a Unity-specific field
     }
 
     /// <summary>
@@ -48,6 +49,11 @@ namespace AngleSharp.Renderer
             Y = y;
             Width = width;
             Height = height;
+        }
+
+        public override String ToString()
+        {
+            return $"LayoutBox(X: {X}, Y: {Y}, Width: {Width}, Height: {Height})";
         }
     }
 }

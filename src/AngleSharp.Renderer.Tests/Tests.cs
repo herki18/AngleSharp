@@ -7,6 +7,7 @@ namespace AngleSharp.Renderer.Tests
     using System.Diagnostics;
     using Core.Tests.Mocks;
     using Css;
+    using Mocks;
 
     [TestFixture]
     public class Tests
@@ -160,8 +161,8 @@ body {
         [Test]
         public void Test1()
         {
-            var renderEngine = new RenderEngine(
-                _document!.DefaultView!, new DefaultRenderDevice());
+            var renderEngine = new DocumentRenderer(
+                _document!.DefaultView!, new DefaultRenderDevice(), new MockRenderer());
 
             renderEngine.Update();
 
