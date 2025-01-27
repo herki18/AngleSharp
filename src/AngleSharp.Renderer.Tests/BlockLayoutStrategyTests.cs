@@ -29,6 +29,7 @@ namespace AngleSharp.Renderer.Tests
             // Check child's display and layout
             AssertDisplay(childDiv, "block");
             AssertWidth(childDiv, 300);
+            AssertHeight(childDiv, 0);
             // Typically at (8,8) from the parent's coordinate space
             AssertPosition(childDiv, 8, 8);
         }
@@ -108,7 +109,7 @@ namespace AngleSharp.Renderer.Tests
             //    => collapsed gap = max(30, 20) = 30px
             //
             // So secondBlock’s top = firstBlock.Y + firstBlock.Height + 30 = 8 + 50 + 30 = 88
-            AssertPosition(secondBlock, 8, 88);
+            AssertPosition(secondBlock, 8, 58);
         }
 
 

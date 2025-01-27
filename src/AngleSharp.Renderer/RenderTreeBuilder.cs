@@ -1,14 +1,15 @@
-﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+﻿#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 namespace AngleSharp.Renderer
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using AngleSharp.Css.Dom;
     using AngleSharp.Css.Values;
     using AngleSharp.Dom;
     using Css;
-    using Css.RenderTree;
     using Html.Dom;
 
     public class RenderTreeBuilder
@@ -71,19 +72,19 @@ namespace AngleSharp.Renderer
             }
 
             // compute unitless line-height after rendering children
-            if (computedStyle?.GetProperty(PropertyNames.LineHeight).RawValue is CssLengthValue { Type: CssLengthValue.Unit.None } unitlessLineHeight)
-            {
-                var fontSize = computedStyle.GetProperty(PropertyNames.FontSize).RawValue is CssLengthValue { Type: CssLengthValue.Unit.Px } fontSizeLength
-                    ? fontSizeLength.Value
-                    : rootFontSize;
-                var pixelValue = unitlessLineHeight.Value * fontSize;
-                var computedLineHeight = new CssLengthValue(pixelValue, CssLengthValue.Unit.Px);
-
-                // create a new property because SetProperty would change the parent value
-                var lineHeightProperty = _context.CreateProperty(PropertyNames.LineHeight);
-                lineHeightProperty.RawValue = computedLineHeight;
-                computedStyle.SetDeclarations(new[] { lineHeightProperty });
-            }
+            // if (computedStyle?.GetProperty(PropertyNames.LineHeight).RawValue is CssLengthValue { Type: CssLengthValue.Unit.None } unitlessLineHeight)
+            // {
+            //     var fontSize = computedStyle.GetProperty(PropertyNames.FontSize).RawValue is CssLengthValue { Type: CssLengthValue.Unit.Px } fontSizeLength
+            //         ? fontSizeLength.Value
+            //         : rootFontSize;
+            //     var pixelValue = unitlessLineHeight.Value * fontSize;
+            //     var computedLineHeight = new CssLengthValue(pixelValue, CssLengthValue.Unit.Px);
+            //
+            //     // create a new property because SetProperty would change the parent value
+            //     var lineHeightProperty = _context.CreateProperty(PropertyNames.LineHeight);
+            //     lineHeightProperty.RawValue = computedLineHeight;
+            //     computedStyle.SetDeclarations(new[] { lineHeightProperty });
+            // }
 
             var node = new ElementNode(reference, children!, style, computedStyle);
 
@@ -306,10 +307,32 @@ namespace AngleSharp.Renderer
 
             // 4. Layout children (vertical stacking)
             float childOffsetY = 0f;
+            float previousChildMarginBottom  = 0f;
+
             foreach (var child in node.Children)
             {
                 if (child is null)
                     continue;
+
+                var childStyle = ((ElementNode)child).ComputedStyle;
+                float childMarginTop = ParsePx(childStyle, "margin-top");
+                float childMarginBottom = ParsePx(childStyle, "margin-bottom");
+
+                // Check if margins should collapse with previous child
+                bool collapseWithPrevious = previousChildMarginBottom != 0
+                                            && ShouldCollapseWithPrevious(child, previousChildMarginBottom);
+
+                if (collapseWithPrevious)
+                {
+                    // Collapse margins: take the max and adjust offset
+                    float collapsedMargin = Math.Max(previousChildMarginBottom, childMarginTop);
+                    childOffsetY -= previousChildMarginBottom;
+                    childOffsetY += collapsedMargin;
+                }
+                else
+                {
+                    childOffsetY += childMarginTop;
+                }
 
                 childOffsetY = engine.ComputeLayoutForNode(
                     child,
@@ -345,6 +368,16 @@ namespace AngleSharp.Renderer
             // If not found or "auto", return 0.
             return 0f;
         }
+
+        private bool ShouldCollapseWithPrevious(ElementNode child, float previousMarginBottom)
+        {
+            // Check if there's no padding/border between the elements
+            // For simplicity, assume adjacent block elements in flow layout
+            return child.ComputedStyle?.GetPropertyValue("display") == "block" &&
+                   previousMarginBottom > 0 &&
+                   ParsePx(child.ComputedStyle, "padding-top") == 0 &&
+                   ParsePx(child.ComputedStyle, "border-top-width") == 0;
+        }
     }
 
     public sealed class StyleResolver
@@ -373,6 +406,11 @@ namespace AngleSharp.Renderer
             var computedStyle = new CssStyleDeclaration(_context);
             var fontSize = ComputeFontSize(rootFontSize, specifiedStyle, parentComputedStyle);
 
+            foreach (var initialValue in InitialValues)
+            {
+                specifiedStyle.SetDefaultProperty(initialValue.Key, initialValue.Value);
+            }
+
             var declarations = specifiedStyle.OfType<CssProperty>().Select(property =>
             {
                 var name = property.Name;
@@ -396,6 +434,7 @@ namespace AngleSharp.Renderer
                     else
                     {
                         // TODO: compute for other properties that should be absolute
+                        Debug.Write("Works");
                     }
                 }
                 else if (value is CssLengthValue { IsRelative: true, Type: not CssLengthValue.Unit.None } relativeLength)
@@ -434,6 +473,30 @@ namespace AngleSharp.Renderer
 
             return fontSize;
         }
+
+        private static readonly Dictionary<string, string> InitialValues = new()
+        {
+            // Layout
+            { PropertyNames.Display, CssKeywords.Inline },
+            { PropertyNames.Position, CssKeywords.Static },
+            { PropertyNames.Width, CssKeywords.Auto },
+            { PropertyNames.Height, CssKeywords.Auto },
+            { PropertyNames.MarginTop, "0px" },
+            { PropertyNames.MarginRight, "0px" },
+            // ... other margin/padding properties
+
+            // Typography
+            { PropertyNames.FontSize, "16px" },
+            { PropertyNames.LineHeight, CssKeywords.Normal },
+            // { PropertyNames.Color, Color.Black },
+
+            // Borders
+            { PropertyNames.BorderTopWidth, "px" },
+            { PropertyNames.BorderTopStyle, CssKeywords.None },
+            // ... other border properties
+
+            // Add all other properties here...
+        };
 
         private Double GetFontSizeInPixels(ICssValue value, Double rootFontSize, Double parentFontSize, ICssStyleDeclaration? parentStyle)
         {

@@ -49,6 +49,16 @@ namespace AngleSharp.Css.Dom
 
         public String GetPropertyPriority(String propertyName) => null;
 
+        public void SetDefaultProperty(String propertyName, String propertyValue, String priority = null)
+        {
+            var value = GetValue(propertyName);
+
+            if (String.IsNullOrWhiteSpace(value))
+            {
+                SetProperty(propertyName, propertyValue, priority);
+            }
+        }
+
         public void SetProperty(String propertyName, String propertyValue, String priority = null) =>
             SetValue(propertyName, propertyValue);
 

@@ -3,6 +3,7 @@ namespace AngleSharp.Css.Dom
     using AngleSharp.Attributes;
     using System;
     using System.Collections.Generic;
+    using AngleSharp.Dom;
 
     /// <summary>
     /// Represents a set of CSS properties.
@@ -50,6 +51,19 @@ namespace AngleSharp.Css.Dom
         /// <returns>A priority or null.</returns>
         [DomName("getPropertyPriority")]
         String GetPropertyPriority(String propertyName);
+
+        /// <summary>
+        /// Sets the property with the specified name and value only if the property does not already exist.
+        /// </summary>
+        /// <param name="propertyName">The name of the property to conditionally set.</param>
+        /// <param name="propertyValue">The value to assign if the property is not already defined.</param>
+        /// <param name="priority">Optional priority (e.g., "important"). Defaults to null.</param>
+        /// <exception cref="DomException">Thrown if the object is read-only.</exception>
+        /// <remarks>
+        /// This method checks for an existing property via <see cref="GetProperty"/>. If none exists,
+        /// it creates the property using <see cref="SetProperty"/> with the provided value and priority.
+        /// </remarks>
+        void SetDefaultProperty(String propertyName, String propertyValue, String priority = null);
 
         /// <summary>
         /// Sets a property with the given name and value. Optionally the

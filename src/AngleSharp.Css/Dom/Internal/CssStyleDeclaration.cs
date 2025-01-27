@@ -272,6 +272,30 @@ namespace AngleSharp.Css.Dom
             }
         }
 
+        public void SetDefaultProperty(String propertyName, String propertyValue, String priority = null)
+        {
+            if (IsReadOnly)
+                throw new DomException(DomError.NoModificationAllowed);
+
+            ICssProperty property = null;
+
+            for (var i = 0; i < _declarations.Count; i++)
+            {
+                var declaration = _declarations[i];
+
+                if (declaration.Name.Isi(propertyName))
+                {
+                    property = declaration;
+                    break;
+                }
+            }
+
+            if (property is null)
+            {
+                SetProperty(propertyName, propertyValue, priority);
+            }
+        }
+
         public void SetProperty(String propertyName, String propertyValue, String priority = null)
         {
             if (IsReadOnly)

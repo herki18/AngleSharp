@@ -12,6 +12,11 @@ namespace AngleSharp.Css.Dom
     public interface ICssProperty : IStyleFormattable
     {
         /// <summary>
+        /// Get if property is Default.
+        /// </summary>
+        Boolean IsDefault { get; }
+
+        /// <summary>
         /// Gets the name of the property.
         /// </summary>
         [DomName("name")]

@@ -16,12 +16,15 @@ public static class RenderEngineExtension
     {
         sb.Append(new string(' ', depth * 2));
         sb.Append(node.Ref.NodeName);
+        // sb.AppendLine();
 
         if (node.Ref is IElement element)
         {
             var id = element.Id;
             if (!string.IsNullOrWhiteSpace(id))
             {
+                sb.AppendLine();
+                sb.Append(new string(' ', depth * 2));
                 sb.Append(" id=");
                 sb.Append(id);
                 sb.Append(" ");
@@ -33,13 +36,17 @@ public static class RenderEngineExtension
             var css = elementNode.ComputedStyle?.ToCss();
             if (!string.IsNullOrWhiteSpace(css))
             {
-                sb.Append(" style=[ ");
+                sb.AppendLine();
+                sb.Append(new string(' ', depth * 2));
+                sb.Append(" computed-style=[ ");
                 sb.Append(css);
                 sb.Append(" ]");
             }
 
             if (elementNode.Layout != null)
             {
+                sb.AppendLine();
+                sb.Append(new string(' ', depth * 2));
                 sb.Append(" ");
                 sb.Append(elementNode.Layout);
             }

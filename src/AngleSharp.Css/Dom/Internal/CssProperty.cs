@@ -23,6 +23,7 @@ namespace AngleSharp.Css.Dom
         private Boolean _important;
         private ICssValue _value;
 
+        private Boolean _isDefault;
         #endregion
 
         #region ctor
@@ -39,6 +40,12 @@ namespace AngleSharp.Css.Dom
         #endregion
 
         #region Properties
+
+        public Boolean IsDefault
+        {
+            get { return _isDefault; }
+            set { _isDefault = value; }
+        }
 
         public ICssValue RawValue
         {
