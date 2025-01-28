@@ -7,8 +7,8 @@ namespace AngleSharp.Renderer
     using System.Diagnostics;
     using System.Linq;
     using AngleSharp.Css.Dom;
-    using AngleSharp.Css.Values;
-    using AngleSharp.Dom;
+    using Css.Values;
+    using Dom;
     using Css;
     using Html.Dom;
 
@@ -70,21 +70,6 @@ namespace AngleSharp.Renderer
                     children.Add(RenderElement(rootFontSize, element, collection, computedStyle));
                 }
             }
-
-            // compute unitless line-height after rendering children
-            // if (computedStyle?.GetProperty(PropertyNames.LineHeight).RawValue is CssLengthValue { Type: CssLengthValue.Unit.None } unitlessLineHeight)
-            // {
-            //     var fontSize = computedStyle.GetProperty(PropertyNames.FontSize).RawValue is CssLengthValue { Type: CssLengthValue.Unit.Px } fontSizeLength
-            //         ? fontSizeLength.Value
-            //         : rootFontSize;
-            //     var pixelValue = unitlessLineHeight.Value * fontSize;
-            //     var computedLineHeight = new CssLengthValue(pixelValue, CssLengthValue.Unit.Px);
-            //
-            //     // create a new property because SetProperty would change the parent value
-            //     var lineHeightProperty = _context.CreateProperty(PropertyNames.LineHeight);
-            //     lineHeightProperty.RawValue = computedLineHeight;
-            //     computedStyle.SetDeclarations(new[] { lineHeightProperty });
-            // }
 
             var node = new ElementNode(reference, children!, style, computedStyle);
 
@@ -239,6 +224,190 @@ namespace AngleSharp.Renderer
         }
     }
 
+    public sealed class InlineLayoutStrategy : ILayoutStrategy
+    {
+        public bool CanHandle(ElementNode node)
+        {
+            var display = node.ComputedStyle?.GetPropertyValue("display") ?? "inline";
+            return display == "inline";
+        }
+
+        public float LayoutNode(
+            ElementNode node,
+            float parentX,
+            float parentY,
+            float containerWidth,
+            float offsetYSoFar,
+            LayoutEngine engine)
+        {
+            // We'll do a simplistic line-by-line approach
+            float x = parentX;
+            float y = parentY + offsetYSoFar;
+            float maxX = x + containerWidth; // right boundary
+            float lineHeight = 0f; // tallest element in the current line
+            float totalHeight = 0f; // sum of all lines
+            float currentX = x; // the "cursor" in the current line
+
+            // We'll store each line's items so we can finalize them if we want baseline alignment, etc.
+            var lineItems = new List<IRenderNode>();
+
+            foreach (var child in node.Children)
+            {
+                if (child is TextNode textNode)
+                {
+                    // Split text into words (very naive: split on whitespace)
+                    var words = (textNode.Ref.TextContent ?? string.Empty).Split(
+                        new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    foreach (var word in words)
+                    {
+                        // Measure width (naive: 7px/char, lineHeight = 16)
+                        float approxCharWidth = 7f;
+                        float singleWordWidth = word.Length * approxCharWidth;
+                        float thisLineHeight = 16f; // could be from computed font-size
+
+                        // Check if word fits in current line
+                        if (currentX + singleWordWidth > maxX)
+                        {
+                            // finalize previous line
+                            totalHeight += lineHeight;
+                            // move to next line
+                            currentX = x;
+                            y += lineHeight;
+                            lineHeight = 0f;
+                            lineItems.Clear(); // for real alignment logic, you'd store line info first
+                        }
+
+                        // Layout this word as a "text node" box
+                        var textBox = new LayoutBox(currentX, y, singleWordWidth, thisLineHeight);
+                        textNode.Layout =
+                            textBox; // In real scenario, we'd have separate node instances for each "word" if we wanted to store them individually
+                        currentX += singleWordWidth + approxCharWidth; // add a space
+                        lineHeight = Math.Max(lineHeight, thisLineHeight);
+                    }
+                }
+                else if (child is ElementNode inlineElement)
+                {
+                    // For inline-level elements, measure them
+                    // If child is actually "inline-block", we might pass it to InlineBlockLayoutStrategy
+                    // or just measure similarly to text for now.
+
+                    // Let's do a naive approach: measure child by letting it layout with "block logic in a sub-container"
+                    // then treat it as a single inline box with that measured size.
+                    float childInitialOffsetY = 0f;
+                    float subLayoutHeight = engine.ComputeLayoutForNode(
+                        inlineElement,
+                        0, 0, // We'll measure in our own coordinate system for width
+                        containerWidth,
+                        childInitialOffsetY
+                    );
+
+                    // The child's Layout.Width/Height is the measured size
+                    float childWidth = inlineElement.Layout?.Width ?? 0f;
+                    float childHeight = inlineElement.Layout?.Height ?? 0f;
+
+                    // Check if it fits in the current line
+                    if (currentX + childWidth > maxX)
+                    {
+                        // finalize previous line
+                        totalHeight += lineHeight;
+                        // move to next line
+                        currentX = x;
+                        y += lineHeight;
+                        lineHeight = 0f;
+                        lineItems.Clear();
+                    }
+
+                    // Place the inline element in the current line
+                    inlineElement.Layout = new LayoutBox(currentX, y, childWidth, childHeight);
+                    currentX += childWidth;
+                    lineHeight = Math.Max(lineHeight, childHeight);
+
+                    lineItems.Add(inlineElement);
+                }
+            }
+
+            // finalize the last line
+            totalHeight += lineHeight;
+
+            // The entire "inline container" has a height = sum of lines
+            float finalWidth = containerWidth;
+            float finalHeight = totalHeight;
+
+            node.Layout = new LayoutBox(x, (parentY + offsetYSoFar), finalWidth, finalHeight);
+
+            // Return how much vertical space we've consumed
+            return offsetYSoFar + finalHeight;
+        }
+    }
+
+    public sealed class InlineBlockLayoutStrategy : ILayoutStrategy
+    {
+        public bool CanHandle(ElementNode node)
+        {
+            var display = node.ComputedStyle?.GetPropertyValue("display") ?? "inline";
+            return display == "inline-block";
+        }
+
+        public float LayoutNode(
+            ElementNode node,
+            float parentX,
+            float parentY,
+            float containerWidth,
+            float offsetYSoFar,
+            LayoutEngine engine)
+        {
+            // In a real inline formatting context, the parent is responsible for deciding
+            // where to place this "inline-block" in the line.
+            // We only handle how the inside of the inline-block is laid out,
+            // then store that as node.Layout.
+
+            // 1. "Shrink-to-fit" width (very naive). We'll do:
+            //    - some minimal or specified width, else fallback to containerWidth.
+
+            float specifiedWidth = ParsePx(node.ComputedStyle, "width");
+            float finalWidth = (specifiedWidth > 0) ? specifiedWidth : containerWidth;
+
+            // 2. Now do a layout pass for children using e.g. a block-like approach inside.
+            // float childOffsetY = 0f;
+            float subLayoutHeight = 0f;
+
+            // We'll "pretend" we do a block layout inside the inline-block:
+            foreach (var child in node.Children)
+            {
+                subLayoutHeight = engine.ComputeLayoutForNode(
+                    child,
+                    0, // we layout children at x=0 inside the inline-block
+                    0,
+                    finalWidth, // the max available width inside the inline-block
+                    subLayoutHeight
+                );
+            }
+
+            // subLayoutHeight is how tall the children collectively are (in a naive block flow)
+            float finalHeight = subLayoutHeight;
+
+            // 3. Assign a LayoutBox to represent the entire inline-block
+            // The parent's inline strategy will offset it appropriately in the line.
+            node.Layout = new LayoutBox(0, 0, finalWidth, finalHeight);
+
+            // 4. Return offsetYSoFar unmodified, because from the perspective of an inline flow,
+            //    the line box logic decides how to place it vertically.
+            return offsetYSoFar;
+        }
+
+        private float ParsePx(ICssStyleDeclaration style, string propName)
+        {
+            var raw = style.GetProperty(propName)?.RawValue;
+            if (raw is CssLengthValue lv && lv.Type == CssLengthValue.Unit.Px)
+            {
+                return (float)lv.Value;
+            }
+
+            return 0f; // treat as "auto"
+        }
+    }
+
     public sealed class BlockLayoutStrategy : ILayoutStrategy
     {
         public bool CanHandle(ElementNode node)
@@ -247,15 +416,10 @@ namespace AngleSharp.Renderer
                 return false;
 
             var display = node.ComputedStyle.GetPropertyValue("display");
-            // We'll handle "block", "inline", "inline-block", and fallback if missing
-            // (You could refine logic here if you have more display types.)
-            if (string.IsNullOrEmpty(display)) display = "inline";
 
             return display == "block"
-                   || display == "inline"
-                   || display == "inline-block"
                    || display == "list-item"
-                   || display == ""; // fallback
+                   || string.IsNullOrEmpty(display);
         }
 
         public float LayoutNode(
@@ -307,31 +471,12 @@ namespace AngleSharp.Renderer
 
             // 4. Layout children (vertical stacking)
             float childOffsetY = 0f;
-            float previousChildMarginBottom  = 0f;
 
             foreach (var child in node.Children)
             {
-                if (child is null)
+                if (child is null or TextNode)
+                {
                     continue;
-
-                var childStyle = ((ElementNode)child).ComputedStyle;
-                float childMarginTop = ParsePx(childStyle, "margin-top");
-                float childMarginBottom = ParsePx(childStyle, "margin-bottom");
-
-                // Check if margins should collapse with previous child
-                bool collapseWithPrevious = previousChildMarginBottom != 0
-                                            && ShouldCollapseWithPrevious(child, previousChildMarginBottom);
-
-                if (collapseWithPrevious)
-                {
-                    // Collapse margins: take the max and adjust offset
-                    float collapsedMargin = Math.Max(previousChildMarginBottom, childMarginTop);
-                    childOffsetY -= previousChildMarginBottom;
-                    childOffsetY += collapsedMargin;
-                }
-                else
-                {
-                    childOffsetY += childMarginTop;
                 }
 
                 childOffsetY = engine.ComputeLayoutForNode(
@@ -367,16 +512,6 @@ namespace AngleSharp.Renderer
 
             // If not found or "auto", return 0.
             return 0f;
-        }
-
-        private bool ShouldCollapseWithPrevious(ElementNode child, float previousMarginBottom)
-        {
-            // Check if there's no padding/border between the elements
-            // For simplicity, assume adjacent block elements in flow layout
-            return child.ComputedStyle?.GetPropertyValue("display") == "block" &&
-                   previousMarginBottom > 0 &&
-                   ParsePx(child.ComputedStyle, "padding-top") == 0 &&
-                   ParsePx(child.ComputedStyle, "border-top-width") == 0;
         }
     }
 
@@ -510,7 +645,8 @@ namespace AngleSharp.Renderer
                 CssConstantValue<CssLengthValue> { CssText: CssKeywords.XLarge } => 24D / 16 * rootFontSize,
                 CssConstantValue<CssLengthValue> { CssText: CssKeywords.XxLarge } => 32D / 16 * rootFontSize,
                 CssConstantValue<CssLengthValue> { CssText: CssKeywords.XxxLarge } => 48D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> { CssText: CssKeywords.Smaller } constLength => ComputeRelativeFontSize(constLength, rootFontSize, parentStyle),
+                CssConstantValue<CssLengthValue> { CssText: CssKeywords.Smaller } constLength =>
+                    ComputeRelativeFontSize(constLength, rootFontSize, parentStyle),
                 CssConstantValue<CssLengthValue> { CssText: CssKeywords.Larger } constLength => ComputeRelativeFontSize(constLength, rootFontSize, parentStyle),
                 CssLengthValue { Type: CssLengthValue.Unit.Px } length => length.Value,
                 CssLengthValue { IsAbsolute: true } length => length.ToPixel(_device),
