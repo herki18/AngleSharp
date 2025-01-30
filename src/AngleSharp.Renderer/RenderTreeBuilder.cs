@@ -270,8 +270,8 @@ namespace AngleSharp.Renderer
             float paddingBottom = ParsePx(style, "padding-bottom");
 
             // (Optional) parse min-width / max-width if supporting them
-            float minWidthVal     = ParsePx(style, "min-width");
-            float maxWidthVal     = ParsePx(style, "max-width");
+            float minWidthVal = ParsePx(style, "min-width");
+            float maxWidthVal = ParsePx(style, "max-width");
 
             // 3) Determine this element's content width
             float specifiedWidth = ParsePx(style, "width");
@@ -298,10 +298,12 @@ namespace AngleSharp.Renderer
             {
                 rawContentWidth = minWidthVal;
             }
+
             if (maxWidthVal > 0 && rawContentWidth > maxWidthVal)
             {
                 rawContentWidth = maxWidthVal;
             }
+
             if (rawContentWidth < 0) rawContentWidth = 0; // clamp to 0 if negative
             float contentWidth = rawContentWidth;
 
@@ -315,53 +317,53 @@ namespace AngleSharp.Renderer
                 marginRightIsAuto
             );
             // 5) Compute the final X,Y of the current element
-        //    We offset from the parent's coordinate plus our own margin/border/padding
-        float elementX = context.ParentX
-                         + borderLeft
-                         + paddingLeft
-                         + resolvedLeftMargin;
+            //    We offset from the parent's coordinate plus our own margin/border/padding
+            float elementX = context.ParentX
+                             + borderLeft
+                             + paddingLeft
+                             + resolvedLeftMargin;
 
-        float elementY = context.ParentY
-                         + offsetYSoFar
-                         + marginTopVal;  // vertical offset includes the top margin
+            float elementY = context.ParentY
+                             + offsetYSoFar
+                             + marginTopVal; // vertical offset includes the top margin
 
-        // 6) Layout this element's children (vertical stacking)
-        //    We'll give them a new FormattingContext representing
-        //    our content box as their parent.
-        float childOffsetY = 0f;
+            // 6) Layout this element's children (vertical stacking)
+            //    We'll give them a new FormattingContext representing
+            //    our content box as their parent.
+            float childOffsetY = 0f;
 
-        var childContext = new FormattingContext
-        {
-            // The left coordinate of our content box
-            ParentX = elementX,
-            // The top coordinate (already accounted for border/padding in elementY,
-            // but if you want to offset inside more, you can add borderTop/paddingTop here).
-            ParentY = elementY + borderTop + paddingTop,
-            // The horizontal space available for children is our contentWidth
-            AvailableWidth = contentWidth
-        };
+            var childContext = new FormattingContext
+            {
+                // The left coordinate of our content box
+                ParentX = elementX,
+                // The top coordinate (already accounted for border/padding in elementY,
+                // but if you want to offset inside more, you can add borderTop/paddingTop here).
+                ParentY = elementY + borderTop + paddingTop,
+                // The horizontal space available for children is our contentWidth
+                AvailableWidth = contentWidth
+            };
 
-        // Recurse into our child nodes
-        foreach (var child in node.Children)
-        {
-            if (child is null or TextNode)
-                continue;
+            // Recurse into our child nodes
+            foreach (var child in node.Children)
+            {
+                if (child is null or TextNode)
+                    continue;
 
-            childOffsetY = engine.ComputeLayoutForNode(child, childOffsetY, childContext);
-        }
+                childOffsetY = engine.ComputeLayoutForNode(child, childOffsetY, childContext);
+            }
 
-        // childOffsetY is how tall the children collectively are
-        float contentHeight = childOffsetY;
+            // childOffsetY is how tall the children collectively are
+            float contentHeight = childOffsetY;
 
-        // 7) The final height of the current element includes its own border/padding
-        float finalHeight = borderTop + paddingTop + contentHeight + paddingBottom + borderBottom;
+            // 7) The final height of the current element includes its own border/padding
+            float finalHeight = borderTop + paddingTop + contentHeight + paddingBottom + borderBottom;
 
-        // 8) Store the layout box for this element
-        node.Layout = new LayoutBox(elementX, elementY, contentWidth, finalHeight);
+            // 8) Store the layout box for this element
+            node.Layout = new LayoutBox(elementX, elementY, contentWidth, finalHeight);
 
-        // 9) Return the updated vertical offset so the next sibling is placed below
-        float totalElementHeight = marginTopVal + finalHeight + marginBottomVal;
-        return offsetYSoFar + totalElementHeight;
+            // 9) Return the updated vertical offset so the next sibling is placed below
+            float totalElementHeight = marginTopVal + finalHeight + marginBottomVal;
+            return offsetYSoFar + totalElementHeight;
         }
 
         /// <summary>
@@ -386,7 +388,7 @@ namespace AngleSharp.Renderer
             if (marginLeftIsAuto && marginRightIsAuto)
             {
                 // Center horizontally
-                marginLeftVal  = leftoverSpace / 2f;
+                marginLeftVal = leftoverSpace / 2f;
                 marginRightVal = leftoverSpace / 2f;
             }
             else if (marginLeftIsAuto)
