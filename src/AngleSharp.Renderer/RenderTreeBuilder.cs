@@ -94,6 +94,234 @@ namespace AngleSharp.Renderer
 
         private IRenderNode? RenderText(IText text) => new TextNode(text);
     }
+    
+    public sealed class StyleResolver
+    {
+        private readonly IBrowsingContext _context;
+        private readonly IRenderDevice _device;
+        private readonly FontEngine _fontEngine;
+
+        public StyleResolver(IBrowsingContext context, IRenderDevice device)
+        {
+            _context = context;
+            _device = device;
+            _fontEngine = new FontEngine(context, device);
+        }
+
+        public ICssStyleDeclaration ComputeCascadedStyle(IElement element, StyleCollection collection)
+        {
+            return collection.ComputeCascadedStyle(element);
+        }
+
+        public CssStyleDeclaration? ComputeComputedStyle(
+            ICssStyleDeclaration specifiedStyle,
+            ICssStyleDeclaration? parentComputedStyle,
+            Double rootFontSize)
+        {
+            var computedStyle = new CssStyleDeclaration(_context);
+            var fontSize = ComputeFontSize(rootFontSize, specifiedStyle, parentComputedStyle);
+
+            foreach (var initialValue in InitialValues)
+            {
+                specifiedStyle.SetDefaultProperty(initialValue.Key, initialValue.Value);
+            }
+
+            var declarations = specifiedStyle.OfType<CssProperty>().Select(property =>
+            {
+                var name = property.Name;
+                var value = property.RawValue;
+                if (name == PropertyNames.FontSize)
+                {
+                    // font-size was already computed
+                    value = new CssLengthValue(fontSize, CssLengthValue.Unit.Px);
+                }
+                else if (value is CssLengthValue { IsAbsolute: true, Type: not CssLengthValue.Unit.Px } absoluteLength)
+                {
+                    value = new CssLengthValue(absoluteLength.ToPixel(_device), CssLengthValue.Unit.Px);
+                }
+                else if (value is CssLengthValue { Type: CssLengthValue.Unit.Percent } percentLength)
+                {
+                    if (name == PropertyNames.VerticalAlign || name == PropertyNames.LineHeight)
+                    {
+                        var pixelValue = percentLength.Value / 100 * fontSize;
+                        value = new CssLengthValue(pixelValue, CssLengthValue.Unit.Px);
+                    }
+                    else
+                    {
+                        // TODO: compute for other properties that should be absolute
+                        Debug.Write("Works");
+                    }
+                }
+                else if (value is CssLengthValue { IsRelative: true, Type: not CssLengthValue.Unit.None } relativeLength)
+                {
+                    var pixelValue = relativeLength.Type switch
+                    {
+                        CssLengthValue.Unit.Em => relativeLength.Value * fontSize,
+                        CssLengthValue.Unit.Rem => relativeLength.Value * rootFontSize,
+                        _ => relativeLength.ToPixel(_device),
+                    };
+                    value = new CssLengthValue(pixelValue, CssLengthValue.Unit.Px);
+                }
+
+                return new CssProperty(name, property.Converter, property.Flags, value, property.IsImportant);
+            });
+
+            computedStyle.SetDeclarations(declarations);
+
+            if (parentComputedStyle != null)
+            {
+                computedStyle?.UpdateDeclarations(parentComputedStyle);
+            }
+
+            return computedStyle;
+        }
+
+        private Double ComputeFontSize(double rootFontSize, ICssStyleDeclaration style, ICssStyleDeclaration? parentStyle)
+        {
+            var parentFontSize = ((CssLengthValue?)parentStyle?.GetProperty(PropertyNames.FontSize)?.RawValue)?.ToPixel(_device) ?? rootFontSize;
+            var fontSize = parentFontSize;
+            // compute font-size first because other properties may depend on it
+            if (style.GetProperty(PropertyNames.FontSize) is { RawValue: not null } fontSizeProperty)
+            {
+                fontSize = GetFontSizeInPixels(fontSizeProperty.RawValue, rootFontSize, parentFontSize, parentStyle);
+            }
+
+            return fontSize;
+        }
+
+        private static readonly Dictionary<string, string> InitialValues = new()
+        {
+            // Layout
+            { PropertyNames.Display, CssKeywords.Inline },
+            { PropertyNames.Position, CssKeywords.Static },
+            { PropertyNames.Width, CssKeywords.Auto },
+            { PropertyNames.Height, CssKeywords.Auto },
+            { PropertyNames.MarginTop, "0px" },
+            { PropertyNames.MarginRight, "0px" },
+            // ... other margin/padding properties
+
+            // Typography
+            { PropertyNames.FontSize, "16px" },
+            { PropertyNames.LineHeight, CssKeywords.Normal },
+            // { PropertyNames.Color, Color.Black },
+
+            // Borders
+            { PropertyNames.BorderTopWidth, "px" },
+            { PropertyNames.BorderTopStyle, CssKeywords.None },
+            // ... other border properties
+
+            // Add all other properties here...
+        };
+
+        private Double GetFontSizeInPixels(ICssValue value, Double rootFontSize, Double parentFontSize, ICssStyleDeclaration? parentStyle)
+        {
+            return value switch
+            {
+                CssConstantValue<CssLengthValue> { CssText: CssKeywords.XxSmall } => 9D / 16 * rootFontSize,
+                CssConstantValue<CssLengthValue> { CssText: CssKeywords.XSmall } => 10D / 16 * rootFontSize,
+                CssConstantValue<CssLengthValue> { CssText: CssKeywords.Small } => 13D / 16 * rootFontSize,
+                CssConstantValue<CssLengthValue> { CssText: CssKeywords.Medium } => 16D / 16 * rootFontSize,
+                CssConstantValue<CssLengthValue> { CssText: CssKeywords.Large } => 18D / 16 * rootFontSize,
+                CssConstantValue<CssLengthValue> { CssText: CssKeywords.XLarge } => 24D / 16 * rootFontSize,
+                CssConstantValue<CssLengthValue> { CssText: CssKeywords.XxLarge } => 32D / 16 * rootFontSize,
+                CssConstantValue<CssLengthValue> { CssText: CssKeywords.XxxLarge } => 48D / 16 * rootFontSize,
+                CssConstantValue<CssLengthValue> { CssText: CssKeywords.Smaller } constLength =>
+                    ComputeRelativeFontSize(constLength, rootFontSize, parentStyle),
+                CssConstantValue<CssLengthValue> { CssText: CssKeywords.Larger } constLength => ComputeRelativeFontSize(constLength, rootFontSize, parentStyle),
+                CssLengthValue { Type: CssLengthValue.Unit.Px } length => length.Value,
+                CssLengthValue { IsAbsolute: true } length => length.ToPixel(_device),
+                CssLengthValue
+                {
+                    Type: CssLengthValue.Unit.Vh or CssLengthValue.Unit.Vw or CssLengthValue.Unit.Vmax
+                    or CssLengthValue.Unit.Vmin
+                } length => length.ToPixel(_device),
+                CssLengthValue { IsRelative: true } length => ComputeRelativeFontSize(length, rootFontSize, parentStyle),
+                ICssSpecialValue specialValue when specialValue.CssText == CssKeywords.Inherit ||
+                                                   specialValue.CssText == CssKeywords.Unset => parentFontSize,
+                ICssSpecialValue { CssText: CssKeywords.Initial } => rootFontSize,
+                _ => throw new InvalidOperationException("Font size must be a length"),
+            };
+        }
+
+        private Double ComputeRelativeFontSize(ICssValue value, Double rootFontSize, ICssStyleDeclaration? parentStyle)
+        {
+            var ancestorValue = parentStyle?.GetProperty(PropertyNames.FontSize)?.RawValue;
+            var ancestorPixels = ancestorValue switch
+            {
+                CssLengthValue { IsAbsolute: true } ancestorLength => ancestorLength.ToPixel(_device),
+                null => rootFontSize,
+                _ => throw new InvalidOperationException(),
+            };
+
+            // set a minimum size of 9px for relative sizes
+            return Math.Max(9, value switch
+            {
+                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Smaller => ancestorPixels / 1.2,
+                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Larger => ancestorPixels * 1.2,
+                CssLengthValue { Type: CssLengthValue.Unit.Rem } length => length.Value * rootFontSize,
+                CssLengthValue { Type: CssLengthValue.Unit.Em } length => length.Value * ancestorPixels,
+                CssLengthValue { Type: CssLengthValue.Unit.Percent } length => length.Value / 100 * ancestorPixels,
+                _ => throw new InvalidOperationException(),
+            });
+        }
+    }
+
+    public sealed class FontEngine
+    {
+        private readonly IRenderDevice _device;
+        private readonly IBrowsingContext _context;
+
+        public FontEngine(IBrowsingContext context, IRenderDevice device)
+        {
+            _context = context;
+            _device = device;
+        }
+
+        public Double ComputeFontSize(
+            ICssStyleDeclaration style,
+            ICssStyleDeclaration? parentStyle,
+            Double rootFontSize)
+        {
+            if (style.GetProperty(PropertyNames.FontSize)?.RawValue is not ICssValue value)
+                return parentStyle?.GetProperty(PropertyNames.FontSize)?.RawValue switch
+                {
+                    CssLengthValue parentLength => parentLength.Value,
+                    _ => rootFontSize
+                };
+
+            return value switch
+            {
+                CssLengthValue length => length.ToPixel(_device),
+                _ => GetKeywordFontSize(value.CssText, rootFontSize)
+            };
+        }
+
+        public ICssValue? ConvertUnits(
+            ICssValue value,
+            double currentFontSize,
+            double rootFontSize,
+            ICssStyleDeclaration? parentStyle)
+        {
+            // Handle unit conversions (em, rem, %, etc.)
+            return null;
+        }
+
+        private Double GetKeywordFontSize(String keyword, Double rootFontSize)
+        {
+            return keyword switch
+            {
+                CssKeywords.XxSmall => 9,
+                CssKeywords.XSmall => 10,
+                CssKeywords.Small => 13,
+                CssKeywords.Medium => 16,
+                CssKeywords.Large => 18,
+                CssKeywords.XLarge => 24,
+                CssKeywords.XxLarge => 32,
+                CssKeywords.XxxLarge => 48,
+                _ => rootFontSize
+            };
+        }
+    }
 
     public interface ILayoutStrategy
     {
@@ -432,234 +660,5 @@ namespace AngleSharp.Renderer
         public float AvailableWidth;
 
         // You can add more fields if needed, e.g. min/max widths, parent's baseline, etc.
-    }
-
-
-    public sealed class StyleResolver
-    {
-        private readonly IBrowsingContext _context;
-        private readonly IRenderDevice _device;
-        private readonly FontEngine _fontEngine;
-
-        public StyleResolver(IBrowsingContext context, IRenderDevice device)
-        {
-            _context = context;
-            _device = device;
-            _fontEngine = new FontEngine(context, device);
-        }
-
-        public ICssStyleDeclaration ComputeCascadedStyle(IElement element, StyleCollection collection)
-        {
-            return collection.ComputeCascadedStyle(element);
-        }
-
-        public CssStyleDeclaration? ComputeComputedStyle(
-            ICssStyleDeclaration specifiedStyle,
-            ICssStyleDeclaration? parentComputedStyle,
-            Double rootFontSize)
-        {
-            var computedStyle = new CssStyleDeclaration(_context);
-            var fontSize = ComputeFontSize(rootFontSize, specifiedStyle, parentComputedStyle);
-
-            foreach (var initialValue in InitialValues)
-            {
-                specifiedStyle.SetDefaultProperty(initialValue.Key, initialValue.Value);
-            }
-
-            var declarations = specifiedStyle.OfType<CssProperty>().Select(property =>
-            {
-                var name = property.Name;
-                var value = property.RawValue;
-                if (name == PropertyNames.FontSize)
-                {
-                    // font-size was already computed
-                    value = new CssLengthValue(fontSize, CssLengthValue.Unit.Px);
-                }
-                else if (value is CssLengthValue { IsAbsolute: true, Type: not CssLengthValue.Unit.Px } absoluteLength)
-                {
-                    value = new CssLengthValue(absoluteLength.ToPixel(_device), CssLengthValue.Unit.Px);
-                }
-                else if (value is CssLengthValue { Type: CssLengthValue.Unit.Percent } percentLength)
-                {
-                    if (name == PropertyNames.VerticalAlign || name == PropertyNames.LineHeight)
-                    {
-                        var pixelValue = percentLength.Value / 100 * fontSize;
-                        value = new CssLengthValue(pixelValue, CssLengthValue.Unit.Px);
-                    }
-                    else
-                    {
-                        // TODO: compute for other properties that should be absolute
-                        Debug.Write("Works");
-                    }
-                }
-                else if (value is CssLengthValue { IsRelative: true, Type: not CssLengthValue.Unit.None } relativeLength)
-                {
-                    var pixelValue = relativeLength.Type switch
-                    {
-                        CssLengthValue.Unit.Em => relativeLength.Value * fontSize,
-                        CssLengthValue.Unit.Rem => relativeLength.Value * rootFontSize,
-                        _ => relativeLength.ToPixel(_device),
-                    };
-                    value = new CssLengthValue(pixelValue, CssLengthValue.Unit.Px);
-                }
-
-                return new CssProperty(name, property.Converter, property.Flags, value, property.IsImportant);
-            });
-
-            computedStyle.SetDeclarations(declarations);
-
-            if (parentComputedStyle != null)
-            {
-                computedStyle?.UpdateDeclarations(parentComputedStyle);
-            }
-
-            return computedStyle;
-        }
-
-        private Double ComputeFontSize(double rootFontSize, ICssStyleDeclaration style, ICssStyleDeclaration? parentStyle)
-        {
-            var parentFontSize = ((CssLengthValue?)parentStyle?.GetProperty(PropertyNames.FontSize)?.RawValue)?.ToPixel(_device) ?? rootFontSize;
-            var fontSize = parentFontSize;
-            // compute font-size first because other properties may depend on it
-            if (style.GetProperty(PropertyNames.FontSize) is { RawValue: not null } fontSizeProperty)
-            {
-                fontSize = GetFontSizeInPixels(fontSizeProperty.RawValue, rootFontSize, parentFontSize, parentStyle);
-            }
-
-            return fontSize;
-        }
-
-        private static readonly Dictionary<string, string> InitialValues = new()
-        {
-            // Layout
-            { PropertyNames.Display, CssKeywords.Inline },
-            { PropertyNames.Position, CssKeywords.Static },
-            { PropertyNames.Width, CssKeywords.Auto },
-            { PropertyNames.Height, CssKeywords.Auto },
-            { PropertyNames.MarginTop, "0px" },
-            { PropertyNames.MarginRight, "0px" },
-            // ... other margin/padding properties
-
-            // Typography
-            { PropertyNames.FontSize, "16px" },
-            { PropertyNames.LineHeight, CssKeywords.Normal },
-            // { PropertyNames.Color, Color.Black },
-
-            // Borders
-            { PropertyNames.BorderTopWidth, "px" },
-            { PropertyNames.BorderTopStyle, CssKeywords.None },
-            // ... other border properties
-
-            // Add all other properties here...
-        };
-
-        private Double GetFontSizeInPixels(ICssValue value, Double rootFontSize, Double parentFontSize, ICssStyleDeclaration? parentStyle)
-        {
-            return value switch
-            {
-                CssConstantValue<CssLengthValue> { CssText: CssKeywords.XxSmall } => 9D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> { CssText: CssKeywords.XSmall } => 10D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> { CssText: CssKeywords.Small } => 13D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> { CssText: CssKeywords.Medium } => 16D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> { CssText: CssKeywords.Large } => 18D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> { CssText: CssKeywords.XLarge } => 24D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> { CssText: CssKeywords.XxLarge } => 32D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> { CssText: CssKeywords.XxxLarge } => 48D / 16 * rootFontSize,
-                CssConstantValue<CssLengthValue> { CssText: CssKeywords.Smaller } constLength =>
-                    ComputeRelativeFontSize(constLength, rootFontSize, parentStyle),
-                CssConstantValue<CssLengthValue> { CssText: CssKeywords.Larger } constLength => ComputeRelativeFontSize(constLength, rootFontSize, parentStyle),
-                CssLengthValue { Type: CssLengthValue.Unit.Px } length => length.Value,
-                CssLengthValue { IsAbsolute: true } length => length.ToPixel(_device),
-                CssLengthValue
-                {
-                    Type: CssLengthValue.Unit.Vh or CssLengthValue.Unit.Vw or CssLengthValue.Unit.Vmax
-                    or CssLengthValue.Unit.Vmin
-                } length => length.ToPixel(_device),
-                CssLengthValue { IsRelative: true } length => ComputeRelativeFontSize(length, rootFontSize, parentStyle),
-                ICssSpecialValue specialValue when specialValue.CssText == CssKeywords.Inherit ||
-                                                   specialValue.CssText == CssKeywords.Unset => parentFontSize,
-                ICssSpecialValue { CssText: CssKeywords.Initial } => rootFontSize,
-                _ => throw new InvalidOperationException("Font size must be a length"),
-            };
-        }
-
-        private Double ComputeRelativeFontSize(ICssValue value, Double rootFontSize, ICssStyleDeclaration? parentStyle)
-        {
-            var ancestorValue = parentStyle?.GetProperty(PropertyNames.FontSize)?.RawValue;
-            var ancestorPixels = ancestorValue switch
-            {
-                CssLengthValue { IsAbsolute: true } ancestorLength => ancestorLength.ToPixel(_device),
-                null => rootFontSize,
-                _ => throw new InvalidOperationException(),
-            };
-
-            // set a minimum size of 9px for relative sizes
-            return Math.Max(9, value switch
-            {
-                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Smaller => ancestorPixels / 1.2,
-                CssConstantValue<CssLengthValue> constLength when constLength.CssText == CssKeywords.Larger => ancestorPixels * 1.2,
-                CssLengthValue { Type: CssLengthValue.Unit.Rem } length => length.Value * rootFontSize,
-                CssLengthValue { Type: CssLengthValue.Unit.Em } length => length.Value * ancestorPixels,
-                CssLengthValue { Type: CssLengthValue.Unit.Percent } length => length.Value / 100 * ancestorPixels,
-                _ => throw new InvalidOperationException(),
-            });
-        }
-    }
-
-    public sealed class FontEngine
-    {
-        private readonly IRenderDevice _device;
-        private readonly IBrowsingContext _context;
-
-        public FontEngine(IBrowsingContext context, IRenderDevice device)
-        {
-            _context = context;
-            _device = device;
-        }
-
-        public Double ComputeFontSize(
-            ICssStyleDeclaration style,
-            ICssStyleDeclaration? parentStyle,
-            Double rootFontSize)
-        {
-            if (style.GetProperty(PropertyNames.FontSize)?.RawValue is not ICssValue value)
-                return parentStyle?.GetProperty(PropertyNames.FontSize)?.RawValue switch
-                {
-                    CssLengthValue parentLength => parentLength.Value,
-                    _ => rootFontSize
-                };
-
-            return value switch
-            {
-                CssLengthValue length => length.ToPixel(_device),
-                _ => GetKeywordFontSize(value.CssText, rootFontSize)
-            };
-        }
-
-        public ICssValue? ConvertUnits(
-            ICssValue value,
-            double currentFontSize,
-            double rootFontSize,
-            ICssStyleDeclaration? parentStyle)
-        {
-            // Handle unit conversions (em, rem, %, etc.)
-            return null;
-        }
-
-        private Double GetKeywordFontSize(String keyword, Double rootFontSize)
-        {
-            return keyword switch
-            {
-                CssKeywords.XxSmall => 9,
-                CssKeywords.XSmall => 10,
-                CssKeywords.Small => 13,
-                CssKeywords.Medium => 16,
-                CssKeywords.Large => 18,
-                CssKeywords.XLarge => 24,
-                CssKeywords.XxLarge => 32,
-                CssKeywords.XxxLarge => 48,
-                _ => rootFontSize
-            };
-        }
     }
 }
