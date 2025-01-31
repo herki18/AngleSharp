@@ -94,7 +94,7 @@ namespace AngleSharp.Renderer
 
         private IRenderNode? RenderText(IText text) => new TextNode(text);
     }
-    
+
     public sealed class StyleResolver
     {
         private readonly IBrowsingContext _context;
@@ -470,180 +470,54 @@ namespace AngleSharp.Renderer
             FormattingContext context,
             LayoutEngine engine)
         {
-            // 1) Check we have computed style for the current element
-            var style = node.ComputedStyle;
-            if (style is null)
+            if (node.ComputedStyle is null)
             {
                 node.Layout = null;
                 return offsetYSoFar;
             }
 
-            // 2) Parse the current element's margins, borders, padding
-            bool marginLeftIsAuto = (style.GetPropertyValue("margin-left") == "auto");
-            bool marginRightIsAuto = (style.GetPropertyValue("margin-right") == "auto");
+            // 1️⃣ Use the BoxModelCalculator to compute margins, paddings, borders, and content dimensions.
+            var box = new BoxModelCalculator(node.ComputedStyle, context.AvailableWidth);
 
-            float marginLeftVal = ParsePx(style, "margin-left");
-            float marginRightVal = ParsePx(style, "margin-right");
-            float marginTopVal = ParsePx(style, "margin-top");
-            float marginBottomVal = ParsePx(style, "margin-bottom");
+            // 2️⃣ Apply CSS constraints (min-width, max-width, etc.) to the content dimensions.
+            var constraints = new LayoutConstraints(node.ComputedStyle);
+            float finalContentWidth = constraints.ApplyWidth(box.ContentWidth);
+            float finalContentHeight = constraints.ApplyHeight(box.ContentHeight);
 
-            float borderLeft = ParsePx(style, "border-left-width");
-            float borderRight = ParsePx(style, "border-right-width");
-            float borderTop = ParsePx(style, "border-top-width");
-            float borderBottom = ParsePx(style, "border-bottom-width");
+            // 3️⃣ Compute margin collapsing (for vertical spacing).
+            // Assume context.PreviousMarginBottom exists; you might need to update FormattingContext if necessary.
+            float collapsedMargin = MarginCollapser.Collapse(context.PreviousMarginBottom, box.MarginTop);
 
-            float paddingLeft = ParsePx(style, "padding-left");
-            float paddingRight = ParsePx(style, "padding-right");
-            float paddingTop = ParsePx(style, "padding-top");
-            float paddingBottom = ParsePx(style, "padding-bottom");
+            // 4️⃣ Compute the element’s base positioning.
+            (float posX, float posY) = PositioningResolver.ComputePosition(
+                node.ComputedStyle, context.ParentX, context.ParentY);
+            posY += collapsedMargin; // Apply the collapsed margin offset.
 
-            // (Optional) parse min-width / max-width if supporting them
-            float minWidthVal = ParsePx(style, "min-width");
-            float maxWidthVal = ParsePx(style, "max-width");
+            // 5️⃣ Save the computed layout information in the node.
+            node.Layout = new LayoutBox(posX, posY, finalContentWidth, finalContentHeight);
 
-            // 3) Determine this element's content width
-            float specifiedWidth = ParsePx(style, "width");
-
-            // Sum of the element's margins/borders/padding on L+R sides
-            float totalNonContent = marginLeftVal + borderLeft + paddingLeft
-                                    + paddingRight + borderRight + marginRightVal;
-
-            // Decide how wide the current element's content area should be
-            float rawContentWidth;
-            if (specifiedWidth > 0)
-            {
-                // The user specified an explicit width (e.g. "width:160px")
-                rawContentWidth = specifiedWidth;
-            }
-            else
-            {
-                // "width: auto" => fill leftover from parent's available width
-                rawContentWidth = context.AvailableWidth - totalNonContent;
-            }
-
-            // (Optional) clamp to min-width, max-width
-            if (minWidthVal > 0 && rawContentWidth < minWidthVal)
-            {
-                rawContentWidth = minWidthVal;
-            }
-
-            if (maxWidthVal > 0 && rawContentWidth > maxWidthVal)
-            {
-                rawContentWidth = maxWidthVal;
-            }
-
-            if (rawContentWidth < 0) rawContentWidth = 0; // clamp to 0 if negative
-            float contentWidth = rawContentWidth;
-
-            // 4) Resolve auto margins, if any
-            (float resolvedLeftMargin, float resolvedRightMargin) = ResolveAutoMargins(
-                parentAvailableWidth: context.AvailableWidth,
-                elementContentWidth: contentWidth,
-                marginLeftVal,
-                marginRightVal,
-                marginLeftIsAuto,
-                marginRightIsAuto
-            );
-            // 5) Compute the final X,Y of the current element
-            //    We offset from the parent's coordinate plus our own margin/border/padding
-            float elementX = context.ParentX
-                             + borderLeft
-                             + paddingLeft
-                             + resolvedLeftMargin;
-
-            float elementY = context.ParentY
-                             + offsetYSoFar
-                             + marginTopVal; // vertical offset includes the top margin
-
-            // 6) Layout this element's children (vertical stacking)
-            //    We'll give them a new FormattingContext representing
-            //    our content box as their parent.
+            // 6️⃣ Set up the context for child elements (using the content box as the container).
             float childOffsetY = 0f;
-
             var childContext = new FormattingContext
             {
-                // The left coordinate of our content box
-                ParentX = elementX,
-                // The top coordinate (already accounted for border/padding in elementY,
-                // but if you want to offset inside more, you can add borderTop/paddingTop here).
-                ParentY = elementY + borderTop + paddingTop,
-                // The horizontal space available for children is our contentWidth
-                AvailableWidth = contentWidth
+                ParentX = posX,
+                ParentY = posY + box.BorderTop + box.PaddingTop,
+                AvailableWidth = finalContentWidth,
+                PreviousMarginBottom = 0f // Reset margin for children.
             };
 
-            // Recurse into our child nodes
+            // 7️⃣ Recurse into child nodes.
             foreach (var child in node.Children)
             {
-                if (child is null or TextNode)
-                    continue;
-
-                childOffsetY = engine.ComputeLayoutForNode(child, childOffsetY, childContext);
+                if (child != null)
+                {
+                    childOffsetY = engine.ComputeLayoutForNode(child, childOffsetY, childContext);
+                }
             }
 
-            // childOffsetY is how tall the children collectively are
-            float contentHeight = childOffsetY;
-
-            // 7) The final height of the current element includes its own border/padding
-            float finalHeight = borderTop + paddingTop + contentHeight + paddingBottom + borderBottom;
-
-            // 8) Store the layout box for this element
-            node.Layout = new LayoutBox(elementX, elementY, contentWidth, finalHeight);
-
-            // 9) Return the updated vertical offset so the next sibling is placed below
-            float totalElementHeight = marginTopVal + finalHeight + marginBottomVal;
+            // 8️⃣ Calculate the total height consumed by the element (including margins).
+            float totalElementHeight = box.MarginTop + finalContentHeight + box.MarginBottom;
             return offsetYSoFar + totalElementHeight;
-        }
-
-        /// <summary>
-        /// Distribute leftover space among margin-left/margin-right if they are "auto",
-        /// in order to center or push the element left/right within the parent's content box.
-        /// </summary>
-        private static (float marginLeft, float marginRight) ResolveAutoMargins(
-            float parentAvailableWidth,
-            float elementContentWidth,
-            float marginLeftVal,
-            float marginRightVal,
-            bool marginLeftIsAuto,
-            bool marginRightIsAuto)
-        {
-            // The non-auto space used up so far: marginLeft + element's content + marginRight
-            float usedNonAuto = marginLeftVal + elementContentWidth + marginRightVal;
-
-            // leftoverSpace = how much is left in the parent's content box
-            float leftoverSpace = parentAvailableWidth - usedNonAuto;
-            if (leftoverSpace < 0) leftoverSpace = 0; // clamp if negative
-
-            if (marginLeftIsAuto && marginRightIsAuto)
-            {
-                // Center horizontally
-                marginLeftVal = leftoverSpace / 2f;
-                marginRightVal = leftoverSpace / 2f;
-            }
-            else if (marginLeftIsAuto)
-            {
-                // Push to the right
-                marginLeftVal = leftoverSpace;
-            }
-            else if (marginRightIsAuto)
-            {
-                // Push to the left
-                marginRightVal = leftoverSpace;
-            }
-
-            return (marginLeftVal, marginRightVal);
-        }
-
-
-        private float ParsePx(ICssStyleDeclaration style, string propName)
-        {
-            var raw = style.GetProperty(propName)?.RawValue;
-            if (raw is CssLengthValue lv && lv.Type == CssLengthValue.Unit.Px)
-            {
-                return (float)lv.Value;
-            }
-
-            // If not found or "auto", return 0.
-            return 0f;
         }
     }
 
@@ -659,6 +533,135 @@ namespace AngleSharp.Renderer
         public float ParentY;
         public float AvailableWidth;
 
-        // You can add more fields if needed, e.g. min/max widths, parent's baseline, etc.
+        public float PreviousMarginBottom;
+    }
+
+    public class BoxModelCalculator
+    {
+        public float MarginTop, MarginRight, MarginBottom, MarginLeft;
+        public float BorderTop, BorderRight, BorderBottom, BorderLeft;
+        public float PaddingTop, PaddingRight, PaddingBottom, PaddingLeft;
+        public float ContentWidth, ContentHeight;
+        public float BoxWidth, BoxHeight;
+
+        public BoxModelCalculator(ICssStyleDeclaration style, float availableWidth)
+        {
+            // Parse margins
+            MarginTop = ParsePx(style, "margin-top");
+            MarginRight = ParsePx(style, "margin-right");
+            MarginBottom = ParsePx(style, "margin-bottom");
+            MarginLeft = ParsePx(style, "margin-left");
+
+            // Parse borders
+            BorderTop = ParsePx(style, "border-top-width");
+            BorderRight = ParsePx(style, "border-right-width");
+            BorderBottom = ParsePx(style, "border-bottom-width");
+            BorderLeft = ParsePx(style, "border-left-width");
+
+            // Parse paddings
+            PaddingTop = ParsePx(style, "padding-top");
+            PaddingRight = ParsePx(style, "padding-right");
+            PaddingBottom = ParsePx(style, "padding-bottom");
+            PaddingLeft = ParsePx(style, "padding-left");
+
+            // Compute content dimensions
+            ContentWidth = ComputeWidth(style, availableWidth);
+            ContentHeight = ComputeHeight(style);
+
+            // Compute full box size
+            BoxWidth = ContentWidth + PaddingLeft + PaddingRight + BorderLeft + BorderRight;
+            BoxHeight = ContentHeight + PaddingTop + PaddingBottom + BorderTop + BorderBottom;
+        }
+
+        private float ComputeWidth(ICssStyleDeclaration style, float availableWidth)
+        {
+            var width = ParsePx(style, "width");
+            // If no explicit width is provided, we use the parent's available width.
+            return width > 0 ? width : availableWidth;
+        }
+
+        private float ComputeHeight(ICssStyleDeclaration style)
+        {
+            var height = ParsePx(style, "height");
+            return height > 0 ? height : float.NaN; // NaN signals that height is determined by content.
+        }
+
+        private static float ParsePx(ICssStyleDeclaration style, string property)
+        {
+            var raw = style.GetProperty(property)?.RawValue;
+            return raw is CssLengthValue lv ? (float)lv.Value : 0f;
+        }
+    }
+
+    public static class MarginCollapser
+    {
+        public static float Collapse(float previousBottomMargin, float currentTopMargin)
+        {
+            // A simple implementation: if either margin is negative, add them.
+            if (previousBottomMargin < 0 || currentTopMargin < 0)
+            {
+                return previousBottomMargin + currentTopMargin;
+            }
+
+            // Otherwise, use the larger of the two.
+            return Math.Max(previousBottomMargin, currentTopMargin);
+        }
+    }
+
+    public class LayoutConstraints
+    {
+        public float MinWidth, MaxWidth, MinHeight, MaxHeight;
+
+        public LayoutConstraints(ICssStyleDeclaration style)
+        {
+            // For min-width/min-height, default is 0.
+            MinWidth = ParsePx(style, "min-width");
+            MinHeight = ParsePx(style, "min-height");
+
+            // For max-width/max-height, default to PositiveInfinity if not set or "auto".
+            MaxWidth = ParsePxOrAuto(style, "max-width");
+            MaxHeight = ParsePxOrAuto(style, "max-height");
+        }
+
+        public float ApplyWidth(float width) => Math.Clamp(width, MinWidth, MaxWidth);
+        public float ApplyHeight(float height) => Math.Clamp(height, MinHeight, MaxHeight);
+
+        private static float ParsePx(ICssStyleDeclaration style, string property)
+        {
+            var raw = style.GetProperty(property)?.RawValue;
+            return raw is CssLengthValue lv ? (float)lv.Value : 0f;
+        }
+
+        private static float ParsePxOrAuto(ICssStyleDeclaration style, string property)
+        {
+            var raw = style.GetProperty(property)?.RawValue;
+            // If the property is specified and is a length, return its value.
+            if (raw is CssLengthValue lv)
+                return (float)lv.Value;
+            // Otherwise (unspecified or "auto"), treat it as no maximum.
+            return float.PositiveInfinity;
+        }
+    }
+
+    public static class PositioningResolver
+    {
+        public static (float X, float Y) ComputePosition(ICssStyleDeclaration style, float parentX, float parentY)
+        {
+            float left = ParsePx(style, "left");
+            float top = ParsePx(style, "top");
+
+            if (style.GetPropertyValue("position") == "relative")
+            {
+                return (parentX + left, parentY + top);
+            }
+
+            return (parentX, parentY);
+        }
+
+        private static float ParsePx(ICssStyleDeclaration style, string property)
+        {
+            var raw = style.GetProperty(property)?.RawValue;
+            return raw is CssLengthValue lv ? (float)lv.Value : 0f;
+        }
     }
 }
