@@ -476,37 +476,31 @@ namespace AngleSharp.Renderer
                 return offsetYSoFar;
             }
 
-            // 1️⃣ Use the BoxModelCalculator to compute margins, paddings, borders, and content dimensions.
+            // 1️⃣ Compute Box Model using the available width from the context.
             var box = new BoxModelCalculator(node.ComputedStyle, context.AvailableWidth);
 
-            // 2️⃣ Apply CSS constraints (min-width, max-width, etc.) to the content dimensions.
+            // 2️⃣ Resolve constraints.
             var constraints = new LayoutConstraints(node.ComputedStyle);
             float finalContentWidth = constraints.ApplyWidth(box.ContentWidth);
-            float finalContentHeight = constraints.ApplyHeight(box.ContentHeight);
 
-            // 3️⃣ Compute margin collapsing (for vertical spacing).
-            // Assume context.PreviousMarginBottom exists; you might need to update FormattingContext if necessary.
+            // 3️⃣ Collapse margins.
             float collapsedMargin = MarginCollapser.Collapse(context.PreviousMarginBottom, box.MarginTop);
 
-            // 4️⃣ Compute the element’s base positioning.
+            // 4️⃣ Determine positioning.
             (float posX, float posY) = PositioningResolver.ComputePosition(
-                node.ComputedStyle, context.ParentX, context.ParentY);
-            posY += collapsedMargin; // Apply the collapsed margin offset.
+                node.ComputedStyle, context.ParentX, context.ParentY, context.AvailableWidth, finalContentWidth);
+            posY += collapsedMargin;
 
-            // 5️⃣ Save the computed layout information in the node.
-            node.Layout = new LayoutBox(posX, posY, finalContentWidth, finalContentHeight);
-
-            // 6️⃣ Set up the context for child elements (using the content box as the container).
+            // 5️⃣ Layout children within this element's content area.
             float childOffsetY = 0f;
             var childContext = new FormattingContext
             {
                 ParentX = posX,
                 ParentY = posY + box.BorderTop + box.PaddingTop,
                 AvailableWidth = finalContentWidth,
-                PreviousMarginBottom = 0f // Reset margin for children.
+                PreviousMarginBottom = 0f
             };
 
-            // 7️⃣ Recurse into child nodes.
             foreach (var child in node.Children)
             {
                 if (child != null)
@@ -515,8 +509,28 @@ namespace AngleSharp.Renderer
                 }
             }
 
-            // 8️⃣ Calculate the total height consumed by the element (including margins).
-            float totalElementHeight = box.MarginTop + finalContentHeight + box.MarginBottom;
+            // 6️⃣ Determine content height:
+            // If the computed height is "auto" (NaN), use the total height from children.
+            float contentHeight = float.IsNaN(box.ContentHeight) ? childOffsetY : box.ContentHeight;
+            float finalContentHeight = constraints.ApplyHeight(contentHeight);
+
+            // 7️⃣ Compute overall element dimensions.
+            // Choose the final width based on box-sizing.
+            // For border-box, the computed finalContentWidth already represents the total outer width.
+            // For content-box, use box.BoxWidth, which adds borders (and padding) to the content width.
+            string boxSizing = node.ComputedStyle.GetPropertyValue("box-sizing");
+            if (string.IsNullOrEmpty(boxSizing))
+            {
+                boxSizing = "content-box";  // Default per CSS spec.
+            }
+            float totalWidth = (boxSizing == "border-box") ? finalContentWidth : box.BoxWidth;
+            float totalHeight = finalContentHeight;
+
+            // 8️⃣ Save the layout box.
+            node.Layout = new LayoutBox(posX, posY, totalWidth, totalHeight);
+
+            // 9️⃣ Return the updated vertical offset.
+            float totalElementHeight = box.MarginTop + totalHeight + box.MarginBottom;
             return offsetYSoFar + totalElementHeight;
         }
     }
@@ -573,17 +587,70 @@ namespace AngleSharp.Renderer
             BoxHeight = ContentHeight + PaddingTop + PaddingBottom + BorderTop + BorderBottom;
         }
 
+        /// <summary>
+        /// Computes the content width based on the specified width and box-sizing.
+        /// </summary>
         private float ComputeWidth(ICssStyleDeclaration style, float availableWidth)
         {
-            var width = ParsePx(style, "width");
-            // If no explicit width is provided, we use the parent's available width.
-            return width > 0 ? width : availableWidth;
+            // Get the specified width.
+            float specifiedWidth = ParsePx(style, "width");
+
+            // Check the box-sizing property.
+            bool isBorderBox = style.GetPropertyValue("box-sizing") == "border-box";
+
+            if (specifiedWidth > 0)
+            {
+                if (isBorderBox)
+                {
+                    // For border-box, the specified width includes padding and border.
+                    // Subtract them to get the content width.
+                    float computed = specifiedWidth - (PaddingLeft + PaddingRight + BorderLeft + BorderRight);
+                    return computed > 0 ? computed : 0;
+                }
+                else
+                {
+                    // For content-box, the specified width is the content width.
+                    return specifiedWidth;
+                }
+            }
+            else
+            {
+                // If width is "auto", use the parent's available width.
+                if (isBorderBox)
+                {
+                    float computed = availableWidth - (PaddingLeft + PaddingRight + BorderLeft + BorderRight);
+                    return computed > 0 ? computed : 0;
+                }
+
+                return availableWidth;
+            }
         }
 
+        /// <summary>
+        /// Computes the content height based on the specified height and box-sizing.
+        /// </summary>
         private float ComputeHeight(ICssStyleDeclaration style)
         {
-            var height = ParsePx(style, "height");
-            return height > 0 ? height : float.NaN; // NaN signals that height is determined by content.
+            float specifiedHeight = ParsePx(style, "height");
+            bool isBorderBox = style.GetPropertyValue("box-sizing") == "border-box";
+
+            if (specifiedHeight > 0)
+            {
+                if (isBorderBox)
+                {
+                    float computed = specifiedHeight - (PaddingTop + PaddingBottom + BorderTop + BorderBottom);
+                    return computed > 0 ? computed : 0;
+                }
+                else
+                {
+                    return specifiedHeight;
+                }
+            }
+            else
+            {
+                // For "auto" height, we signal that the content height will be determined by the content.
+                return float.NaN;
+            }
         }
 
         private static float ParsePx(ICssStyleDeclaration style, string property)
@@ -645,23 +712,71 @@ namespace AngleSharp.Renderer
 
     public static class PositioningResolver
     {
-        public static (float X, float Y) ComputePosition(ICssStyleDeclaration style, float parentX, float parentY)
+        public static (float X, float Y) ComputePosition(
+            ICssStyleDeclaration style,
+            float parentX,
+            float parentY,
+            float parentAvailableWidth,
+            float elementContentWidth)
         {
-            float left = ParsePx(style, "left");
-            float top = ParsePx(style, "top");
+            // Resolve auto margins within the resolver.
+            float marginLeftVal = ParsePx(style, "margin-left");
+            float marginRightVal = ParsePx(style, "margin-right");
+            bool marginLeftAuto = style.GetPropertyValue("margin-left") == "auto";
+            bool marginRightAuto = style.GetPropertyValue("margin-right") == "auto";
 
-            if (style.GetPropertyValue("position") == "relative")
-            {
-                return (parentX + left, parentY + top);
-            }
+            (float resolvedLeftMargin, float resolvedRightMargin) =
+                AutoMarginResolver.Resolve(parentAvailableWidth, elementContentWidth,
+                    marginLeftVal, marginRightVal,
+                    marginLeftAuto, marginRightAuto);
 
-            return (parentX, parentY);
+            float leftOffset = (style.GetPropertyValue("position") == "relative") ? ParsePx(style, "left") : 0;
+            float topOffset = (style.GetPropertyValue("position") == "relative") ? ParsePx(style, "top") : 0;
+
+            return (parentX + resolvedLeftMargin + leftOffset, parentY + topOffset);
         }
 
         private static float ParsePx(ICssStyleDeclaration style, string property)
         {
             var raw = style.GetProperty(property)?.RawValue;
             return raw is CssLengthValue lv ? (float)lv.Value : 0f;
+        }
+    }
+
+    /// <summary>
+    /// Handles auto margin resolution (e.g. horizontal centering) in a separate helper class.
+    /// </summary>
+    public static class AutoMarginResolver
+    {
+        public static (float marginLeft, float marginRight) Resolve(
+            float parentAvailableWidth,
+            float elementContentWidth,
+            float marginLeftVal,
+            float marginRightVal,
+            bool marginLeftIsAuto,
+            bool marginRightIsAuto)
+        {
+            // Calculate the total non-auto space.
+            float usedNonAuto = marginLeftVal + elementContentWidth + marginRightVal;
+            float leftoverSpace = parentAvailableWidth - usedNonAuto;
+            if (leftoverSpace < 0)
+                leftoverSpace = 0;
+
+            if (marginLeftIsAuto && marginRightIsAuto)
+            {
+                marginLeftVal = leftoverSpace / 2f;
+                marginRightVal = leftoverSpace / 2f;
+            }
+            else if (marginLeftIsAuto)
+            {
+                marginLeftVal = leftoverSpace;
+            }
+            else if (marginRightIsAuto)
+            {
+                marginRightVal = leftoverSpace;
+            }
+
+            return (marginLeftVal, marginRightVal);
         }
     }
 }
