@@ -48,11 +48,59 @@ namespace AngleSharp.Renderer
             return rootNode;
         }
 
-        private ElementNode? RenderElement(
+        private IRenderNode? RenderElement(
             Double rootFontSize,
             IElement reference,
             StyleCollection collection,
             ICssStyleDeclaration? parentComputedStyles = null)
+        {
+            bool isNonRenderable = IsNonRenderableElement(reference);
+
+            if (isNonRenderable)
+            {
+                return HandleNonRenderableElement(rootFontSize, reference, collection, parentComputedStyles);
+            }
+            else
+            {
+                return HandleRenderableElement(rootFontSize, reference, collection, parentComputedStyles);
+            }
+        }
+
+        private IRenderNode? HandleNonRenderableElement(
+            double rootFontSize,
+            IElement element,
+            StyleCollection collection,
+            ICssStyleDeclaration? parentComputedStyles)
+        {
+            // Convert ALL children to NonRenderableNode (no recursion needed)
+            var children = element.ChildNodes
+                .Select<INode, IRenderNode?>(child =>
+                    new NonRenderableNode(child, Enumerable.Empty<IRenderNode?>()!))
+                .ToList();
+
+            var node = new NonRenderableNode(element, children!);
+
+            // Set parent references
+            foreach (var child in children)
+            {
+                if(child is NonRenderableNode nonRenderableChild)
+                {
+                    nonRenderableChild.Parent = node;
+                }
+                else
+                {
+                    throw new InvalidOperationException();
+                }
+            }
+
+            return node;
+        }
+
+        private ElementNode? HandleRenderableElement(
+            double rootFontSize,
+            IElement reference,
+            StyleCollection collection,
+            ICssStyleDeclaration? parentComputedStyles)
         {
             // Merge all stylesheets, including default stylesheets
             var style = _styleResolver.ComputeCascadedStyle(reference, collection);
@@ -83,6 +131,10 @@ namespace AngleSharp.Renderer
                 {
                     textChild.Parent = node;
                 }
+                else if(child is NonRenderableNode nonRenderableChild)
+                {
+                    nonRenderableChild.Parent = node;
+                }
                 else
                 {
                     throw new InvalidOperationException();
@@ -92,7 +144,27 @@ namespace AngleSharp.Renderer
             return node;
         }
 
-        private IRenderNode? RenderText(IText text) => new TextNode(text);
+        private static bool IsNonRenderableElement(IElement element)
+        {
+            if (element is IHtmlHeadElement or
+                IHtmlScriptElement or
+                IHtmlStyleElement)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private IRenderNode? RenderText(IText text)
+        {
+            var content = text.TextContent;
+
+            // Treat empty/whitespace text as NonRenderableNode
+            return string.IsNullOrWhiteSpace(content)
+                ? new NonRenderableNode(text, Enumerable.Empty<IRenderNode?>()!)
+                : new TextNode(text);
+        }
     }
 
     public sealed class StyleResolver

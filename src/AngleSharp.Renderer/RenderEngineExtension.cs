@@ -15,6 +15,11 @@ public static class RenderEngineExtension
     private static void PrintNode(IRenderNode node, int depth, StringBuilder sb)
     {
         sb.Append(new string(' ', depth * 2));
+        if(node is NonRenderableNode nonRenderableNode)
+        {
+            sb.Append("NR:");
+        }
+
         sb.Append(node.Ref.NodeName);
         // sb.AppendLine();
 

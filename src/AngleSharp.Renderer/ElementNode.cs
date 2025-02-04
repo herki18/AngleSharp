@@ -33,6 +33,19 @@ namespace AngleSharp.Renderer
         public IRenderElement? Wrapper { get; set; } // This is a Unity-specific field
     }
 
+    public class NonRenderableNode : IRenderNode
+    {
+        public NonRenderableNode(INode @ref, IEnumerable<IRenderNode> children)
+        {
+            Ref = @ref;
+            Children = children;
+        }
+
+        public INode Ref { get; }
+        public IEnumerable<IRenderNode> Children { get; }
+        public IRenderNode? Parent { get; set; }
+    }
+
     /// <summary>
     /// The final (used) layout geometry for an element or text node.
     /// </summary>

@@ -4,7 +4,7 @@
     using System.Linq;
     using AngleSharp.Dom;
 
-    sealed class TextNode : IRenderNode
+    public sealed class TextNode : IRenderNode
     {
         public TextNode(INode reference)
         {
