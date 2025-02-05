@@ -310,8 +310,10 @@ namespace AngleSharp.Renderer.Tests
             NotNull(containerDiv, "Could not find container <div> under <body>.");
 
             // Assert container is block-level, 300px wide
+            // 300px total width minus left/right padding of 10px => 280px content area
             AssertDisplay(containerDiv, "block");
-            AssertContentWidth(containerDiv, 300);
+            AssertContentWidth(containerDiv, 280);
+            AssertBoxWidth(containerDiv, 300);
 
             // 3) Find child <div style="display: block">
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
@@ -319,9 +321,9 @@ namespace AngleSharp.Renderer.Tests
 
             // Assert child's display
             AssertDisplay(childDiv, "block");
-            // Because default box-sizing is content-box,
-            // 300px total width minus left/right padding of 10px => 280px content area
+
             AssertContentWidth(childDiv, 280);
+            AssertBoxWidth(childDiv, 280);
         }
 
         [Test]
