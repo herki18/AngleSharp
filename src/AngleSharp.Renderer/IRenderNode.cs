@@ -17,5 +17,7 @@
         /// References the contained render children.
         /// </summary>
         IEnumerable<IRenderNode> Children { get; }
+
+        public LayoutBox? Layout { get; set; }
     }
 }

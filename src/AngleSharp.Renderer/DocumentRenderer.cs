@@ -27,7 +27,7 @@
 
             if (_root != null)
             {
-                var layoutEngine = new LayoutEngine();
+                var layoutEngine = new LayoutEngineV2();
 
                 // Get device viewport or fallback to some defaults
                 float viewportWidth = 800f;

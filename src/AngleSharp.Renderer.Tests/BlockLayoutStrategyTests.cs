@@ -18,7 +18,7 @@ namespace AngleSharp.Renderer.Tests
 
             // The container has display:block and width=300
             AssertDisplay(containerDiv, "block");
-            AssertWidth(containerDiv, 300);
+            AssertContentWidth(containerDiv, 300);
             // Position might be offset by body margin if absolute coords
             AssertPosition(containerDiv, 8, 8);
 
@@ -28,7 +28,7 @@ namespace AngleSharp.Renderer.Tests
 
             // Check child's display and layout
             AssertDisplay(childDiv, "block");
-            AssertWidth(childDiv, 300);
+            AssertContentWidth(childDiv, 300);
             AssertHeight(childDiv, 0);
             // Typically at (8,8) from the parent's coordinate space
             AssertPosition(childDiv, 8, 8);
@@ -46,7 +46,7 @@ namespace AngleSharp.Renderer.Tests
 
             // Assert it's block-level and 400px wide
             AssertDisplay(containerDiv, "block");
-            AssertWidth(containerDiv, 400);
+            AssertContentWidth(containerDiv, 400);
             // Typically at (8,8)
             AssertPosition(containerDiv, 8, 8);
 
@@ -56,7 +56,7 @@ namespace AngleSharp.Renderer.Tests
 
             // Assert block display and 200px width
             AssertDisplay(childDiv, "block");
-            AssertWidth(childDiv, 200);
+            AssertContentWidth(childDiv, 200);
 
             // 4) Check that margin-left/margin-right remain 'auto'
             That(childDiv.ComputedStyle.MarginLeft, Is.EqualTo("auto"),
@@ -66,9 +66,9 @@ namespace AngleSharp.Renderer.Tests
 
             // 5) Verify horizontal centering
             var containerX = containerDiv.Layout?.X ?? 0.0;
-            var containerWidth = containerDiv.Layout?.Width ?? 0.0;
+            var containerWidth = containerDiv.Layout?.BoxWidth ?? 0.0;
             var childX = childDiv.Layout?.X ?? 0.0;
-            var childWidth = childDiv.Layout?.Width ?? 0.0;
+            var childWidth = childDiv.Layout?.BoxWidth ?? 0.0;
 
             var expectedOffset = (containerWidth - childWidth) / 2.0; // => 100
             var actualOffset = childX - containerX;
@@ -89,7 +89,7 @@ namespace AngleSharp.Renderer.Tests
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
             NotNull(containerDiv);
             AssertDisplay(containerDiv, "block");
-            AssertWidth(containerDiv, 400);
+            AssertContentWidth(containerDiv, 400);
 
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
             NotNull(childDiv);
@@ -102,7 +102,7 @@ namespace AngleSharp.Renderer.Tests
             var childLayout = childDiv.Layout;
             NotNull(childLayout, "Child layout box is null.");
 
-            That(childLayout.Width, Is.EqualTo(400).Within(1.0),
+            That(childLayout.BoxWidth, Is.EqualTo(400).Within(1.0),
                 "Child should fill the container in normal block flow when width is auto and margins are auto.");
 
             // X position should be the same as container's X in typical block layout.
@@ -121,11 +121,11 @@ namespace AngleSharp.Renderer.Tests
             var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
             NotNull(containerDiv);
-            AssertWidth(containerDiv, 400);
+            AssertContentWidth(containerDiv, 400);
 
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
             NotNull(childDiv);
-            AssertWidth(childDiv, 100);
+            AssertContentWidth(childDiv, 100);
 
             // Check computed style
             That(childDiv.ComputedStyle.MarginLeft, Is.EqualTo("auto"));
@@ -133,9 +133,9 @@ namespace AngleSharp.Renderer.Tests
 
             // Check final layout
             var containerX = containerDiv.Layout?.X ?? 0.0;
-            var containerWidth = containerDiv.Layout?.Width ?? 0.0;
+            var containerWidth = containerDiv.Layout?.BoxWidth ?? 0.0;
             var childX = childDiv.Layout?.X ?? 0.0;
-            var childWidth = childDiv.Layout?.Width ?? 0.0;
+            var childWidth = childDiv.Layout?.BoxWidth ?? 0.0;
 
             // The leftover space is 400 - 100 - 20 => 280
             // With margin-left:auto, child should have x= containerX + 280
@@ -154,11 +154,11 @@ namespace AngleSharp.Renderer.Tests
             var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
             NotNull(containerDiv);
-            AssertWidth(containerDiv, 400);
+            AssertContentWidth(containerDiv, 400);
 
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
             NotNull(childDiv);
-            AssertWidth(childDiv, 150);
+            AssertContentWidth(childDiv, 150);
 
             // Check computed style
             That(childDiv.ComputedStyle.MarginLeft, Is.EqualTo("10px"));
@@ -166,9 +166,9 @@ namespace AngleSharp.Renderer.Tests
 
             // Check final layout
             var containerX = containerDiv.Layout?.X ?? 0.0;
-            var containerWidth = containerDiv.Layout?.Width ?? 0.0;
+            var containerWidth = containerDiv.Layout?.BoxWidth ?? 0.0;
             var childX = childDiv.Layout?.X ?? 0.0;
-            var childWidth = childDiv.Layout?.Width ?? 0.0;
+            var childWidth = childDiv.Layout?.BoxWidth ?? 0.0;
 
             // leftover = 400 - (150 + 10) => 240
             // margin-right is auto => child remains left-aligned with 10px margin-left
@@ -188,16 +188,16 @@ namespace AngleSharp.Renderer.Tests
             var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
             NotNull(containerDiv);
-            AssertWidth(containerDiv, 300);
+            AssertContentWidth(containerDiv, 300);
 
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
             NotNull(childDiv);
-            AssertWidth(childDiv, 500);
+            AssertContentWidth(childDiv, 500);
 
             // leftoverSpace = 300 - 500 = -200 => 0 after clamp
             // Typically, child ends up at containerX, simply overflowing to the right
             var containerX = containerDiv.Layout?.X ?? 0f;
-            var containerWidth = containerDiv.Layout?.Width ?? 0f;
+            var containerWidth = containerDiv.Layout?.BoxWidth ?? 0f;
             var childX = childDiv.Layout?.X ?? 0f;
 
             That(childX, Is.EqualTo(containerX).Within(0.5),
@@ -219,17 +219,17 @@ namespace AngleSharp.Renderer.Tests
             var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
             NotNull(containerDiv);
-            AssertWidth(containerDiv, 400);
+            AssertContentWidth(containerDiv, 400);
 
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
             NotNull(childDiv);
-            AssertWidth(childDiv, 160);
+            AssertContentWidth(childDiv, 160);
 
             // Final layout
             var containerX = containerDiv.Layout?.X ?? 0f;
-            var containerWidth = containerDiv.Layout?.Width ?? 0f; // 400
+            var containerWidth = containerDiv.Layout?.BoxWidth ?? 0f; // 400
             var childX = childDiv.Layout?.X ?? 0f;
-            var childWidth = childDiv.Layout?.Width ?? 0f;
+            var childWidth = childDiv.Layout?.BoxWidth ?? 0f;
 
             // Typically your code uses "contentWidth = containerWidth - (paddingLeft + paddingRight + borders + marginLeft + marginRight)"
             // So the leftover for auto margins is computed AFTER container’s padding.
@@ -250,20 +250,20 @@ namespace AngleSharp.Renderer.Tests
             NotNull(containerDiv, "Could not find container <div> under <body>.");
 
             AssertDisplay(containerDiv, "block");
-            AssertWidth(containerDiv, 300);
+            AssertContentWidth(containerDiv, 300);
             AssertPosition(containerDiv, 8, 8);
 
             // 3) First child <div style="height: 50px; margin-bottom: 30px">
             var firstBlock = FindChildByIndex(containerDiv, 0);
             AssertDisplay(firstBlock, "block");
-            AssertWidth(firstBlock, 300);
+            AssertContentWidth(firstBlock, 300);
             // Usually at (8,8)
             AssertPosition(firstBlock, 8, 8);
 
             // 4) Second child <div style="height: 70px; margin-top: 20px">
             var secondBlock = FindChildByIndex(containerDiv, 1);
             AssertDisplay(secondBlock, "block");
-            AssertWidth(secondBlock, 300);
+            AssertContentWidth(secondBlock, 300);
 
             // 5) Verify margin collapsing:
             //    bottom margin of first block = 30px
@@ -287,7 +287,7 @@ namespace AngleSharp.Renderer.Tests
 
             // Check container is block, 400px wide
             AssertDisplay(containerDiv, "block");
-            AssertWidth(containerDiv, 400);
+            AssertContentWidth(containerDiv, 400);
 
             // 3) Find child <div style="width: 50%">
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
@@ -296,7 +296,7 @@ namespace AngleSharp.Renderer.Tests
             // Assert it is block-level
             AssertDisplay(childDiv, "block");
             // 50% of 400px => 200px
-            AssertWidth(childDiv, 200);
+            AssertContentWidth(childDiv, 200);
         }
 
         [Test]
@@ -311,7 +311,7 @@ namespace AngleSharp.Renderer.Tests
 
             // Assert container is block-level, 300px wide
             AssertDisplay(containerDiv, "block");
-            AssertWidth(containerDiv, 300);
+            AssertContentWidth(containerDiv, 300);
 
             // 3) Find child <div style="display: block">
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
@@ -321,7 +321,7 @@ namespace AngleSharp.Renderer.Tests
             AssertDisplay(childDiv, "block");
             // Because default box-sizing is content-box,
             // 300px total width minus left/right padding of 10px => 280px content area
-            AssertWidth(childDiv, 280);
+            AssertContentWidth(childDiv, 280);
         }
 
         [Test]
@@ -336,7 +336,7 @@ namespace AngleSharp.Renderer.Tests
 
             // Check parent is block-level, 300px wide, 150px tall
             AssertDisplay(parentDiv, "block");
-            AssertWidth(parentDiv, 300);
+            AssertContentWidth(parentDiv, 300);
             AssertHeight(parentDiv, 150);
 
             // 3) Find child <div style="height: 200px">
@@ -387,7 +387,7 @@ namespace AngleSharp.Renderer.Tests
             //    total width = content width (200px) + left border (5px) + right border (5px) = 210px
             //    So the computed layout width is 210.
             //    (If your engine lumps border into .Layout.Width, we expect 210).
-            AssertWidth(parentDiv, 210);
+            AssertContentWidth(parentDiv, 210);
 
             // Optionally check the child, but the requirement is only that the parent
             // has total box width = 210px.
@@ -406,7 +406,7 @@ namespace AngleSharp.Renderer.Tests
             // 2) Find the container <div style="width: 300px">
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
             NotNull(containerDiv, "Could not find container <div> under <body>.");
-            AssertWidth(containerDiv, 300);
+            AssertContentWidth(containerDiv, 300);
 
             // 3) Find the first child <div style="height: 50px; margin-bottom: -10px">
             var firstBlock = FindChildByIndex(containerDiv, 0);
@@ -465,7 +465,7 @@ namespace AngleSharp.Renderer.Tests
 
             // 3) Check the parent's overall layout width is 300
             //    (Many engines will store the total box size in Layout.Width)
-            AssertWidth(parentDiv, 300);
+            AssertContentWidth(parentDiv, 300);
 
             // 4) Check the child’s content area is ~270 if the child is block and auto-fills the parent's content box
             //    i.e. 300 - leftPadding(10) - rightPadding(10) - leftBorder(5) - rightBorder(5) = 270
@@ -474,7 +474,7 @@ namespace AngleSharp.Renderer.Tests
             NotNull(childDiv, "Could not find child <div> inside border-box parent.");
 
             // If the child is a block-level, width:auto element, it should fill the parent's content box => 270
-            AssertWidth(childDiv, 270);
+            AssertContentWidth(childDiv, 270);
         }
 
         [Test]
@@ -489,7 +489,7 @@ namespace AngleSharp.Renderer.Tests
 
             // By standard CSS rules, min-width=200px overrides width=100px
             // => final used width is 200px.
-            AssertWidth(parentDiv, 200);
+            AssertContentWidth(parentDiv, 200);
 
             // 3) Child <div style="width: 50px">
             //    We can confirm it’s present, but the main check is the parent's width.
@@ -509,7 +509,7 @@ namespace AngleSharp.Renderer.Tests
             NotNull(parentDiv, "Could not find parent <div> with max-width.");
 
             // If both width=500px and max-width=300px, the used width is the smaller => 300px
-            AssertWidth(parentDiv, 300);
+            AssertContentWidth(parentDiv, 300);
 
             // 3) Child <div style="width: 400px">
             //    This doesn't matter as far as parent's final width, but we can check it’s there
@@ -554,13 +554,13 @@ namespace AngleSharp.Renderer.Tests
                 "Expected the <span> to have computed display 'inline-block'.");
 
             // 5) Assert the final computed width/height
-            AssertWidth(spanNode, 100);
+            AssertContentWidth(spanNode, 100);
             AssertHeight(spanNode, 20);
 
             // 6) (Optional) Ensure the line box is at least 20px tall (so no overlap with text).
             //    If your engine stores line box info in containerDiv.Layout or somewhere similar,
             //    you might do something like:
-            var containerHeight = containerDiv.Layout?.Height ?? 0.0;
+            var containerHeight = containerDiv.Layout?.BoxHeight ?? 0.0;
             That(containerHeight, Is.GreaterThanOrEqualTo(20.0),
                 "Parent line box should accommodate 20px tall inline-block.");
 
@@ -656,7 +656,7 @@ namespace AngleSharp.Renderer.Tests
 
             // 5) If your engine calculates a final layout height, it may be 0 or minimal if there's no text or content inside.
             //    We'll just ensure it's not 150 or some incorrectly derived 50% of the parent's width.
-            var childLayoutHeight = childDiv.Layout?.Height ?? 0.0;
+            var childLayoutHeight = childDiv.Layout?.BoxHeight ?? 0.0;
             That(childLayoutHeight, Is.LessThan(10.0),
                 "Child should not get a large 50%-of-parent-height. Likely near 0 if empty or text-based auto height.");
         }
@@ -721,13 +721,13 @@ namespace AngleSharp.Renderer.Tests
 
             // 5) Check the inline-block’s final computed width/height
             //    The example sets width=80px, height=16px.
-            AssertWidth(spanNode, 80);
+            AssertContentWidth(spanNode, 80);
             AssertHeight(spanNode, 16);
 
             // 6) Confirm the line box accommodates 16px in height and
             //    that the bottom of the inline-block aligns with the text baseline.
             //    In many engines, the container's line-height or line box might be ~16px (or a bit more).
-            var containerHeight = containerDiv.Layout?.Height ?? 0.0;
+            var containerHeight = containerDiv.Layout?.BoxHeight ?? 0.0;
             That(containerHeight, Is.GreaterThanOrEqualTo(16.0),
                 "Line box must be at least 16px tall to avoid clipping the inline-block.");
 
@@ -758,7 +758,7 @@ namespace AngleSharp.Renderer.Tests
             // The container has box-sizing: content-box.
             // In content-box, the specified width (300px) is the content width.
             AssertDisplay(containerDiv, "block");
-            AssertWidth(containerDiv, 300);
+            AssertContentWidth(containerDiv, 300);
             AssertPosition(containerDiv, 8, 8);
 
             // 3) Find the child <div>
@@ -767,9 +767,9 @@ namespace AngleSharp.Renderer.Tests
 
             // The child should span the full container content width (300px) and have zero height.
             AssertDisplay(childDiv, "block");
-            AssertWidth(childDiv, 300);
+            AssertContentWidth(childDiv, 300);
             AssertHeight(childDiv, 0);
-            AssertPosition(childDiv, 8, 8);
+            AssertPosition(childDiv, 20, 20);
         }
 
 // <div style="width:300px; padding:10px; border:2px solid black; box-sizing: border-box">
@@ -788,7 +788,7 @@ namespace AngleSharp.Renderer.Tests
             // For border-box, the specified width (300px) includes padding and border.
             // Thus, the computed content width is 300 - (10+10+2+2) = 276px.
             AssertDisplay(containerDiv, "block");
-            AssertWidth(containerDiv, 276);
+            AssertContentWidth(containerDiv, 276);
             AssertPosition(containerDiv, 8, 8);
 
             // 3) Find the child <div>
@@ -797,9 +797,9 @@ namespace AngleSharp.Renderer.Tests
 
             // The child should also have a computed width of 276px and zero height.
             AssertDisplay(childDiv, "block");
-            AssertWidth(childDiv, 276);
+            AssertContentWidth(childDiv, 276);
             AssertHeight(childDiv, 0);
-            AssertPosition(childDiv, 8, 8);
+            AssertPosition(childDiv, 20, 20);
         }
 
 // <div style="width:300px; padding:10px; border:2px solid black">
@@ -817,7 +817,7 @@ namespace AngleSharp.Renderer.Tests
 
             // With no box-sizing specified, the default is content-box.
             AssertDisplay(containerDiv, "block");
-            AssertWidth(containerDiv, 300);
+            AssertContentWidth(containerDiv, 300);
             AssertPosition(containerDiv, 8, 8);
 
             // 3) Find the child <div>
@@ -825,9 +825,9 @@ namespace AngleSharp.Renderer.Tests
             NotNull(childDiv, "Could not find child <div> under container <div>.");
 
             AssertDisplay(childDiv, "block");
-            AssertWidth(childDiv, 300);
+            AssertContentWidth(childDiv, 300);
             AssertHeight(childDiv, 0);
-            AssertPosition(childDiv, 8, 8);
+            AssertPosition(childDiv, 20, 20);
         }
 
 // <div style="height:200px; padding:10px; border:2px solid black; box-sizing: content-box">
@@ -855,7 +855,7 @@ namespace AngleSharp.Renderer.Tests
 
             // The child should have zero height.
             AssertDisplay(childDiv, "block");
-            AssertWidth(childDiv, containerDiv.Layout.Width); // width might be inherited or auto (if width not set)
+            AssertContentWidth(childDiv, containerDiv.Layout.BoxWidth); // width might be inherited or auto (if width not set)
             AssertHeight(childDiv, 0);
             AssertPosition(childDiv, 8, 8);
         }
@@ -883,7 +883,7 @@ namespace AngleSharp.Renderer.Tests
             NotNull(childDiv, "Could not find child <div> under container <div>.");
 
             AssertDisplay(childDiv, "block");
-            AssertWidth(childDiv, containerDiv.Layout.Width);
+            AssertContentWidth(childDiv, containerDiv.Layout.BoxWidth);
             AssertHeight(childDiv, 0);
             AssertPosition(childDiv, 8, 8);
         }
@@ -905,7 +905,7 @@ namespace AngleSharp.Renderer.Tests
             // For border-box with width:auto, the container takes the full available width.
             // Thus, the computed content width is 500 - (10+10+2+2) = 500 - 24 = 476px.
             AssertDisplay(containerDiv, "block");
-            AssertWidth(containerDiv, 476);
+            AssertContentWidth(containerDiv, 476);
             AssertPosition(containerDiv, 8, 8);
 
             // 3) Find the child <div>
@@ -913,7 +913,7 @@ namespace AngleSharp.Renderer.Tests
             NotNull(childDiv, "Could not find child <div> under container <div>.");
 
             AssertDisplay(childDiv, "block");
-            AssertWidth(childDiv, 476);
+            AssertContentWidth(childDiv, 476);
             AssertHeight(childDiv, 0);
             AssertPosition(childDiv, 8, 8);
         }
@@ -933,7 +933,7 @@ namespace AngleSharp.Renderer.Tests
 
             // For border-box, computed content width = 20 - (10+10+2+2) = 20 - 24 = -4, clamped to 0.
             AssertDisplay(containerDiv, "block");
-            AssertWidth(containerDiv, 0);
+            AssertContentWidth(containerDiv, 0);
             AssertPosition(containerDiv, 8, 8);
 
             // 3) Find the child <div>
@@ -941,9 +941,9 @@ namespace AngleSharp.Renderer.Tests
             NotNull(childDiv, "Could not find child <div> under container <div>.");
 
             AssertDisplay(childDiv, "block");
-            AssertWidth(childDiv, 0);
+            AssertContentWidth(childDiv, 0);
             AssertHeight(childDiv, 0);
-            AssertPosition(childDiv, 8, 8);
+            AssertPosition(childDiv, 20, 20);
         }
 
 
@@ -963,7 +963,7 @@ namespace AngleSharp.Renderer.Tests
             // Even though the specified width is 300px, the min-width forces the width to be at least 350px.
             // In border-box mode, the computed content width is 350 - (10+10+2+2) = 350 - 24 = 326px.
             AssertDisplay(containerDiv, "block");
-            AssertWidth(containerDiv, 326);
+            AssertContentWidth(containerDiv, 326);
             AssertPosition(containerDiv, 8, 8);
 
             // 3) Find the child <div>
@@ -971,9 +971,9 @@ namespace AngleSharp.Renderer.Tests
             NotNull(childDiv, "Could not find child <div> under container <div>.");
 
             AssertDisplay(childDiv, "block");
-            AssertWidth(childDiv, 326);
+            AssertContentWidth(childDiv, 326);
             AssertHeight(childDiv, 0);
-            AssertPosition(childDiv, 8, 8);
+            AssertPosition(childDiv, 20, 20);
         }
 
 // <div style="width:300px; padding:10px; border:2px solid black; box-sizing: border-box">
@@ -991,7 +991,7 @@ namespace AngleSharp.Renderer.Tests
 
             // For border-box, outer container computed content width = 300 - (10+10+2+2) = 276px.
             AssertDisplay(containerDiv, "block");
-            AssertWidth(containerDiv, 276);
+            AssertContentWidth(containerDiv, 276);
             AssertPosition(containerDiv, 8, 8);
 
             // 3) Find the inner child <div>
@@ -1000,9 +1000,9 @@ namespace AngleSharp.Renderer.Tests
 
             // The inner child uses content-box, so its specified width (100px) is its content width.
             AssertDisplay(childDiv, "block");
-            AssertWidth(childDiv, 100);
+            AssertContentWidth(childDiv, 100);
             AssertHeight(childDiv, 0);
-            AssertPosition(childDiv, 8, 8);
+            AssertPosition(childDiv, 20, 20);
         }
     }
 }

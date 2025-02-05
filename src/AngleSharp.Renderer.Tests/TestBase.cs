@@ -159,10 +159,10 @@ namespace AngleSharp.Renderer.Tests
         /// Asserts that the <see cref="ElementNode"/> layout width matches <paramref name="expectedWidth"/>.
         /// Allows for a small floating-point tolerance in case of sub-pixel rendering.
         /// </summary>
-        protected void AssertWidth(ElementNode node, double expectedWidth, double tolerance = 0.5)
+        protected void AssertContentWidth(ElementNode node, double expectedWidth, double tolerance = 0.5)
         {
             NotNull(node, $"Node cannot be null when checking expected width={expectedWidth}.");
-            That(node!.Layout?.Width,
+            That(node!.Layout?.ContentWidth,
                  Is.EqualTo(expectedWidth).Within(tolerance),
                  $"Expected element width to be {expectedWidth}px ± {tolerance}.");
         }
@@ -174,7 +174,7 @@ namespace AngleSharp.Renderer.Tests
         protected void AssertHeight(ElementNode node, double expectedHeight, double tolerance = 0.5)
         {
             NotNull(node, $"Node cannot be null when checking expected height={expectedHeight}.");
-            That(node!.Layout?.Height,
+            That(node!.Layout?.ContentHeight,
                 Is.EqualTo(expectedHeight).Within(tolerance),
                 $"Expected element height to be {expectedHeight}px ± {tolerance}.");
         }

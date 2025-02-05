@@ -598,12 +598,181 @@ namespace AngleSharp.Renderer
             float totalWidth = (boxSizing == "border-box") ? finalContentWidth : box.BoxWidth;
             float totalHeight = finalContentHeight;
 
-            // 8️⃣ Save the layout box.
-            node.Layout = new LayoutBox(posX, posY, totalWidth, totalHeight);
+            // 8️⃣ Create and assign a new LayoutBox with all the details.
+            var layoutBox = new LayoutBox(posX, posY, totalWidth, totalHeight)
+            {
+                // Save box model metrics for later use (e.g. hit testing, alignment, etc.)
+                MarginTop = box.MarginTop,
+                MarginRight = box.MarginRight,
+                MarginBottom = box.MarginBottom,
+                MarginLeft = box.MarginLeft,
+                BorderTop = box.BorderTop,
+                BorderRight = box.BorderRight,
+                BorderBottom = box.BorderBottom,
+                BorderLeft = box.BorderLeft,
+                PaddingTop = box.PaddingTop,
+                PaddingRight = box.PaddingRight,
+                PaddingBottom = box.PaddingBottom,
+                PaddingLeft = box.PaddingLeft,
+                // Relative positions (relative to the parent's coordinate system)
+                RelativeX = posX - context.ParentX,
+                RelativeY = posY - context.ParentY
+            };
+
+            node.Layout = layoutBox;
 
             // 9️⃣ Return the updated vertical offset.
             float totalElementHeight = box.MarginTop + totalHeight + box.MarginBottom;
             return offsetYSoFar + totalElementHeight;
+        }
+    }
+
+    /// <summary>
+    /// Represents the raw box model extracted from computed style,
+    /// without applying constraints.
+    /// </summary>
+    public class RawBoxModel
+    {
+        public float MarginTop, MarginRight, MarginBottom, MarginLeft;
+        public float BorderTop, BorderRight, BorderBottom, BorderLeft;
+        public float PaddingTop, PaddingRight, PaddingBottom, PaddingLeft;
+        public float RawContentWidth, RawContentHeight;  // before constraints
+        public float RawBoxWidth, RawBoxHeight;          // full box if content-box
+
+        public RawBoxModel(ICssStyleDeclaration style, float availableWidth)
+        {
+            MarginTop = ParsePx(style, "margin-top");
+            MarginRight = ParsePx(style, "margin-right");
+            MarginBottom = ParsePx(style, "margin-bottom");
+            MarginLeft = ParsePx(style, "margin-left");
+
+            BorderTop = ParsePx(style, "border-top-width");
+            BorderRight = ParsePx(style, "border-right-width");
+            BorderBottom = ParsePx(style, "border-bottom-width");
+            BorderLeft = ParsePx(style, "border-left-width");
+
+            PaddingTop = ParsePx(style, "padding-top");
+            PaddingRight = ParsePx(style, "padding-right");
+            PaddingBottom = ParsePx(style, "padding-bottom");
+            PaddingLeft = ParsePx(style, "padding-left");
+
+            // Compute raw content dimension
+            RawContentWidth = ComputeRawContentWidth(style, availableWidth);
+            RawContentHeight = ComputeRawContentHeight(style);
+
+            // For content-box, the final box is content + padding + border;
+            // For border-box, RawContentWidth below is already "content" portion
+            // but we still store RawBoxWidth as if content-box was used.
+            RawBoxWidth = RawContentWidth + PaddingLeft + PaddingRight + BorderLeft + BorderRight;
+            RawBoxHeight = RawContentHeight + PaddingTop + PaddingBottom + BorderTop + BorderBottom;
+        }
+
+        private float ComputeRawContentWidth(ICssStyleDeclaration style, float availableWidth)
+        {
+            float specifiedWidth = ParsePx(style, "width");
+            bool isBorderBox = style.GetPropertyValue("box-sizing") == "border-box";
+
+            if (specifiedWidth > 0)
+            {
+                return isBorderBox
+                    // For border-box, subtract border+padding from the declared width => raw content
+                    ? specifiedWidth - (PaddingLeft + PaddingRight + BorderLeft + BorderRight)
+                    : specifiedWidth;
+            }
+            else
+            {
+                // If width is "auto", just use the parent’s availableWidth.
+                return isBorderBox
+                    ? availableWidth - (PaddingLeft + PaddingRight + BorderLeft + BorderRight)
+                    : availableWidth;
+            }
+        }
+
+        private float ComputeRawContentHeight(ICssStyleDeclaration style)
+        {
+            float specifiedHeight = ParsePx(style, "height");
+            bool isBorderBox = style.GetPropertyValue("box-sizing") == "border-box";
+
+            if (specifiedHeight > 0)
+            {
+                return isBorderBox
+                    ? specifiedHeight - (PaddingTop + PaddingBottom + BorderTop + BorderBottom)
+                    : specifiedHeight;
+            }
+            else
+            {
+                // auto height => return NaN to signal "determined by content"
+                return float.NaN;
+            }
+        }
+
+        private static float ParsePx(ICssStyleDeclaration style, string property)
+        {
+            var raw = style.GetProperty(property)?.RawValue;
+            return raw is CssLengthValue lv ? (float)lv.Value : 0f;
+        }
+    }
+
+    /// <summary>
+    /// Applies min/max constraints to the raw content width/height.
+    /// Produces final values for content and box.
+    /// </summary>
+    public class ConstrainedBoxModel
+    {
+        public float MarginTop, MarginRight, MarginBottom, MarginLeft;
+        public float BorderTop, BorderRight, BorderBottom, BorderLeft;
+        public float PaddingTop, PaddingRight, PaddingBottom, PaddingLeft;
+
+        // The final constrained content dimensions
+        public float ContentWidth, ContentHeight;
+        // The final box dimensions
+        public float BoxWidth, BoxHeight;
+
+        public ConstrainedBoxModel(RawBoxModel raw, LayoutConstraints constraints, string boxSizing)
+        {
+            // Copy margins/borders/paddings
+            MarginTop = raw.MarginTop;
+            MarginRight = raw.MarginRight;
+            MarginBottom = raw.MarginBottom;
+            MarginLeft = raw.MarginLeft;
+            BorderTop = raw.BorderTop;
+            BorderRight = raw.BorderRight;
+            BorderBottom = raw.BorderBottom;
+            BorderLeft = raw.BorderLeft;
+            PaddingTop = raw.PaddingTop;
+            PaddingRight = raw.PaddingRight;
+            PaddingBottom = raw.PaddingBottom;
+            PaddingLeft = raw.PaddingLeft;
+
+            // Apply constraints to raw content
+            float unclampedContentWidth = raw.RawContentWidth;
+            float unclampedContentHeight = raw.RawContentHeight;
+
+            ContentWidth = constraints.ApplyWidth(unclampedContentWidth);
+
+            if (!float.IsNaN(unclampedContentHeight))
+            {
+                ContentHeight = constraints.ApplyHeight(unclampedContentHeight);
+            }
+            else
+            {
+                // If "auto", remain NaN so we can compute from children later
+                ContentHeight = float.NaN;
+            }
+
+            // Now compute final outer box dimensions
+            if (boxSizing == "border-box")
+            {
+                // The declared width was the final outer width, so box = content dimension
+                // because ContentWidth is the actual content portion.
+                BoxWidth = ContentWidth; // already includes border+padding in raw logic
+                BoxHeight = ContentHeight;
+            }
+            else
+            {
+                BoxWidth = ContentWidth + (PaddingLeft + PaddingRight + BorderLeft + BorderRight);
+                BoxHeight = ContentHeight + (PaddingTop + PaddingBottom + BorderTop + BorderBottom);
+            }
         }
     }
 
@@ -762,8 +931,15 @@ namespace AngleSharp.Renderer
             MaxHeight = ParsePxOrAuto(style, "max-height");
         }
 
-        public float ApplyWidth(float width) => Math.Clamp(width, MinWidth, MaxWidth);
-        public float ApplyHeight(float height) => Math.Clamp(height, MinHeight, MaxHeight);
+        public float ApplyWidth(float width)
+        {
+            return Math.Clamp(width, MinWidth, MaxWidth);
+        }
+
+        public float ApplyHeight(float height)
+        {
+            return Math.Clamp(height, MinHeight, MaxHeight);
+        }
 
         private static float ParsePx(ICssStyleDeclaration style, string property)
         {
