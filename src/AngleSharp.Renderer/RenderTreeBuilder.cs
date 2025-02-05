@@ -754,16 +754,53 @@ namespace AngleSharp.Renderer
 
     public static class MarginCollapser
     {
-        public static float Collapse(float previousBottomMargin, float currentTopMargin)
+        /// <summary>
+        /// Collapses two vertical margins according to CSS rules:
+        /// 1. If both are positive, use the maximum.
+        /// 2. If both are negative, use the minimum (most negative).
+        /// 3. If one is positive and one is negative, add them.
+        /// </summary>
+        public static float Collapse(float marginA, float marginB)
         {
-            // A simple implementation: if either margin is negative, add them.
-            if (previousBottomMargin < 0 || currentTopMargin < 0)
+            // If only one margin is non-zero, short-circuit
+            if (marginA == 0) return marginB;
+            if (marginB == 0) return marginA;
+
+            // Both non-zero
+            bool aPos = marginA > 0;
+            bool bPos = marginB > 0;
+
+            // Same sign => pick the "extreme"
+            if (aPos && bPos)
             {
-                return previousBottomMargin + currentTopMargin;
+                return MathF.Max(marginA, marginB);
+            }
+            if (!aPos && !bPos)
+            {
+                // both negative, pick the more negative (i.e. min)
+                return MathF.Min(marginA, marginB);
             }
 
-            // Otherwise, use the larger of the two.
-            return Math.Max(previousBottomMargin, currentTopMargin);
+            // Different signs => sum them up
+            return marginA + marginB;
+        }
+
+        /// <summary>
+        /// If a block is empty (no in-flow children, no padding/border),
+        /// it can collapse its own top/bottom margin together or even with the parent.
+        /// This function returns the single (collapsed) margin if we should treat it as empty.
+        /// Otherwise, returns 0 to indicate no special empty collapse.
+        /// </summary>
+        public static float CollapseEmptyBlock(float marginTop, float marginBottom, bool isTrulyEmpty)
+        {
+            if (isTrulyEmpty)
+            {
+                // For an empty block:
+                // The top and bottom margin collapse into a single margin
+                // whose size is the max of the absolute values (with sign logic).
+                return Collapse(marginTop, marginBottom);
+            }
+            return 0f;
         }
     }
 

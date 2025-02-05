@@ -222,11 +222,11 @@ public class BlockLayoutObject : ILayoutObject
 
         var style = elem.ComputedStyle;
         var lb = elem.Layout; // The LayoutBox we set in Measure()
-
         if (lb == null) return; // Safety check
 
-        // 1️⃣ Collapse top margin with parent's (if desired)
-        float collapsedMargin = MarginCollapser.Collapse(context.PreviousMarginBottom, lb.MarginTop);
+        // 1️⃣ Collapse the parent's previous bottom margin with our top margin.
+        // (For the very first element on the page, context.PreviousMarginBottom will be 0.)
+        float collapsedMarginTop = MarginCollapser.Collapse(context.PreviousMarginBottom, lb.MarginTop);
 
         // 2️⃣ Compute final absolute position
         (float posX, float posY) = PositioningResolver.ComputePosition(
@@ -236,7 +236,7 @@ public class BlockLayoutObject : ILayoutObject
             context.AvailableWidth,
             lb.ContentWidth // or lb.BoxWidth if border-box
         );
-        posY += collapsedMargin;
+        posY += collapsedMarginTop;
 
         // Store final XY
         lb.X = posX;
@@ -277,7 +277,7 @@ public class BlockLayoutObject : ILayoutObject
             childOffsetY = updatedOffsetY;
         }
 
-        // 4️⃣ If height was auto, finalize using total children size
+        // // 4️⃣ If height was auto, finalize using total children size
         if (float.IsNaN(lb.ContentHeight))
         {
             lb.BoxHeight = childOffsetY

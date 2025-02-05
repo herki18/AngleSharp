@@ -14,6 +14,7 @@ namespace AngleSharp.Renderer.Tests
         protected IBrowsingContext Context { get; private set; }
         protected IDocument Document { get; private set; }
 
+        protected virtual string TestPath => "";
         protected virtual string TestCaseName => GetSanitizedTestName();
         protected virtual string CssHref => $"{TestCaseName}.css";
 
@@ -51,7 +52,7 @@ namespace AngleSharp.Renderer.Tests
         protected string GetTestFilePath(string fileName)
         {
             return Path.Combine(TestContext.CurrentContext.TestDirectory,
-                "TestData", fileName);
+                "TestData", TestPath, fileName);
         }
 
         protected bool FileExists(string path) => File.Exists(path);

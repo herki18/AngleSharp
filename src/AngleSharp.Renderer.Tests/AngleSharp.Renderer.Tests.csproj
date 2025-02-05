@@ -27,9 +27,6 @@
       <None Update="TestData\test_block_element_takes_full_container_width.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="TestData\test_auto_margins_center_element_horizontally.html">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
       <None Update="TestData\test_vertical_margins_collapse_between_siblings.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
@@ -48,25 +45,16 @@
       <None Update="TestData\test_display_inline_not_handled_by_block_strategy.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="TestData\test_negative_margins_allow_overlap.html">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
       <None Update="TestData\test_box_sizing_border_box_includes_border_padding.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="TestData\test_display_none_skips_layout.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="TestData\test_empty_block_still_collapses_margins.html">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
       <None Update="TestData\test_inline_block_baseline_alignment.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="TestData\test_inline_block_retains_dimensions_in_inline_flow.html">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="TestData\test_margin_collapse_with_first_child.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="TestData\test_max_width_constrains_content_width.html">
@@ -82,21 +70,6 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="TestData\test_percentage_padding_relative_to_container_width.html">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="TestData\test_auto_margins_no_explicit_width_fill_container.html">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="TestData\test_only_left_margin_auto.html">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="TestData\test_only_right_margin_auto.html">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="TestData\test_child_wider_than_container_auto_margins.html">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="TestData\test_auto_margins_center_within_padded_container.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="TestData\test_box_sizing_auto_width_border_box.html">
@@ -124,6 +97,33 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="TestData\test_box_sizing_height_content_box.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_auto_margins_center_element_horizontally.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_auto_margins_center_within_padded_container.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_auto_margins_no_explicit_width_fill_container.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_margin_collapse_with_first_child.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_negative_margins_allow_overlap.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_only_left_margin_auto.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_only_right_margin_auto.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_child_wider_than_container_auto_margins.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_empty_block_still_collapses_margins.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>
