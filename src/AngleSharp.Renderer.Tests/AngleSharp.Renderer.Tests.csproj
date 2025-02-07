@@ -126,6 +126,18 @@
       <None Update="TestData\Margins\test_empty_block_still_collapses_margins.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="TestData\Margins\test_block_element_takes_full_container_width.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_multiple_sibling_margin_collapse.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_nested_margin_collapse_with_parent_and_siblings.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_single_child_margin_collapse.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

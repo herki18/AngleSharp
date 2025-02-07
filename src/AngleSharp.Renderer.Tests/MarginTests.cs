@@ -120,6 +120,38 @@ namespace AngleSharp.Renderer.Tests
         }
 
         [Test]
+        public void test_block_element_takes_full_container_width()
+        {
+            // 1) Render and get (root, html, body)
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+
+            // 2) Find container <div style="width:300px"> inside <body>
+            var container = FindElementNodeByTagName(bodyNode, TagNames.Div);
+            NotNull(container, "Could not find container <div>.");
+            AssertContentWidth(container, 300);
+
+            // 3) Find first child (first block): <div style="height:50px; margin-bottom:20px;">
+            var firstBlock = FindChildByIndex(container, 0);
+            NotNull(firstBlock, "Could not find first block.");
+            // Expect height of 50px
+            AssertHeight(firstBlock, 50);
+
+            // 4) Find second child: <div style="height:50px; margin-top:30px;">
+            var secondBlock = FindChildByIndex(container, 1);
+            NotNull(secondBlock, "Could not find second block.");
+
+            // 5) Check positions:
+            //    The container is expected at Y = 8 (body's margin applied once)
+            AssertPosition(container, 8, 8);
+            //    First block should start at Y = 8 (its top margin collapses with container's position)
+            AssertPosition(firstBlock, 8, 8);
+            //    The gap between first and second blocks should be the collapse of
+            //       first block's bottom margin (20) and second block's top margin (30) → 30.
+            //    Thus, second block's top should be: 8 + 50 (first block's height) + 30 = 88.
+            AssertPosition(secondBlock, 8, 88);
+        }
+
+        [Test]
         public void test_child_wider_than_container_auto_margins()
         {
             // HTML:
@@ -208,6 +240,38 @@ namespace AngleSharp.Renderer.Tests
         }
 
         [Test]
+        public void test_multiple_sibling_margin_collapse()
+        {
+            // 1) Render and get (root, html, body)
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+
+            // 2) Find the outer container <div> inside <body>
+            var container = FindElementNodeByTagName(bodyNode, TagNames.Div);
+            NotNull(container, "Could not find the container <div>.");
+            // Expect container positioned at (8,8)
+            AssertPosition(container, 8, 8);
+
+            // 3) Find three sibling divs inside the container.
+            //    Each sibling has height:40px and margin:8px (both top and bottom).
+            var sibling1 = FindChildByIndex(container, 0);
+            var sibling2 = FindChildByIndex(container, 1);
+            var sibling3 = FindChildByIndex(container, 2);
+            NotNull(sibling1, "Could not find sibling 1.");
+            NotNull(sibling2, "Could not find sibling 2.");
+            NotNull(sibling3, "Could not find sibling 3.");
+
+            // 4) Expected positions:
+            //    - First sibling: with collapsed top margin, its top is at Y = 8.
+            AssertPosition(sibling1, 8, 8);
+            //    - The gap between siblings collapses the bottom of sibling1 and top of sibling2:
+            //         Collapse(8,8) → 8px gap.
+            //         So sibling2's top should be: 8 + 40 + 8 = 56.
+            AssertPosition(sibling2, 8, 56);
+            //    - Similarly, sibling3's top should be: 56 + 40 + 8 = 104.
+            AssertPosition(sibling3, 8, 104);
+        }
+
+        [Test]
         public void test_negative_margins_allow_overlap()
         {
             // 1) Render the document
@@ -234,6 +298,53 @@ namespace AngleSharp.Renderer.Tests
             //       effectively overlapping the prior 10px
             AssertPosition(secondBlock, 8 /* or the X offset if relevant */, 40 /* Y expected */);
         }
+
+//         [Test]
+// public void test_nested_margin_collapse_with_parent_and_siblings()
+// {
+//     // 1) Render and get (root, html, body)
+//     var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+//
+//     // 2) Find the outer container <div> (which has its own margin and padding)
+//     var outerContainer = FindElementNodeByTagName(bodyNode, TagNames.Div);
+//     NotNull(outerContainer, "Could not find outer container <div>.");
+//     // For this test, assume outer container is positioned at (8,8)
+//     AssertPosition(outerContainer, 8, 8);
+//
+//     // 3) Within the outer container, there are three nested sibling divs.
+//     //    Each nested div has height:30px and margin:10px.
+//     var nested1 = FindChildByIndex(outerContainer, 0);
+//     var nested2 = FindChildByIndex(outerContainer, 1);
+//     var nested3 = FindChildByIndex(outerContainer, 2);
+//     NotNull(nested1, "Could not find nested div 1.");
+//     NotNull(nested2, "Could not find nested div 2.");
+//     NotNull(nested3, "Could not find nested div 3.");
+//
+//     // 4) Assume the outer container has a top padding of 5px; therefore,
+//     //    its content area's Y origin is 8 (container) + 5 (padding) = 13.
+//     //    For the first nested div, if its top margin (10px) collapses with the container's margin,
+//     //    then its top should be at Y = 13.
+//     AssertPosition(nested1, 8, 13);
+//     // 5) For nested siblings, the gap is the collapse of 10px margins → 10px gap.
+//     //    So nested2's top should be: 13 + 30 + 10 = 53.
+//     AssertPosition(nested2, 8, 53);
+//     //    And nested3's top should be: 53 + 30 + 10 = 93.
+//     AssertPosition(nested3, 8, 93);
+//
+//     // 6) Finally, find additional sibling divs outside the outer container.
+//     //    For example, these may be the second and third divs in <body>.
+//     var sibling1 = FindElementNodeByTagName(bodyNode, TagNames.Div, 1);
+//     var sibling2 = FindElementNodeByTagName(bodyNode, TagNames.Div, 2);
+//     NotNull(sibling1, "Could not find sibling div 1.");
+//     NotNull(sibling2, "Could not find sibling div 2.");
+//
+//     // 7) Assume the outer container’s bottom is computed around Y ~110.
+//     //    With sibling1's margin of 8, its top should be approximately 110 + 8 = 118.
+//     AssertPosition(sibling1, 8, 118);
+//     // 8) Sibling2 should then be positioned at: 118 + 50 (sibling1 height) + 8 = 176.
+//     AssertPosition(sibling2, 8, 176);
+// }
+
 
         [Test]
         public void test_only_left_margin_auto()
@@ -301,5 +412,24 @@ namespace AngleSharp.Renderer.Tests
             That(childX, Is.EqualTo(expectedX).Within(0.5),
                 "Child should sit 10px from the container's left edge.");
         }
+
+        [Test]
+        public void test_single_child_margin_collapse()
+        {
+            // 1) Render and get (root, html, body)
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+
+            // 2) Find the single child <div style="width:300px; margin:8px;"> under <body>
+            var singleChild = FindElementNodeByTagName(bodyNode, TagNames.Div);
+            NotNull(singleChild, "Could not find the single child <div>.");
+
+            // 3) Assert that the child's content width is 300.
+            AssertContentWidth(singleChild, 300);
+
+            // 4) With body's margin of 8px and the child's own margin of 8px,
+            //    proper collapse should result in the child being positioned (16,8).
+            AssertPosition(singleChild, 16, 8);
+        }
+
     }
 }

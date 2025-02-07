@@ -1,6 +1,7 @@
 namespace AngleSharp.Renderer;
 
 using System;
+using System.Linq;
 
 /// <summary>
 /// Each layout object encapsulates the logic for measuring and arranging an IRenderNode.
@@ -224,65 +225,106 @@ public class BlockLayoutObject : ILayoutObject
         var lb = elem.Layout; // The LayoutBox we set in Measure()
         if (lb == null) return; // Safety check
 
-        // 1️⃣ Collapse the parent's previous bottom margin with our top margin.
-        // (For the very first element on the page, context.PreviousMarginBottom will be 0.)
-        float collapsedMarginTop = MarginCollapser.Collapse(context.PreviousMarginBottom, lb.MarginTop);
+        float collapsedMarginWithParent = MarginCollapser.Collapse(
+            context.PreviousMarginBottom,
+            lb.MarginTop
+        );
 
-        // 2️⃣ Compute final absolute position
+
+        // 1) Collapse the parent's previous margin bottom with this block's top margin.
+        // float collapsedMarginWithParent = MarginCollapser.Collapse(parentMargin, lb.MarginTop);
+
+        // Compute final absolute position (this can include relative positioning, etc.).
         (float posX, float posY) = PositioningResolver.ComputePosition(
             style,
             context.ParentX,
             context.ParentY,
             context.AvailableWidth,
-            lb.ContentWidth // or lb.BoxWidth if border-box
+            lb.ContentWidth
         );
-        posY += collapsedMarginTop;
 
-        // Store final XY
+        posY = context.ParentY - context.PreviousMarginBottom + collapsedMarginWithParent;
+
+        // Store final position
         lb.X = posX;
         lb.Y = posY;
 
-        // 3️⃣ Layout children in block flow
-        float childOffsetY = 0f;
+        // Prepare to layout children in normal block flow
+        float currentY = 0f; // tracks the vertical offset inside this block
+        float previousSiblingBottomMargin = 0f; // tracks the last child's bottom margin
+
+        // Set up a flag so that for the first child we do not add its top margin again.
+        bool isFirstChild = true;
+
+        // The childContext is used for each child.
         var childContext = new LayoutContext
         {
             ParentX = posX + lb.BorderLeft + lb.PaddingLeft,
             ParentY = posY + lb.BorderTop + lb.PaddingTop,
             AvailableWidth = lb.ContentWidth,
-            PreviousMarginBottom = 0f
+            PreviousMarginBottom = lb.MarginBottom
         };
 
-        foreach (var child in elem.Children)
+        // Layout children in a vertical stack
+        foreach (var child in elem.Children.Where(node => node is ElementNode or TextNode))
         {
             if (child == null) continue;
 
-            // Let each child measure & arrange in the parent's context
-            // But we already did MeasurePass globally, so you could skip or do partial measure here if needed.
-            float updatedOffsetY = childOffsetY;
+            // Retrieve child's layout object
             var cLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(child);
-            cLayoutObj.Arrange(childContext);
 
-            // Once arranged, see how tall child is
+            // If the child is an element node with a layout, we collapse the child's top margin
+            // with the previous sibling's bottom margin:
+            float childTopMargin = 0f;
+            float childBottomMargin = 0f;
+            float childHeight = 0f;
+
             if (child is ElementNode cElem && cElem.Layout != null)
             {
-                float childHeight = cElem.Layout.BoxHeight;
-                float marginBottom = cElem.Layout.MarginBottom;
-                updatedOffsetY += (childHeight + marginBottom + cElem.Layout.MarginTop);
-            }
-            else if (child is TextNode tNode && tNode.Layout != null)
-            {
-                updatedOffsetY += tNode.Layout.BoxHeight;
+                childTopMargin = cElem.Layout.MarginTop;
+                childBottomMargin = cElem.Layout.MarginBottom;
+                childHeight = cElem.Layout.BoxHeight;
             }
 
-            childOffsetY = updatedOffsetY;
+            // For the first child, if the container’s own top margin has already been applied,
+            // do not add the child's top margin. For subsequent siblings, collapse normally.
+            float collapsedMarginTop;
+            if (isFirstChild)
+            {
+                collapsedMarginTop = 0f;
+                isFirstChild = false;
+            }
+            else
+            {
+                collapsedMarginTop = MarginCollapser.Collapse(previousSiblingBottomMargin, childTopMargin);
+            }
+
+
+
+            // Update the child's ParentY to include the offset + collapsed top margin
+            childContext.ParentY = posY + lb.BorderTop + lb.PaddingTop + currentY + collapsedMarginTop;
+
+            // Arrange the child in that position
+            cLayoutObj.Arrange(childContext);
+
+            // Now that the child has been arranged, we advance the currentY:
+            // childHeight + bottom margin
+            currentY += collapsedMarginTop + childHeight;
+
+            // Next iteration: previousSiblingBottomMargin is this child's bottom margin
+            previousSiblingBottomMargin = childBottomMargin;
         }
 
-        // // 4️⃣ If height was auto, finalize using total children size
+        // Update this element’s final box height if it was auto;
+        // or adjust if you are recalculating. The code below is just an example:
         if (float.IsNaN(lb.ContentHeight))
         {
-            lb.BoxHeight = childOffsetY
-                           + lb.PaddingTop + lb.PaddingBottom
-                           + lb.BorderTop + lb.BorderBottom;
+            // Add the last child's bottom margin as well
+            currentY += previousSiblingBottomMargin;
+
+            lb.BoxHeight = currentY
+                + lb.PaddingTop + lb.PaddingBottom
+                + lb.BorderTop + lb.BorderBottom;
         }
     }
 }
@@ -367,25 +409,11 @@ public class LayoutEngineV2
     {
         var layoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(node);
         layoutObj.Measure(context);
-
-        // foreach (var child in node.Children)
-        // {
-        //     if (child == null) continue;
-        //     var childCtx = context; // you might refine per child
-        //     MeasurePass(child, childCtx);
-        // }
     }
 
     private void ArrangePass(IRenderNode node, LayoutContext context)
     {
         var layoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(node);
         layoutObj.Arrange(context);
-
-        // foreach (var child in node.Children)
-        // {
-        //     if (child == null) continue;
-        //     var childCtx = context; // again, refine per child if needed
-        //     ArrangePass(child, childCtx);
-        // }
     }
 }
