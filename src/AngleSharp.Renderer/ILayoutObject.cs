@@ -2,6 +2,7 @@ namespace AngleSharp.Renderer;
 
 using System;
 using System.Linq;
+using Html.Construction;
 
 /// <summary>
 /// Each layout object encapsulates the logic for measuring and arranging an IRenderNode.
@@ -40,6 +41,7 @@ public struct LayoutContext
     public float AvailableWidth;
 
     public bool IsFirstChild;
+    public float ParentMarginBottom;
 
     public float PreviousMarginBottom; // For margin collapsing, if desired.
 }
@@ -250,7 +252,12 @@ public class BlockLayoutObject : ILayoutObject
         if (collapsedMarginWithParent == 0)
         {
             posY = context.ParentY;
-        }else
+        }
+        else if(context.IsFirstChild)
+        {
+            posY = context.ParentY - context.ParentMarginBottom + collapsedMarginWithParent;
+        }
+        else
         {
             posY = context.ParentY - context.PreviousMarginBottom + collapsedMarginWithParent;
         }
@@ -286,6 +293,8 @@ public class BlockLayoutObject : ILayoutObject
             ParentX = posX + lb.BorderLeft + lb.PaddingLeft,
             ParentY = posY + lb.BorderTop + lb.PaddingTop,
             AvailableWidth = lb.ContentWidth,
+            IsFirstChild = false,
+            ParentMarginBottom = lb.MarginBottom,
             PreviousMarginBottom = 0f  // We'll set this per-child now
         };
 
@@ -311,6 +320,8 @@ public class BlockLayoutObject : ILayoutObject
                         lb.PaddingTop,
                         lb.BorderTop
                     );
+
+                    childContext.IsFirstChild = true;
                 }
                 else
                 {
@@ -321,6 +332,8 @@ public class BlockLayoutObject : ILayoutObject
                         previousSiblingBottomMargin,
                         childElem.Layout.MarginTop
                     );
+
+                    childContext.IsFirstChild = false;
                 }
 
                 // Update child context with current position

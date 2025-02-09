@@ -238,7 +238,8 @@ namespace AngleSharp.Renderer.Tests
 
             // 3) Check the parent's overall layout width is 300
             //    (Many engines will store the total box size in Layout.Width)
-            AssertContentWidth(parentDiv, 300);
+            AssertBoxWidth(parentDiv, 300);
+            AssertContentWidth(parentDiv, 270);
 
             // 4) Check the child’s content area is ~270 if the child is block and auto-fills the parent's content box
             //    i.e. 300 - leftPadding(10) - rightPadding(10) - leftBorder(5) - rightBorder(5) = 270
