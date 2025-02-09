@@ -39,6 +39,8 @@ public struct LayoutContext
     public float ParentY;
     public float AvailableWidth;
 
+    public bool IsFirstChild;
+
     public float PreviousMarginBottom; // For margin collapsing, if desired.
 }
 
@@ -225,14 +227,15 @@ public class BlockLayoutObject : ILayoutObject
         var lb = elem.Layout; // The LayoutBox we set in Measure()
         if (lb == null) return; // Safety check
 
-        float collapsedMarginWithParent = MarginCollapser.Collapse(
+        // Calculate parent-child margin collapse with enhanced rules
+        float collapsedMarginWithParent = MarginCollapser.CalculateParentChildCollapse(
+            elem.Parent as ElementNode,
+            elem,
             context.PreviousMarginBottom,
-            lb.MarginTop
+            lb.MarginTop,
+            lb.PaddingTop,
+            lb.BorderTop
         );
-
-
-        // 1) Collapse the parent's previous margin bottom with this block's top margin.
-        // float collapsedMarginWithParent = MarginCollapser.Collapse(parentMargin, lb.MarginTop);
 
         // Compute final absolute position (this can include relative positioning, etc.).
         (float posX, float posY) = PositioningResolver.ComputePosition(
@@ -243,76 +246,102 @@ public class BlockLayoutObject : ILayoutObject
             lb.ContentWidth
         );
 
-        posY = context.ParentY - context.PreviousMarginBottom + collapsedMarginWithParent;
+        // If there is not Parent Child Collapse, the posY is the same as the parent's X
+        if (collapsedMarginWithParent == 0)
+        {
+            posY = context.ParentY;
+        }else
+        {
+            posY = context.ParentY - context.PreviousMarginBottom + collapsedMarginWithParent;
+        }
 
         // Store final position
         lb.X = posX;
         lb.Y = posY;
 
-        // Prepare to layout children in normal block flow
-        float currentY = 0f; // tracks the vertical offset inside this block
-        float previousSiblingBottomMargin = 0f; // tracks the last child's bottom margin
+        // // Prepare to layout children in normal block flow
+        // float currentY = 0f; // tracks the vertical offset inside this block
+        // float previousSiblingBottomMargin = 0f; // tracks the last child's bottom margin
+        //
+        // // Set up a flag so that for the first child we do not add its top margin again.
+        // bool isFirstChild = true;
+        //
+        // // The childContext is used for each child.
+        // var childContext = new LayoutContext
+        // {
+        //     ParentX = posX + lb.BorderLeft + lb.PaddingLeft,
+        //     ParentY = posY + lb.BorderTop + lb.PaddingTop,
+        //     AvailableWidth = lb.ContentWidth,
+        //     PreviousMarginBottom = lb.MarginBottom
+        // };
 
-        // Set up a flag so that for the first child we do not add its top margin again.
-        bool isFirstChild = true;
+        // Initialize child layout tracking
+        float currentY = 0f;
+        float previousSiblingBottomMargin = 0f;
+        ElementNode? previousSibling = null;
 
-        // The childContext is used for each child.
+        // Prepare child context
         var childContext = new LayoutContext
         {
             ParentX = posX + lb.BorderLeft + lb.PaddingLeft,
             ParentY = posY + lb.BorderTop + lb.PaddingTop,
             AvailableWidth = lb.ContentWidth,
-            PreviousMarginBottom = lb.MarginBottom
+            PreviousMarginBottom = 0f  // We'll set this per-child now
         };
 
-        // Layout children in a vertical stack
+        // Layout children with enhanced margin handling
         foreach (var child in elem.Children.Where(node => node is ElementNode or TextNode))
         {
             if (child == null) continue;
 
-            // Retrieve child's layout object
-            var cLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(child);
+            var childLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(child);
 
-            // If the child is an element node with a layout, we collapse the child's top margin
-            // with the previous sibling's bottom margin:
-            float childTopMargin = 0f;
-            float childBottomMargin = 0f;
-            float childHeight = 0f;
-
-            if (child is ElementNode cElem && cElem.Layout != null)
+            if (child is ElementNode childElem && childElem.Layout != null)
             {
-                childTopMargin = cElem.Layout.MarginTop;
-                childBottomMargin = cElem.Layout.MarginBottom;
-                childHeight = cElem.Layout.BoxHeight;
-            }
+                float collapsedMargin;
 
-            // For the first child, if the container’s own top margin has already been applied,
-            // do not add the child's top margin. For subsequent siblings, collapse normally.
-            float collapsedMarginTop;
-            if (isFirstChild)
+                if (previousSibling == null)
+                {
+                    // First child - special handling for parent-child margin collapse
+                    collapsedMargin = MarginCollapser.CalculateParentChildCollapse(
+                        elem,
+                        childElem,
+                        lb.MarginTop,
+                        childElem.Layout.MarginTop,
+                        lb.PaddingTop,
+                        lb.BorderTop
+                    );
+                }
+                else
+                {
+                    // Subsequent children - handle sibling margin collapse
+                    collapsedMargin = MarginCollapser.CalculateSiblingCollapse(
+                        previousSibling,
+                        childElem,
+                        previousSiblingBottomMargin,
+                        childElem.Layout.MarginTop
+                    );
+                }
+
+                // Update child context with current position
+                childContext.ParentY = posY + lb.BorderTop + lb.PaddingTop + currentY;
+                childContext.PreviousMarginBottom = previousSiblingBottomMargin;
+
+                // Arrange the child
+                childLayoutObj.Arrange(childContext);
+
+                // Update tracking variables
+                currentY += collapsedMargin + childElem.Layout.BoxHeight;
+                previousSiblingBottomMargin = childElem.Layout.MarginBottom;
+                previousSibling = childElem;
+            }
+            else if (child is TextNode textNode && textNode.Layout != null)
             {
-                collapsedMarginTop = 0f;
-                isFirstChild = false;
+                // Handle text nodes without margin collapse
+                childContext.ParentY = posY + lb.BorderTop + lb.PaddingTop + currentY;
+                childLayoutObj.Arrange(childContext);
+                currentY += textNode.Layout.BoxHeight;
             }
-            else
-            {
-                collapsedMarginTop = MarginCollapser.Collapse(previousSiblingBottomMargin, childTopMargin);
-            }
-
-
-
-            // Update the child's ParentY to include the offset + collapsed top margin
-            childContext.ParentY = posY + lb.BorderTop + lb.PaddingTop + currentY + collapsedMarginTop;
-
-            // Arrange the child in that position
-            cLayoutObj.Arrange(childContext);
-
-            // Now that the child has been arranged, we advance the currentY:
-            // childHeight + bottom margin
-            currentY += collapsedMarginTop + childHeight;
-
-            // Next iteration: previousSiblingBottomMargin is this child's bottom margin
-            previousSiblingBottomMargin = childBottomMargin;
         }
 
         // Update this element’s final box height if it was auto;
