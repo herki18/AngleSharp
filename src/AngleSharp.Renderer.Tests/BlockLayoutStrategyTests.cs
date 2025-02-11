@@ -20,7 +20,7 @@ namespace AngleSharp.Renderer.Tests
             AssertDisplay(containerDiv, "block");
             AssertContentWidth(containerDiv, 300);
             // Position might be offset by body margin if absolute coords
-            AssertPosition(containerDiv, 8, 8);
+            AssertGlobalPosition(containerDiv, 8, 8);
 
             // 3) Find child <div style="display:block">
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
@@ -31,7 +31,7 @@ namespace AngleSharp.Renderer.Tests
             AssertContentWidth(childDiv, 300);
             AssertHeight(childDiv, 0);
             // Typically at (8,8) from the parent's coordinate space
-            AssertPosition(childDiv, 8, 8);
+            AssertGlobalPosition(childDiv, 8, 8);
         }
 
 
@@ -48,14 +48,14 @@ namespace AngleSharp.Renderer.Tests
 
             AssertDisplay(containerDiv, "block");
             AssertContentWidth(containerDiv, 300);
-            AssertPosition(containerDiv, 8, 8);
+            AssertGlobalPosition(containerDiv, 8, 8);
 
             // 3) First child <div style="height: 50px; margin-bottom: 30px">
             var firstBlock = FindChildByIndex(containerDiv, 0);
             AssertDisplay(firstBlock, "block");
             AssertContentWidth(firstBlock, 300);
             // Usually at (8,8)
-            AssertPosition(firstBlock, 8, 8);
+            AssertGlobalPosition(firstBlock, 8, 8);
 
             // 4) Second child <div style="height: 70px; margin-top: 20px">
             var secondBlock = FindChildByIndex(containerDiv, 1);
@@ -68,7 +68,7 @@ namespace AngleSharp.Renderer.Tests
             //    => collapsed gap = max(30, 20) = 30px
             //
             // So secondBlock’s top = firstBlock.Y + firstBlock.Height + 30 = 8 + 50 + 30 = 88
-            AssertPosition(secondBlock, 8, 58);
+            AssertGlobalPosition(secondBlock, 8, 58);
         }
 
 
@@ -473,7 +473,7 @@ namespace AngleSharp.Renderer.Tests
             // In content-box, the specified width (300px) is the content width.
             AssertDisplay(containerDiv, "block");
             AssertContentWidth(containerDiv, 300);
-            AssertPosition(containerDiv, 8, 8);
+            AssertGlobalPosition(containerDiv, 8, 8);
 
             // 3) Find the child <div>
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
@@ -483,7 +483,7 @@ namespace AngleSharp.Renderer.Tests
             AssertDisplay(childDiv, "block");
             AssertContentWidth(childDiv, 300);
             AssertHeight(childDiv, 0);
-            AssertPosition(childDiv, 20, 20);
+            AssertGlobalPosition(childDiv, 20, 20);
         }
 
 // <div style="width:300px; padding:10px; border:2px solid black; box-sizing: border-box">
@@ -503,7 +503,7 @@ namespace AngleSharp.Renderer.Tests
             // Thus, the computed content width is 300 - (10+10+2+2) = 276px.
             AssertDisplay(containerDiv, "block");
             AssertContentWidth(containerDiv, 276);
-            AssertPosition(containerDiv, 8, 8);
+            AssertGlobalPosition(containerDiv, 8, 8);
 
             // 3) Find the child <div>
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
@@ -513,7 +513,7 @@ namespace AngleSharp.Renderer.Tests
             AssertDisplay(childDiv, "block");
             AssertContentWidth(childDiv, 276);
             AssertHeight(childDiv, 0);
-            AssertPosition(childDiv, 20, 20);
+            AssertGlobalPosition(childDiv, 20, 20);
         }
 
 // <div style="width:300px; padding:10px; border:2px solid black">
@@ -532,7 +532,7 @@ namespace AngleSharp.Renderer.Tests
             // With no box-sizing specified, the default is content-box.
             AssertDisplay(containerDiv, "block");
             AssertContentWidth(containerDiv, 300);
-            AssertPosition(containerDiv, 8, 8);
+            AssertGlobalPosition(containerDiv, 8, 8);
 
             // 3) Find the child <div>
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
@@ -541,7 +541,7 @@ namespace AngleSharp.Renderer.Tests
             AssertDisplay(childDiv, "block");
             AssertContentWidth(childDiv, 300);
             AssertHeight(childDiv, 0);
-            AssertPosition(childDiv, 20, 20);
+            AssertGlobalPosition(childDiv, 20, 20);
         }
 
 // <div style="height:200px; padding:10px; border:2px solid black; box-sizing: content-box">
@@ -561,7 +561,7 @@ namespace AngleSharp.Renderer.Tests
             AssertDisplay(containerDiv, "block");
             // Expected content height: 200px.
             AssertHeight(containerDiv, 200);
-            AssertPosition(containerDiv, 8, 8);
+            AssertGlobalPosition(containerDiv, 8, 8);
 
             // 3) Find the child <div>
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
@@ -571,7 +571,7 @@ namespace AngleSharp.Renderer.Tests
             AssertDisplay(childDiv, "block");
             AssertContentWidth(childDiv, containerDiv.Layout.BoxWidth); // width might be inherited or auto (if width not set)
             AssertHeight(childDiv, 0);
-            AssertPosition(childDiv, 8, 8);
+            AssertGlobalPosition(childDiv, 8, 8);
         }
 
 // <div style="height:200px; padding:10px; border:2px solid black; box-sizing: border-box">
@@ -590,7 +590,7 @@ namespace AngleSharp.Renderer.Tests
             // For border-box, the overall height is 200px, so the computed content height is 200 - (10+10+2+2) = 176px.
             AssertDisplay(containerDiv, "block");
             AssertHeight(containerDiv, 176);
-            AssertPosition(containerDiv, 8, 8);
+            AssertGlobalPosition(containerDiv, 8, 8);
 
             // 3) Find the child <div>
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
@@ -599,7 +599,7 @@ namespace AngleSharp.Renderer.Tests
             AssertDisplay(childDiv, "block");
             AssertContentWidth(childDiv, containerDiv.Layout.BoxWidth);
             AssertHeight(childDiv, 0);
-            AssertPosition(childDiv, 8, 8);
+            AssertGlobalPosition(childDiv, 8, 8);
         }
 
 // <div style="width:auto; padding:10px; border:2px solid black; box-sizing: border-box">
@@ -620,7 +620,7 @@ namespace AngleSharp.Renderer.Tests
             // Thus, the computed content width is 500 - (10+10+2+2) = 500 - 24 = 476px.
             AssertDisplay(containerDiv, "block");
             AssertContentWidth(containerDiv, 476);
-            AssertPosition(containerDiv, 8, 8);
+            AssertGlobalPosition(containerDiv, 8, 8);
 
             // 3) Find the child <div>
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
@@ -629,7 +629,7 @@ namespace AngleSharp.Renderer.Tests
             AssertDisplay(childDiv, "block");
             AssertContentWidth(childDiv, 476);
             AssertHeight(childDiv, 0);
-            AssertPosition(childDiv, 8, 8);
+            AssertGlobalPosition(childDiv, 8, 8);
         }
 
 // <div style="width:20px; padding:10px; border:2px solid black; box-sizing: border-box">
@@ -648,7 +648,7 @@ namespace AngleSharp.Renderer.Tests
             // For border-box, computed content width = 20 - (10+10+2+2) = 20 - 24 = -4, clamped to 0.
             AssertDisplay(containerDiv, "block");
             AssertContentWidth(containerDiv, 0);
-            AssertPosition(containerDiv, 8, 8);
+            AssertGlobalPosition(containerDiv, 8, 8);
 
             // 3) Find the child <div>
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
@@ -657,7 +657,7 @@ namespace AngleSharp.Renderer.Tests
             AssertDisplay(childDiv, "block");
             AssertContentWidth(childDiv, 0);
             AssertHeight(childDiv, 0);
-            AssertPosition(childDiv, 20, 20);
+            AssertGlobalPosition(childDiv, 20, 20);
         }
 
 
@@ -678,7 +678,7 @@ namespace AngleSharp.Renderer.Tests
             // In border-box mode, the computed content width is 350 - (10+10+2+2) = 350 - 24 = 326px.
             AssertDisplay(containerDiv, "block");
             AssertContentWidth(containerDiv, 326);
-            AssertPosition(containerDiv, 8, 8);
+            AssertGlobalPosition(containerDiv, 8, 8);
 
             // 3) Find the child <div>
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
@@ -687,7 +687,7 @@ namespace AngleSharp.Renderer.Tests
             AssertDisplay(childDiv, "block");
             AssertContentWidth(childDiv, 326);
             AssertHeight(childDiv, 0);
-            AssertPosition(childDiv, 20, 20);
+            AssertGlobalPosition(childDiv, 20, 20);
         }
 
 // <div style="width:300px; padding:10px; border:2px solid black; box-sizing: border-box">
@@ -706,7 +706,7 @@ namespace AngleSharp.Renderer.Tests
             // For border-box, outer container computed content width = 300 - (10+10+2+2) = 276px.
             AssertDisplay(containerDiv, "block");
             AssertContentWidth(containerDiv, 276);
-            AssertPosition(containerDiv, 8, 8);
+            AssertGlobalPosition(containerDiv, 8, 8);
 
             // 3) Find the inner child <div>
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
@@ -716,7 +716,7 @@ namespace AngleSharp.Renderer.Tests
             AssertDisplay(childDiv, "block");
             AssertContentWidth(childDiv, 100);
             AssertHeight(childDiv, 0);
-            AssertPosition(childDiv, 20, 20);
+            AssertGlobalPosition(childDiv, 20, 20);
         }
     }
 }

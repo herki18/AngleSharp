@@ -1,3 +1,4 @@
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 namespace AngleSharp.Renderer.Tests
 {
     using System.IO;
@@ -18,11 +19,25 @@ namespace AngleSharp.Renderer.Tests
         protected virtual string TestCaseName => GetSanitizedTestName();
         protected virtual string CssHref => $"{TestCaseName}.css";
 
+        private string _overrideHtml;
+        private string _overrideCss;
+
+        protected virtual string OverrideHtml => _overrideHtml;
+        protected virtual string OverrideCss => _overrideCss;
+
         [SetUp]
         public void Setup()
         {
-            var html = LoadHtml();
-            var css = LoadCss();
+            _overrideHtml = null; // Reset override before each test
+            _overrideCss = null;  // Reset override before each test
+
+            ReloadDocument();
+        }
+
+        public void ReloadDocument()
+        {
+            var html = OverrideHtml ?? LoadHtmlFromFile();
+            var css = OverrideCss ?? LoadCssFromFile();
 
             var requester = new MockRequester();
             requester.BuildResponse(request =>
@@ -37,13 +52,31 @@ namespace AngleSharp.Renderer.Tests
             Document = Context.OpenAsync(req => req.Content(html)).Result;
         }
 
-        protected string LoadHtml()
+        /// <summary>
+        /// Sets the HTML override and reloads the document.
+        /// </summary>
+        protected void SetHtml(string html)
+        {
+            _overrideHtml = html;
+            ReloadDocument();
+        }
+
+        /// <summary>
+        /// Sets the CSS override and reloads the document.
+        /// </summary>
+        protected void SetCss(string css)
+        {
+            _overrideCss = css;
+            ReloadDocument();
+        }
+
+        protected string LoadHtmlFromFile()
         {
             var path = GetTestFilePath($"{TestCaseName}.html");
             return File.ReadAllText(path);
         }
 
-        protected string LoadCss()
+        protected string LoadCssFromFile()
         {
             var path = GetTestFilePath($"{TestCaseName}.css");
             return FileExists(path) ? File.ReadAllText(path) : string.Empty;
@@ -76,7 +109,7 @@ namespace AngleSharp.Renderer.Tests
         /// Renders the current Document into a tree of <see cref="ElementNode"/>s
         /// and returns (root, html, body). Also prints the render tree.
         /// </summary>
-        protected (ElementNode Root, ElementNode Html, ElementNode Body) RenderDocumentAndGetNodes()
+        protected (ElementNode Root, ElementNode Html, ElementNode Body) RenderDocumentAndGetNodes(bool printTree = true)
         {
             var renderEngine = new DocumentRenderer(
                 Document.DefaultView,
@@ -86,7 +119,11 @@ namespace AngleSharp.Renderer.Tests
 
             // 1) Get the root node
             var root = renderEngine.GetRoot() as ElementNode;
-            TestContext.Out.WriteLine(renderEngine.Print());
+
+            if(printTree)
+            {
+                TestContext.Out.WriteLine(renderEngine.Print());
+            }
 
             // 2) Find <html> in the render tree
             var htmlNode = FindElementNodeByTagName(root, TagNames.Html, includeParent: true);
@@ -141,9 +178,13 @@ namespace AngleSharp.Renderer.Tests
             }
 
             // 2) Otherwise, search among the direct children (one level deep)
-            return parent.Children
+            var firstElementNode =  parent.Children
                 .OfType<ElementNode>()
                 .FirstOrDefault(x => x.Ref is IElement e && e.GetTagName() == tagName);
+
+            NotNull(firstElementNode, $"Could not find element with tag name '{tagName}'.");
+
+            return firstElementNode;
         }
 
         /// <summary>
@@ -214,7 +255,7 @@ namespace AngleSharp.Renderer.Tests
         /// Asserts that the <see cref="ElementNode"/> is positioned at X/Y coordinates
         /// within a given tolerance.
         /// </summary>
-        protected void AssertPosition(
+        protected void AssertGlobalPosition(
             ElementNode node,
             double expectedX,
             double expectedY,

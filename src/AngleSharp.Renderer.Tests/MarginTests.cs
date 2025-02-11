@@ -17,17 +17,15 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find the container <div style="width:400px">
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv, "Could not find container <div> under <body>.");
 
             // Assert it's block-level and 400px wide
             AssertDisplay(containerDiv, "block");
             AssertContentWidth(containerDiv, 400);
             // Typically at (8,8)
-            AssertPosition(containerDiv, 8, 8);
+            AssertGlobalPosition(containerDiv, 8, 8);
 
             // 3) Find the child <div style="width:200px; margin-left:auto; margin-right:auto">
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
-            NotNull(childDiv, "Could not find child <div> under container <div>.");
 
             // Assert block display and 200px width
             AssertDisplay(childDiv, "block");
@@ -142,13 +140,13 @@ namespace AngleSharp.Renderer.Tests
 
             // 5) Check positions:
             //    The container is expected at Y = 8 (body's margin applied once)
-            AssertPosition(container, 8, 8);
+            AssertGlobalPosition(container, 8, 8);
             //    First block should start at Y = 8 (its top margin collapses with container's position)
-            AssertPosition(firstBlock, 8, 8);
+            AssertGlobalPosition(firstBlock, 8, 8);
             //    The gap between first and second blocks should be the collapse of
             //       first block's bottom margin (20) and second block's top margin (30) → 30.
             //    Thus, second block's top should be: 8 + 50 (first block's height) + 30 = 88.
-            AssertPosition(secondBlock, 8, 88);
+            AssertGlobalPosition(secondBlock, 8, 88);
         }
 
         [Test]
@@ -206,11 +204,11 @@ namespace AngleSharp.Renderer.Tests
             //    If the container is at Y=8, firstBlock is at 8, then
             //    next sibling's top => firstBlock.Y + firstBlock.Height + collapsedMargin(20 vs 30 => 30).
             //    => 8 + 40 + 30 = 78 => emptyBlock's top
-            AssertPosition(emptyBlock, 8, 78);
+            AssertGlobalPosition(emptyBlock, 8, 78);
 
             // 7) Then for thirdBlock => emptyBlock.Y + emptyBlock.Height(=0 for empty block) + collapsedMargin(10 vs 15 => 15)
             //    => 78 + 0 + 15 = 93
-            AssertPosition(thirdBlock, 8, 93);
+            AssertGlobalPosition(thirdBlock, 8, 93);
         }
 
         [Test]
@@ -233,7 +231,7 @@ namespace AngleSharp.Renderer.Tests
             //    Let's see how your engine tracks absolute Y. Possibly parent's Y is 8, child is at 38, etc.
             //    If there's no default body margin or other offsets, it might be 30.
             //    We'll assume the net offset is 30 from the page, ignoring body margin:
-            AssertPosition(childDiv, 8, 30);
+            AssertGlobalPosition(childDiv, 8, 30);
             // Adjust if your engine has a body margin of 8 => childDiv might be at (8, 38).
 
             // The key is that it's 30px total, not 50px.
@@ -249,7 +247,7 @@ namespace AngleSharp.Renderer.Tests
             var container = FindElementNodeByTagName(bodyNode, TagNames.Div);
             NotNull(container, "Could not find the container <div>.");
             // Expect container positioned at (8,8)
-            AssertPosition(container, 8, 8);
+            AssertGlobalPosition(container, 8, 8);
 
             // 3) Find three sibling divs inside the container.
             //    Each sibling has height:40px and margin:8px (both top and bottom).
@@ -262,13 +260,13 @@ namespace AngleSharp.Renderer.Tests
 
             // 4) Expected positions:
             //    - First sibling: with collapsed top margin, its top is at Y = 8.
-            AssertPosition(sibling1, 8, 8);
+            AssertGlobalPosition(sibling1, 8, 8);
             //    - The gap between siblings collapses the bottom of sibling1 and top of sibling2:
             //         Collapse(8,8) → 8px gap.
             //         So sibling2's top should be: 8 + 40 + 8 = 56.
-            AssertPosition(sibling2, 8, 56);
+            AssertGlobalPosition(sibling2, 8, 56);
             //    - Similarly, sibling3's top should be: 56 + 40 + 8 = 104.
-            AssertPosition(sibling3, 8, 104);
+            AssertGlobalPosition(sibling3, 8, 104);
         }
 
         [Test]
@@ -296,7 +294,7 @@ namespace AngleSharp.Renderer.Tests
             //    The first block is 50px tall, but margin-bottom = -10px
             //    => second block starts at 50 + (-10) = 40,
             //       effectively overlapping the prior 10px
-            AssertPosition(secondBlock, 8 /* or the X offset if relevant */, 40 /* Y expected */);
+            AssertGlobalPosition(secondBlock, 8 /* or the X offset if relevant */, 40 /* Y expected */);
         }
 
 //         [Test]
@@ -428,7 +426,7 @@ namespace AngleSharp.Renderer.Tests
 
             // 4) With body's margin of 8px and the child's own margin of 8px,
             //    proper collapse should result in the child being positioned (16,8).
-            AssertPosition(singleChild, 16, 8);
+            AssertGlobalPosition(singleChild, 16, 8);
         }
 
     }
