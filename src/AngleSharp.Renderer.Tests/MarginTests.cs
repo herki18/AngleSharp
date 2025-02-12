@@ -429,5 +429,31 @@ namespace AngleSharp.Renderer.Tests
             AssertGlobalPosition(singleChild, 16, 8);
         }
 
+        [TestCase("<body style='margin: 0px;'><div style='margin-top: 20px;'><div style='margin-top: 30px;'></div></div></body>", 0, 30)]
+        [TestCase("<body style='margin: 0px;'><div style='margin-top: 0px;'><div style='margin-top: 30px;'></div></div></body>", 0, 30)]
+        [TestCase("<body style='margin: 0px;'><div style='margin-top: 20px;'><div style='margin-top: -10px;'></div></div></body>", 0, 10)]
+        [TestCase("<body style='margin: 0px;'><div style='margin-top: -20px;'><div style='margin-top: -10px;'></div></div></body>", 0, -10)]
+        public void test_nested_margin_collapse_parent_child(string html, double expectedX, double expectedY)
+        {
+            ReplaceBody(html);
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+            var parentDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
+            var childDiv = FindElementNodeByTagName(parentDiv, TagNames.Div);
+            AssertGlobalPosition(childDiv, expectedX, expectedY);
+        }
+
+        [TestCase("<body style='margin: 0px;'><div style='margin-top: 20px;'><div style='margin-top: 30px;'><div style='margin-top: 10px;'></div></div></div></body>", 8, 30)]
+        [TestCase("<body style='margin: 0px;'><div style='margin-top: 20px;'><div style='margin-top: -10px;'><div style='margin-top: 15px;'></div></div></div></body>", 8, 15)]
+        [TestCase("<body style='margin: 0px;'><div style='margin-top: 0px;'><div style='margin-top: 30px;'><div style='margin-top: 0px;'></div></div></div></body>", 8, 30)]
+        [TestCase("<body style='margin: 0px;'><div style='margin-top: 20px; padding: 10px;'><div style='margin-top: 30px;'><div style='margin-top: 10px;'></div></div></div></body>", 8, 40)]
+        public void test_nested_margin_collapse_with_deep_hierarchy(string html, double expectedX, double expectedY)
+        {
+            ReplaceBody(html);
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+            var outerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
+            var middleDiv = FindElementNodeByTagName(outerDiv, TagNames.Div);
+            var innerDiv = FindElementNodeByTagName(middleDiv, TagNames.Div);
+            AssertGlobalPosition(innerDiv, expectedX, expectedY);
+        }
     }
 }

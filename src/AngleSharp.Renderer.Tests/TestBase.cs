@@ -61,6 +61,20 @@ namespace AngleSharp.Renderer.Tests
             ReloadDocument();
         }
 
+        public void ReplaceBody(string body)
+        {
+            string htmlWithBody = @$"<!DOCTYPE html>
+<html lang=""en"">
+<head>
+    <meta charset=""UTF-8"">
+    <title>Title</title>
+</head>
+{body}
+</html>";
+
+            SetHtml(htmlWithBody);
+        }
+
         /// <summary>
         /// Sets the CSS override and reloads the document.
         /// </summary>
@@ -73,13 +87,13 @@ namespace AngleSharp.Renderer.Tests
         protected string LoadHtmlFromFile()
         {
             var path = GetTestFilePath($"{TestCaseName}.html");
-            return File.ReadAllText(path);
+            return File.Exists(path) ? File.ReadAllText(path) : "<html><body>No HTML file found</body></html>";
         }
 
         protected string LoadCssFromFile()
         {
             var path = GetTestFilePath($"{TestCaseName}.css");
-            return FileExists(path) ? File.ReadAllText(path) : string.Empty;
+            return File.Exists(path) ? File.ReadAllText(path) : string.Empty;
         }
 
         protected string GetTestFilePath(string fileName)
@@ -87,8 +101,6 @@ namespace AngleSharp.Renderer.Tests
             return Path.Combine(TestContext.CurrentContext.TestDirectory,
                 "TestData", TestPath, fileName);
         }
-
-        protected bool FileExists(string path) => File.Exists(path);
 
         private string GetSanitizedTestName()
         {
