@@ -83,7 +83,7 @@ namespace AngleSharp.Renderer
             // Set parent references
             foreach (var child in children)
             {
-                if(child is NonRenderableNode nonRenderableChild)
+                if (child is NonRenderableNode nonRenderableChild)
                 {
                     nonRenderableChild.Parent = node;
                 }
@@ -131,7 +131,7 @@ namespace AngleSharp.Renderer
                 {
                     textChild.Parent = node;
                 }
-                else if(child is NonRenderableNode nonRenderableChild)
+                else if (child is NonRenderableNode nonRenderableChild)
                 {
                     nonRenderableChild.Parent = node;
                 }
@@ -559,7 +559,7 @@ namespace AngleSharp.Renderer
             float collapsedMargin = MarginCollapser.Collapse(context.PreviousMarginBottom, box.MarginTop);
 
             // 4️⃣ Determine positioning.
-            (float posX, float posY) = PositioningResolver.ComputePosition(
+            (float posX, float posY) = PositioningResolver.CalculateElementPosition(
                 node.ComputedStyle, context.ParentX, context.ParentY, context.AvailableWidth, finalContentWidth);
             posY += collapsedMargin;
 
@@ -593,8 +593,9 @@ namespace AngleSharp.Renderer
             string boxSizing = node.ComputedStyle.GetPropertyValue("box-sizing");
             if (string.IsNullOrEmpty(boxSizing))
             {
-                boxSizing = "content-box";  // Default per CSS spec.
+                boxSizing = "content-box"; // Default per CSS spec.
             }
+
             float totalWidth = (boxSizing == "border-box") ? finalContentWidth : box.BoxWidth;
             float totalHeight = finalContentHeight;
 
@@ -782,10 +783,10 @@ namespace AngleSharp.Renderer
         }
 
         public static float CalculateSiblingCollapse(
-        ElementNode previousSibling,
-        ElementNode currentElement,
-        float previousMarginBottom,
-        float currentMarginTop)
+            ElementNode previousSibling,
+            ElementNode currentElement,
+            float previousMarginBottom,
+            float currentMarginTop)
         {
             // If previous sibling is empty block, handle special case
             if (IsEmptyBlock(previousSibling))
@@ -902,6 +903,7 @@ namespace AngleSharp.Renderer
             {
                 return MathF.Max(marginA, marginB);
             }
+
             if (!aPos && !bPos)
             {
                 // both negative, pick the more negative (i.e. min)
@@ -927,6 +929,7 @@ namespace AngleSharp.Renderer
                 // whose size is the max of the absolute values (with sign logic).
                 return Collapse(marginTop, marginBottom);
             }
+
             return 0f;
         }
     }
@@ -973,45 +976,92 @@ namespace AngleSharp.Renderer
         }
     }
 
+    /// <summary>
+    /// Calculates the final X,Y coordinates of an element taking into account margins, positioning,
+    /// and parent container constraints following CSS layout rules.
+    /// </summary>
     public static class PositioningResolver
     {
-        public static (float X, float Y) ComputePosition(
+        /// <summary>
+        /// Calculates the final position of an element considering its margins, relative positioning,
+        /// and parent container boundaries. Handles both fixed and auto margins according to CSS rules.
+        /// </summary>
+        /// <param name="style">CSS style declaration containing positioning and margin properties</param>
+        /// <param name="parentX">Parent container's X coordinate</param>
+        /// <param name="parentY">Parent container's Y coordinate</param>
+        /// <param name="parentAvailableWidth">Available width within the parent container</param>
+        /// <param name="elementContentWidth">Width of the element being positioned</param>
+        /// <returns>Tuple containing final (X, Y) coordinates of the element</returns>
+        public static (float X, float Y) CalculateElementPosition(
             ICssStyleDeclaration style,
             float parentX,
             float parentY,
             float parentAvailableWidth,
             float elementContentWidth)
         {
-            // Resolve auto margins within the resolver.
-            float marginLeftVal = ParsePx(style, "margin-left");
-            float marginRightVal = ParsePx(style, "margin-right");
-            bool marginLeftAuto = style.GetPropertyValue("margin-left") == "auto";
-            bool marginRightAuto = style.GetPropertyValue("margin-right") == "auto";
+            // Extract margin values and check if they're set to 'auto'
+            float marginLeftValue = ParseCssPixelValue(style, "margin-left");
+            float marginRightValue = ParseCssPixelValue(style, "margin-right");
+            bool isMarginLeftAuto = style.GetPropertyValue("margin-left") == "auto";
+            bool isMarginRightAuto = style.GetPropertyValue("margin-right") == "auto";
 
-            (float resolvedLeftMargin, float resolvedRightMargin) =
-                AutoMarginResolver.Resolve(parentAvailableWidth, elementContentWidth,
-                    marginLeftVal, marginRightVal,
-                    marginLeftAuto, marginRightAuto);
+            // Calculate final margins accounting for 'auto' values
+            (float finalLeftMargin, float finalRightMargin) =
+                AutoMarginResolver.CalculateAutoMargins(
+                    parentAvailableWidth,
+                    elementContentWidth,
+                    marginLeftValue,
+                    marginRightValue,
+                    isMarginLeftAuto,
+                    isMarginRightAuto);
 
-            float leftOffset = (style.GetPropertyValue("position") == "relative") ? ParsePx(style, "left") : 0;
-            float topOffset = (style.GetPropertyValue("position") == "relative") ? ParsePx(style, "top") : 0;
+            // Handle relative positioning offsets
+            bool isRelativelyPositioned = style.GetPropertyValue("position") == "relative";
+            float horizontalOffset = isRelativelyPositioned ? ParseCssPixelValue(style, "left") : 0;
+            float verticalOffset = isRelativelyPositioned ? ParseCssPixelValue(style, "top") : 0;
 
-            return (parentX + resolvedLeftMargin + leftOffset, parentY + topOffset);
+            // Calculate final coordinates
+            float finalX = parentX + finalLeftMargin + horizontalOffset;
+            float finalY = parentY + verticalOffset;
+
+            return (finalX, finalY);
         }
 
-        private static float ParsePx(ICssStyleDeclaration style, string property)
+        /// <summary>
+        /// Parses a CSS pixel value from a style property. Returns 0 if the property
+        /// is not set or is not a valid length value.
+        /// </summary>
+        /// <param name="style">CSS style declaration containing the property</param>
+        /// <param name="propertyName">Name of the CSS property to parse</param>
+        /// <returns>Pixel value as float, or 0 if not found/invalid</returns>
+        private static float ParseCssPixelValue(ICssStyleDeclaration style, string propertyName)
         {
-            var raw = style.GetProperty(property)?.RawValue;
-            return raw is CssLengthValue lv ? (float)lv.Value : 0f;
+            var propertyValue = style.GetProperty(propertyName)?.RawValue;
+            return propertyValue is CssLengthValue lengthValue ? (float)lengthValue.Value : 0f;
         }
     }
 
     /// <summary>
-    /// Handles auto margin resolution (e.g. horizontal centering) in a separate helper class.
+    /// Handles automatic margin calculations for CSS-style layouts, particularly for centering elements
+    /// and distributing available space when margins are set to 'auto'.
     /// </summary>
     public static class AutoMarginResolver
     {
-        public static (float marginLeft, float marginRight) Resolve(
+        /// <summary>
+        /// Calculates the final left and right margins when one or both margins are set to 'auto'.
+        /// Following CSS box model rules:
+        /// - If both margins are auto, the element is centered by distributing space equally
+        /// - If one margin is auto, it takes up all remaining space
+        /// - If no margins are auto, the original margin values are returned
+        /// </summary>
+        /// <param name="parentAvailableWidth">Total available width in the parent container</param>
+        /// <param name="elementContentWidth">Width of the element itself</param>
+        /// <param name="marginLeftVal">Specified left margin value (ignored if marginLeftIsAuto is true)</param>
+        /// <param name="marginRightVal">Specified right margin value (ignored if marginRightIsAuto is true)</param>
+        /// <param name="marginLeftIsAuto">Whether left margin is set to 'auto'</param>
+        /// <param name="marginRightIsAuto">Whether right margin is set to 'auto'</param>
+        /// <returns>Tuple containing the resolved (left margin, right margin) values</returns>
+        public static (float marginLeft, float marginRight) CalculateAutoMargins(
             float parentAvailableWidth,
             float elementContentWidth,
             float marginLeftVal,
@@ -1019,26 +1069,34 @@ namespace AngleSharp.Renderer
             bool marginLeftIsAuto,
             bool marginRightIsAuto)
         {
-            // Calculate the total non-auto space.
-            float usedNonAuto = marginLeftVal + elementContentWidth + marginRightVal;
-            float leftoverSpace = parentAvailableWidth - usedNonAuto;
-            if (leftoverSpace < 0)
-                leftoverSpace = 0;
+            // Calculate remaining space after accounting for element width and non-auto margins
+            float usedNonAutoSpace = marginLeftVal + elementContentWidth + marginRightVal;
+            float remainingSpace = parentAvailableWidth - usedNonAutoSpace;
 
+            // Ensure we don't have negative space (prevents overflow)
+            if (remainingSpace < 0)
+                remainingSpace = 0;
+
+            // Both margins auto: center the element
             if (marginLeftIsAuto && marginRightIsAuto)
             {
-                marginLeftVal = leftoverSpace / 2f;
-                marginRightVal = leftoverSpace / 2f;
-            }
-            else if (marginLeftIsAuto)
-            {
-                marginLeftVal = leftoverSpace;
-            }
-            else if (marginRightIsAuto)
-            {
-                marginRightVal = leftoverSpace;
+                float halfSpace = remainingSpace / 2f;
+                return (halfSpace, halfSpace);
             }
 
+            // Left margin auto: use all remaining space on left
+            if (marginLeftIsAuto)
+            {
+                return (remainingSpace, marginRightVal);
+            }
+
+            // Right margin auto: use all remaining space on right
+            if (marginRightIsAuto)
+            {
+                return (marginLeftVal, remainingSpace);
+            }
+
+            // No auto margins: return original values
             return (marginLeftVal, marginRightVal);
         }
     }

@@ -7,7 +7,7 @@ namespace AngleSharp.Renderer.Tests
     [TestFixture]
     public class MarginTests : TestBase
     {
-        protected override string TestPath { get; } = "Margins";
+        protected override string TestPath => "Margins";
 
         [Test]
         public void test_auto_margins_center_element_horizontally()

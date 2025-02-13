@@ -1,3 +1,4 @@
+#pragma warning disable CS0162 // Unreachable code detected
 namespace AngleSharp.Renderer;
 
 using System;
@@ -44,6 +45,12 @@ public struct LayoutContext
     public float ParentMarginBottom;
 
     public float PreviousMarginBottom; // For margin collapsing, if desired.
+
+
+    public float ParentGlobalPositionX;
+    public float ParentGlobalPositionY;
+
+
 }
 
 /// <summary>
@@ -222,6 +229,8 @@ public class BlockLayoutObject : ILayoutObject
     /// </summary>
     public void Arrange(LayoutContext context)
     {
+        Arrange2(context);
+        return;
         if (Node is not ElementNode elem || elem.ComputedStyle == null)
             return;
 
@@ -240,7 +249,7 @@ public class BlockLayoutObject : ILayoutObject
         );
 
         // Compute final absolute position (this can include relative positioning, etc.).
-        (float posX, float posY) = PositioningResolver.ComputePosition(
+        (float posX, float posY) = PositioningResolver.CalculateElementPosition(
             style,
             context.ParentX,
             context.ParentY,
@@ -265,22 +274,6 @@ public class BlockLayoutObject : ILayoutObject
         // Store final position
         lb.X = posX;
         lb.Y = posY;
-
-        // // Prepare to layout children in normal block flow
-        // float currentY = 0f; // tracks the vertical offset inside this block
-        // float previousSiblingBottomMargin = 0f; // tracks the last child's bottom margin
-        //
-        // // Set up a flag so that for the first child we do not add its top margin again.
-        // bool isFirstChild = true;
-        //
-        // // The childContext is used for each child.
-        // var childContext = new LayoutContext
-        // {
-        //     ParentX = posX + lb.BorderLeft + lb.PaddingLeft,
-        //     ParentY = posY + lb.BorderTop + lb.PaddingTop,
-        //     AvailableWidth = lb.ContentWidth,
-        //     PreviousMarginBottom = lb.MarginBottom
-        // };
 
         // Initialize child layout tracking
         float currentY = 0f;
@@ -367,6 +360,49 @@ public class BlockLayoutObject : ILayoutObject
             lb.BoxHeight = currentY
                 + lb.PaddingTop + lb.PaddingBottom
                 + lb.BorderTop + lb.BorderBottom;
+        }
+    }
+
+    public void Arrange2(LayoutContext context)
+    {
+        if (Node is not ElementNode elem || elem.ComputedStyle == null || elem.Layout == null)
+        {
+            return;
+        }
+
+        var computedStyle = elem.ComputedStyle;
+        var layoutBox = elem.Layout;
+
+        // Calculate Global Position
+        (float posX, float posY) = PositioningResolver.CalculateElementPosition(
+            computedStyle,
+            context.ParentX,
+            context.ParentY,
+            context.AvailableWidth,
+            layoutBox.ContentWidth
+        );
+
+        // Calculate Relative Position
+
+
+        foreach (var child in elem.Children.Where(node => node is ElementNode or TextNode))
+        {
+            var childContext = new LayoutContext()
+            {
+                ParentX = posX + layoutBox.BorderLeft + layoutBox.PaddingLeft,
+                ParentY = posY + layoutBox.BorderTop + layoutBox.PaddingTop,
+            };
+
+            var childLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(child);
+
+            // Margin Collapse Parent Child First Child
+
+            // Margin Collapse Siblings
+
+            childLayoutObj.Arrange(childContext);
+
+
+            // Margin Collapse Parent Child Last Child
         }
     }
 }
