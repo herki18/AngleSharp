@@ -262,6 +262,32 @@ namespace AngleSharp.Renderer.Tests
             }
         }
 
+        protected void AssertLayoutPadding(ElementNode node, float expectedLeft, float expectedRight, float expectedTop, float expectedBottom)
+        {
+            // Check left / right
+            That(node!.Layout.PaddingLeft, Is.EqualTo(expectedLeft),
+                $"Expected padding-left = {expectedLeft}, got {node.Layout.PaddingLeft}");
+            That(node.Layout.PaddingRight, Is.EqualTo(expectedRight),
+                $"Expected padding-right = {expectedRight}, got {node.Layout.PaddingRight}");
+            That(node.Layout.PaddingTop, Is.EqualTo(expectedTop),
+                $"Expected padding-top = {expectedTop}, got {node.Layout.PaddingTop}");
+            That(node.Layout.PaddingBottom, Is.EqualTo(expectedBottom),
+                $"Expected padding-bottom = {expectedBottom}, got {node.Layout.PaddingBottom}");
+        }
+
+        protected void AssertLayoutBorder(ElementNode node, float expectedLeft, float expectedRight, float expectedTop, float expectedBottom)
+        {
+            // Check left / right
+            That(node!.Layout.PaddingLeft, Is.EqualTo(expectedLeft),
+                $"Expected padding-left = {expectedLeft}, got {node.Layout.PaddingLeft}");
+            That(node.Layout.PaddingRight, Is.EqualTo(expectedRight),
+                $"Expected padding-right = {expectedRight}, got {node.Layout.PaddingRight}");
+            That(node.Layout.PaddingTop, Is.EqualTo(expectedTop),
+                $"Expected padding-top = {expectedTop}, got {node.Layout.PaddingTop}");
+            That(node.Layout.PaddingBottom, Is.EqualTo(expectedBottom),
+                $"Expected padding-bottom = {expectedBottom}, got {node.Layout.PaddingBottom}");
+        }
+
 
         /// <summary>
         /// Asserts that the <see cref="ElementNode"/> is positioned at X/Y coordinates

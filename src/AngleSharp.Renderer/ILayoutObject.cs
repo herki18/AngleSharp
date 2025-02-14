@@ -391,6 +391,8 @@ public class BlockLayoutObject : ILayoutObject
             {
                 ParentX = posX + layoutBox.BorderLeft + layoutBox.PaddingLeft,
                 ParentY = posY + layoutBox.BorderTop + layoutBox.PaddingTop,
+                AvailableWidth = layoutBox.ContentWidth
+
             };
 
             var childLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(child);

@@ -79,21 +79,21 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find the container <div>
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv, "Could not find container <div> under <body>.");
 
             // With no box-sizing specified, the default is content-box.
             AssertDisplay(containerDiv, "block");
+            AssertLayoutPadding(containerDiv, 10, 10, 10, 10);
+            AssertLayoutBorder(containerDiv, 10, 10, 10, 10);
             AssertContentWidth(containerDiv, 300);
-            AssertGlobalPosition(containerDiv, 8, 8);
+            AssertGlobalPosition(containerDiv, 0, 0);
 
             // 3) Find the child <div>
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
-            NotNull(childDiv, "Could not find child <div> under container <div>.");
 
             AssertDisplay(childDiv, "block");
             AssertContentWidth(childDiv, 300);
             AssertHeight(childDiv, 0);
-            AssertGlobalPosition(childDiv, 20, 20);
+            AssertGlobalPosition(childDiv, 12, 12);
         }
 
 // <div style="height:200px; padding:10px; border:2px solid black; box-sizing: content-box">
