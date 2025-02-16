@@ -25,7 +25,8 @@ namespace AngleSharp.Renderer.Tests
             // In content-box, the specified width (300px) is the content width.
             AssertDisplay(containerDiv, "block");
             AssertContentWidth(containerDiv, 300);
-            AssertGlobalPosition(containerDiv, 8, 8);
+            AssertBoxWidth(containerDiv, 324);
+            AssertGlobalPosition(containerDiv, 0, 0);
 
             // 3) Find the child <div>
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
@@ -34,8 +35,9 @@ namespace AngleSharp.Renderer.Tests
             // The child should span the full container content width (300px) and have zero height.
             AssertDisplay(childDiv, "block");
             AssertContentWidth(childDiv, 300);
+            AssertBoxWidth(childDiv, 300);
             AssertHeight(childDiv, 0);
-            AssertGlobalPosition(childDiv, 20, 20);
+            AssertGlobalPosition(childDiv, 12, 12);
         }
 
 // <div style="width:300px; padding:10px; border:2px solid black; box-sizing: border-box">
@@ -165,23 +167,23 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find the container <div>
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv, "Could not find container <div> under <body>.");
 
             // In this test, assume the parent (viewport) available width is 500px.
             // For border-box with width:auto, the container takes the full available width.
             // Thus, the computed content width is 500 - (10+10+2+2) = 500 - 24 = 476px.
             AssertDisplay(containerDiv, "block");
-            AssertContentWidth(containerDiv, 476);
-            AssertGlobalPosition(containerDiv, 8, 8);
+            AssertContentWidth(containerDiv, 776);
+            AssertBoxWidth(containerDiv, 800);
+            AssertGlobalPosition(containerDiv, 0, 0);
 
             // 3) Find the child <div>
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
-            NotNull(childDiv, "Could not find child <div> under container <div>.");
 
             AssertDisplay(childDiv, "block");
-            AssertContentWidth(childDiv, 476);
+            AssertContentWidth(childDiv, 776);
+            AssertBoxWidth(childDiv, 776);
             AssertHeight(childDiv, 0);
-            AssertGlobalPosition(childDiv, 8, 8);
+            AssertGlobalPosition(childDiv, 0, 0);
         }
 
 // <div style="width:20px; padding:10px; border:2px solid black; box-sizing: border-box">

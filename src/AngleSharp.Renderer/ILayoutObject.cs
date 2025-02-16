@@ -382,6 +382,9 @@ public class BlockLayoutObject : ILayoutObject
             layoutBox.ContentWidth
         );
 
+        layoutBox.X = posX;
+        layoutBox.Y = posY;
+
         // Calculate Relative Position
 
 
