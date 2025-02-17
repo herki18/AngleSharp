@@ -270,5 +270,33 @@ namespace AngleSharp.Renderer.Tests
             AssertHeight(childDiv, 0);
             AssertGlobalPosition(childDiv, 12, 12);
         }
+
+        [Test]
+        public void test_box_sizing_border_box_includes_border_padding()
+        {
+            // 1) Render & get (root, htmlNode, bodyNode)
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+
+            // 2) Find the parent <div style="width: 300px; padding: 10px; border: 5px solid; box-sizing: border-box">
+            var parentDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
+            NotNull(parentDiv, "Could not find parent <div> with border-box sizing.");
+
+            // With box-sizing: border-box, the declared width (300px) is the total box width
+            // including border + padding. So the "content box" is 300 - 2*(10 + 5) = 270.
+
+            // 3) Check the parent's overall layout width is 300
+            //    (Many engines will store the total box size in Layout.Width)
+            AssertBoxWidth(parentDiv, 300);
+            AssertContentWidth(parentDiv, 270);
+
+            // 4) Check the child’s content area is ~270 if the child is block and auto-fills the parent's content box
+            //    i.e. 300 - leftPadding(10) - rightPadding(10) - leftBorder(5) - rightBorder(5) = 270
+            //    If your engine doesn’t directly track “content width,” we assume the child is block-level inside:
+            var childDiv = FindElementNodeByTagName(parentDiv, TagNames.Div);
+            NotNull(childDiv, "Could not find child <div> inside border-box parent.");
+
+            // If the child is a block-level, width:auto element, it should fill the parent's content box => 270
+            AssertContentWidth(childDiv, 270);
+        }
     }
 }

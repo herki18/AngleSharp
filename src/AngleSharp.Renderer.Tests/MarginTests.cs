@@ -455,5 +455,40 @@ namespace AngleSharp.Renderer.Tests
             var innerDiv = FindElementNodeByTagName(middleDiv, TagNames.Div);
             AssertGlobalPosition(innerDiv, expectedX, expectedY);
         }
+
+        [Test]
+        public void test_vertical_margins_collapse_between_siblings()
+        {
+            // 1) Render and get (root, html, body)
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+
+            // 2) Find the container <div style="width: 300px">
+            var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
+            NotNull(containerDiv, "Could not find container <div> under <body>.");
+
+            AssertDisplay(containerDiv, "block");
+            AssertContentWidth(containerDiv, 300);
+            AssertGlobalPosition(containerDiv, 8, 8);
+
+            // 3) First child <div style="height: 50px; margin-bottom: 30px">
+            var firstBlock = FindChildByIndex(containerDiv, 0);
+            AssertDisplay(firstBlock, "block");
+            AssertContentWidth(firstBlock, 300);
+            // Usually at (8,8)
+            AssertGlobalPosition(firstBlock, 8, 8);
+
+            // 4) Second child <div style="height: 70px; margin-top: 20px">
+            var secondBlock = FindChildByIndex(containerDiv, 1);
+            AssertDisplay(secondBlock, "block");
+            AssertContentWidth(secondBlock, 300);
+
+            // 5) Verify margin collapsing:
+            //    bottom margin of first block = 30px
+            //    top margin of second block   = 20px
+            //    => collapsed gap = max(30, 20) = 30px
+            //
+            // So secondBlock’s top = firstBlock.Y + firstBlock.Height + 30 = 8 + 50 + 30 = 88
+            AssertGlobalPosition(secondBlock, 8, 58);
+        }
     }
 }

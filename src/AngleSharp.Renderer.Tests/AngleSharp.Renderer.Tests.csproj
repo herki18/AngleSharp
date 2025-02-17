@@ -28,9 +28,6 @@
       <None Update="TestData\test_block_element_takes_full_container_width.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="TestData\test_vertical_margins_collapse_between_siblings.html">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
       <None Update="TestData\test_explicit_height_overrides_content_height.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
@@ -137,6 +134,9 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="TestData\BoxSizing\test_box_sizing_with_min_max.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_vertical_margins_collapse_between_siblings.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>
