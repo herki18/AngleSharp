@@ -1,5 +1,6 @@
 ﻿namespace AngleSharp.Renderer
 {
+    using System;
     using System.Collections.Generic;
     using AngleSharp.Dom;
 
@@ -8,6 +9,11 @@
     /// </summary>
     public interface IRenderNode
     {
+        /// <summary>
+        /// Gets the id of the element.
+        /// </summary>
+        public String? Id { get; }
+
         /// <summary>
         /// References the original DOM node.
         /// </summary>

@@ -1,6 +1,7 @@
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 namespace AngleSharp.Renderer.Tests
 {
+    using System;
     using System.IO;
     using System.Linq;
     using Core.Tests.Mocks;
@@ -164,39 +165,62 @@ namespace AngleSharp.Renderer.Tests
         }
 
         /// <summary>
-        /// Finds the first <see cref="ElementNode"/> whose tag name matches <paramref name="tagName"/>.
-        /// If <paramref name="includeParent"/> is <c>true</c>, this method checks the <paramref name="parent"/> node
-        /// itself first; otherwise, it only searches the parent's direct children (one level deep).
+        /// Finds the <paramref name="occurrenceIndex"/>-th <see cref="ElementNode"/> whose tag name
+        /// matches <paramref name="tagName"/> among the direct children of <paramref name="parent"/>
+        /// (or the parent itself, if <paramref name="includeParent"/> is <c>true</c> and it matches).
+        /// If no such element is found, an exception is thrown.
         /// </summary>
         /// <param name="parent">
-        /// The starting node. If <paramref name="includeParent"/> is <c>true</c> and the parent matches,
-        /// it will be returned.
+        /// The starting node. If <paramref name="includeParent"/> is <c>true</c> and the parent’s
+        /// tag name matches, it can be returned as the first match.
         /// </param>
-        /// <param name="tagName">The tag name to look for (e.g., "html", "body", "div").</param>
+        /// <param name="tagName">
+        /// The tag name to look for (e.g., "html", "body", "div").
+        /// </param>
+        /// <param name="occurrenceIndex">
+        /// The nth occurrence to return, counting from 1. Defaults to 1 (the first match).
+        /// </param>
         /// <param name="includeParent">
-        /// If <c>true</c>, the method checks whether <paramref name="parent"/> is itself a match before
-        /// searching its children.
+        /// If <c>true</c>, the method checks whether <paramref name="parent"/> is itself a match
+        /// before searching its direct children.
         /// </param>
-        /// <returns>The first matching <see cref="ElementNode"/> or <c>null</c> if none is found.</returns>
+        /// <returns>
+        /// The <paramref name="occurrenceIndex"/>-th matching <see cref="ElementNode"/>.
+        /// An exception is thrown if insufficient matches are found.
+        /// </returns>
         protected ElementNode FindElementNodeByTagName(
             ElementNode parent,
             string tagName,
+            int occurrenceIndex = 1,
             bool includeParent = false)
         {
-            // 1) Check if the parent *itself* has the desired tag name
+            // If includeParent = true, check the parent itself
             if (includeParent && parent.Ref is IElement parentElement && parentElement.GetTagName() == tagName)
             {
-                return parent;
+                // If you’re asking for the *first* occurrence (occurrenceIndex == 1),
+                // returning the parent directly might make sense.
+                if (occurrenceIndex == 1)
+                {
+                    return parent;
+                }
+                // If occurrenceIndex > 1, you’d need additional logic here.
             }
 
-            // 2) Otherwise, search among the direct children (one level deep)
-            var firstElementNode =  parent.Children
+            // Gather all direct child elements that match 'tagName'.
+            var matchingChildren = parent.Children
                 .OfType<ElementNode>()
-                .FirstOrDefault(x => x.Ref is IElement e && e.GetTagName() == tagName);
+                .Where(x => x.Ref is IElement e && e.GetTagName() == tagName)
+                .ToList();
 
-            NotNull(firstElementNode, $"Could not find element with tag name '{tagName}'.");
+            // Make sure we have enough matches
+            if (matchingChildren.Count < occurrenceIndex)
+            {
+                throw new Exception(
+                    $"Could not find the {occurrenceIndex}-th <{tagName}> under {parent.Ref?.GetTagName()}."
+                );
+            }
 
-            return firstElementNode;
+            return matchingChildren[occurrenceIndex - 1];
         }
 
         /// <summary>

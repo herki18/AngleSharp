@@ -432,8 +432,8 @@ namespace AngleSharp.Renderer.Tests
         [TestCase("<body style='margin: 0px;'><div style='margin-top: 20px;'><div style='margin-top: 30px;'></div></div></body>", 0, 30)]
         [TestCase("<body style='margin: 0px;'><div style='margin-top: 0px;'><div style='margin-top: 30px;'></div></div></body>", 0, 30)]
         [TestCase("<body style='margin: 0px;'><div style='margin-top: 20px;'><div style='margin-top: -10px;'></div></div></body>", 0, 10)]
-        [TestCase("<body style='margin: 0px;'><div style='margin-top: -20px;'><div style='margin-top: -10px;'></div></div></body>", 0, -10)]
-        public void test_nested_margin_collapse_parent_child(string html, double expectedX, double expectedY)
+        [TestCase("<body style='margin: 0px;'><div style='margin-top: -20px;'><div style='margin-top: -10px;'></div></div></body>", 0, -20)]
+        public void test_nested_margin_collapse_parent_child_top(string html, double expectedX, double expectedY)
         {
             ReplaceBody(html);
             var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
@@ -442,10 +442,29 @@ namespace AngleSharp.Renderer.Tests
             AssertGlobalPosition(childDiv, expectedX, expectedY);
         }
 
-        [TestCase("<body style='margin: 0px;'><div style='margin-top: 20px;'><div style='margin-top: 30px;'><div style='margin-top: 10px;'></div></div></div></body>", 8, 30)]
-        [TestCase("<body style='margin: 0px;'><div style='margin-top: 20px;'><div style='margin-top: -10px;'><div style='margin-top: 15px;'></div></div></div></body>", 8, 15)]
-        [TestCase("<body style='margin: 0px;'><div style='margin-top: 0px;'><div style='margin-top: 30px;'><div style='margin-top: 0px;'></div></div></div></body>", 8, 30)]
-        [TestCase("<body style='margin: 0px;'><div style='margin-top: 20px; padding: 10px;'><div style='margin-top: 30px;'><div style='margin-top: 10px;'></div></div></div></body>", 8, 40)]
+        [TestCase("<body style='margin: 0px;'><div style='margin-bottom: 20px;'><div style='margin-bottom: 30px;'></div></div><div style='background: red; height: 1px;'></div></body>", 0, 30)]
+        [TestCase("<body style='margin: 0px;'><div style='margin-bottom: 0px;'><div style='margin-bottom: 30px;'></div></div><div style='background: red; height: 1px;'></div></body>", 0, 30)]
+        [TestCase("<body style='margin: 0px;'><div style='margin-bottom: 20px;'><div style='margin-bottom: -10px;'></div></div><div style='background: red; height: 1px;'></div></body>", 0, 10)]
+        [TestCase("<body style='margin: 0px;'><div style='margin-bottom: -20px;'><div style='margin-bottom: -10px;'></div></div><div style='background: red; height: 1px;'></div></body>", 0, -30)]
+        public void test_nested_margin_collapse_parent_child_bottom(string html, double expectedX, double expectedY)
+        {
+            ReplaceBody(html);
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+
+            // First <div> is the parent; second <div> is the child
+            var parentDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
+            var childDiv  = FindElementNodeByTagName(parentDiv, TagNames.Div);
+
+            // Next sibling <div> (the "red" block) is where we measure final Y offset
+            var siblingDiv = FindElementNodeByTagName(bodyNode, TagNames.Div, 2);
+
+            AssertGlobalPosition(siblingDiv, expectedX, expectedY);
+        }
+
+        [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 20px;'><div id='d2' style='margin-top: 30px;'><div id='d3' style='margin-top: 10px;'></div></div></div></body>", 0, 30)]
+        [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 20px;'><div id='d2' style='margin-top: -10px;'><div id='d3' style='margin-top: 15px;'></div></div></div></body>", 0, 10)]
+        [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 0px;'><div id='d2' style='margin-top: 30px;'><div id='d3' style='margin-top: 0px;'></div></div></div></body>", 0, 30)]
+        [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 20px; padding: 10px;'><div id='d2' style='margin-top: 30px;'><div id='d3' style='margin-top: 10px;'></div></div></div></body>", 10, 40)]
         public void test_nested_margin_collapse_with_deep_hierarchy(string html, double expectedX, double expectedY)
         {
             ReplaceBody(html);

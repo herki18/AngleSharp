@@ -1,3 +1,4 @@
+#pragma warning disable CS0219 // Variable is assigned but its value is never used
 #pragma warning disable CS0162 // Unreachable code detected
 namespace AngleSharp.Renderer;
 
@@ -50,7 +51,12 @@ public struct LayoutContext
     public float ParentGlobalPositionX;
     public float ParentGlobalPositionY;
 
+    public bool IsCollapsedMarginWithParentTop;
+    public float ChildMarginTop;
 
+
+    public bool IsCollapsedMarginWithParentBottom;
+    public float ChildMarginBottom;
 }
 
 /// <summary>
@@ -385,29 +391,96 @@ public class BlockLayoutObject : ILayoutObject
         layoutBox.X = posX;
         layoutBox.Y = posY;
 
+
+        if (context.IsCollapsedMarginWithParentTop)
+        {
+            layoutBox.Y = layoutBox.Y + context.ChildMarginTop;
+        }
+
+
         // Calculate Relative Position
 
 
-        foreach (var child in elem.Children.Where(node => node is ElementNode or TextNode))
+
+        var children = elem.Children.Where(node => node is ElementNode or TextNode).ToList();
+        int count = children.Count;
+
+        for (var childIndex = 0; childIndex < children.Count; childIndex++)
         {
+            var child = children[childIndex];
+            bool isFirst = (childIndex == 0);
+            bool isLast = (childIndex == count - 1);
+
+
             var childContext = new LayoutContext()
             {
                 ParentX = posX + layoutBox.BorderLeft + layoutBox.PaddingLeft,
                 ParentY = posY + layoutBox.BorderTop + layoutBox.PaddingTop,
                 AvailableWidth = layoutBox.ContentWidth
-
             };
 
             var childLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(child);
 
             // Margin Collapse Parent Child First Child
+            childContext.IsCollapsedMarginWithParentTop = layoutBox.PaddingTop == 0 && layoutBox.BorderTop == 0 && isFirst;
+            if (childContext.IsCollapsedMarginWithParentTop)
+            {
+                childContext.ChildMarginTop = MarginCollapser.Collapse(layoutBox.MarginTop, child.Layout?.MarginTop ?? 0);
+            }
 
             // Margin Collapse Siblings
 
-            childLayoutObj.Arrange(childContext);
-
-
             // Margin Collapse Parent Child Last Child
+            childContext.IsCollapsedMarginWithParentBottom = layoutBox.PaddingBottom == 0 && layoutBox.BorderBottom == 0 && isLast;
+            if (childContext.IsCollapsedMarginWithParentBottom)
+            {
+                childContext.ChildMarginBottom = MarginCollapser.Collapse(layoutBox.MarginBottom, child.Layout?.MarginBottom ?? 0);
+            }
+
+            childLayoutObj.Arrange(childContext);
+        }
+
+        if (children.Count > 0)
+        {
+            var lastChildNode = children[^1] as ElementNode;
+            if (lastChildNode?.Layout is LayoutBox lastChildBox)
+            {
+                // The last child's final bottom = child’s Y + child’s total height
+                // (BoxHeight includes border+padding+content).
+                float lastChildBottom = lastChildBox.Y + lastChildBox.BoxHeight;
+
+                // If the parent and last child *can* collapse margins at the bottom,
+                // recalculate how far the parent extends.
+                if (layoutBox.PaddingBottom == 0 && layoutBox.BorderBottom == 0)
+                {
+                    float collapsedBottom =
+                        MarginCollapser.Collapse(layoutBox.MarginBottom, lastChildBox.MarginBottom);
+
+                    // The parent's new "bottom" = last child's bottom + collapsed margin
+                    float newParentBottom = lastChildBottom + collapsedBottom;
+
+                    // So the parent's BoxHeight = (new bottom) - (parent's top)
+                    float newHeight = newParentBottom - layoutBox.Y;
+
+                    // If negative margins exceed child’s bottom, you could clamp or allow it:
+                    if (newHeight < 0)
+                    {
+                        newHeight = 0;
+                    }
+
+                    layoutBox.BoxHeight = newHeight;
+                }
+                else
+                {
+                    // If parent does NOT collapse bottom margin (has padding/border, etc.),
+                    // we still need to ensure the parent covers the last child's bottom at least.
+                    float needed = lastChildBottom - layoutBox.Y;
+                    if (needed > layoutBox.BoxHeight)
+                    {
+                        layoutBox.BoxHeight = needed;
+                    }
+                }
+            }
         }
     }
 }

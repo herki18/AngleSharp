@@ -14,7 +14,10 @@ namespace AngleSharp.Renderer
             Children = children;
             SpecifiedStyle = specifiedStyle;
             ComputedStyle = computedStyle;
+            Id = reference.Id;
         }
+
+        public String? Id { get; }
 
         public IElement Ref { get; }
 
@@ -40,6 +43,8 @@ namespace AngleSharp.Renderer
             Ref = @ref;
             Children = children;
         }
+
+        public String? Id => null;
 
         public INode Ref { get; }
         public IEnumerable<IRenderNode> Children { get; }

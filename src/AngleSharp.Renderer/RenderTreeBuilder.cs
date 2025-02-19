@@ -804,7 +804,7 @@ namespace AngleSharp.Renderer
             return MarginCollapser.Collapse(previousMarginBottom, currentMarginTop);
         }
 
-        private static bool IsFirstInFlowChild(ElementNode? parent, ElementNode child)
+        public static bool IsFirstInFlowChild(ElementNode? parent, ElementNode child)
         {
             if (parent == null || child == null) return false;
 
