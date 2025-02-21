@@ -3,6 +3,7 @@
 namespace AngleSharp.Renderer;
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Html.Construction;
 
@@ -391,6 +392,9 @@ public class BlockLayoutObject : ILayoutObject
         layoutBox.X = posX;
         layoutBox.Y = posY;
 
+        // Margin Collapse Parent Child First Child
+        float collapsedMargin = CollapseMarginsForElement(elem);
+
 
         if (context.IsCollapsedMarginWithParentTop)
         {
@@ -422,20 +426,20 @@ public class BlockLayoutObject : ILayoutObject
             var childLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(child);
 
             // Margin Collapse Parent Child First Child
-            childContext.IsCollapsedMarginWithParentTop = layoutBox.PaddingTop == 0 && layoutBox.BorderTop == 0 && isFirst;
-            if (childContext.IsCollapsedMarginWithParentTop)
-            {
-                childContext.ChildMarginTop = MarginCollapser.Collapse(layoutBox.MarginTop, child.Layout?.MarginTop ?? 0);
-            }
+            // childContext.IsCollapsedMarginWithParentTop = layoutBox.PaddingTop == 0 && layoutBox.BorderTop == 0 && isFirst;
+            // if (childContext.IsCollapsedMarginWithParentTop)
+            // {
+            //     childContext.ChildMarginTop = MarginCollapser.Collapse(layoutBox.MarginTop, child.Layout?.MarginTop ?? 0);
+            // }
 
             // Margin Collapse Siblings
 
             // Margin Collapse Parent Child Last Child
-            childContext.IsCollapsedMarginWithParentBottom = layoutBox.PaddingBottom == 0 && layoutBox.BorderBottom == 0 && isLast;
-            if (childContext.IsCollapsedMarginWithParentBottom)
-            {
-                childContext.ChildMarginBottom = MarginCollapser.Collapse(layoutBox.MarginBottom, child.Layout?.MarginBottom ?? 0);
-            }
+            // childContext.IsCollapsedMarginWithParentBottom = layoutBox.PaddingBottom == 0 && layoutBox.BorderBottom == 0 && isLast;
+            // if (childContext.IsCollapsedMarginWithParentBottom)
+            // {
+            //     childContext.ChildMarginBottom = MarginCollapser.Collapse(layoutBox.MarginBottom, child.Layout?.MarginBottom ?? 0);
+            // }
 
             childLayoutObj.Arrange(childContext);
         }
@@ -482,6 +486,37 @@ public class BlockLayoutObject : ILayoutObject
                 }
             }
         }
+    }
+
+    public float CollapseMarginsForElement(ElementNode? elementNode)
+    {
+        if (elementNode == null)
+            return 0;
+
+        var margins = new List<float>();
+        var current = elementNode;
+        var visited = new HashSet<ElementNode>();
+
+        while (current != null && !visited.Contains(current))
+        {
+            visited.Add(current);
+
+            if (current.Layout != null)
+                margins.Add(current.Layout.MarginTop);
+
+            current = current.Children.FirstOrDefault() as ElementNode;
+        }
+
+        if (!margins.Any())
+            return 0;
+
+        var positiveMargins = margins.Where(m => m >= 0);
+        var negativeMargins = margins.Where(m => m < 0);
+
+        float maxPositive = positiveMargins.Any() ? positiveMargins.Max() : 0;
+        float maxNegative = negativeMargins.Any() ? negativeMargins.Min() : 0;
+
+        return maxPositive + maxNegative;
     }
 }
 
