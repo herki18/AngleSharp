@@ -171,7 +171,7 @@ namespace AngleSharp.Renderer.Tests
         /// If no such element is found, an exception is thrown.
         /// </summary>
         /// <param name="parent">
-        /// The starting node. If <paramref name="includeParent"/> is <c>true</c> and the parent’s
+        /// The starting node. If <paramref name="includeParent"/> is <c>true</c> and the parent's
         /// tag name matches, it can be returned as the first match.
         /// </param>
         /// <param name="tagName">
@@ -221,6 +221,24 @@ namespace AngleSharp.Renderer.Tests
             }
 
             return matchingChildren[occurrenceIndex - 1];
+        }
+
+        protected ElementNode FindElementNodeById(ElementNode parent, string id)
+        {
+            // Gather all direct child elements that match the id
+            var matchingChildren = parent.Children
+                .OfType<ElementNode>()
+                .Where(x => x.Ref is IElement e && e.GetAttribute("id") == id)
+                .ToList();
+
+            if (!matchingChildren.Any())
+            {
+                throw new Exception(
+                    $"Could not find element with id='{id}' under {parent.Ref?.GetTagName()}."
+                );
+            }
+
+            return matchingChildren[0];
         }
 
         /// <summary>

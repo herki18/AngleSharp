@@ -429,43 +429,43 @@ namespace AngleSharp.Renderer.Tests
             AssertGlobalPosition(singleChild, 16, 8);
         }
 
-        [TestCase("<body style='margin: 0px;'><div style='margin-top: 20px;'><div style='margin-top: 30px;'></div></div></body>", 0, 30)]
-        [TestCase("<body style='margin: 0px;'><div style='margin-top: 0px;'><div style='margin-top: 30px;'></div></div></body>", 0, 30)]
-        [TestCase("<body style='margin: 0px;'><div style='margin-top: 20px;'><div style='margin-top: -10px;'></div></div></body>", 0, 10)]
-        [TestCase("<body style='margin: 0px;'><div style='margin-top: -20px;'><div style='margin-top: -10px;'></div></div></body>", 0, -20)]
-        public void test_nested_margin_collapse_parent_child_top(string html, double expectedX, double expectedY)
-        {
-            ReplaceBody(html);
-            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
-            var parentDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            var childDiv = FindElementNodeByTagName(parentDiv, TagNames.Div);
-            AssertGlobalPosition(childDiv, expectedX, expectedY);
-        }
+        // [TestCase("<body style='margin: 0px;'><div style='margin-top: 20px;'><div style='margin-top: 30px;'></div></div></body>", 0, 30)]
+        // [TestCase("<body style='margin: 0px;'><div style='margin-top: 0px;'><div style='margin-top: 30px;'></div></div></body>", 0, 30)]
+        // [TestCase("<body style='margin: 0px;'><div style='margin-top: 20px;'><div style='margin-top: -10px;'></div></div></body>", 0, 10)]
+        // [TestCase("<body style='margin: 0px;'><div style='margin-top: -20px;'><div style='margin-top: -10px;'></div></div></body>", 0, -20)]
+        // public void test_nested_margin_collapse_parent_child_top(string html, double expectedX, double expectedY)
+        // {
+        //     ReplaceBody(html);
+        //     var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+        //     var parentDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
+        //     var childDiv = FindElementNodeByTagName(parentDiv, TagNames.Div);
+        //     AssertGlobalPosition(childDiv, expectedX, expectedY);
+        // }
 
-        [TestCase("<body style='margin: 0px;'><div style='margin-bottom: 20px;'><div style='margin-bottom: 30px;'></div></div><div style='background: red; height: 1px;'></div></body>", 0, 30)]
-        [TestCase("<body style='margin: 0px;'><div style='margin-bottom: 0px;'><div style='margin-bottom: 30px;'></div></div><div style='background: red; height: 1px;'></div></body>", 0, 30)]
-        [TestCase("<body style='margin: 0px;'><div style='margin-bottom: 20px;'><div style='margin-bottom: -10px;'></div></div><div style='background: red; height: 1px;'></div></body>", 0, 10)]
-        [TestCase("<body style='margin: 0px;'><div style='margin-bottom: -20px;'><div style='margin-bottom: -10px;'></div></div><div style='background: red; height: 1px;'></div></body>", 0, -30)]
-        public void test_nested_margin_collapse_parent_child_bottom(string html, double expectedX, double expectedY)
-        {
-            ReplaceBody(html);
-            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+        // [TestCase("<body style='margin: 0px;'><div style='margin-bottom: 20px;'><div style='margin-bottom: 30px;'></div></div><div style='background: red; height: 1px;'></div></body>", 0, 30)]
+        // [TestCase("<body style='margin: 0px;'><div style='margin-bottom: 0px;'><div style='margin-bottom: 30px;'></div></div><div style='background: red; height: 1px;'></div></body>", 0, 30)]
+        // [TestCase("<body style='margin: 0px;'><div style='margin-bottom: 20px;'><div style='margin-bottom: -10px;'></div></div><div style='background: red; height: 1px;'></div></body>", 0, 10)]
+        // [TestCase("<body style='margin: 0px;'><div style='margin-bottom: -20px;'><div style='margin-bottom: -10px;'></div></div><div style='background: red; height: 1px;'></div></body>", 0, -30)]
+        // public void test_nested_margin_collapse_parent_child_bottom(string html, double expectedX, double expectedY)
+        // {
+        //     ReplaceBody(html);
+        //     var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
 
-            // First <div> is the parent; second <div> is the child
-            var parentDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            var childDiv  = FindElementNodeByTagName(parentDiv, TagNames.Div);
+        //     // First <div> is the parent; second <div> is the child
+        //     var parentDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
+        //     var childDiv  = FindElementNodeByTagName(parentDiv, TagNames.Div);
 
-            // Next sibling <div> (the "red" block) is where we measure final Y offset
-            var siblingDiv = FindElementNodeByTagName(bodyNode, TagNames.Div, 2);
+        //     // Next sibling <div> (the "red" block) is where we measure final Y offset
+        //     var siblingDiv = FindElementNodeByTagName(bodyNode, TagNames.Div, 2);
 
-            AssertGlobalPosition(siblingDiv, expectedX, expectedY);
-        }
+        //     AssertGlobalPosition(siblingDiv, expectedX, expectedY);
+        // }
 
         [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 20px;'><div id='d2' style='margin-top: 30px;'><div id='d3' style='margin-top: 10px;'></div></div></div></body>", 0, 30)]
         [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 20px;'><div id='d2' style='margin-top: -10px;'><div id='d3' style='margin-top: 15px;'></div></div></div></body>", 0, 10)]
         [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 0px;'><div id='d2' style='margin-top: 30px;'><div id='d3' style='margin-top: 0px;'></div></div></div></body>", 0, 30)]
         [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 20px; padding: 10px;'><div id='d2' style='margin-top: 30px;'><div id='d3' style='margin-top: 10px;'></div></div></div></body>", 10, 40)]
-        public void test_nested_margin_collapse_with_deep_hierarchy(string html, double expectedX, double expectedY)
+        public void test_nested_margin_collapse_with_deep_hierarchy1(string html, double expectedX, double expectedY)
         {
             ReplaceBody(html);
             var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
@@ -474,6 +474,39 @@ namespace AngleSharp.Renderer.Tests
             var innerDiv = FindElementNodeByTagName(middleDiv, TagNames.Div);
             AssertGlobalPosition(innerDiv, expectedX, expectedY);
         }
+
+        [TestCaseSource(typeof(MarginTestData), nameof(MarginTestData.ParentChildTopMarginCases))]
+        public void test_nested_margin_collapse_parent_child_top(MarginTestCase testCase)
+        {
+            ReplaceBody(testCase.Html);
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+            var parentDiv = FindElementNodeById(bodyNode, "d1");
+            var childDiv = FindElementNodeById(parentDiv, "d2");
+            AssertGlobalPosition(childDiv, testCase.ExpectedX, testCase.ExpectedY);
+        }
+
+        [TestCaseSource(typeof(MarginTestData), nameof(MarginTestData.ParentChildBottomMarginCases))]
+        public void test_nested_margin_collapse_parent_child_bottom(MarginTestCase testCase)
+        {
+            ReplaceBody(testCase.Html);
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+            var parentDiv = FindElementNodeById(bodyNode, "d1");
+            var childDiv = FindElementNodeById(parentDiv, "d2");
+            var siblingDiv = FindElementNodeById(bodyNode, "d1.1");
+            AssertGlobalPosition(siblingDiv, testCase.ExpectedX, testCase.ExpectedY);
+        }
+
+        [TestCaseSource(typeof(MarginTestData), nameof(MarginTestData.DeepHierarchyMarginCases))]
+        public void test_nested_margin_collapse_with_deep_hierarchy(MarginTestCase testCase)
+        {
+            ReplaceBody(testCase.Html);
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+            var d1 = FindElementNodeById(bodyNode, "d1");
+            var d2 = FindElementNodeById(d1, "d2");
+            var d3 = FindElementNodeById(d2, "d3");
+            AssertGlobalPosition(d3, testCase.ExpectedX, testCase.ExpectedY);
+        }
+
 
         [Test]
         public void test_vertical_margins_collapse_between_siblings()

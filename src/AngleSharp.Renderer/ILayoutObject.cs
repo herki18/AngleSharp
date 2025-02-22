@@ -392,18 +392,29 @@ public class BlockLayoutObject : ILayoutObject
         layoutBox.X = posX;
         layoutBox.Y = posY;
 
-        // Margin Collapse Parent Child First Child
-        float collapsedMargin = CollapseMarginsForElement(elem);
+
+        // if (context.IsCollapsedMarginWithParentTop)
+        // {
+        //     layoutBox.Y = layoutBox.Y + context.ChildMarginTop;
+        // }
 
 
-        if (context.IsCollapsedMarginWithParentTop)
+        // --- HANDLE MARGIN COLLAPSING AT TOP ---
+        // For elements that can collapse margins (no border/padding at top),
+        // use CollapseMarginsForElement to handle the entire chain of first children
+        if (layoutBox.BorderTop == 0 && layoutBox.PaddingTop == 0)
         {
-            layoutBox.Y = layoutBox.Y + context.ChildMarginTop;
+            // Calculate the collapsed margin through entire descendant chain
+            float collapsedMargin = CollapseMarginsForElement(elem);
+
+            // Adjust the element's position based on collapsed margin
+            // This effectively replaces its own margin with the collapsed result
+            layoutBox.Y += collapsedMargin;
+
+            // EXPLANATION:
+            // CollapseMarginsForElement already traverses the entire chain of first children
+            // and calculates a single collapsed margin value for all of them
         }
-
-
-        // Calculate Relative Position
-
 
 
         var children = elem.Children.Where(node => node is ElementNode or TextNode).ToList();
@@ -444,48 +455,48 @@ public class BlockLayoutObject : ILayoutObject
             childLayoutObj.Arrange(childContext);
         }
 
-        if (children.Count > 0)
-        {
-            var lastChildNode = children[^1] as ElementNode;
-            if (lastChildNode?.Layout is LayoutBox lastChildBox)
-            {
-                // The last child's final bottom = child’s Y + child’s total height
-                // (BoxHeight includes border+padding+content).
-                float lastChildBottom = lastChildBox.Y + lastChildBox.BoxHeight;
-
-                // If the parent and last child *can* collapse margins at the bottom,
-                // recalculate how far the parent extends.
-                if (layoutBox.PaddingBottom == 0 && layoutBox.BorderBottom == 0)
-                {
-                    float collapsedBottom =
-                        MarginCollapser.Collapse(layoutBox.MarginBottom, lastChildBox.MarginBottom);
-
-                    // The parent's new "bottom" = last child's bottom + collapsed margin
-                    float newParentBottom = lastChildBottom + collapsedBottom;
-
-                    // So the parent's BoxHeight = (new bottom) - (parent's top)
-                    float newHeight = newParentBottom - layoutBox.Y;
-
-                    // If negative margins exceed child’s bottom, you could clamp or allow it:
-                    if (newHeight < 0)
-                    {
-                        newHeight = 0;
-                    }
-
-                    layoutBox.BoxHeight = newHeight;
-                }
-                else
-                {
-                    // If parent does NOT collapse bottom margin (has padding/border, etc.),
-                    // we still need to ensure the parent covers the last child's bottom at least.
-                    float needed = lastChildBottom - layoutBox.Y;
-                    if (needed > layoutBox.BoxHeight)
-                    {
-                        layoutBox.BoxHeight = needed;
-                    }
-                }
-            }
-        }
+        // if (children.Count > 0)
+        // {
+        //     var lastChildNode = children[^1] as ElementNode;
+        //     if (lastChildNode?.Layout is LayoutBox lastChildBox)
+        //     {
+        //         // The last child's final bottom = child’s Y + child’s total height
+        //         // (BoxHeight includes border+padding+content).
+        //         float lastChildBottom = lastChildBox.Y + lastChildBox.BoxHeight;
+        //
+        //         // If the parent and last child *can* collapse margins at the bottom,
+        //         // recalculate how far the parent extends.
+        //         if (layoutBox.PaddingBottom == 0 && layoutBox.BorderBottom == 0)
+        //         {
+        //             float collapsedBottom =
+        //                 MarginCollapser.Collapse(layoutBox.MarginBottom, lastChildBox.MarginBottom);
+        //
+        //             // The parent's new "bottom" = last child's bottom + collapsed margin
+        //             float newParentBottom = lastChildBottom + collapsedBottom;
+        //
+        //             // So the parent's BoxHeight = (new bottom) - (parent's top)
+        //             float newHeight = newParentBottom - layoutBox.Y;
+        //
+        //             // If negative margins exceed child’s bottom, you could clamp or allow it:
+        //             if (newHeight < 0)
+        //             {
+        //                 newHeight = 0;
+        //             }
+        //
+        //             layoutBox.BoxHeight = newHeight;
+        //         }
+        //         else
+        //         {
+        //             // If parent does NOT collapse bottom margin (has padding/border, etc.),
+        //             // we still need to ensure the parent covers the last child's bottom at least.
+        //             float needed = lastChildBottom - layoutBox.Y;
+        //             if (needed > layoutBox.BoxHeight)
+        //             {
+        //                 layoutBox.BoxHeight = needed;
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     public float CollapseMarginsForElement(ElementNode? elementNode)
