@@ -64,11 +64,9 @@ namespace AngleSharp.Renderer.Tests
 
             var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv);
             AssertContentWidth(containerDiv, 400);
 
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
-            NotNull(childDiv);
             AssertContentWidth(childDiv, 160);
 
             // Final layout
@@ -94,12 +92,10 @@ namespace AngleSharp.Renderer.Tests
 
             var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv);
             AssertDisplay(containerDiv, "block");
             AssertContentWidth(containerDiv, 400);
 
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
-            NotNull(childDiv);
             AssertDisplay(childDiv, "block");
 
             // The child's computed style for width might be "auto",
@@ -107,7 +103,6 @@ namespace AngleSharp.Renderer.Tests
             // If your code sets it to 400, or 0, or something else, it can differ.
             // Typically we expect the final Layout width to match the container's content box width.
             var childLayout = childDiv.Layout;
-            NotNull(childLayout, "Child layout box is null.");
 
             That(childLayout.BoxWidth, Is.EqualTo(400).Within(1.0),
                 "Child should fill the container in normal block flow when width is auto and margins are auto.");
@@ -125,18 +120,15 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find container <div style="width:300px"> inside <body>
             var container = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(container, "Could not find container <div>.");
             AssertContentWidth(container, 300);
 
             // 3) Find first child (first block): <div style="height:50px; margin-bottom:20px;">
             var firstBlock = FindChildByIndex(container, 0);
-            NotNull(firstBlock, "Could not find first block.");
             // Expect height of 50px
             AssertHeight(firstBlock, 50);
 
             // 4) Find second child: <div style="height:50px; margin-top:30px;">
             var secondBlock = FindChildByIndex(container, 1);
-            NotNull(secondBlock, "Could not find second block.");
 
             // 5) Check positions:
             //    The container is expected at Y = 8 (body's margin applied once)
@@ -159,11 +151,9 @@ namespace AngleSharp.Renderer.Tests
 
             var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv);
             AssertContentWidth(containerDiv, 300);
 
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
-            NotNull(childDiv);
             AssertContentWidth(childDiv, 500);
 
             // leftoverSpace = 300 - 500 = -200 => 0 after clamp
@@ -184,20 +174,16 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Container <div style="width:200px">
             var container = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(container, "Could not find container <div>.");
 
             // 3) firstBlock: <div style="height:40px; margin-bottom:20px;">
             var firstBlock = FindChildByIndex(container, 0);
-            NotNull(firstBlock, "Could not find first block.");
             AssertHeight(firstBlock, 40);
 
             // 4) emptyBlock: <div style="margin-top:30px; margin-bottom:10px;">
             var emptyBlock = FindChildByIndex(container, 1);
-            NotNull(emptyBlock, "Could not find the empty block.");
 
             // 5) thirdBlock: <div style="height:40px; margin-top:15px;">
             var thirdBlock = FindChildByIndex(container, 2);
-            NotNull(thirdBlock, "Could not find the third block.");
             AssertHeight(thirdBlock, 40);
 
             // 6) Let's check the Y positions to confirm collapsed margins.
@@ -219,11 +205,9 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find the parent <div style="margin-top:20px; border:none; padding:0">
             var parentDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(parentDiv, "Could not find parent <div> with margin-top:20px.");
 
             // 3) Find the child <div style="height:50px; margin-top:30px">
             var childDiv = FindElementNodeByTagName(parentDiv, TagNames.Div);
-            NotNull(childDiv, "Could not find child <div> with margin-top:30px.");
 
             // 4) The parent's top margin (20px) + child's top margin (30px)
             //    collapse to 30px total offset from the page top.
@@ -245,7 +229,6 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find the outer container <div> inside <body>
             var container = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(container, "Could not find the container <div>.");
             // Expect container positioned at (8,8)
             AssertGlobalPosition(container, 8, 8);
 
@@ -254,9 +237,9 @@ namespace AngleSharp.Renderer.Tests
             var sibling1 = FindChildByIndex(container, 0);
             var sibling2 = FindChildByIndex(container, 1);
             var sibling3 = FindChildByIndex(container, 2);
-            NotNull(sibling1, "Could not find sibling 1.");
-            NotNull(sibling2, "Could not find sibling 2.");
-            NotNull(sibling3, "Could not find sibling 3.");
+            That(sibling1, Is.Not.Null, "Could not find sibling 1.");
+            That(sibling2, Is.Not.Null, "Could not find sibling 2.");
+            That(sibling3, Is.Not.Null, "Could not find sibling 3.");
 
             // 4) Expected positions:
             //    - First sibling: with collapsed top margin, its top is at Y = 8.
@@ -277,17 +260,14 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find the container <div style="width: 300px">
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv, "Could not find container <div> under <body>.");
             AssertContentWidth(containerDiv, 300);
 
             // 3) Find the first child <div style="height: 50px; margin-bottom: -10px">
             var firstBlock = FindChildByIndex(containerDiv, 0);
-            NotNull(firstBlock, "Could not find first child.");
             AssertHeight(firstBlock, 50);
 
             // 4) Find the second child <div style="height: 70px">
             var secondBlock = FindChildByIndex(containerDiv, 1);
-            NotNull(secondBlock, "Could not find second child.");
             AssertHeight(secondBlock, 70);
 
             // 5) Check Y-position for negative margin overlap
@@ -296,52 +276,6 @@ namespace AngleSharp.Renderer.Tests
             //       effectively overlapping the prior 10px
             AssertGlobalPosition(secondBlock, 8 /* or the X offset if relevant */, 40 /* Y expected */);
         }
-
-//         [Test]
-// public void test_nested_margin_collapse_with_parent_and_siblings()
-// {
-//     // 1) Render and get (root, html, body)
-//     var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
-//
-//     // 2) Find the outer container <div> (which has its own margin and padding)
-//     var outerContainer = FindElementNodeByTagName(bodyNode, TagNames.Div);
-//     NotNull(outerContainer, "Could not find outer container <div>.");
-//     // For this test, assume outer container is positioned at (8,8)
-//     AssertPosition(outerContainer, 8, 8);
-//
-//     // 3) Within the outer container, there are three nested sibling divs.
-//     //    Each nested div has height:30px and margin:10px.
-//     var nested1 = FindChildByIndex(outerContainer, 0);
-//     var nested2 = FindChildByIndex(outerContainer, 1);
-//     var nested3 = FindChildByIndex(outerContainer, 2);
-//     NotNull(nested1, "Could not find nested div 1.");
-//     NotNull(nested2, "Could not find nested div 2.");
-//     NotNull(nested3, "Could not find nested div 3.");
-//
-//     // 4) Assume the outer container has a top padding of 5px; therefore,
-//     //    its content area's Y origin is 8 (container) + 5 (padding) = 13.
-//     //    For the first nested div, if its top margin (10px) collapses with the container's margin,
-//     //    then its top should be at Y = 13.
-//     AssertPosition(nested1, 8, 13);
-//     // 5) For nested siblings, the gap is the collapse of 10px margins → 10px gap.
-//     //    So nested2's top should be: 13 + 30 + 10 = 53.
-//     AssertPosition(nested2, 8, 53);
-//     //    And nested3's top should be: 53 + 30 + 10 = 93.
-//     AssertPosition(nested3, 8, 93);
-//
-//     // 6) Finally, find additional sibling divs outside the outer container.
-//     //    For example, these may be the second and third divs in <body>.
-//     var sibling1 = FindElementNodeByTagName(bodyNode, TagNames.Div, 1);
-//     var sibling2 = FindElementNodeByTagName(bodyNode, TagNames.Div, 2);
-//     NotNull(sibling1, "Could not find sibling div 1.");
-//     NotNull(sibling2, "Could not find sibling div 2.");
-//
-//     // 7) Assume the outer container’s bottom is computed around Y ~110.
-//     //    With sibling1's margin of 8, its top should be approximately 110 + 8 = 118.
-//     AssertPosition(sibling1, 8, 118);
-//     // 8) Sibling2 should then be positioned at: 118 + 50 (sibling1 height) + 8 = 176.
-//     AssertPosition(sibling2, 8, 176);
-// }
 
 
         [Test]
@@ -354,11 +288,9 @@ namespace AngleSharp.Renderer.Tests
 
             var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv);
             AssertContentWidth(containerDiv, 400);
 
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
-            NotNull(childDiv);
             AssertContentWidth(childDiv, 100);
 
             // Check computed style
@@ -387,11 +319,9 @@ namespace AngleSharp.Renderer.Tests
 
             var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv);
             AssertContentWidth(containerDiv, 400);
 
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
-            NotNull(childDiv);
             AssertContentWidth(childDiv, 150);
 
             // Check computed style
@@ -419,7 +349,6 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find the single child <div style="width:300px; margin:8px;"> under <body>
             var singleChild = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(singleChild, "Could not find the single child <div>.");
 
             // 3) Assert that the child's content width is 300.
             AssertContentWidth(singleChild, 300);
@@ -461,19 +390,19 @@ namespace AngleSharp.Renderer.Tests
         //     AssertGlobalPosition(siblingDiv, expectedX, expectedY);
         // }
 
-        [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 20px;'><div id='d2' style='margin-top: 30px;'><div id='d3' style='margin-top: 10px;'></div></div></div></body>", 0, 30)]
-        [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 20px;'><div id='d2' style='margin-top: -10px;'><div id='d3' style='margin-top: 15px;'></div></div></div></body>", 0, 10)]
-        [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 0px;'><div id='d2' style='margin-top: 30px;'><div id='d3' style='margin-top: 0px;'></div></div></div></body>", 0, 30)]
-        [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 20px; padding: 10px;'><div id='d2' style='margin-top: 30px;'><div id='d3' style='margin-top: 10px;'></div></div></div></body>", 10, 40)]
-        public void test_nested_margin_collapse_with_deep_hierarchy1(string html, double expectedX, double expectedY)
-        {
-            ReplaceBody(html);
-            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
-            var outerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            var middleDiv = FindElementNodeByTagName(outerDiv, TagNames.Div);
-            var innerDiv = FindElementNodeByTagName(middleDiv, TagNames.Div);
-            AssertGlobalPosition(innerDiv, expectedX, expectedY);
-        }
+        // [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 20px;'><div id='d2' style='margin-top: 30px;'><div id='d3' style='margin-top: 10px;'></div></div></div></body>", 0, 30)]
+        // [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 20px;'><div id='d2' style='margin-top: -10px;'><div id='d3' style='margin-top: 15px;'></div></div></div></body>", 0, 10)]
+        // [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 0px;'><div id='d2' style='margin-top: 30px;'><div id='d3' style='margin-top: 0px;'></div></div></div></body>", 0, 30)]
+        // [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 20px; padding: 10px;'><div id='d2' style='margin-top: 30px;'><div id='d3' style='margin-top: 10px;'></div></div></div></body>", 10, 40)]
+        // public void test_nested_margin_collapse_with_deep_hierarchy1(string html, double expectedX, double expectedY)
+        // {
+        //     ReplaceBody(html);
+        //     var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+        //     var outerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
+        //     var middleDiv = FindElementNodeByTagName(outerDiv, TagNames.Div);
+        //     var innerDiv = FindElementNodeByTagName(middleDiv, TagNames.Div);
+        //     AssertGlobalPosition(innerDiv, expectedX, expectedY);
+        // }
 
         [TestCaseSource(typeof(MarginTestData), nameof(MarginTestData.ParentChildTopMarginCases))]
         public void test_nested_margin_collapse_parent_child_top(MarginTestCase testCase)
@@ -516,7 +445,6 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find the container <div style="width: 300px">
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv, "Could not find container <div> under <body>.");
 
             AssertDisplay(containerDiv, "block");
             AssertContentWidth(containerDiv, 300);

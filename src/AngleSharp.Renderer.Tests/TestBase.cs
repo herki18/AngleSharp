@@ -160,7 +160,7 @@ namespace AngleSharp.Renderer.Tests
         public ElementNode FindChildByIndex(ElementNode parent, int index)
         {
             var child = parent.Children.OfType<ElementNode>().ElementAtOrDefault(index);
-            NotNull(child, $"Could not find child element at index={index} under parent <{parent.Ref?.NodeName}>.");
+            That(child, Is.Not.Null, $"Could not find child element at index={index} under parent <{parent.Ref?.NodeName}>.");
             return child;
         }
 
@@ -171,7 +171,7 @@ namespace AngleSharp.Renderer.Tests
         /// If no such element is found, an exception is thrown.
         /// </summary>
         /// <param name="parent">
-        /// The starting node. If <paramref name="includeParent"/> is <c>true</c> and the parent's
+        /// The starting node. If <paramref name="includeParent"/> is <c>true</c> and the parent’s
         /// tag name matches, it can be returned as the first match.
         /// </param>
         /// <param name="tagName">
@@ -246,7 +246,7 @@ namespace AngleSharp.Renderer.Tests
         /// </summary>
         protected void AssertDisplay(ElementNode node, string expectedDisplay)
         {
-            NotNull(node, $"Node cannot be null when checking display='{expectedDisplay}'.");
+            That(node, Is.Not.Null, $"Node cannot be null when checking display='{expectedDisplay}'.");
             That(node!.ComputedStyle.Display, Is.EqualTo(expectedDisplay),
                 $"Expected element display to be '{expectedDisplay}'.");
         }
@@ -257,7 +257,7 @@ namespace AngleSharp.Renderer.Tests
         /// </summary>
         protected void AssertContentWidth(ElementNode node, double expectedWidth, double tolerance = 0.5)
         {
-            NotNull(node, $"Node cannot be null when checking expected width={expectedWidth}.");
+            That(node, Is.Not.Null, $"Node cannot be null when checking expected width={expectedWidth}.");
             That(node!.Layout?.ContentWidth,
                  Is.EqualTo(expectedWidth).Within(tolerance),
                  $"Expected element width to be {expectedWidth}px ± {tolerance}.");
@@ -265,7 +265,7 @@ namespace AngleSharp.Renderer.Tests
 
         protected void AssertBoxWidth(ElementNode node, double expectedWidth, double tolerance = 0.5)
         {
-            NotNull(node, $"Node cannot be null when checking expected width={expectedWidth}.");
+            That(node, Is.Not.Null, $"Node cannot be null when checking expected width={expectedWidth}.");
             That(node!.Layout?.BoxWidth,
                 Is.EqualTo(expectedWidth).Within(tolerance),
                 $"Expected element width to be {expectedWidth}px ± {tolerance}.");
@@ -277,7 +277,7 @@ namespace AngleSharp.Renderer.Tests
         /// </summary>
         protected void AssertHeight(ElementNode node, double expectedHeight, double tolerance = 0.5)
         {
-            NotNull(node, $"Node cannot be null when checking expected height={expectedHeight}.");
+            That(node, Is.Not.Null, $"Node cannot be null when checking expected height={expectedHeight}.");
             That(node!.Layout?.ContentHeight,
                 Is.EqualTo(expectedHeight).Within(tolerance),
                 $"Expected element height to be {expectedHeight}px ± {tolerance}.");
@@ -341,11 +341,14 @@ namespace AngleSharp.Renderer.Tests
             double expectedY,
             double tolerance = 0.5)
         {
-            NotNull(node, "Node cannot be null when checking position.");
+            That(node, Is.Not.Null, "Node cannot be null when checking position.");
+
+            string idMessage = node?.Id != null ? $" (Id: {node.Id})" : "";
+
             That(node!.Layout?.X, Is.EqualTo(expectedX).Within(tolerance),
-                $"Expected element X to be {expectedX}px ± {tolerance}.");
+                $"Expected element{idMessage} X to be {expectedX}px ± {tolerance}.");
             That(node.Layout?.Y, Is.EqualTo(expectedY).Within(tolerance),
-                $"Expected element Y to be {expectedY}px ± {tolerance}.");
+                $"Expected element{idMessage} Y to be {expectedY}px ± {tolerance}.");
         }
 
         /// <summary>
@@ -354,7 +357,7 @@ namespace AngleSharp.Renderer.Tests
         /// </summary>
         protected void AssertChromiumDefaultBodyMargin(ElementNode bodyNode)
         {
-            NotNull(bodyNode, "Body node cannot be null when checking default margin.");
+            That(bodyNode, Is.Not.Null, "Body node cannot be null when checking default margin.");
 
             That(bodyNode!.ComputedStyle.MarginTop, Is.EqualTo("8px"),
                 "Expected default user-agent margin of 8px on <body> (top).");

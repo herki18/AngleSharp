@@ -17,9 +17,9 @@ namespace AngleSharp.Renderer.Tests
         {
             var element = node as IElement;
 
-            Assert.AreEqual(NodeType.Element, (NodeType)node.NodeType);
-            Assert.IsNotNull(element);
-            Assert.IsNull(element.Prefix);
+            Assert.That((NodeType)node.NodeType, Is.EqualTo(NodeType.Element));
+            Assert.That(element, Is.Not.Null);
+            Assert.That(element.Prefix, Is.Null);
 
             return element.LocalName;
         }

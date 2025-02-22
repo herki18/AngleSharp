@@ -14,7 +14,6 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find <div style="width:300px">
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv, "Could not find container <div> under <body>.");
 
             // The container has display:block and width=300
             AssertDisplay(containerDiv, "block");
@@ -23,7 +22,6 @@ namespace AngleSharp.Renderer.Tests
 
             // 3) Find child <div style="display:block">
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
-            NotNull(childDiv, "Could not find child <div> under container <div>.");
 
             // Check child's display and layout
             AssertDisplay(childDiv, "block");
@@ -44,7 +42,6 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find the container <div style="width: 400px">
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv, "Could not find container <div> under <body>.");
 
             // Check container is block, 400px wide
             AssertDisplay(containerDiv, "block");
@@ -52,7 +49,6 @@ namespace AngleSharp.Renderer.Tests
 
             // 3) Find child <div style="width: 50%">
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
-            NotNull(childDiv, "Could not find child <div> inside the container.");
 
             // Assert it is block-level
             AssertDisplay(childDiv, "block");
@@ -68,7 +64,6 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find the container <div style="width: 300px; padding: 10px">
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv, "Could not find container <div> under <body>.");
 
             // Assert container is block-level, 300px wide
             // 300px total width minus left/right padding of 10px => 280px content area
@@ -78,7 +73,6 @@ namespace AngleSharp.Renderer.Tests
 
             // 3) Find child <div style="display: block">
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
-            NotNull(childDiv, "Could not find child <div> inside container.");
 
             // Assert child's display
             AssertDisplay(childDiv, "block");
@@ -95,7 +89,6 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find parent <div style="width: 300px; height: 150px">
             var parentDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(parentDiv, "Could not find parent <div> under <body>.");
 
             // Check parent is block-level, 300px wide, 150px tall
             AssertDisplay(parentDiv, "block");
@@ -104,7 +97,6 @@ namespace AngleSharp.Renderer.Tests
 
             // 3) Find child <div style="height: 200px">
             var childDiv = FindElementNodeByTagName(parentDiv, TagNames.Div);
-            NotNull(childDiv, "Could not find child <div> inside parent.");
 
             // Check child is block-level
             AssertDisplay(childDiv, "block");
@@ -125,7 +117,6 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find the <span> we want to check
             var spanNode = FindElementNodeByTagName(bodyNode, TagNames.Span);
-            NotNull(spanNode, "Could not find <span> in the body.");
 
             // 3) We want to ensure the block layout strategy does NOT handle inline elements
             //    This depends on your actual layout code. Typically something like:
@@ -167,11 +158,9 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find the container <div style="width: 200px">
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv, "Could not find container <div> under <body>.");
 
             // 3) Find child <div style="padding: 10%">
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
-            NotNull(childDiv, "Could not find child <div> for percentage padding test.");
 
             // In CSS, padding percentages are based on container *width*.
             // 10% of 200px = 20px
@@ -194,7 +183,6 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find parent <div style="width: 100px; min-width: 200px">
             var parentDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(parentDiv, "Could not find parent <div> with min-width.");
 
             // By standard CSS rules, min-width=200px overrides width=100px
             // => final used width is 200px.
@@ -203,7 +191,6 @@ namespace AngleSharp.Renderer.Tests
             // 3) Child <div style="width: 50px">
             //    We can confirm it’s present, but the main check is the parent's width.
             var childDiv = FindElementNodeByTagName(parentDiv, TagNames.Div);
-            NotNull(childDiv, "Expected a child <div> inside the parent.");
             // Possibly check child's display or width, but the key assertion is parent's 200px.
         }
 
@@ -215,7 +202,6 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find parent <div style="width: 500px; max-width: 300px">
             var parentDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(parentDiv, "Could not find parent <div> with max-width.");
 
             // If both width=500px and max-width=300px, the used width is the smaller => 300px
             AssertContentWidth(parentDiv, 300);
@@ -223,7 +209,6 @@ namespace AngleSharp.Renderer.Tests
             // 3) Child <div style="width: 400px">
             //    This doesn't matter as far as parent's final width, but we can check it’s there
             var childDiv = FindElementNodeByTagName(parentDiv, TagNames.Div);
-            NotNull(childDiv, "Could not find child <div> inside parent with max-width.");
             // The child's own specified width can't exceed the parent's used width in normal flow, but
             // the main assertion is parent's final 300px.
         }
@@ -236,7 +221,6 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find <div style="display:none">
             var hiddenDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(hiddenDiv, "Could not find <div> with display:none.");
 
             // 3) Since it's display:none, it should not appear in normal flow.
             //    Typically this means it has no layout box (i.e., hiddenDiv.Layout == null).
@@ -252,11 +236,9 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Locate the container <div style="font-size:16px; width:300px;">
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv, "Could not find container <div> for inline flow test.");
 
             // 3) Find the inline-block <span>
             var spanNode = FindElementNodeByTagName(containerDiv, TagNames.Span);
-            NotNull(spanNode, "Could not find <span> with display:inline-block.");
 
             // 4) Check that the span is indeed recognized as 'inline-block'.
             That(spanNode.ComputedStyle.Display, Is.EqualTo("inline-block"),
@@ -284,11 +266,9 @@ namespace AngleSharp.Renderer.Tests
             // 2) The parent: <div style="width:300px; background:lightgray;">
             //    No explicit height => auto
             var parentDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(parentDiv, "Could not find parent <div> with auto height.");
 
             // 3) Child: <div style="height:50%; background:turquoise;">
             var childDiv = FindElementNodeByTagName(parentDiv, TagNames.Div);
-            NotNull(childDiv, "Could not find child <div> with height=50%.");
 
             // 4) In standard CSS, if the parent’s height is auto, the child’s 50% is unresolved => child’s used height is auto.
             //    We can check the computed style or final layout. The engine might store it as "auto" or 0 if there's no content.
@@ -312,14 +292,12 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find the container <div style="width:300px; height:100px; overflow:hidden;">
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv, "Could not find container <div> with overflow:hidden.");
 
             // Check container’s final height is 100px
             AssertHeight(containerDiv, 100);
 
             // 3) Find the child <div style="height:150px;">
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
-            NotNull(childDiv, "Could not find child <div> in overflow:hidden container.");
 
             // The child is 150px tall
             AssertHeight(childDiv, 150);
@@ -350,11 +328,9 @@ namespace AngleSharp.Renderer.Tests
 
             // 2) Find the container <div style="font-size:16px;">
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-            NotNull(containerDiv, "Could not find container <div> for inline-block baseline test.");
 
             // 3) Find the inline-block <span>
             var spanNode = FindElementNodeByTagName(containerDiv, TagNames.Span);
-            NotNull(spanNode, "Could not find inline-block <span>.");
 
             // 4) Verify the computed display is "inline-block" and vertical-align is "baseline"
             That(spanNode.ComputedStyle.Display, Is.EqualTo("inline-block"),
