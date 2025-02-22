@@ -58,6 +58,9 @@ public struct LayoutContext
 
     public bool IsCollapsedMarginWithParentBottom;
     public float ChildMarginBottom;
+
+    public float CollapsedMarginTop { get; set; }
+    public bool IsInMarginCollapseChain { get; set; }
 }
 
 /// <summary>
@@ -230,147 +233,7 @@ public class BlockLayoutObject : ILayoutObject
         }
     }
 
-    /// <summary>
-    /// 2nd pass: finalize X, Y, plus lay out children.
-    /// Then fix up height if it was auto, etc.
-    /// </summary>
     public void Arrange(LayoutContext context)
-    {
-        Arrange2(context);
-        return;
-        if (Node is not ElementNode elem || elem.ComputedStyle == null)
-            return;
-
-        var style = elem.ComputedStyle;
-        var lb = elem.Layout; // The LayoutBox we set in Measure()
-        if (lb == null) return; // Safety check
-
-        // Calculate parent-child margin collapse with enhanced rules
-        float collapsedMarginWithParent = MarginCollapser.CalculateParentChildCollapse(
-            elem.Parent as ElementNode,
-            elem,
-            context.PreviousMarginBottom,
-            lb.MarginTop,
-            lb.PaddingTop,
-            lb.BorderTop
-        );
-
-        // Compute final absolute position (this can include relative positioning, etc.).
-        (float posX, float posY) = PositioningResolver.CalculateElementPosition(
-            style,
-            context.ParentX,
-            context.ParentY,
-            context.AvailableWidth,
-            lb.ContentWidth
-        );
-
-        // If there is not Parent Child Collapse, the posY is the same as the parent's X
-        if (collapsedMarginWithParent == 0)
-        {
-            posY = context.ParentY;
-        }
-        else if(context.IsFirstChild)
-        {
-            posY = context.ParentY - context.ParentMarginBottom + collapsedMarginWithParent;
-        }
-        else
-        {
-            posY = context.ParentY - context.PreviousMarginBottom + collapsedMarginWithParent;
-        }
-
-        // Store final position
-        lb.X = posX;
-        lb.Y = posY;
-
-        // Initialize child layout tracking
-        float currentY = 0f;
-        float previousSiblingBottomMargin = 0f;
-        ElementNode? previousSibling = null;
-
-        // Prepare child context
-        var childContext = new LayoutContext
-        {
-            ParentX = posX + lb.BorderLeft + lb.PaddingLeft,
-            ParentY = posY + lb.BorderTop + lb.PaddingTop,
-            AvailableWidth = lb.ContentWidth,
-            IsFirstChild = false,
-            ParentMarginBottom = lb.MarginBottom,
-            PreviousMarginBottom = 0f  // We'll set this per-child now
-        };
-
-        // Layout children with enhanced margin handling
-        foreach (var child in elem.Children.Where(node => node is ElementNode or TextNode))
-        {
-            if (child == null) continue;
-
-            var childLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(child);
-
-            if (child is ElementNode childElem && childElem.Layout != null)
-            {
-                float collapsedMargin;
-
-                if (previousSibling == null)
-                {
-                    // First child - special handling for parent-child margin collapse
-                    collapsedMargin = MarginCollapser.CalculateParentChildCollapse(
-                        elem,
-                        childElem,
-                        lb.MarginTop,
-                        childElem.Layout.MarginTop,
-                        lb.PaddingTop,
-                        lb.BorderTop
-                    );
-
-                    childContext.IsFirstChild = true;
-                }
-                else
-                {
-                    // Subsequent children - handle sibling margin collapse
-                    collapsedMargin = MarginCollapser.CalculateSiblingCollapse(
-                        previousSibling,
-                        childElem,
-                        previousSiblingBottomMargin,
-                        childElem.Layout.MarginTop
-                    );
-
-                    childContext.IsFirstChild = false;
-                }
-
-                // Update child context with current position
-                childContext.ParentY = posY + lb.BorderTop + lb.PaddingTop + currentY;
-                childContext.PreviousMarginBottom = previousSiblingBottomMargin;
-
-                // Arrange the child
-                childLayoutObj.Arrange(childContext);
-
-                // Update tracking variables
-                currentY += collapsedMargin + childElem.Layout.BoxHeight;
-                previousSiblingBottomMargin = childElem.Layout.MarginBottom;
-                previousSibling = childElem;
-            }
-            else if (child is TextNode textNode && textNode.Layout != null)
-            {
-                // Handle text nodes without margin collapse
-                childContext.ParentY = posY + lb.BorderTop + lb.PaddingTop + currentY;
-                childLayoutObj.Arrange(childContext);
-                currentY += textNode.Layout.BoxHeight;
-            }
-        }
-
-        // Update this element’s final box height if it was auto;
-        // or adjust if you are recalculating. The code below is just an example:
-        if (float.IsNaN(lb.ContentHeight))
-        {
-            // Add the last child's bottom margin as well
-            currentY += previousSiblingBottomMargin;
-
-            lb.BoxHeight = currentY
-                + lb.PaddingTop + lb.PaddingBottom
-                + lb.BorderTop + lb.BorderBottom;
-        }
-    }
-
-    public void Arrange2(LayoutContext context)
     {
         if (Node is not ElementNode elem || elem.ComputedStyle == null || elem.Layout == null)
         {
