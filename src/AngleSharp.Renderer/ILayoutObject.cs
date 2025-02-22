@@ -270,16 +270,28 @@ public class BlockLayoutObject : ILayoutObject
             // Calculate the collapsed margin through entire descendant chain
             float collapsedMargin = CollapseMarginsForElement(elem);
 
-            // Adjust the element's position based on collapsed margin
-            // This effectively replaces its own margin with the collapsed result
-            layoutBox.Y += collapsedMargin;
-
-            // EXPLANATION:
-            // CollapseMarginsForElement already traverses the entire chain of first children
-            // and calculates a single collapsed margin value for all of them
+            if (!context.IsInMarginCollapseChain)
+            {
+                // Root of collapse chain - apply the full margin
+                layoutBox.Y += collapsedMargin;
+                context.CollapsedMarginTop = collapsedMargin;
+                context.IsInMarginCollapseChain = true;
+            }
+            else
+            {
+                // Part of existing chain - use parent's collapsed margin
+                layoutBox.Y = posY;
+                layoutBox.MarginTop = 0;
+            }
+        }
+        else
+        {
+            // Reset collapse chain when hitting border/padding
+            context.IsInMarginCollapseChain = false;
+            context.CollapsedMarginTop = 0;
         }
 
-
+        // Continue with child layouts...
         var children = elem.Children.Where(node => node is ElementNode or TextNode).ToList();
         int count = children.Count;
 
@@ -294,7 +306,10 @@ public class BlockLayoutObject : ILayoutObject
             {
                 ParentX = posX + layoutBox.BorderLeft + layoutBox.PaddingLeft,
                 ParentY = posY + layoutBox.BorderTop + layoutBox.PaddingTop,
-                AvailableWidth = layoutBox.ContentWidth
+                AvailableWidth = layoutBox.ContentWidth,
+
+                IsInMarginCollapseChain = context.IsInMarginCollapseChain && isFirst,
+                CollapsedMarginTop = context.CollapsedMarginTop
             };
 
             var childLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(child);
@@ -378,7 +393,7 @@ public class BlockLayoutObject : ILayoutObject
             if (current.Layout != null)
                 margins.Add(current.Layout.MarginTop);
 
-            current = current.Children.FirstOrDefault() as ElementNode;
+            current = current.Children.FirstOrDefault(node => node is not NonRenderableNode) as ElementNode;
         }
 
         if (!margins.Any())
