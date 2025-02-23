@@ -89,6 +89,8 @@ namespace AngleSharp.Renderer
         public float ContentWidth => BoxWidth - (PaddingLeft + PaddingRight + BorderLeft + BorderRight);
         public float ContentHeight => BoxHeight - (PaddingTop + PaddingBottom + BorderTop + BorderBottom);
 
+        public bool IsInMarginToCollapsedChain { get; set; }
+
         public LayoutBox(
             float x, float y,
             float width, float height)

@@ -98,7 +98,7 @@
       <None Update="TestData\Margins\test_empty_block_still_collapses_margins.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="TestData\Margins\test_block_element_takes_full_container_width.html">
+      <None Update="TestData\Margins\test_vertical_margin_collapsing_between_block_elements.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="TestData\Margins\test_multiple_sibling_margin_collapse.html">

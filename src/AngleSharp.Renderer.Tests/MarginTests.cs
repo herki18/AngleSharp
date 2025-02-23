@@ -65,21 +65,14 @@ namespace AngleSharp.Renderer.Tests
             var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
             var containerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
             AssertContentWidth(containerDiv, 400);
+            AssertBoxWidth(containerDiv, 440);
 
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
             AssertContentWidth(childDiv, 160);
+            AssertBoxWidth(childDiv, 160);
 
-            // Final layout
-            var containerX = containerDiv.Layout?.X ?? 0f;
-            var containerWidth = containerDiv.Layout?.BoxWidth ?? 0f; // 400
-            var childX = childDiv.Layout?.X ?? 0f;
-            var childWidth = childDiv.Layout?.BoxWidth ?? 0f;
-
-            // Typically your code uses "contentWidth = containerWidth - (paddingLeft + paddingRight + borders + marginLeft + marginRight)"
-            // So the leftover for auto margins is computed AFTER container’s padding.
-            // Let's see if that’s how your engine is set up.
-            var expectedOffsetFromContainerLeft = 20 + 100; // 120
-            That(childX - containerX, Is.EqualTo(expectedOffsetFromContainerLeft).Within(1.0));
+            // Child X=Container X+Parent Padding(Left)+Margin-Left(Auto)
+            AssertGlobalPosition(childDiv, 148, 28);
         }
 
         [Test]
@@ -113,7 +106,7 @@ namespace AngleSharp.Renderer.Tests
         }
 
         [Test]
-        public void test_block_element_takes_full_container_width()
+        public void test_vertical_margin_collapsing_between_block_elements()
         {
             // 1) Render and get (root, html, body)
             var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();

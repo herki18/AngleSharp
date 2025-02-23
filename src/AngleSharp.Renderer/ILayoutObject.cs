@@ -58,9 +58,6 @@ public struct LayoutContext
 
     public bool IsCollapsedMarginWithParentBottom;
     public float ChildMarginBottom;
-
-    public float CollapsedMarginTop { get; set; }
-    public bool IsInMarginCollapseChain { get; set; }
 }
 
 /// <summary>
@@ -255,27 +252,19 @@ public class BlockLayoutObject : ILayoutObject
         layoutBox.X = posX;
         layoutBox.Y = posY;
 
-
-        // if (context.IsCollapsedMarginWithParentTop)
-        // {
-        //     layoutBox.Y = layoutBox.Y + context.ChildMarginTop;
-        // }
-
-
         // --- HANDLE MARGIN COLLAPSING AT TOP ---
         // For elements that can collapse margins (no border/padding at top),
         // use CollapseMarginsForElement to handle the entire chain of first children
         if (layoutBox.BorderTop == 0 && layoutBox.PaddingTop == 0)
         {
-            // Calculate the collapsed margin through entire descendant chain
-            float collapsedMargin = CollapseMarginsForElement(elem);
-
-            if (!context.IsInMarginCollapseChain)
+            if (!layoutBox.IsInMarginToCollapsedChain)
             {
+                // Calculate the collapsed margin through entire descendant chain
+                float collapsedMargin = CollapseMarginsForElement(elem);
+
                 // Root of collapse chain - apply the full margin
                 layoutBox.Y += collapsedMargin;
-                context.CollapsedMarginTop = collapsedMargin;
-                context.IsInMarginCollapseChain = true;
+                posY += collapsedMargin;
             }
             else
             {
@@ -283,12 +272,6 @@ public class BlockLayoutObject : ILayoutObject
                 layoutBox.Y = posY;
                 layoutBox.MarginTop = 0;
             }
-        }
-        else
-        {
-            // Reset collapse chain when hitting border/padding
-            context.IsInMarginCollapseChain = false;
-            context.CollapsedMarginTop = 0;
         }
 
         // Continue with child layouts...
@@ -307,74 +290,12 @@ public class BlockLayoutObject : ILayoutObject
                 ParentX = posX + layoutBox.BorderLeft + layoutBox.PaddingLeft,
                 ParentY = posY + layoutBox.BorderTop + layoutBox.PaddingTop,
                 AvailableWidth = layoutBox.ContentWidth,
-
-                IsInMarginCollapseChain = context.IsInMarginCollapseChain && isFirst,
-                CollapsedMarginTop = context.CollapsedMarginTop
             };
 
             var childLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(child);
 
-            // Margin Collapse Parent Child First Child
-            // childContext.IsCollapsedMarginWithParentTop = layoutBox.PaddingTop == 0 && layoutBox.BorderTop == 0 && isFirst;
-            // if (childContext.IsCollapsedMarginWithParentTop)
-            // {
-            //     childContext.ChildMarginTop = MarginCollapser.Collapse(layoutBox.MarginTop, child.Layout?.MarginTop ?? 0);
-            // }
-
-            // Margin Collapse Siblings
-
-            // Margin Collapse Parent Child Last Child
-            // childContext.IsCollapsedMarginWithParentBottom = layoutBox.PaddingBottom == 0 && layoutBox.BorderBottom == 0 && isLast;
-            // if (childContext.IsCollapsedMarginWithParentBottom)
-            // {
-            //     childContext.ChildMarginBottom = MarginCollapser.Collapse(layoutBox.MarginBottom, child.Layout?.MarginBottom ?? 0);
-            // }
-
             childLayoutObj.Arrange(childContext);
         }
-
-        // if (children.Count > 0)
-        // {
-        //     var lastChildNode = children[^1] as ElementNode;
-        //     if (lastChildNode?.Layout is LayoutBox lastChildBox)
-        //     {
-        //         // The last child's final bottom = child’s Y + child’s total height
-        //         // (BoxHeight includes border+padding+content).
-        //         float lastChildBottom = lastChildBox.Y + lastChildBox.BoxHeight;
-        //
-        //         // If the parent and last child *can* collapse margins at the bottom,
-        //         // recalculate how far the parent extends.
-        //         if (layoutBox.PaddingBottom == 0 && layoutBox.BorderBottom == 0)
-        //         {
-        //             float collapsedBottom =
-        //                 MarginCollapser.Collapse(layoutBox.MarginBottom, lastChildBox.MarginBottom);
-        //
-        //             // The parent's new "bottom" = last child's bottom + collapsed margin
-        //             float newParentBottom = lastChildBottom + collapsedBottom;
-        //
-        //             // So the parent's BoxHeight = (new bottom) - (parent's top)
-        //             float newHeight = newParentBottom - layoutBox.Y;
-        //
-        //             // If negative margins exceed child’s bottom, you could clamp or allow it:
-        //             if (newHeight < 0)
-        //             {
-        //                 newHeight = 0;
-        //             }
-        //
-        //             layoutBox.BoxHeight = newHeight;
-        //         }
-        //         else
-        //         {
-        //             // If parent does NOT collapse bottom margin (has padding/border, etc.),
-        //             // we still need to ensure the parent covers the last child's bottom at least.
-        //             float needed = lastChildBottom - layoutBox.Y;
-        //             if (needed > layoutBox.BoxHeight)
-        //             {
-        //                 layoutBox.BoxHeight = needed;
-        //             }
-        //         }
-        //     }
-        // }
     }
 
     public float CollapseMarginsForElement(ElementNode? elementNode)
@@ -385,13 +306,17 @@ public class BlockLayoutObject : ILayoutObject
         var margins = new List<float>();
         var current = elementNode;
         var visited = new HashSet<ElementNode>();
+        HashSet<ElementNode> partOfChain = new HashSet<ElementNode>();
 
         while (current != null && !visited.Contains(current))
         {
             visited.Add(current);
 
             if (current.Layout != null)
+            {
                 margins.Add(current.Layout.MarginTop);
+                partOfChain.Add(current);
+            }
 
             current = current.Children.FirstOrDefault(node => node is not NonRenderableNode) as ElementNode;
         }
@@ -404,6 +329,11 @@ public class BlockLayoutObject : ILayoutObject
 
         float maxPositive = positiveMargins.Any() ? positiveMargins.Max() : 0;
         float maxNegative = negativeMargins.Any() ? negativeMargins.Min() : 0;
+
+        foreach (var node in partOfChain)
+        {
+            node.Layout!.IsInMarginToCollapsedChain = true;
+        }
 
         return maxPositive + maxNegative;
     }
