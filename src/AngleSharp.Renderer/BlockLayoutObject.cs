@@ -196,6 +196,10 @@ public class BlockLayoutObject : ILayoutObject
 
         // Continue with child layouts...
         var children = elem.Children.Where(node => node is ElementNode or TextNode).ToList();
+
+        // PRE-PROCESSING STEP: Identify empty block chains
+        var emptyBlockChains = IdentifyEmptyBlockChains(children);
+
         int count = children.Count;
         float previousMarginBottom = 0f;
         ElementNode? previousSibling = null;
@@ -248,6 +252,137 @@ public class BlockLayoutObject : ILayoutObject
                 previousMarginBottom = childElem.Layout?.MarginBottom ?? 0f;
             }
         }
+    }
+
+    /// <summary>
+    /// Represents a chain of consecutive empty block elements
+    /// </summary>
+    private class EmptyBlockChain
+    {
+        public List<ElementNode> Elements { get; } = new List<ElementNode>();
+        public int FirstIndex { get; set; }
+        public int LastIndex { get; set; }
+        public float CollapsedMargin { get; set; }
+    }
+
+    /// <summary>
+    /// Identifies chains of consecutive empty blocks and calculates their collapsed margins
+    /// </summary>
+    private List<EmptyBlockChain> IdentifyEmptyBlockChains(List<IRenderNode> children)
+    {
+        var chains = new List<EmptyBlockChain>();
+        EmptyBlockChain? currentChain = null;
+
+        for (int i = 0; i < children.Count; i++)
+        {
+            if (children[i] is ElementNode element && IsEmptyBlock(element))
+            {
+                if (currentChain == null)
+                {
+                    currentChain = new EmptyBlockChain { FirstIndex = i };
+                }
+
+                currentChain.Elements.Add(element);
+                currentChain.LastIndex = i;
+            }
+            else if (currentChain != null)
+            {
+                // End of chain - calculate collapsed margin
+                CalculateChainCollapsedMargin(currentChain);
+
+                // Only add chains with more than one element (single empty blocks are handled by normal code)
+                if (currentChain.Elements.Count > 1)
+                {
+                    chains.Add(currentChain);
+                }
+                currentChain = null;
+            }
+        }
+
+        // Handle chain at the end
+        if (currentChain != null)
+        {
+            CalculateChainCollapsedMargin(currentChain);
+
+            // Only add chains with more than one element
+            if (currentChain.Elements.Count > 1)
+            {
+                chains.Add(currentChain);
+            }
+        }
+
+        return chains;
+    }
+
+    /// <summary>
+    /// Calculates the collapsed margin for a chain of empty blocks
+    /// </summary>
+    private void CalculateChainCollapsedMargin(EmptyBlockChain chain)
+    {
+        var margins = new List<float>();
+
+        foreach (var element in chain.Elements)
+        {
+            if (element.ComputedStyle != null && element.Layout != null)
+            {
+                margins.Add(element.Layout.MarginTop);
+                margins.Add(element.Layout.MarginBottom);
+            }
+        }
+
+        chain.CollapsedMargin = CollapseMarginList(margins);
+    }
+
+    /// <summary>
+    /// Collapses a list of margins into a single margin value
+    /// </summary>
+    private float CollapseMarginList(List<float> margins)
+    {
+        if (!margins.Any()) return 0;
+
+        float result = margins[0];
+        for (int i = 1; i < margins.Count; i++)
+        {
+            result = MarginCollapser.Collapse(result, margins[i]);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Determines whether an element is an empty block that participates in margin collapsing
+    /// </summary>
+    private bool IsEmptyBlock(ElementNode element)
+    {
+        if (element == null || element.Layout == null) return false;
+
+        // Check if element has any in-flow children
+        bool hasInFlowContent = element.Children.Any(child =>
+            (child is ElementNode && !IsOutOfFlowPosition(child)) ||
+            (child is TextNode text && !string.IsNullOrWhiteSpace(text.Ref.TextContent)));
+
+        // Check if element has padding or border
+        float paddingTop = element.Layout.PaddingTop;
+        float paddingBottom = element.Layout.PaddingBottom;
+        float borderTop = element.Layout.BorderTop;
+        float borderBottom = element.Layout.BorderBottom;
+
+        return !hasInFlowContent && paddingTop == 0 && paddingBottom == 0 &&
+               borderTop == 0 && borderBottom == 0;
+    }
+
+    /// <summary>
+    /// Checks if a node has an out-of-flow positioning (absolute, fixed)
+    /// </summary>
+    private bool IsOutOfFlowPosition(IRenderNode node)
+    {
+        if (node is not ElementNode element || element.ComputedStyle == null)
+            return false;
+
+        string position = element.ComputedStyle.GetPropertyValue("position") ?? "";
+        string float_ = element.ComputedStyle.GetPropertyValue("float") ?? "";
+
+        return position == "absolute" || position == "fixed" || float_ != "none";
     }
 
     /// <summary>
