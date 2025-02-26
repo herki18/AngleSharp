@@ -600,8 +600,14 @@ public class BlockLayoutObject : ILayoutObject
         float borderTop = element.Layout.BorderTop;
         float borderBottom = element.Layout.BorderBottom;
 
-        return !hasInFlowContent && paddingTop == 0 && paddingBottom == 0 &&
-               borderTop == 0 && borderBottom == 0;
+        // Check if element has explicit height
+        bool hasExplicitHeight = element.ComputedStyle?.GetPropertyValue("height") != null &&
+                                 element.ComputedStyle?.GetPropertyValue("height") != "auto";
+
+        return !hasInFlowContent &&
+               paddingTop == 0 && paddingBottom == 0 &&
+               borderTop == 0 && borderBottom == 0 &&
+               !hasExplicitHeight;
     }
 
     /// <summary>
