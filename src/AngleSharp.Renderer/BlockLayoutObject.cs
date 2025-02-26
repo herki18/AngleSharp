@@ -2,7 +2,6 @@ namespace AngleSharp.Renderer;
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 
 #pragma warning disable CS0219, CS0162
@@ -213,7 +212,7 @@ public class BlockLayoutObject : ILayoutObject
         float childPosY = posY + layoutBox.BorderTop + layoutBox.PaddingTop; // Track child Y positions
         int skipToIndex = -1; // Used to skip over processed chains
         ElementNode? lastContentChild = null; // Track the last child with actual content
-
+        float effectiveBottomMargin = 0f; // Store the effective bottom margin after collapsing
 
         for (var childIndex = 0; childIndex < children.Count; childIndex++)
         {
@@ -235,6 +234,7 @@ public class BlockLayoutObject : ILayoutObject
 
             if (currentChain != null)
             {
+                // ... [existing empty block chain handling code]
                 Console.WriteLine($"Processing empty block chain starting at index {childIndex}");
 
                 // Position the first element at the current Y position
@@ -335,7 +335,11 @@ public class BlockLayoutObject : ILayoutObject
                         previousSibling.Layout.Y + previousSibling.Layout.BoxHeight,
                         firstElement.Layout?.Y + firstElement.Layout?.BoxHeight ?? 0
                     );
-                    previousMarginBottom = previousSibling.Layout.MarginBottom;
+
+                    // For collapsed margins from chain elements, sum all negative margins
+                    // or take the max of positive margins
+                    previousMarginBottom = CalculateEffectiveBottomMargin(currentChain.Elements);
+                    effectiveBottomMargin = previousMarginBottom;
                 }
 
                 // Skip to the end of the chain
@@ -359,10 +363,12 @@ public class BlockLayoutObject : ILayoutObject
                     // Add the previous sibling's height to childPosY
                     childPosY += previousSibling.Layout.BoxHeight;
 
+                    // For collapsed margins between siblings, we need to use the previous sibling's
+                    // effective bottom margin, which might include collapsed margins from its children
                     float collapsedMargin = MarginCollapser.CalculateSiblingCollapse(
                         previousSibling,
                         currentElement,
-                        previousMarginBottom,
+                        effectiveBottomMargin, // Use effective margin from previous calculations
                         currentElement.Layout?.MarginTop ?? 0f
                     );
 
@@ -389,7 +395,12 @@ public class BlockLayoutObject : ILayoutObject
                 if (child is ElementNode childElem)
                 {
                     previousSibling = childElem;
+
+                    // Calculate the effective bottom margin for this element, which might include
+                    // collapsed margins from its children
+                    float childEffectiveMargin = CalculateEffectiveBottomMargin(childElem);
                     previousMarginBottom = childElem.Layout?.MarginBottom ?? 0f;
+                    effectiveBottomMargin = childEffectiveMargin;
 
                     // Update last content child if this isn't an empty block
                     if (!IsEmptyBlock(childElem))
@@ -400,23 +411,118 @@ public class BlockLayoutObject : ILayoutObject
             }
         }
 
-        // Handle bottom margin collapsing with the parent after all children are arranged
-        if (lastContentChild != null)
-        {
-            HandleBottomMarginCollapseWithParent(elem, lastContentChild);
-        }
-
-        // Update parent's effective height to include the bottom margin of the last child
-        // if there should be margin collapsing (no border or padding at the bottom)
+        // Update the layout context with the final collapsed margin information
         if (layoutBox.BorderBottom == 0 && layoutBox.PaddingBottom == 0 && children.Any())
         {
             // Keep track of how far the content actually extends, including collapsed margins
-            context.ChildMarginBottom = layoutBox.MarginBottom;
+            float finalBottomMargin = lastContentChild != null
+                ? CalculateEffectiveBottomMargin(lastContentChild)
+                : layoutBox.MarginBottom;
+
+            context.ChildMarginBottom = finalBottomMargin;
             context.IsCollapsedMarginWithParentBottom = true;
         }
     }
 
-     /// <summary>
+    /// <summary>
+    /// Calculates the effective bottom margin for an element, considering any child margins
+    /// that might collapse with it.
+    /// </summary>
+    private float CalculateEffectiveBottomMargin(ElementNode element)
+    {
+        if (element == null || element.Layout == null) return 0;
+
+        // If the element has padding or border at bottom, just return its own margin
+        if (element.Layout.PaddingBottom > 0 || element.Layout.BorderBottom > 0)
+            return element.Layout.MarginBottom;
+
+        // Calculate the collapsed bottom margin with any applicable children
+        return CollapseBottomMarginsRecursively(element);
+    }
+
+    /// <summary>
+    /// Calculates the combined effective bottom margin for a list of elements
+    /// </summary>
+    private float CalculateEffectiveBottomMargin(List<ElementNode> elements)
+    {
+        if (elements == null || !elements.Any()) return 0;
+
+        // For a single element, use its effective margin
+        if (elements.Count == 1)
+            return CalculateEffectiveBottomMargin(elements[0]);
+
+        // For multiple elements, we need to handle special cases
+        float combinedMargin = 0;
+        bool allNegative = true;
+
+        // First check if all margins are negative
+        foreach (var element in elements)
+        {
+            float elementMargin = CalculateEffectiveBottomMargin(element);
+            if (elementMargin >= 0)
+            {
+                allNegative = false;
+                break;
+            }
+        }
+
+        // If all margins are negative, sum them
+        if (allNegative)
+        {
+            foreach (var element in elements)
+            {
+                combinedMargin += CalculateEffectiveBottomMargin(element);
+            }
+
+            return combinedMargin;
+        }
+
+        // Otherwise use standard margin collapse rules
+        combinedMargin = CalculateEffectiveBottomMargin(elements[0]);
+        for (int i = 1; i < elements.Count; i++)
+        {
+            combinedMargin = MarginCollapser.Collapse(
+                combinedMargin,
+                CalculateEffectiveBottomMargin(elements[i])
+            );
+        }
+
+        return combinedMargin;
+    }
+
+    /// <summary>
+    /// Recursively calculates the collapsed bottom margins for an element and its descendants
+    /// </summary>
+    private float CollapseBottomMarginsRecursively(ElementNode element)
+    {
+        if (element == null || element.Layout == null) return 0;
+
+        // If element has padding or border at the bottom, just return its own margin
+        if (element.Layout.PaddingBottom > 0 || element.Layout.BorderBottom > 0)
+            return element.Layout.MarginBottom;
+
+        // Find the last content-bearing child (if any)
+        var lastContentChild = FindLastContentChild(element);
+
+        // If no content child, just return this element's margin
+        if (lastContentChild == null)
+            return element.Layout.MarginBottom;
+
+        // Recursively get the collapsed bottom margin from the child
+        float childCollapsedMargin = CollapseBottomMarginsRecursively(lastContentChild);
+
+        // Special handling for negative margins: when both parent and child have negative margins,
+        // they should be summed rather than using the standard margin collapse logic
+        if (element.Layout.MarginBottom < 0 && childCollapsedMargin < 0)
+        {
+            return element.Layout.MarginBottom + childCollapsedMargin;
+        }
+
+        // Standard collapse for all other cases
+        return MarginCollapser.Collapse(element.Layout.MarginBottom, childCollapsedMargin);
+    }
+
+    /// <summary>
     /// Handles bottom margin collapsing between parent and its last content-bearing child
     /// </summary>
     private void HandleBottomMarginCollapseWithParent(ElementNode parent, ElementNode lastChild)
@@ -441,31 +547,6 @@ public class BlockLayoutObject : ILayoutObject
 
         // Store the collapsed margin in the parent
         parent.Layout.MarginBottom = finalMargin;
-    }
-
-    /// <summary>
-    /// Recursively calculates the collapsed bottom margins for an element and its descendants
-    /// </summary>
-    private float CollapseBottomMarginsRecursively(ElementNode element)
-    {
-        if (element == null || element.Layout == null) return 0;
-
-        // If element has padding or border at the bottom, just return its own margin
-        if (element.Layout.PaddingBottom > 0 || element.Layout.BorderBottom > 0)
-            return element.Layout.MarginBottom;
-
-        // Find the last content-bearing child (if any)
-        var lastContentChild = FindLastContentChild(element);
-
-        // If no content child, just return this element's margin
-        if (lastContentChild == null)
-            return element.Layout.MarginBottom;
-
-        // Recursively get the collapsed bottom margin from the child
-        float childCollapsedMargin = CollapseBottomMarginsRecursively(lastContentChild);
-
-        // Collapse with this element's margin
-        return MarginCollapser.Collapse(element.Layout.MarginBottom, childCollapsedMargin);
     }
 
     /// <summary>
