@@ -162,32 +162,21 @@ namespace AngleSharp.Renderer.Tests
         [Test]
         public void test_empty_block_still_collapses_margins()
         {
-            // 1) Render
             var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
 
-            // 2) Container <div style="width:200px">
             var container = FindElementNodeByTagName(bodyNode, TagNames.Div);
 
-            // 3) firstBlock: <div style="height:40px; margin-bottom:20px;">
             var firstBlock = FindChildByIndex(container, 0);
             AssertHeight(firstBlock, 40);
 
-            // 4) emptyBlock: <div style="margin-top:30px; margin-bottom:10px;">
             var emptyBlock = FindChildByIndex(container, 1);
 
-            // 5) thirdBlock: <div style="height:40px; margin-top:15px;">
             var thirdBlock = FindChildByIndex(container, 2);
             AssertHeight(thirdBlock, 40);
 
-            // 6) Let's check the Y positions to confirm collapsed margins.
-            //    If the container is at Y=8, firstBlock is at 8, then
-            //    next sibling's top => firstBlock.Y + firstBlock.Height + collapsedMargin(20 vs 30 => 30).
-            //    => 8 + 40 + 30 = 78 => emptyBlock's top
             AssertGlobalPosition(emptyBlock, 8, 78);
 
-            // 7) Then for thirdBlock => emptyBlock.Y + emptyBlock.Height(=0 for empty block) + collapsedMargin(10 vs 15 => 15)
-            //    => 78 + 0 + 15 = 93
-            AssertGlobalPosition(thirdBlock, 8, 93);
+            AssertGlobalPosition(thirdBlock, 8, 78);
         }
 
         [Test]
@@ -236,13 +225,13 @@ namespace AngleSharp.Renderer.Tests
 
             // 4) Expected positions:
             //    - First sibling: with collapsed top margin, its top is at Y = 8.
-            AssertGlobalPosition(sibling1, 8, 8);
+            AssertGlobalPosition(sibling1, 16, 8);
             //    - The gap between siblings collapses the bottom of sibling1 and top of sibling2:
             //         Collapse(8,8) → 8px gap.
             //         So sibling2's top should be: 8 + 40 + 8 = 56.
-            AssertGlobalPosition(sibling2, 8, 56);
+            AssertGlobalPosition(sibling2, 16, 56);
             //    - Similarly, sibling3's top should be: 56 + 40 + 8 = 104.
-            AssertGlobalPosition(sibling3, 8, 104);
+            AssertGlobalPosition(sibling3, 16, 104);
         }
 
         [Test]
@@ -267,7 +256,7 @@ namespace AngleSharp.Renderer.Tests
             //    The first block is 50px tall, but margin-bottom = -10px
             //    => second block starts at 50 + (-10) = 40,
             //       effectively overlapping the prior 10px
-            AssertGlobalPosition(secondBlock, 8 /* or the X offset if relevant */, 40 /* Y expected */);
+            AssertGlobalPosition(secondBlock, 8 /* or the X offset if relevant */, 48 /* Y expected */);
         }
 
 
@@ -444,14 +433,14 @@ namespace AngleSharp.Renderer.Tests
             AssertGlobalPosition(containerDiv, 8, 8);
 
             // 3) First child <div style="height: 50px; margin-bottom: 30px">
-            var firstBlock = FindChildByIndex(containerDiv, 0);
+            var firstBlock = FindElementNodeById(containerDiv, "d2.1");
             AssertDisplay(firstBlock, "block");
             AssertContentWidth(firstBlock, 300);
             // Usually at (8,8)
             AssertGlobalPosition(firstBlock, 8, 8);
 
             // 4) Second child <div style="height: 70px; margin-top: 20px">
-            var secondBlock = FindChildByIndex(containerDiv, 1);
+            var secondBlock = FindElementNodeById(containerDiv, "d2.2");
             AssertDisplay(secondBlock, "block");
             AssertContentWidth(secondBlock, 300);
 
@@ -461,7 +450,176 @@ namespace AngleSharp.Renderer.Tests
             //    => collapsed gap = max(30, 20) = 30px
             //
             // So secondBlock’s top = firstBlock.Y + firstBlock.Height + 30 = 8 + 50 + 30 = 88
-            AssertGlobalPosition(secondBlock, 8, 58);
+            AssertGlobalPosition(secondBlock, 8, 88);
+        }
+
+        [Test]
+        public void test_global_positions_and_dimensions()
+        {
+            // 1) Render the document and get (root, html, body)
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+
+            // --- BODY (ID: d0) ---
+            // Chrome reports BODY at (0, 40) (relative to document)
+            AssertDisplay(bodyNode, "block");
+            AssertGlobalPosition(bodyNode, 0, 40);
+
+            // --- Container d0.1 ---
+            // Chrome: X=498, Y=40; Expected content width = 600px (from CSS)
+            var d01 = FindElementNodeById(bodyNode, "d0.1");
+            AssertDisplay(d01, "block");
+            AssertContentWidth(d01, 600);
+            AssertGlobalPosition(d01, 498, 40);
+
+            // --- d0.1.1 ---
+            // Chrome: X=520, Y=82
+            var d011 = FindElementNodeById(d01, "d0.1.1");
+            AssertDisplay(d011, "block");
+            AssertGlobalPosition(d011, 520, 82);
+
+            // --- <p> inside d0.1.1, ID: d0.1.1-p ---
+            // Chrome: X=531, Y=109
+            var p_d011 = FindElementNodeById(d011, "d0.1.1-p");
+            AssertDisplay(p_d011, "block");
+            AssertGlobalPosition(p_d011, 531, 109);
+
+            // --- d0.1.2 ---
+            // Chrome: X=520, Y=174
+            var d012 = FindElementNodeById(d01, "d0.1.2");
+            AssertDisplay(d012, "block");
+            AssertGlobalPosition(d012, 520, 174);
+
+            // --- <p> inside d0.1.2, ID: d0.1.2-p ---
+            // Chrome: X=531, Y=201
+            var p_d012 = FindElementNodeById(d012, "d0.1.2-p");
+            AssertDisplay(p_d012, "block");
+            AssertGlobalPosition(p_d012, 531, 201);
+
+            // --- d0.1.2.1 ---
+            // Chrome: X=531, Y=239
+            var d0121 = FindElementNodeById(d012, "d0.1.2.1");
+            AssertDisplay(d0121, "block");
+            AssertGlobalPosition(d0121, 531, 239);
+
+            // --- <p> inside d0.1.2.1, ID: d0.1.2.1-p ---
+            // Chrome: X=542, Y=266
+            var p_d0121 = FindElementNodeById(d0121, "d0.1.2.1-p");
+            AssertDisplay(p_d0121, "block");
+            AssertGlobalPosition(p_d0121, 542, 266);
+
+            // --- d0.1.2.2 (empty block) ---
+            // Chrome: X=531, Y=331
+            var d0122 = FindElementNodeById(d012, "d0.1.2.2");
+            AssertDisplay(d0122, "block");
+            AssertGlobalPosition(d0122, 531, 331);
+
+            // --- d0.1.2.3 ---
+            // Chrome: X=531, Y=331
+            var d0123 = FindElementNodeById(d012, "d0.1.2.3");
+            AssertDisplay(d0123, "block");
+            AssertGlobalPosition(d0123, 531, 331);
+
+            // --- <p> inside d0.1.2.3, ID: d0.1.2.3-p ---
+            // Chrome: X=542, Y=358
+            var p_d0123 = FindElementNodeById(d0123, "d0.1.2.3-p");
+            AssertDisplay(p_d0123, "block");
+            AssertGlobalPosition(p_d0123, 542, 358);
+
+            // --- d0.1.2.3.1 ---
+            // Chrome: X=542, Y=396
+            var d01231 = FindElementNodeById(d0123, "d0.1.2.3.1");
+            AssertDisplay(d01231, "block");
+            AssertGlobalPosition(d01231, 542, 396);
+
+            // --- <p> inside d0.1.2.3.1, ID: d0.1.2.3.1-p ---
+            // Chrome: X=553, Y=423
+            var p_d01231 = FindElementNodeById(d01231, "d0.1.2.3.1-p");
+            AssertDisplay(p_d01231, "block");
+            AssertGlobalPosition(p_d01231, 553, 423);
+
+            // --- d0.1.3 ---
+            // Chrome: X=520, Y=550
+            var d013 = FindElementNodeById(d01, "d0.1.3");
+            AssertDisplay(d013, "block");
+            AssertGlobalPosition(d013, 520, 550);
+
+            // --- d0.1.4 ---
+            // Chrome: X=520, Y=550
+            var d014 = FindElementNodeById(d01, "d0.1.4");
+            AssertDisplay(d014, "block");
+            AssertGlobalPosition(d014, 520, 550);
+
+            // --- Container d0.2 (side-by-side empty blocks container) ---
+            // Chrome: X=498, Y=612
+            var d02 = FindElementNodeById(bodyNode, "d0.2");
+            AssertDisplay(d02, "block");
+            AssertGlobalPosition(d02, 498, 612);
+
+            // --- d0.2.1 ---
+            // Chrome: X=520, Y=654
+            var d021 = FindElementNodeById(d02, "d0.2.1");
+            AssertDisplay(d021, "block");
+            AssertGlobalPosition(d021, 520, 654);
+
+            // --- d0.2.2 ---
+            // Chrome: X=825, Y=654
+            var d022 = FindElementNodeById(d02, "d0.2.2");
+            AssertDisplay(d022, "block");
+            AssertGlobalPosition(d022, 825, 654);
+
+            // --- Container d0.3 ---
+            // Chrome: X=498, Y=736
+            var d03 = FindElementNodeById(bodyNode, "d0.3");
+            AssertDisplay(d03, "block");
+            AssertGlobalPosition(d03, 498, 736);
+
+            // --- d0.3.1 ---
+            // Chrome: X=520, Y=778
+            var d031 = FindElementNodeById(d03, "d0.3.1");
+            AssertDisplay(d031, "block");
+            AssertGlobalPosition(d031, 520, 778);
+
+            // --- <p> inside d0.3.1, ID: d0.3.1-p ---
+            // Chrome: X=531, Y=805
+            var p_d031 = FindElementNodeById(d031, "d0.3.1-p");
+            AssertDisplay(p_d031, "block");
+            AssertGlobalPosition(p_d031, 531, 805);
+
+            // --- d0.3.1.1 ---
+            // Chrome: X=531, Y=843
+            var d0311 = FindElementNodeById(d031, "d0.3.1.1");
+            AssertDisplay(d0311, "block");
+            AssertGlobalPosition(d0311, 531, 843);
+
+            // --- <p> inside d0.3.1.1, ID: d0.3.1.1-p ---
+            // Chrome: X=542, Y=870
+            var p_d0311 = FindElementNodeById(d0311, "d0.3.1.1-p");
+            AssertDisplay(p_d0311, "block");
+            AssertGlobalPosition(p_d0311, 542, 870);
+
+            // --- d0.3.1.1.1 ---
+            // Chrome: X=542, Y=908
+            var d03111 = FindElementNodeById(d0311, "d0.3.1.1.1");
+            AssertDisplay(d03111, "block");
+            AssertGlobalPosition(d03111, 542, 908);
+
+            // --- <p> inside d0.3.1.1.1, ID: d0.3.1.1.1-p ---
+            // Chrome: X=553, Y=935
+            var p_d03111 = FindElementNodeById(d03111, "d0.3.1.1.1-p");
+            AssertDisplay(p_d03111, "block");
+            AssertGlobalPosition(p_d03111, 553, 935);
+
+            // --- d0.3.1.1.1.1 ---
+            // Chrome: X=553, Y=973
+            var d031111 = FindElementNodeById(d03111, "d0.3.1.1.1.1");
+            AssertDisplay(d031111, "block");
+            AssertGlobalPosition(d031111, 553, 973);
+
+            // --- <p> inside d0.3.1.1.1.1, ID: d0.3.1.1.1.1-p ---
+            // Chrome: X=564, Y=1000
+            var p_d031111 = FindElementNodeById(d031111, "d0.3.1.1.1.1-p");
+            AssertDisplay(p_d031111, "block");
+            AssertGlobalPosition(p_d031111, 564, 1000);
         }
     }
 }
