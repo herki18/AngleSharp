@@ -200,56 +200,186 @@ public class BlockLayoutObject : ILayoutObject
         // PRE-PROCESSING STEP: Identify empty block chains
         var emptyBlockChains = IdentifyEmptyBlockChains(children);
 
+        Console.WriteLine($"Found {emptyBlockChains.Count} empty block chains");
+        foreach (var chain in emptyBlockChains)
+        {
+            Console.WriteLine(
+                $"Chain from index {chain.FirstIndex} to {chain.LastIndex} with {chain.Elements.Count} elements and collapsed margin {chain.CollapsedMargin}");
+        }
+
         int count = children.Count;
         float previousMarginBottom = 0f;
         ElementNode? previousSibling = null;
-        float childPosY = posY; // Track child Y positions separately
+        float childPosY = posY + layoutBox.BorderTop + layoutBox.PaddingTop; // Track child Y positions
+        int skipToIndex = -1; // Used to skip over processed chains
 
         for (var childIndex = 0; childIndex < children.Count; childIndex++)
         {
+            // Skip if we're already processed as part of a chain
+            if (childIndex <= skipToIndex) continue;
+
             var child = children[childIndex];
             bool isFirst = (childIndex == 0);
             bool isLast = (childIndex == count - 1);
 
             Console.WriteLine($"Arranging child {child.Ref.NodeName} - {child.Id} under parent {elem.Ref.TagName} - {elem.Id}");
 
-            // Handle margin collapsing between siblings
-            if (child is ElementNode currentElement && previousSibling != null && previousSibling.Layout != null)
+            // Check if this is the start of an empty block chain
+            EmptyBlockChain? currentChain = null;
+            if (child is ElementNode childElement)
             {
-                // Add the previous sibling's height to childPosY
-                childPosY += previousSibling.Layout.BoxHeight;
-
-                float collapsedMargin = MarginCollapser.CalculateSiblingCollapse(
-                    previousSibling,
-                    currentElement,
-                    previousMarginBottom,
-                    currentElement.Layout?.MarginTop ?? 0f
-                );
-
-                // Adjust the Y position based on the collapsed margin
-                childPosY += collapsedMargin;
+                currentChain = emptyBlockChains.FirstOrDefault(c => c.FirstIndex == childIndex);
             }
 
-            Console.WriteLine($"Final Y position for {child.Ref.NodeName} - {child.Id}: {childPosY}");
-
-            var childContext = new LayoutContext()
+// Inside the if (currentChain != null) block, update the positioning logic
+            if (currentChain != null)
             {
-                ParentX = posX + layoutBox.BorderLeft + layoutBox.PaddingLeft,
-                ParentY = childPosY + layoutBox.BorderTop + layoutBox.PaddingTop,
-                AvailableWidth = layoutBox.ContentWidth,
-                HasPreviousSibling = previousSibling != null,
-                PreviousSiblingMarginBottom = previousMarginBottom,
-                CurrentSiblingMarginTop = child is ElementNode currentElem ? currentElem.Layout?.MarginTop ?? 0f : 0f
-            };
+                Console.WriteLine($"Processing empty block chain starting at index {childIndex}");
 
-            var childLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(child);
-            childLayoutObj.Arrange(childContext);
+                // Position the first element at the current Y position
+                var firstElement = currentChain.Elements[0];
+                if (firstElement.Layout != null)
+                {
+                    firstElement.Layout.X = posX + layoutBox.BorderLeft + layoutBox.PaddingLeft;
+                    firstElement.Layout.Y = childPosY;
+                    firstElement.Layout.IsInMarginToCollapsedChain = true;
 
-            // Update previous sibling information for next iteration
-            if (child is ElementNode childElem)
+                    // Set child context for recursive arrangement
+                    var childContext = new LayoutContext()
+                    {
+                        ParentX = firstElement.Layout.X,
+                        ParentY = firstElement.Layout.Y,
+                        AvailableWidth = layoutBox.ContentWidth,
+                        HasPreviousSibling = false,
+                        PreviousSiblingMarginBottom = 0,
+                        CurrentSiblingMarginTop = firstElement.Layout.MarginTop
+                    };
+
+                    var childLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(firstElement);
+                    childLayoutObj.Arrange(childContext);
+                }
+
+                // For subsequent elements, apply the collapsed margin of the entire chain
+                // This is crucial - d1.2 and d1.3 should both be at the same Y position
+                // if d1.2 is a zero-height block with only margins
+                float chainY = childPosY;
+                if (firstElement.Layout != null)
+                {
+                    chainY += firstElement.Layout.BoxHeight;
+
+                    // For a proper empty block (has zero height), the margins collapse across it
+                    // So the next element's position is determined by the max of all margins in the chain
+                    if (currentChain.Elements.Count > 1 && firstElement.Layout.BoxHeight == 0)
+                    {
+                        // Use the collapsed margin across all elements
+                        // This positions d1.3 at the same position as d1.2
+                        chainY = childPosY;
+                    }
+                    else
+                    {
+                        // Add the collapsed margin from the chain
+                        chainY += currentChain.CollapsedMargin;
+                    }
+                }
+
+                // Position all remaining elements in the chain
+                for (int i = 1; i < currentChain.Elements.Count; i++)
+                {
+                    var chainElement = currentChain.Elements[i];
+                    if (chainElement.Layout == null) continue;
+
+                    chainElement.Layout.X = posX + layoutBox.BorderLeft + layoutBox.PaddingLeft;
+
+                    // If the previous element was truly empty (zero height),
+                    // position this element at the same Y position
+                    var prevElement = currentChain.Elements[i - 1];
+                    if (prevElement.Layout != null && prevElement.Layout.BoxHeight == 0)
+                    {
+                        chainElement.Layout.Y = prevElement.Layout.Y;
+                    }
+                    else
+                    {
+                        chainElement.Layout.Y = chainY;
+                    }
+
+                    chainElement.Layout.IsInMarginToCollapsedChain = true;
+
+                    // Set child context for recursive arrangement
+                    var childContext = new LayoutContext()
+                    {
+                        ParentX = chainElement.Layout.X,
+                        ParentY = chainElement.Layout.Y,
+                        AvailableWidth = layoutBox.ContentWidth,
+                        HasPreviousSibling = true,
+                        PreviousSiblingMarginBottom = 0, // Already collapsed
+                        CurrentSiblingMarginTop = 0 // Already collapsed
+                    };
+
+                    var childLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(chainElement);
+                    childLayoutObj.Arrange(childContext);
+
+                    // Only update chainY if this element has height
+                    if (chainElement.Layout.BoxHeight > 0)
+                    {
+                        chainY += chainElement.Layout.BoxHeight;
+                    }
+                }
+
+                // Update for after the chain
+                previousSibling = currentChain.Elements.LastOrDefault() as ElementNode;
+                if (previousSibling?.Layout != null)
+                {
+                    // Calculate the proper Y position after the chain
+                    childPosY = Math.Max(
+                        previousSibling.Layout.Y + previousSibling.Layout.BoxHeight,
+                        firstElement.Layout?.Y + firstElement.Layout?.BoxHeight ?? 0
+                    );
+                    previousMarginBottom = previousSibling.Layout.MarginBottom;
+                }
+
+                // Skip to the end of the chain
+                skipToIndex = currentChain.LastIndex;
+            }
+            else
             {
-                previousSibling = childElem;
-                previousMarginBottom = childElem.Layout?.MarginBottom ?? 0f;
+                // Normal (non-chain) element processing
+                if (child is ElementNode currentElement && previousSibling != null && previousSibling.Layout != null)
+                {
+                    // Add the previous sibling's height to childPosY
+                    childPosY += previousSibling.Layout.BoxHeight;
+
+                    float collapsedMargin = MarginCollapser.CalculateSiblingCollapse(
+                        previousSibling,
+                        currentElement,
+                        previousMarginBottom,
+                        currentElement.Layout?.MarginTop ?? 0f
+                    );
+
+                    // Adjust the Y position based on the collapsed margin
+                    childPosY += collapsedMargin;
+                }
+
+                Console.WriteLine($"Final Y position for {child.Ref.NodeName} - {child.Id}: {childPosY}");
+
+                var childContext = new LayoutContext()
+                {
+                    ParentX = posX + layoutBox.BorderLeft + layoutBox.PaddingLeft,
+                    ParentY = childPosY,
+                    AvailableWidth = layoutBox.ContentWidth,
+                    HasPreviousSibling = previousSibling != null,
+                    PreviousSiblingMarginBottom = previousMarginBottom,
+                    CurrentSiblingMarginTop = child is ElementNode currentElem ? currentElem.Layout?.MarginTop ?? 0f : 0f
+                };
+
+                var childLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(child);
+                childLayoutObj.Arrange(childContext);
+
+                // Update previous sibling information for next iteration
+                if (child is ElementNode childElem)
+                {
+                    previousSibling = childElem;
+                    previousMarginBottom = childElem.Layout?.MarginBottom ?? 0f;
+                }
             }
         }
     }
@@ -295,6 +425,7 @@ public class BlockLayoutObject : ILayoutObject
                 {
                     chains.Add(currentChain);
                 }
+
                 currentChain = null;
             }
         }
