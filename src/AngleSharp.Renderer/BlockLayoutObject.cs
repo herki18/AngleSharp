@@ -681,25 +681,4 @@ public class BlockLayoutObject : ILayoutObject
 
         return maxPositive + maxNegative;
     }
-
-    /// <summary>
-    /// Calculates the collapsed margin between a parent element and its last child,
-    /// following CSS margin collapsing rules for bottom margins.
-    /// </summary>
-    private float CollapseBottomMargins(ElementNode parent, ElementNode lastChild)
-    {
-        if (parent.Layout == null || lastChild.Layout == null)
-            return 0;
-
-        // If parent has padding or border at bottom, no collapse occurs
-        if (parent.Layout.PaddingBottom > 0 || parent.Layout.BorderBottom > 0)
-            return lastChild.Layout.MarginBottom;
-
-        // If the last child is not in normal flow, no collapse occurs
-        if (IsOutOfFlowPosition(lastChild))
-            return lastChild.Layout.MarginBottom;
-
-        // Collapse parent's bottom margin with last child's bottom margin
-        return MarginCollapser.Collapse(parent.Layout.MarginBottom, lastChild.Layout.MarginBottom);
-    }
 }
