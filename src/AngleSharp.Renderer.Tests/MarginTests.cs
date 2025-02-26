@@ -91,18 +91,17 @@ namespace AngleSharp.Renderer.Tests
             var childDiv = FindElementNodeByTagName(containerDiv, TagNames.Div);
             AssertDisplay(childDiv, "block");
 
-            // When a block element has auto margins on both sides and no explicit width,
-            // it should shrink to fit its content (which is empty in this case)
+            // When a block element has auto margins but no explicit width,
+            // it should fill its container's width
             var childLayout = childDiv.Layout;
 
-            That(childLayout.BoxWidth, Is.EqualTo(0).Within(1.0),
-                "Child with no content and no explicit width should shrink to fit (near zero width) when margins are auto.");
+            That(childLayout.BoxWidth, Is.EqualTo(containerDiv.Layout.ContentWidth).Within(1.0),
+                "Child with no explicit width should fill its container's width, regardless of auto margins.");
 
-            // X position should be centered in the parent container
-            var expectedX = containerDiv.Layout?.X ?? 0;
-            // Since both margins are auto and equal, the element should be centered
-            That(childLayout.X, Is.EqualTo(expectedX + containerDiv.Layout.ContentWidth / 2).Within(0.5),
-                "Expected child to be centered in the container with auto margins on both sides.");
+            // X position should match container's content box
+            var expectedX = containerDiv.Layout?.X + containerDiv.Layout.BorderLeft ?? 0;
+            That(childLayout.X, Is.EqualTo(expectedX).Within(0.5),
+                "Child should align with container's content box when filling container width.");
         }
 
         [Test]
@@ -331,52 +330,6 @@ namespace AngleSharp.Renderer.Tests
             //    proper collapse should result in the child being positioned (16,8).
             AssertGlobalPosition(singleChild, 16, 8);
         }
-
-        // [TestCase("<body style='margin: 0px;'><div style='margin-top: 20px;'><div style='margin-top: 30px;'></div></div></body>", 0, 30)]
-        // [TestCase("<body style='margin: 0px;'><div style='margin-top: 0px;'><div style='margin-top: 30px;'></div></div></body>", 0, 30)]
-        // [TestCase("<body style='margin: 0px;'><div style='margin-top: 20px;'><div style='margin-top: -10px;'></div></div></body>", 0, 10)]
-        // [TestCase("<body style='margin: 0px;'><div style='margin-top: -20px;'><div style='margin-top: -10px;'></div></div></body>", 0, -20)]
-        // public void test_nested_margin_collapse_parent_child_top(string html, double expectedX, double expectedY)
-        // {
-        //     ReplaceBody(html);
-        //     var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
-        //     var parentDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-        //     var childDiv = FindElementNodeByTagName(parentDiv, TagNames.Div);
-        //     AssertGlobalPosition(childDiv, expectedX, expectedY);
-        // }
-
-        // [TestCase("<body style='margin: 0px;'><div style='margin-bottom: 20px;'><div style='margin-bottom: 30px;'></div></div><div style='background: red; height: 1px;'></div></body>", 0, 30)]
-        // [TestCase("<body style='margin: 0px;'><div style='margin-bottom: 0px;'><div style='margin-bottom: 30px;'></div></div><div style='background: red; height: 1px;'></div></body>", 0, 30)]
-        // [TestCase("<body style='margin: 0px;'><div style='margin-bottom: 20px;'><div style='margin-bottom: -10px;'></div></div><div style='background: red; height: 1px;'></div></body>", 0, 10)]
-        // [TestCase("<body style='margin: 0px;'><div style='margin-bottom: -20px;'><div style='margin-bottom: -10px;'></div></div><div style='background: red; height: 1px;'></div></body>", 0, -30)]
-        // public void test_nested_margin_collapse_parent_child_bottom(string html, double expectedX, double expectedY)
-        // {
-        //     ReplaceBody(html);
-        //     var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
-
-        //     // First <div> is the parent; second <div> is the child
-        //     var parentDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-        //     var childDiv  = FindElementNodeByTagName(parentDiv, TagNames.Div);
-
-        //     // Next sibling <div> (the "red" block) is where we measure final Y offset
-        //     var siblingDiv = FindElementNodeByTagName(bodyNode, TagNames.Div, 2);
-
-        //     AssertGlobalPosition(siblingDiv, expectedX, expectedY);
-        // }
-
-        // [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 20px;'><div id='d2' style='margin-top: 30px;'><div id='d3' style='margin-top: 10px;'></div></div></div></body>", 0, 30)]
-        // [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 20px;'><div id='d2' style='margin-top: -10px;'><div id='d3' style='margin-top: 15px;'></div></div></div></body>", 0, 10)]
-        // [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 0px;'><div id='d2' style='margin-top: 30px;'><div id='d3' style='margin-top: 0px;'></div></div></div></body>", 0, 30)]
-        // [TestCase("<body style='margin: 0px;'><div id='d1' style='margin-top: 20px; padding: 10px;'><div id='d2' style='margin-top: 30px;'><div id='d3' style='margin-top: 10px;'></div></div></div></body>", 10, 40)]
-        // public void test_nested_margin_collapse_with_deep_hierarchy1(string html, double expectedX, double expectedY)
-        // {
-        //     ReplaceBody(html);
-        //     var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
-        //     var outerDiv = FindElementNodeByTagName(bodyNode, TagNames.Div);
-        //     var middleDiv = FindElementNodeByTagName(outerDiv, TagNames.Div);
-        //     var innerDiv = FindElementNodeByTagName(middleDiv, TagNames.Div);
-        //     AssertGlobalPosition(innerDiv, expectedX, expectedY);
-        // }
 
         [TestCaseSource(typeof(MarginTestData), nameof(MarginTestData.ParentChildTopMarginCases))]
         public void test_nested_margin_collapse_parent_child_top(MarginTestCase testCase)

@@ -212,6 +212,8 @@ public class BlockLayoutObject : ILayoutObject
         ElementNode? previousSibling = null;
         float childPosY = posY + layoutBox.BorderTop + layoutBox.PaddingTop; // Track child Y positions
         int skipToIndex = -1; // Used to skip over processed chains
+        ElementNode? lastContentChild = null; // Track the last child with actual content
+
 
         for (var childIndex = 0; childIndex < children.Count; childIndex++)
         {
@@ -231,7 +233,6 @@ public class BlockLayoutObject : ILayoutObject
                 currentChain = emptyBlockChains.FirstOrDefault(c => c.FirstIndex == childIndex);
             }
 
-// Inside the if (currentChain != null) block, update the positioning logic
             if (currentChain != null)
             {
                 Console.WriteLine($"Processing empty block chain starting at index {childIndex}");
@@ -339,6 +340,16 @@ public class BlockLayoutObject : ILayoutObject
 
                 // Skip to the end of the chain
                 skipToIndex = currentChain.LastIndex;
+
+                // Check if this is effectively the last content-bearing child
+                // If all elements in the chain are truly empty, they don't count as the "last content child"
+                bool hasRealContent = currentChain.Elements.Any(e =>
+                    e.Layout != null && (e.Layout.BoxHeight > 0 || e.Children.Any(c => c is TextNode)));
+
+                if (hasRealContent)
+                {
+                    lastContentChild = currentChain.Elements.Last();
+                }
             }
             else
             {
@@ -379,9 +390,100 @@ public class BlockLayoutObject : ILayoutObject
                 {
                     previousSibling = childElem;
                     previousMarginBottom = childElem.Layout?.MarginBottom ?? 0f;
+
+                    // Update last content child if this isn't an empty block
+                    if (!IsEmptyBlock(childElem))
+                    {
+                        lastContentChild = childElem;
+                    }
                 }
             }
         }
+
+        // Handle bottom margin collapsing with the parent after all children are arranged
+        if (lastContentChild != null)
+        {
+            HandleBottomMarginCollapseWithParent(elem, lastContentChild);
+        }
+
+        // Update parent's effective height to include the bottom margin of the last child
+        // if there should be margin collapsing (no border or padding at the bottom)
+        if (layoutBox.BorderBottom == 0 && layoutBox.PaddingBottom == 0 && children.Any())
+        {
+            // Keep track of how far the content actually extends, including collapsed margins
+            context.ChildMarginBottom = layoutBox.MarginBottom;
+            context.IsCollapsedMarginWithParentBottom = true;
+        }
+    }
+
+     /// <summary>
+    /// Handles bottom margin collapsing between parent and its last content-bearing child
+    /// </summary>
+    private void HandleBottomMarginCollapseWithParent(ElementNode parent, ElementNode lastChild)
+    {
+        if (parent.Layout == null || lastChild.Layout == null) return;
+
+        // Only collapse if the parent has no bottom padding or border
+        if (parent.Layout.PaddingBottom > 0 || parent.Layout.BorderBottom > 0) return;
+
+        // Check if the last child has padding/border that would prevent collapse
+        if (lastChild.Layout.PaddingBottom > 0 || lastChild.Layout.BorderBottom > 0)
+        {
+            // No collapse, but we need to calculate the position after this child for layout
+            return;
+        }
+
+        // Now we'll check if this child's bottom margin should collapse with any of its children
+        float collapsedBottomMargin = CollapseBottomMarginsRecursively(lastChild);
+
+        // Calculate the final collapsed margin between parent and child
+        float finalMargin = MarginCollapser.Collapse(parent.Layout.MarginBottom, collapsedBottomMargin);
+
+        // Store the collapsed margin in the parent
+        parent.Layout.MarginBottom = finalMargin;
+    }
+
+    /// <summary>
+    /// Recursively calculates the collapsed bottom margins for an element and its descendants
+    /// </summary>
+    private float CollapseBottomMarginsRecursively(ElementNode element)
+    {
+        if (element == null || element.Layout == null) return 0;
+
+        // If element has padding or border at the bottom, just return its own margin
+        if (element.Layout.PaddingBottom > 0 || element.Layout.BorderBottom > 0)
+            return element.Layout.MarginBottom;
+
+        // Find the last content-bearing child (if any)
+        var lastContentChild = FindLastContentChild(element);
+
+        // If no content child, just return this element's margin
+        if (lastContentChild == null)
+            return element.Layout.MarginBottom;
+
+        // Recursively get the collapsed bottom margin from the child
+        float childCollapsedMargin = CollapseBottomMarginsRecursively(lastContentChild);
+
+        // Collapse with this element's margin
+        return MarginCollapser.Collapse(element.Layout.MarginBottom, childCollapsedMargin);
+    }
+
+    /// <summary>
+    /// Finds the last child of an element that has actual content (not empty)
+    /// </summary>
+    private ElementNode? FindLastContentChild(ElementNode parent)
+    {
+        if (parent == null) return null;
+
+        // Find the last element child that isn't an empty block
+        for (int i = parent.Children.Count() - 1; i >= 0; i--)
+        {
+            var child = parent.Children.ElementAtOrDefault(i);
+            if (child is ElementNode elementChild && !IsEmptyBlock(elementChild))
+                return elementChild;
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -572,5 +674,26 @@ public class BlockLayoutObject : ILayoutObject
         }
 
         return maxPositive + maxNegative;
+    }
+
+    /// <summary>
+    /// Calculates the collapsed margin between a parent element and its last child,
+    /// following CSS margin collapsing rules for bottom margins.
+    /// </summary>
+    private float CollapseBottomMargins(ElementNode parent, ElementNode lastChild)
+    {
+        if (parent.Layout == null || lastChild.Layout == null)
+            return 0;
+
+        // If parent has padding or border at bottom, no collapse occurs
+        if (parent.Layout.PaddingBottom > 0 || parent.Layout.BorderBottom > 0)
+            return lastChild.Layout.MarginBottom;
+
+        // If the last child is not in normal flow, no collapse occurs
+        if (IsOutOfFlowPosition(lastChild))
+            return lastChild.Layout.MarginBottom;
+
+        // Collapse parent's bottom margin with last child's bottom margin
+        return MarginCollapser.Collapse(parent.Layout.MarginBottom, lastChild.Layout.MarginBottom);
     }
 }
