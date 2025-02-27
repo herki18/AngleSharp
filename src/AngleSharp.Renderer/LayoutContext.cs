@@ -29,4 +29,6 @@ public struct LayoutContext
 
     public bool IsCollapsedMarginWithParentBottom;
     public float ChildMarginBottom;
+
+    public float EmptyBlockCollapsedMargin;
 }
