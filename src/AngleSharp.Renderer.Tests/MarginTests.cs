@@ -452,9 +452,9 @@ namespace AngleSharp.Renderer.Tests
             // First block position
             AssertGlobalPosition(block1, 0, 0);
             // All empty blocks should stack at the same Y
-            AssertGlobalPosition(empty1, 0, 50);
-            AssertGlobalPosition(empty2, 0, 50);
-            AssertGlobalPosition(empty3, 0, 50);
+            AssertGlobalPosition(empty1, 0, 60);
+            AssertGlobalPosition(empty2, 0, 70);
+            AssertGlobalPosition(empty3, 0, 80);
             // Second block should be at:
             // block1.Y + block1.Height + max of all margins = 80
             AssertGlobalPosition(block2, 0, 80);
