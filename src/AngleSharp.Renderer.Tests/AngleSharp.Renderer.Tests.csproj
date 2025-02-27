@@ -143,6 +143,33 @@
       <None Update="TestData\Margins\test_vertical_margins_collapse_between_siblings.html">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="TestData\Margins\test_basic_empty_block_margin_collapse.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_chain_of_three_empty_blocks_collapse.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_consecutive_empty_blocks_collapse.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_empty_block_at_end_of_container.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_empty_blocks_at_different_nesting_levels.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_empty_blocks_with_negative_margins.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_empty_blocks_with_non_empty_blocks.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_global_positions_and_dimensions.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="TestData\Margins\test_multiple_stacked_empty_blocks_at_start.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

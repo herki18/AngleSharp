@@ -399,6 +399,170 @@ namespace AngleSharp.Renderer.Tests
         }
 
         [Test]
+        public void test_basic_empty_block_margin_collapse()
+        {
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+            var container = FindElementNodeById(bodyNode, "container");
+            var block1 = FindElementNodeById(container, "block1");
+            var empty = FindElementNodeById(container, "empty");
+            var block2 = FindElementNodeById(container, "block2");
+
+            // First block position
+            AssertGlobalPosition(block1, 0, 0);
+            // Empty block should be positioned at block1's bottom
+            AssertGlobalPosition(empty, 0, 50);
+            // Empty block has no height, so second block should be at:
+            // block1.Y + block1.Height + max(empty.marginTop, empty.marginBottom)
+            // = 0 + 50 + max(20, 30) = 80
+            AssertGlobalPosition(block2, 0, 80);
+        }
+
+        [Test]
+        public void test_consecutive_empty_blocks_collapse()
+        {
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+            var container = FindElementNodeById(bodyNode, "container");
+            var block1 = FindElementNodeById(container, "block1");
+            var empty1 = FindElementNodeById(container, "empty1");
+            var empty2 = FindElementNodeById(container, "empty2");
+            var block2 = FindElementNodeById(container, "block2");
+
+            // First block position
+            AssertGlobalPosition(block1, 0, 0);
+            // Empty blocks should stack at the same position (block1's bottom)
+            AssertGlobalPosition(empty1, 0, 50);
+            AssertGlobalPosition(empty2, 0, 50);
+            // Second block should be at:
+            // block1.Y + block1.Height + maxOfAllMargins
+            // = 0 + 50 + max(20, 10, 15, 25) = 75
+            AssertGlobalPosition(block2, 0, 75);
+        }
+
+        [Test]
+        public void test_chain_of_three_empty_blocks_collapse()
+        {
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+            var container = FindElementNodeById(bodyNode, "container");
+            var block1 = FindElementNodeById(container, "block1");
+            var empty1 = FindElementNodeById(container, "empty1");
+            var empty2 = FindElementNodeById(container, "empty2");
+            var empty3 = FindElementNodeById(container, "empty3");
+            var block2 = FindElementNodeById(container, "block2");
+
+            // First block position
+            AssertGlobalPosition(block1, 0, 0);
+            // All empty blocks should stack at the same Y
+            AssertGlobalPosition(empty1, 0, 50);
+            AssertGlobalPosition(empty2, 0, 50);
+            AssertGlobalPosition(empty3, 0, 50);
+            // Second block should be at:
+            // block1.Y + block1.Height + max of all margins = 80
+            AssertGlobalPosition(block2, 0, 80);
+        }
+
+        [Test]
+        public void test_empty_blocks_with_negative_margins()
+        {
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+            var container = FindElementNodeById(bodyNode, "container");
+            var block1 = FindElementNodeById(container, "block1");
+            var empty1 = FindElementNodeById(container, "empty1");
+            var empty2 = FindElementNodeById(container, "empty2");
+            var block2 = FindElementNodeById(container, "block2");
+
+            // First block position
+            AssertGlobalPosition(block1, 0, 0);
+            // Empty blocks positioned at block1's bottom
+            AssertGlobalPosition(empty1, 0, 50);
+            AssertGlobalPosition(empty2, 0, 50);
+            // With negative margins:
+            // max positive margin = 20
+            // min negative margin = -15
+            // collapsed margin = 20 + (-15) = 5
+            AssertGlobalPosition(block2, 0, 55);
+        }
+
+        [Test]
+        public void test_empty_blocks_with_non_empty_blocks()
+        {
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+            var container = FindElementNodeById(bodyNode, "container");
+            var block1 = FindElementNodeById(container, "block1");
+            var empty1 = FindElementNodeById(container, "empty1");
+            var notEmpty = FindElementNodeById(container, "not-empty");
+            var block2 = FindElementNodeById(container, "block2");
+
+            // First block position
+            AssertGlobalPosition(block1, 0, 0);
+            // Empty block
+            AssertGlobalPosition(empty1, 0, 50);
+            // Not-empty block should be at block1 + height + max(empty1.marginBottom, not-empty.marginTop)
+            // = 0 + 50 + max(30, 15) = 80
+            AssertGlobalPosition(notEmpty, 0, 80);
+            // block2 should be at not-empty.Y + not-empty.height + not-empty.marginBottom
+            // = 80 + 1 + 25 = 106
+            AssertGlobalPosition(block2, 0, 106);
+        }
+
+        [Test]
+        public void test_empty_blocks_at_different_nesting_levels()
+        {
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+            var container = FindElementNodeById(bodyNode, "container");
+            var block1 = FindElementNodeById(container, "block1");
+            var parent = FindElementNodeById(container, "parent");
+            var childEmpty = FindElementNodeById(parent, "child-empty");
+            var block2 = FindElementNodeById(container, "block2");
+
+            // First block position
+            AssertGlobalPosition(block1, 0, 0);
+            // Parent (empty) should be at block1.Y + block1.Height + parent.marginTop
+            AssertGlobalPosition(parent, 0, 70); // 0 + 50 + 20
+            // Child empty should be at same Y as parent (both empty)
+            AssertGlobalPosition(childEmpty, 0, 70);
+            // block2 should be at parent.Y + max of all margins
+            // = 70 + max(10, 25) = 95
+            AssertGlobalPosition(block2, 0, 95);
+        }
+
+        [Test]
+        public void test_empty_block_at_end_of_container()
+        {
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+            var container = FindElementNodeById(bodyNode, "container");
+            var block1 = FindElementNodeById(container, "block1");
+            var empty = FindElementNodeById(container, "empty");
+            var nextContainer = FindElementNodeById(bodyNode, "next-container");
+
+            // First block position
+            AssertGlobalPosition(block1, 0, 0);
+            // Empty at the end
+            AssertGlobalPosition(empty, 0, 80);
+            // Next container should be at container.Y + container.content-height +
+            // max(container.marginBottom, empty.marginBottom)
+            // = 0 + 50 + max(20, 40) = 90
+            AssertGlobalPosition(nextContainer, 0, 90);
+        }
+
+        [Test]
+        public void test_multiple_stacked_empty_blocks_at_start()
+        {
+            var (root, htmlNode, bodyNode) = RenderDocumentAndGetNodes();
+            var container = FindElementNodeById(bodyNode, "container");
+            var empty1 = FindElementNodeById(container, "empty1");
+            var empty2 = FindElementNodeById(container, "empty2");
+            var empty3 = FindElementNodeById(container, "empty3");
+            var block1 = FindElementNodeById(container, "block1");
+
+            // All empty blocks should be at the same position
+            AssertGlobalPosition(empty1, 0, 0);
+            AssertGlobalPosition(empty2, 0, 0);
+            AssertGlobalPosition(empty3, 0, 0);
+            // Block1 should be at the maximum margin (30px)
+            AssertGlobalPosition(block1, 0, 30);
+        }
+
+        [Test]
         public void test_global_positions_and_dimensions()
         {
             // 1) Render the document and get (root, html, body)
