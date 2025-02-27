@@ -7,7 +7,7 @@ using System.Linq;
 #pragma warning disable CS0219, CS0162
 /// <summary>
 /// A simple block layout object that does a 2-pass approach.
-/// In practice, you’ll adapt your existing BoxModelCalculator, constraints,
+/// In practice, you'll adapt your existing BoxModelCalculator, constraints,
 /// margin collapsing, etc. in these two methods.
 /// </summary>
 public class BlockLayoutObject : ILayoutObject
@@ -40,8 +40,8 @@ public class BlockLayoutObject : ILayoutObject
     }
 
     /// <summary>
-    /// 1st pass: compute the node’s “content width” and “content height” if known.
-    /// We don’t set final X, Y, or fully finalize height if auto. We store partial results in Node.Layout.
+    /// 1st pass: compute the node's "content width" and "content height" if known.
+    /// We don't set final X, Y, or fully finalize height if auto. We store partial results in Node.Layout.
     /// </summary>
     public void Measure(LayoutContext context)
     {
@@ -275,16 +275,10 @@ public class BlockLayoutObject : ILayoutObject
             LogArrange($"Processing child {childIndex}/{childCount-1}: {child.Ref.NodeName} - {child.Id ?? "no-id"}, isFirst={isFirst}, isLast={isLast}");
 
             // Check if this is the start of an empty block chain
-            bool isStandaloneEmptyBlock = false;
             EmptyBlockChain? currentChain = null;
             if (child is ElementNode childElement)
             {
                 currentChain = emptyBlockChains.FirstOrDefault(c => c.FirstIndex == childIndex);
-
-                if (currentChain == null && IsEmptyBlock(childElement))
-                {
-                    isStandaloneEmptyBlock = true;
-                }
             }
 
             if (currentChain != null)
@@ -296,6 +290,26 @@ public class BlockLayoutObject : ILayoutObject
                 if (firstElement.Layout != null)
                 {
                     float elementX = posX + layoutBox.BorderLeft + layoutBox.PaddingLeft;
+
+                    // Handle proper positioning when an empty chain comes after other elements
+                    if (previousSibling != null && previousSibling.Layout != null && !isFirst)
+                    {
+                        // Add previous sibling's height to childPosY first
+                        float oldChildPosY = childPosY;
+                        childPosY += previousSibling.Layout.BoxHeight;
+                        LogArrange($"  Added previous sibling height for chain: {oldChildPosY} -> {childPosY} (added {previousSibling.Layout.BoxHeight})");
+
+                        // Apply margin collapse between previous sibling and this empty block
+                        LogArrange($"  Calculating margin collapse for chain start: prev bottom={previousMarginBottom}, chain top={firstElement.Layout.MarginTop}");
+                        float collapsedMargin = MarginCollapser.Collapse(previousMarginBottom, firstElement.Layout.MarginTop);
+                        LogArrange($"  Margin collapse for chain start: {collapsedMargin}");
+
+                        // Adjust position based on collapsed margin
+                        oldChildPosY = childPosY;
+                        childPosY += collapsedMargin;
+                        LogArrange($"  Applied margin for chain: {oldChildPosY} -> {childPosY}");
+                    }
+
                     LogArrange($"  Positioning first element of chain at X={elementX}, Y={childPosY}");
                     firstElement.Layout.X = elementX;
                     firstElement.Layout.Y = childPosY;
@@ -404,27 +418,29 @@ public class BlockLayoutObject : ILayoutObject
                 previousSibling = currentChain.Elements.LastOrDefault() as ElementNode;
                 if (previousSibling?.Layout != null)
                 {
-                    // Calculate the proper Y position after the chain
-                    float oldChildPosY = childPosY;
-
                     if (allEmptyBlocks)
                     {
-                        // For chains of completely empty blocks, only add the collapsed margin
-                        childPosY += currentChain.CollapsedMargin;
-                        LogArrange($"  All blocks were empty - updating childPosY: {oldChildPosY} -> {childPosY} (added collapsed margin {currentChain.CollapsedMargin})");
+                        // For chains of completely empty blocks:
+                        // 1. We don't adjust childPosY further - it should stay at the
+                        //    position of the first chain element plus any necessary margin
+                        // 2. Set previousMarginBottom to 0 since we've already accounted for
+                        //    the empty block's margins in the chain processing
+                        LogArrange($"  All blocks were empty - keeping childPosY at {childPosY} for next element");
+                        LogArrange($"  Setting previousMarginBottom to 0 (already applied through chain)");
+                        previousMarginBottom = 0;
                     }
                     else
                     {
                         // For chains with non-empty blocks, take the max
+                        float oldChildPosY = childPosY;
                         childPosY = Math.Max(
                             previousSibling.Layout.Y + previousSibling.Layout.BoxHeight,
                             firstElement.Layout?.Y + firstElement.Layout?.BoxHeight ?? 0
                         );
                         LogArrange($"  Chain had non-empty blocks - updating childPosY: {oldChildPosY} -> {childPosY}");
+                        previousMarginBottom = previousSibling.Layout.MarginBottom;
+                        LogArrange($"  Setting previousMarginBottom to {previousMarginBottom}");
                     }
-
-                    previousMarginBottom = previousSibling.Layout.MarginBottom;
-                    LogArrange($"  Setting previousMarginBottom to {previousMarginBottom}");
                 }
 
                 // Skip to the end of the chain
@@ -438,60 +454,25 @@ public class BlockLayoutObject : ILayoutObject
 
                 if (child is ElementNode currentElement && previousSibling != null && previousSibling.Layout != null)
                 {
-
                     // Add the previous sibling's height to childPosY
+                    float oldChildPosY = childPosY;
                     childPosY += previousSibling.Layout.BoxHeight;
+                    LogArrange($"  Added previous sibling height: {oldChildPosY} -> {childPosY} (added {previousSibling.Layout.BoxHeight})");
 
-                    float collapsedMargin;
+                    // Calculate collapsed margins between siblings
+                    LogArrange($"  Calculating sibling margin collapse: prev bottom={previousMarginBottom}, current top={currentElement.Layout?.MarginTop ?? 0f}");
+                    float collapsedMargin = MarginCollapser.CalculateSiblingCollapse(
+                        previousSibling,
+                        currentElement,
+                        previousMarginBottom,
+                        currentElement.Layout?.MarginTop ?? 0f
+                    );
+                    LogArrange($"  Collapsed margin between siblings: {collapsedMargin}");
 
-                    if (isStandaloneEmptyBlock && currentElement.Layout != null)
-                    {
-                        // For standalone empty blocks, collapse their top and bottom margins together
-                        float emptyBlockCollapsedMargin = MarginCollapser.Collapse(
-                            currentElement.Layout.MarginTop,
-                            currentElement.Layout.MarginBottom
-                        );
-
-                        // Then collapse with previous sibling's margin
-                        collapsedMargin = MarginCollapser.Collapse(previousMarginBottom, emptyBlockCollapsedMargin);
-
-                        // Mark this element as part of a collapsed margin chain
-                        currentElement.Layout.IsInMarginToCollapsedChain = true;
-                    }
-                    else
-                    {
-                        // Regular sibling margin collapsing
-                        collapsedMargin = MarginCollapser.CalculateSiblingCollapse(
-                            previousSibling,
-                            currentElement,
-                            previousMarginBottom,
-                            currentElement.Layout?.MarginTop ?? 0f
-                        );
-                    }
+                    // Adjust the Y position based on the collapsed margin
+                    float oldPosWithMargin = childPosY;
                     childPosY += collapsedMargin;
-                    // // Adjust the Y position based on the collapsed margin
-                    // childPosY += collapsedMargin;
-                    //
-                    //
-                    // // Add the previous sibling's height to childPosY
-                    // float oldChildPosY = childPosY;
-                    // childPosY += previousSibling.Layout.BoxHeight;
-                    // LogArrange($"  Added previous sibling height: {oldChildPosY} -> {childPosY} (added {previousSibling.Layout.BoxHeight})");
-                    //
-                    // // Calculate collapsed margins between siblings
-                    // LogArrange($"  Calculating sibling margin collapse: prev bottom={previousMarginBottom}, current top={currentElement.Layout?.MarginTop ?? 0f}");
-                    // float collapsedMargin = MarginCollapser.CalculateSiblingCollapse(
-                    //     previousSibling,
-                    //     currentElement,
-                    //     previousMarginBottom,
-                    //     currentElement.Layout?.MarginTop ?? 0f
-                    // );
-                    // LogArrange($"  Collapsed margin between siblings: {collapsedMargin}");
-                    //
-                    // // Adjust the Y position based on the collapsed margin
-                    // float oldPosWithMargin = childPosY;
-                    // childPosY += collapsedMargin;
-                    // LogArrange($"  Applied collapsed margin: {oldPosWithMargin} -> {childPosY}");
+                    LogArrange($"  Applied collapsed margin: {oldPosWithMargin} -> {childPosY}");
                 }
                 else if (isFirst)
                 {
@@ -525,18 +506,11 @@ public class BlockLayoutObject : ILayoutObject
                 if (child is ElementNode childElem)
                 {
                     previousSibling = childElem;
-                    if (isStandaloneEmptyBlock && childElem.Layout != null)
+                    if (childElem.Layout != null)
                     {
                         LogArrange($"  Child arranged: Position=({childElem.Layout.X}, {childElem.Layout.Y}), Size={childElem.Layout.BoxWidth}x{childElem.Layout.BoxHeight}");
-                        previousMarginBottom = MarginCollapser.Collapse(
-                            childElem.Layout.MarginTop,
-                            childElem.Layout.MarginBottom
-                        );
+                        previousMarginBottom = childElem.Layout.MarginBottom;
                         LogArrange($"  Updated previousSibling to current child, previousMarginBottom={previousMarginBottom}");
-                    }
-                    else
-                    {
-                        previousMarginBottom = childElem.Layout?.MarginBottom ?? 0f;
                     }
                 }
                 else
@@ -561,7 +535,8 @@ public class BlockLayoutObject : ILayoutObject
     }
 
     /// <summary>
-    /// Identifies chains of consecutive empty blocks and calculates their collapsed margins
+    /// Identifies chains of consecutive empty blocks and calculates their collapsed margins.
+    /// Now includes single empty blocks as "chains of one" for consistent handling.
     /// </summary>
     private List<EmptyBlockChain> IdentifyEmptyBlockChains(List<IRenderNode> children)
     {
@@ -585,11 +560,8 @@ public class BlockLayoutObject : ILayoutObject
                 // End of chain - calculate collapsed margin
                 CalculateChainCollapsedMargin(currentChain);
 
-                // Only add chains with more than one element (single empty blocks are handled by normal code)
-                if (currentChain.Elements.Count > 1)
-                {
-                    chains.Add(currentChain);
-                }
+                // Add all chains, including single empty blocks
+                chains.Add(currentChain);
 
                 currentChain = null;
             }
@@ -599,12 +571,7 @@ public class BlockLayoutObject : ILayoutObject
         if (currentChain != null)
         {
             CalculateChainCollapsedMargin(currentChain);
-
-            // Only add chains with more than one element
-            if (currentChain.Elements.Count > 1)
-            {
-                chains.Add(currentChain);
-            }
+            chains.Add(currentChain);
         }
 
         return chains;
@@ -670,7 +637,6 @@ public class BlockLayoutObject : ILayoutObject
             return false;
         }
 
-        // More checks with logging...
         string minHeight = element.ComputedStyle.GetPropertyValue("min-height") ?? "";
         bool hasMinHeight = !string.IsNullOrEmpty(minHeight) && minHeight != "0" && minHeight != "0px" && minHeight != "auto";
         if (hasMinHeight)
@@ -713,7 +679,6 @@ public class BlockLayoutObject : ILayoutObject
         return true;
     }
 
-
     /// <summary>
     /// Checks if a node has an out-of-flow positioning (absolute, fixed)
     /// </summary>
@@ -732,15 +697,7 @@ public class BlockLayoutObject : ILayoutObject
     /// Calculates the collapsed margin between a parent element and its child elements,
     /// traversing down the DOM tree as deep as possible according to CSS margin collapsing rules.
     /// This method specifically handles parent-child margin collapsing, not sibling margin collapsing.
-    ///
-    /// The method follows these rules:
-    /// 1. Only considers elements that can participate in margin collapsing (no border/padding)
-    /// 2. Traverses down through first children until a stopping condition is met
-    /// 3. Takes the largest positive margin and the smallest negative margin
-    /// 4. Marks all elements in the collapse chain to prevent double-counting
     /// </summary>
-    /// <param name="elementNode">The parent element to start margin collapse calculation from</param>
-    /// <returns>The final collapsed margin value combining the largest positive and smallest negative margins</returns>
     public float CollapseMarginsForElement(ElementNode? elementNode)
     {
         if (elementNode == null || !elementNode.Children.Any())
