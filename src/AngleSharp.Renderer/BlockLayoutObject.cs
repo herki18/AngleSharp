@@ -477,40 +477,25 @@ public class BlockLayoutObject : ILayoutObject
                             // We're positioning after an empty block
                             LogArrange($"  After empty block - using special collapsed margin: {context.EmptyBlockCollapsedMargin}");
 
-                            // In our case, the test has:
-                            // - block1 ends at y=50
-                            // - empty block positioned at y=70 (after 20px margin)
-                            // - block2 should be at y=80 (after 30px collapsed margin from block1)
-
-                            // Hard-coded correction for this specific test case:
-                            if (previousSibling.Id == "empty" && currentElement.Id == "block2")
+                            // Get the margin-top from the computed style object, not the layout
+                            float marginTopPx = 0;
+                            var marginTopVal = previousSibling.ComputedStyle?.GetPropertyValue("margin-top");
+                            if (!string.IsNullOrEmpty(marginTopVal) && marginTopVal != "auto")
                             {
-                                childPosY = 50 + context.EmptyBlockCollapsedMargin;
-                                LogArrange($"  Using fixed positioning for known test case - block2 at Y={childPosY}");
-                            }
-                            else
-                            {
-                                // For general case where we can't determine the previous block's end position directly:
-                                // Get the margin-top from the computed style object, not the layout
-                                float marginTopPx = 0;
-                                var marginTopVal = previousSibling.ComputedStyle?.GetPropertyValue("margin-top");
-                                if (!string.IsNullOrEmpty(marginTopVal) && marginTopVal != "auto")
+                                if (float.TryParse(marginTopVal.Replace("px", ""), out float parsed))
                                 {
-                                    if (float.TryParse(marginTopVal.Replace("px", ""), out float parsed))
-                                    {
-                                        marginTopPx = parsed;
-                                    }
+                                    marginTopPx = parsed;
                                 }
-
-                                LogArrange($"  Empty block computed margin-top: {marginTopPx}px");
-
-                                // Previous non-empty block end = empty block Y - margin-top
-                                float previousNonEmptyBlockEnd = previousSibling.Layout.Y - marginTopPx;
-                                childPosY = previousNonEmptyBlockEnd + context.EmptyBlockCollapsedMargin;
-
-                                LogArrange($"  Previous non-empty block end: {previousNonEmptyBlockEnd}");
-                                LogArrange($"  Positioned after empty block at Y={childPosY}");
                             }
+
+                            LogArrange($"  Empty block computed margin-top: {marginTopPx}px");
+
+                            // Previous non-empty block end = empty block Y - margin-top
+                            float previousNonEmptyBlockEnd = previousSibling.Layout.Y - marginTopPx;
+                            childPosY = previousNonEmptyBlockEnd + context.EmptyBlockCollapsedMargin;
+
+                            LogArrange($"  Previous non-empty block end: {previousNonEmptyBlockEnd}");
+                            LogArrange($"  Positioned after empty block at Y={childPosY}");
 
                             // Clear the flag
                             context.EmptyBlockCollapsedMargin = 0;
