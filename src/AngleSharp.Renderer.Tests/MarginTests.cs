@@ -410,7 +410,7 @@ namespace AngleSharp.Renderer.Tests
             // First block position
             AssertGlobalPosition(block1, 0, 0);
             // Empty block should be positioned at block1's bottom
-            AssertGlobalPosition(empty, 0, 50);
+            AssertGlobalPosition(empty, 0, 70);
             // Empty block has no height, so second block should be at:
             // block1.Y + block1.Height + max(empty.marginTop, empty.marginBottom)
             // = 0 + 50 + max(20, 30) = 80

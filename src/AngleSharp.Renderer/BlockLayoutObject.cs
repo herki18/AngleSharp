@@ -15,17 +15,27 @@ public class BlockLayoutObject : ILayoutObject
     public IRenderNode Node { get; }
 
     private readonly bool _enableLogging = true;
+    private readonly bool _enableArrangeLogging = true;
+    private readonly bool _enableMeasureLogging = false;
 
     public BlockLayoutObject(IRenderNode node)
     {
         Node = node;
     }
 
-    private void Log(string message)
+    private void LogArrange(string message)
     {
-        if (_enableLogging)
+        if (_enableLogging && _enableArrangeLogging)
         {
-            Console.WriteLine($"[Layout] {message}");
+            Console.WriteLine($"[Arrange] {message}");
+        }
+    }
+
+    private void LogMeasure(string message)
+    {
+        if (_enableLogging && _enableMeasureLogging)
+        {
+            Console.WriteLine($"[Measure] {message}");
         }
     }
 
@@ -37,20 +47,20 @@ public class BlockLayoutObject : ILayoutObject
     {
         if (Node is not ElementNode elem || elem.ComputedStyle == null)
         {
-            Log($"Skipping measure for non-element or null style: {Node?.Ref?.NodeName}");
+            LogMeasure($"Skipping measure for non-element or null style: {Node?.Ref?.NodeName}");
             return;
         }
 
-        Log($"--- MEASURING {elem.Ref.TagName} - {elem.Id ?? "no-id"} ---");
-        Log($"Available width: {context.AvailableWidth}");
+        LogMeasure($"--- MEASURING {elem.Ref.TagName} - {elem.Id ?? "no-id"} ---");
+        LogMeasure($"Available width: {context.AvailableWidth}");
 
         var style = elem.ComputedStyle;
         var box = new BoxModelCalculator(style, context.AvailableWidth);
 
-        Log($"Box model: Margin({box.MarginTop},{box.MarginRight},{box.MarginBottom},{box.MarginLeft})");
-        Log($"Box model: Border({box.BorderTop},{box.BorderRight},{box.BorderBottom},{box.BorderLeft})");
-        Log($"Box model: Padding({box.PaddingTop},{box.PaddingRight},{box.PaddingBottom},{box.PaddingLeft})");
-        Log($"Box model: Content({box.ContentWidth}x{box.ContentHeight})");
+        LogMeasure($"Box model: Margin({box.MarginTop},{box.MarginRight},{box.MarginBottom},{box.MarginLeft})");
+        LogMeasure($"Box model: Border({box.BorderTop},{box.BorderRight},{box.BorderBottom},{box.BorderLeft})");
+        LogMeasure($"Box model: Padding({box.PaddingTop},{box.PaddingRight},{box.PaddingBottom},{box.PaddingLeft})");
+        LogMeasure($"Box model: Content({box.ContentWidth}x{box.ContentHeight})");
 
         var constraints = new LayoutConstraints(style);
         string boxSizing = style.GetPropertyValue("box-sizing") ?? "content-box";
@@ -85,7 +95,7 @@ public class BlockLayoutObject : ILayoutObject
             totalHeight = contentHeight + (box.PaddingTop + box.PaddingBottom + box.BorderTop + box.BorderBottom);
         }
 
-        Log($"Final dimensions: Content({contentWidth}x{contentHeight}), Total({totalWidth}x{totalHeight})");
+        LogMeasure($"Final dimensions: Content({contentWidth}x{contentHeight}), Total({totalWidth}x{totalHeight})");
 
         // Store partial results (like your single pass does at the end)
         if (elem.Layout == null)
@@ -128,9 +138,9 @@ public class BlockLayoutObject : ILayoutObject
             PreviousMarginBottom = 0f
         };
 
-        Log($"Stored in Layout: BoxWidth={elem.Layout.BoxWidth}, BoxHeight={elem.Layout.BoxHeight}");
+        LogMeasure($"Stored in Layout: BoxWidth={elem.Layout.BoxWidth}, BoxHeight={elem.Layout.BoxHeight}");
 
-        Log($"Measuring {elem.Children.Count()} children with content width: {contentWidth}");
+        LogMeasure($"Measuring {elem.Children.Count()} children with content width: {contentWidth}");
 
         foreach (var child in elem.Children)
         {
@@ -161,7 +171,7 @@ public class BlockLayoutObject : ILayoutObject
 
             lb.BoxHeight = totalHeight;
 
-            Log($"Auto height adjusted to {totalHeight} based on child content");
+            LogArrange($"Auto height adjusted to {totalHeight} based on child content");
         }
     }
 
@@ -172,11 +182,11 @@ public class BlockLayoutObject : ILayoutObject
             return;
         }
 
-        Log("");
-        Log("========================================");
-        Log($"ARRANGING {elem.Ref.TagName} - {elem.Id ?? "no-id"}");
-        Log($"Parent position: ({context.ParentX}, {context.ParentY})");
-        Log($"Available width: {context.AvailableWidth}");
+        LogArrange("");
+        LogArrange("========================================");
+        LogArrange($"ARRANGING {elem.Ref.TagName} - {elem.Id ?? "no-id"}");
+        LogArrange($"Parent position: ({context.ParentX}, {context.ParentY})");
+        LogArrange($"Available width: {context.AvailableWidth}");
 
         var computedStyle = elem.ComputedStyle;
         var layoutBox = elem.Layout;
@@ -190,7 +200,7 @@ public class BlockLayoutObject : ILayoutObject
             layoutBox.ContentWidth
         );
 
-        Log($"Initial position from resolver: ({posX}, {posY})");
+        LogArrange($"Initial position from resolver: ({posX}, {posY})");
 
         layoutBox.X = posX;
         layoutBox.Y = posY;
@@ -199,50 +209,49 @@ public class BlockLayoutObject : ILayoutObject
         // use CollapseMarginsForElement to handle the entire chain of first children
         if (!context.HasPreviousSibling && layoutBox.BorderTop == 0 && layoutBox.PaddingTop == 0)
         {
-            Log("Element qualifies for parent-child margin collapsing");
+            LogArrange("Element qualifies for parent-child margin collapsing");
             if (!layoutBox.IsInMarginToCollapsedChain)
             {
                 // Calculate the collapsed margin through entire descendant chain
                 float collapsedMargin = CollapseMarginsForElement(elem);
-                Log($"Calculated collapsed margin: {collapsedMargin} (not in existing chain)");
+                LogArrange($"Calculated collapsed margin: {collapsedMargin} (not in existing chain)");
 
                 // Root of collapse chain - apply the full margin
                 layoutBox.Y += collapsedMargin;
                 posY += collapsedMargin;
-                Log($"Position after margin collapse: ({layoutBox.X}, {layoutBox.Y})");
+                LogArrange($"Position after margin collapse: ({layoutBox.X}, {layoutBox.Y})");
             }
             else
             {
                 // Part of existing chain - use parent's collapsed margin
-                Log($"Element is part of existing margin collapsed chain");
+                LogArrange($"Element is part of existing margin collapsed chain");
                 layoutBox.Y = posY;
                 layoutBox.MarginTop = 0;
-                Log($"Using parent's collapsed margin, setting MarginTop=0");
+                LogArrange($"Using parent's collapsed margin, setting MarginTop=0");
             }
         }
         else
         {
-            Log($"No parent-child margin collapsing: HasPreviousSibling={context.HasPreviousSibling}, BorderTop={layoutBox.BorderTop}, PaddingTop={layoutBox.PaddingTop}");
+            LogArrange($"No parent-child margin collapsing: HasPreviousSibling={context.HasPreviousSibling}, BorderTop={layoutBox.BorderTop}, PaddingTop={layoutBox.PaddingTop}");
             layoutBox.Y = posY;
         }
 
         // Continue with child layouts...
         var children = elem.Children.Where(node => node is ElementNode or TextNode).ToList();
         int childCount = children.Count;
-        Log($"Processing {childCount} children");
+        LogArrange($"Processing {childCount} children");
 
         // PRE-PROCESSING STEP: Identify empty block chains
         var emptyBlockChains = IdentifyEmptyBlockChains(children);
-        Log($"Found {emptyBlockChains.Count} empty block chains");
+        LogArrange($"Found {emptyBlockChains.Count} empty block chains");
 
-        Console.WriteLine($"Found {emptyBlockChains.Count} empty block chains");
         foreach (var chain in emptyBlockChains)
         {
-            Log($"Chain from index {chain.FirstIndex} to {chain.LastIndex} with {chain.Elements.Count} elements");
-            Log($"  Collapsed margin: {chain.CollapsedMargin}");
+            LogArrange($"Chain from index {chain.FirstIndex} to {chain.LastIndex} with {chain.Elements.Count} elements");
+            LogArrange($"  Collapsed margin: {chain.CollapsedMargin}");
             foreach (var el in chain.Elements)
             {
-                Log($"  > {el.Ref.TagName} - {el.Id ?? "no-id"} with margin-top: {el.Layout?.MarginTop} margin-bottom: {el.Layout?.MarginBottom}");
+                LogArrange($"  > {el.Ref.TagName} - {el.Id ?? "no-id"} with margin-top: {el.Layout?.MarginTop} margin-bottom: {el.Layout?.MarginBottom}");
             }
         }
 
@@ -263,25 +272,31 @@ public class BlockLayoutObject : ILayoutObject
             bool isFirst = (childIndex == 0);
             bool isLast = (childIndex == count - 1);
 
-            Log($"Processing child {childIndex}/{childCount-1}: {child.Ref.NodeName} - {child.Id ?? "no-id"}, isFirst={isFirst}, isLast={isLast}");
+            LogArrange($"Processing child {childIndex}/{childCount-1}: {child.Ref.NodeName} - {child.Id ?? "no-id"}, isFirst={isFirst}, isLast={isLast}");
 
             // Check if this is the start of an empty block chain
+            bool isStandaloneEmptyBlock = false;
             EmptyBlockChain? currentChain = null;
             if (child is ElementNode childElement)
             {
                 currentChain = emptyBlockChains.FirstOrDefault(c => c.FirstIndex == childIndex);
+
+                if (currentChain == null && IsEmptyBlock(childElement))
+                {
+                    isStandaloneEmptyBlock = true;
+                }
             }
 
             if (currentChain != null)
             {
-                Log($"  Processing as part of empty block chain (indices {currentChain.FirstIndex}-{currentChain.LastIndex})");
+                LogArrange($"  Processing as part of empty block chain (indices {currentChain.FirstIndex}-{currentChain.LastIndex})");
 
                 // Position the first element at the current Y position
                 var firstElement = currentChain.Elements[0];
                 if (firstElement.Layout != null)
                 {
                     float elementX = posX + layoutBox.BorderLeft + layoutBox.PaddingLeft;
-                    Log($"  Positioning first element of chain at X={elementX}, Y={childPosY}");
+                    LogArrange($"  Positioning first element of chain at X={elementX}, Y={childPosY}");
                     firstElement.Layout.X = elementX;
                     firstElement.Layout.Y = childPosY;
                     firstElement.Layout.IsInMarginToCollapsedChain = true;
@@ -300,7 +315,7 @@ public class BlockLayoutObject : ILayoutObject
                     var childLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(firstElement);
                     childLayoutObj.Arrange(childContext);
 
-                    Log($"  First element of chain arranged: Y={firstElement.Layout.Y}, Height={firstElement.Layout.BoxHeight}");
+                    LogArrange($"  First element of chain arranged: Y={firstElement.Layout.Y}, Height={firstElement.Layout.BoxHeight}");
                 }
 
                 // For subsequent elements, apply the collapsed margin of the entire chain
@@ -323,16 +338,16 @@ public class BlockLayoutObject : ILayoutObject
                 {
                     // For chains of pure empty blocks, position all at same Y with collapsed margin
                     chainY = childPosY;
-                    Log($"  All blocks in chain are empty - positioning at starting Y: {chainY}");
+                    LogArrange($"  All blocks in chain are empty - positioning at starting Y: {chainY}");
                 }
                 else if (firstElement.Layout != null)
                 {
                     // If first element has height, next element starts after it plus margin
                     chainY += firstElement.Layout.BoxHeight + currentChain.CollapsedMargin;
-                    Log($"  First element has height - positioning after it: {chainY}");
+                    LogArrange($"  First element has height - positioning after it: {chainY}");
                 }
 
-                Log($"  Chain contains all empty blocks: {allEmptyBlocks}");
+                LogArrange($"  Chain contains all empty blocks: {allEmptyBlocks}");
 
                 // Position all remaining elements in the chain
                 for (int i = 1; i < currentChain.Elements.Count; i++)
@@ -349,13 +364,13 @@ public class BlockLayoutObject : ILayoutObject
                     {
                         chainElement.Layout.X = elementX;
                         chainElement.Layout.Y = prevElement.Layout.Y;
-                        Log($"  Positioning chain element {i} at same Y as previous (empty): X={elementX}, Y={prevElement.Layout.Y}");
+                        LogArrange($"  Positioning chain element {i} at same Y as previous (empty): X={elementX}, Y={prevElement.Layout.Y}");
                     }
                     else
                     {
                         chainElement.Layout.X = elementX;
                         chainElement.Layout.Y = chainY;
-                        Log($"  Positioning chain element {i} at: X={elementX}, Y={chainY}");
+                        LogArrange($"  Positioning chain element {i} at: X={elementX}, Y={chainY}");
                     }
 
                     chainElement.Layout.IsInMarginToCollapsedChain = true;
@@ -374,14 +389,14 @@ public class BlockLayoutObject : ILayoutObject
                     var childLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(chainElement);
                     childLayoutObj.Arrange(childContext);
 
-                    Log($"  Chain element {i} arranged: Y={chainElement.Layout.Y}, Height={chainElement.Layout.BoxHeight}");
+                    LogArrange($"  Chain element {i} arranged: Y={chainElement.Layout.Y}, Height={chainElement.Layout.BoxHeight}");
 
                     // Only update chainY if this element has height
                     if (chainElement.Layout.BoxHeight > 0)
                     {
                         float oldChainY = chainY;
                         chainY += chainElement.Layout.BoxHeight;
-                        Log($"  Updating chainY: {oldChainY} -> {chainY} (added height {chainElement.Layout.BoxHeight})");
+                        LogArrange($"  Updating chainY: {oldChainY} -> {chainY} (added height {chainElement.Layout.BoxHeight})");
                     }
                 }
 
@@ -396,7 +411,7 @@ public class BlockLayoutObject : ILayoutObject
                     {
                         // For chains of completely empty blocks, only add the collapsed margin
                         childPosY += currentChain.CollapsedMargin;
-                        Log($"  All blocks were empty - updating childPosY: {oldChildPosY} -> {childPosY} (added collapsed margin {currentChain.CollapsedMargin})");
+                        LogArrange($"  All blocks were empty - updating childPosY: {oldChildPosY} -> {childPosY} (added collapsed margin {currentChain.CollapsedMargin})");
                     }
                     else
                     {
@@ -405,54 +420,89 @@ public class BlockLayoutObject : ILayoutObject
                             previousSibling.Layout.Y + previousSibling.Layout.BoxHeight,
                             firstElement.Layout?.Y + firstElement.Layout?.BoxHeight ?? 0
                         );
-                        Log($"  Chain had non-empty blocks - updating childPosY: {oldChildPosY} -> {childPosY}");
+                        LogArrange($"  Chain had non-empty blocks - updating childPosY: {oldChildPosY} -> {childPosY}");
                     }
 
                     previousMarginBottom = previousSibling.Layout.MarginBottom;
-                    Log($"  Setting previousMarginBottom to {previousMarginBottom}");
+                    LogArrange($"  Setting previousMarginBottom to {previousMarginBottom}");
                 }
 
                 // Skip to the end of the chain
                 skipToIndex = currentChain.LastIndex;
-                Log($"  Chain processing complete - setting skipToIndex={skipToIndex}");
+                LogArrange($"  Chain processing complete - setting skipToIndex={skipToIndex}");
             }
             else
             {
                 // Normal (non-chain) element processing
-                Log($"  Processing as normal element (not part of chain)");
+                LogArrange($"  Processing as normal element (not part of chain)");
 
                 if (child is ElementNode currentElement && previousSibling != null && previousSibling.Layout != null)
                 {
+
                     // Add the previous sibling's height to childPosY
-                    float oldChildPosY = childPosY;
                     childPosY += previousSibling.Layout.BoxHeight;
-                    Log($"  Added previous sibling height: {oldChildPosY} -> {childPosY} (added {previousSibling.Layout.BoxHeight})");
 
-                    // Calculate collapsed margins between siblings
-                    Log($"  Calculating sibling margin collapse: prev bottom={previousMarginBottom}, current top={currentElement.Layout?.MarginTop ?? 0f}");
-                    float collapsedMargin = MarginCollapser.CalculateSiblingCollapse(
-                        previousSibling,
-                        currentElement,
-                        previousMarginBottom,
-                        currentElement.Layout?.MarginTop ?? 0f
-                    );
-                    Log($"  Collapsed margin between siblings: {collapsedMargin}");
+                    float collapsedMargin;
 
-                    // Adjust the Y position based on the collapsed margin
-                    float oldPosWithMargin = childPosY;
+                    if (isStandaloneEmptyBlock && currentElement.Layout != null)
+                    {
+                        // For standalone empty blocks, collapse their top and bottom margins together
+                        float emptyBlockCollapsedMargin = MarginCollapser.Collapse(
+                            currentElement.Layout.MarginTop,
+                            currentElement.Layout.MarginBottom
+                        );
+
+                        // Then collapse with previous sibling's margin
+                        collapsedMargin = MarginCollapser.Collapse(previousMarginBottom, emptyBlockCollapsedMargin);
+
+                        // Mark this element as part of a collapsed margin chain
+                        currentElement.Layout.IsInMarginToCollapsedChain = true;
+                    }
+                    else
+                    {
+                        // Regular sibling margin collapsing
+                        collapsedMargin = MarginCollapser.CalculateSiblingCollapse(
+                            previousSibling,
+                            currentElement,
+                            previousMarginBottom,
+                            currentElement.Layout?.MarginTop ?? 0f
+                        );
+                    }
                     childPosY += collapsedMargin;
-                    Log($"  Applied collapsed margin: {oldPosWithMargin} -> {childPosY}");
+                    // // Adjust the Y position based on the collapsed margin
+                    // childPosY += collapsedMargin;
+                    //
+                    //
+                    // // Add the previous sibling's height to childPosY
+                    // float oldChildPosY = childPosY;
+                    // childPosY += previousSibling.Layout.BoxHeight;
+                    // LogArrange($"  Added previous sibling height: {oldChildPosY} -> {childPosY} (added {previousSibling.Layout.BoxHeight})");
+                    //
+                    // // Calculate collapsed margins between siblings
+                    // LogArrange($"  Calculating sibling margin collapse: prev bottom={previousMarginBottom}, current top={currentElement.Layout?.MarginTop ?? 0f}");
+                    // float collapsedMargin = MarginCollapser.CalculateSiblingCollapse(
+                    //     previousSibling,
+                    //     currentElement,
+                    //     previousMarginBottom,
+                    //     currentElement.Layout?.MarginTop ?? 0f
+                    // );
+                    // LogArrange($"  Collapsed margin between siblings: {collapsedMargin}");
+                    //
+                    // // Adjust the Y position based on the collapsed margin
+                    // float oldPosWithMargin = childPosY;
+                    // childPosY += collapsedMargin;
+                    // LogArrange($"  Applied collapsed margin: {oldPosWithMargin} -> {childPosY}");
                 }
                 else if (isFirst)
                 {
-                    Log($"  First child - no sibling margin collapse needed");
+                    LogArrange($"  First child - no sibling margin collapse needed");
                 }
                 else
                 {
-                    Log($"  No margin collapse calculation - previous sibling not valid or current not element");
+                    LogArrange($"  No margin collapse calculation - previous sibling not valid or current not element");
                 }
 
-                Log($"  Final Y position for child: {childPosY}");
+                LogArrange($"  Final Y position for child: {childPosY}");
 
                 // Create child context with final position
                 var childContext = new LayoutContext()
@@ -465,7 +515,7 @@ public class BlockLayoutObject : ILayoutObject
                     CurrentSiblingMarginTop = child is ElementNode currentElem ? currentElem.Layout?.MarginTop ?? 0f : 0f
                 };
 
-                Log($"  Creating child context: ParentX={childContext.ParentX}, ParentY={childContext.ParentY}, Width={childContext.AvailableWidth}");
+                LogArrange($"  Creating child context: ParentX={childContext.ParentX}, ParentY={childContext.ParentY}, Width={childContext.AvailableWidth}");
 
                 // Arrange the child with its context
                 var childLayoutObj = LayoutObjectFactory.GetOrCreateLayoutObject(child);
@@ -475,21 +525,28 @@ public class BlockLayoutObject : ILayoutObject
                 if (child is ElementNode childElem)
                 {
                     previousSibling = childElem;
-                    if (childElem.Layout != null)
+                    if (isStandaloneEmptyBlock && childElem.Layout != null)
                     {
-                        Log($"  Child arranged: Position=({childElem.Layout.X}, {childElem.Layout.Y}), Size={childElem.Layout.BoxWidth}x{childElem.Layout.BoxHeight}");
-                        previousMarginBottom = childElem.Layout.MarginBottom;
-                        Log($"  Updated previousSibling to current child, previousMarginBottom={previousMarginBottom}");
+                        LogArrange($"  Child arranged: Position=({childElem.Layout.X}, {childElem.Layout.Y}), Size={childElem.Layout.BoxWidth}x{childElem.Layout.BoxHeight}");
+                        previousMarginBottom = MarginCollapser.Collapse(
+                            childElem.Layout.MarginTop,
+                            childElem.Layout.MarginBottom
+                        );
+                        LogArrange($"  Updated previousSibling to current child, previousMarginBottom={previousMarginBottom}");
+                    }
+                    else
+                    {
+                        previousMarginBottom = childElem.Layout?.MarginBottom ?? 0f;
                     }
                 }
                 else
                 {
-                    Log($"  Child arranged (non-element or null layout)");
+                    LogArrange($"  Child arranged (non-element or null layout)");
                 }
             }
         }
 
-        Log($"Arrangement complete for {elem.Ref.NodeName} - {elem.Id ?? "no-id"} with {childCount} children");
+        LogArrange($"Arrangement complete for {elem.Ref.NodeName} - {elem.Id ?? "no-id"} with {childCount} children");
     }
 
     /// <summary>
@@ -559,20 +616,20 @@ public class BlockLayoutObject : ILayoutObject
     private void CalculateChainCollapsedMargin(EmptyBlockChain chain)
     {
         var margins = new List<float>();
-        Log($"Calculating collapsed margin for chain with {chain.Elements.Count} elements:");
+        LogArrange($"Calculating collapsed margin for chain with {chain.Elements.Count} elements:");
 
         foreach (var element in chain.Elements)
         {
             if (element.ComputedStyle != null && element.Layout != null)
             {
-                Log($"  Element {element.Ref.TagName} - {element.Id ?? "no-id"}: margin-top={element.Layout.MarginTop}, margin-bottom={element.Layout.MarginBottom}");
+                LogArrange($"  Element {element.Ref.TagName} - {element.Id ?? "no-id"}: margin-top={element.Layout.MarginTop}, margin-bottom={element.Layout.MarginBottom}");
                 margins.Add(element.Layout.MarginTop);
                 margins.Add(element.Layout.MarginBottom);
             }
         }
 
         chain.CollapsedMargin = CollapseMarginList(margins);
-        Log($"  Final collapsed margin: {chain.CollapsedMargin}");
+        LogArrange($"  Final collapsed margin: {chain.CollapsedMargin}");
     }
 
     /// <summary>
@@ -582,14 +639,14 @@ public class BlockLayoutObject : ILayoutObject
     {
         if (!margins.Any()) return 0;
 
-        Log($"Collapsing {margins.Count} margins: [{string.Join(", ", margins)}]");
+        LogArrange($"Collapsing {margins.Count} margins: [{string.Join(", ", margins)}]");
         float result = margins[0];
 
         for (int i = 1; i < margins.Count; i++)
         {
             float before = result;
             result = MarginCollapser.Collapse(result, margins[i]);
-            Log($"  Collapsed {before} with {margins[i]} = {result}");
+            LogArrange($"  Collapsed {before} with {margins[i]} = {result}");
         }
 
         return result;
@@ -602,14 +659,14 @@ public class BlockLayoutObject : ILayoutObject
     {
         if (element == null || element.Layout == null || element.ComputedStyle == null)
         {
-            Log($"Not empty block: null element or missing layout/style");
+            LogArrange($"Not empty block: null element or missing layout/style");
             return false;
         }
 
         string display = element.ComputedStyle.GetPropertyValue("display") ?? "";
         if (display == "none" || (display != "block" && display != "flow-root"))
         {
-            Log($"Not empty block: display={display} (not block or flow-root)");
+            LogArrange($"Not empty block: display={display} (not block or flow-root)");
             return false;
         }
 
@@ -618,7 +675,7 @@ public class BlockLayoutObject : ILayoutObject
         bool hasMinHeight = !string.IsNullOrEmpty(minHeight) && minHeight != "0" && minHeight != "0px" && minHeight != "auto";
         if (hasMinHeight)
         {
-            Log($"Not empty block: has min-height={minHeight}");
+            LogArrange($"Not empty block: has min-height={minHeight}");
             return false;
         }
 
@@ -628,7 +685,7 @@ public class BlockLayoutObject : ILayoutObject
 
         if (hasInFlowContent)
         {
-            Log($"Not empty block: has in-flow content");
+            LogArrange($"Not empty block: has in-flow content");
             return false;
         }
 
@@ -639,7 +696,7 @@ public class BlockLayoutObject : ILayoutObject
 
         if (paddingTop > 0 || paddingBottom > 0 || borderTop > 0 || borderBottom > 0)
         {
-            Log($"Not empty block: has padding/border (top-padding={paddingTop}, bottom-padding={paddingBottom}, top-border={borderTop}, bottom-border={borderBottom})");
+            LogArrange($"Not empty block: has padding/border (top-padding={paddingTop}, bottom-padding={paddingBottom}, top-border={borderTop}, bottom-border={borderBottom})");
             return false;
         }
 
@@ -648,11 +705,11 @@ public class BlockLayoutObject : ILayoutObject
 
         if (hasExplicitHeight)
         {
-            Log($"Not empty block: has explicit height={element.ComputedStyle.GetPropertyValue("height")}");
+            LogArrange($"Not empty block: has explicit height={element.ComputedStyle.GetPropertyValue("height")}");
             return false;
         }
 
-        Log($"Element IS an empty block: {element.Ref.TagName} - {element.Id ?? "no-id"}");
+        LogArrange($"Element IS an empty block: {element.Ref.TagName} - {element.Id ?? "no-id"}");
         return true;
     }
 
@@ -688,10 +745,10 @@ public class BlockLayoutObject : ILayoutObject
     {
         if (elementNode == null || !elementNode.Children.Any())
         {
-            Log("No elements to collapse margins for");
+            LogArrange("No elements to collapse margins for");
             return 0;
         }
-        Log($"Calculating parent-child margin collapse for {elementNode.Ref.TagName} - {elementNode.Id ?? "no-id"}");
+        LogArrange($"Calculating parent-child margin collapse for {elementNode.Ref.TagName} - {elementNode.Id ?? "no-id"}");
 
         var margins = new List<float>();
         var current = elementNode;
@@ -729,7 +786,7 @@ public class BlockLayoutObject : ILayoutObject
         {
             node.Layout!.IsInMarginToCollapsedChain = true;
         }
-        Log($"Final collapsed margin: {maxPositive + maxNegative} (max positive={maxPositive}, max negative={maxNegative})");
+        LogArrange($"Final collapsed margin: {maxPositive + maxNegative} (max positive={maxPositive}, max negative={maxNegative})");
         return maxPositive + maxNegative;
     }
 }
