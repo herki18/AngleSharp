@@ -1,17 +1,14 @@
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
-#pragma warning disable CS8600, CS8602, CS8603, CS8625
 namespace AngleSharp.LayoutEngine;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Dom;
-using AngleSharp.Css.Dom;
 using AngleSharp.Html.Dom;
 
 /// <summary>
-/// Builds a render tree from an AngleSharp DOM tree. The render tree contains only
-/// elements that need to be laid out and rendered, with computed styles.
+/// Builds a render tree from an AngleSharp DOM tree, optimized to leverage AngleSharp's
+/// capabilities and minimize duplication.
 /// </summary>
 public class RenderTreeBuilder
 {
@@ -63,33 +60,6 @@ public class RenderTreeBuilder
     }
 
     /// <summary>
-    /// Gets render nodes that have been added since the last render tree build.
-    /// </summary>
-    /// <returns>A collection of added render nodes.</returns>
-    public IEnumerable<IRenderNode> GetAddedNodes()
-    {
-        return _addedNodes;
-    }
-
-    /// <summary>
-    /// Gets render nodes that have been removed since the last render tree build.
-    /// </summary>
-    /// <returns>A collection of removed render nodes.</returns>
-    public IEnumerable<IRenderNode> GetRemovedNodes()
-    {
-        return _removedNodes;
-    }
-
-    /// <summary>
-    /// Gets render nodes that have changed since the last render tree build.
-    /// </summary>
-    /// <returns>A collection of changed render nodes.</returns>
-    public IEnumerable<IRenderNode> GetChangedNodes()
-    {
-        return _changedNodes;
-    }
-
-    /// <summary>
     /// Builds a render node for the specified DOM node.
     /// </summary>
     /// <param name="node">The DOM node to build a render node for.</param>
@@ -108,9 +78,8 @@ public class RenderTreeBuilder
 
         if (node is IElement element)
         {
-            // Get styles
-            var specifiedStyle = GetSpecifiedStyle(element);
-            var computedStyle = GetComputedStyle(element);
+            // Get computed style directly from AngleSharp
+            var computedStyle = element.GetComputedStyle();
 
             // Create child render nodes
             var children = new List<IRenderNode>();
@@ -124,10 +93,13 @@ public class RenderTreeBuilder
                 }
             }
 
+            // Use AngleSharp's IStyle interface for specified style (inline styles)
+            var specifiedStyle = element.GetStyle();
+
             // Create element render node
             renderNode = new ElementNode(element, children, specifiedStyle, computedStyle);
         }
-        else if (node is IText text && !string.IsNullOrWhiteSpace(text.Data))
+        else if (node is IText text && !string.IsNullOrWhiteSpace(text.TextContent))
         {
             // Create text render node
             renderNode = new TextNode(text);
@@ -163,7 +135,7 @@ public class RenderTreeBuilder
             }
         }
 
-        // Create child render nodes and update their parent references
+        // Update parent references for children
         if (renderNode is ElementNode elementNode)
         {
             foreach (var child in elementNode.Children)
@@ -184,91 +156,24 @@ public class RenderTreeBuilder
     {
         if (node is IElement element)
         {
-            // Check display:none
-            var style = element.GetComputedStyle();
-            if (style != null && style.GetPropertyValue("display") == "none")
+            // Check display:none using AngleSharp's computed style
+            var computedStyle = element.GetComputedStyle();
+            if (computedStyle != null && computedStyle.Display == "none")
             {
                 return false;
             }
 
-            // Always render elements with renderable content
             return true;
         }
 
         if (node is IText text)
         {
             // Only render non-empty text nodes
-            return !string.IsNullOrWhiteSpace(text.Data);
+            return !string.IsNullOrWhiteSpace(text.TextContent);
         }
 
         // Don't render comments, document types, etc.
         return false;
-    }
-
-    /// <summary>
-    /// Gets the specified style for an element.
-    /// </summary>
-    /// <param name="element">The element to get the style for.</param>
-    /// <returns>The specified style declaration.</returns>
-    private ICssStyleDeclaration GetSpecifiedStyle(IElement element)
-    {
-        // Get inline style
-        var styleAttr = element.GetAttribute("style");
-        if (!string.IsNullOrEmpty(styleAttr))
-        {
-            // In a real implementation, this would parse the style attribute
-            // and create a style declaration. Here we'll use a simple implementation.
-            var style = new SimpleStyleDeclaration();
-            ParseInlineStyle(styleAttr, style);
-            return style;
-        }
-
-        // Return empty style if no inline style
-        return new SimpleStyleDeclaration();
-    }
-
-    /// <summary>
-    /// Gets the computed style for an element.
-    /// </summary>
-    /// <param name="element">The element to get the style for.</param>
-    /// <returns>The computed style declaration.</returns>
-    private ICssStyleDeclaration GetComputedStyle(IElement element)
-    {
-        // In a real implementation, this would use the cascade to compute
-        // the final styles. Here we'll just use the element's computed style
-        // if available from AngleSharp.
-        var computedStyle = element.GetComputedStyle();
-        if (computedStyle != null)
-        {
-            return computedStyle;
-        }
-
-        // If not available, use a simplified approach
-        return new SimpleStyleDeclaration();
-    }
-
-    /// <summary>
-    /// Parses an inline style string into a style declaration.
-    /// </summary>
-    /// <param name="styleText">The style text to parse.</param>
-    /// <param name="style">The style declaration to populate.</param>
-    private void ParseInlineStyle(string styleText, SimpleStyleDeclaration style)
-    {
-        if (string.IsNullOrEmpty(styleText))
-            return;
-
-        // Simple parser: split by semicolons, then by colons
-        var declarations = styleText.Split(';', StringSplitOptions.RemoveEmptyEntries);
-        foreach (var declaration in declarations)
-        {
-            var parts = declaration.Split(':', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length == 2)
-            {
-                var property = parts[0].Trim();
-                var value = parts[1].Trim();
-                style.SetProperty(property, value);
-            }
-        }
     }
 
     /// <summary>
@@ -283,15 +188,35 @@ public class RenderTreeBuilder
         if (oldNode.GetType() != newNode.GetType())
             return true;
 
-        // For elements, check styles and attributes
+        // For elements, compare computed styles
         if (oldNode is ElementNode oldElement && newNode is ElementNode newElement)
         {
-            // Check if styles have changed
-            if (HaveStylesChanged(oldElement.SpecifiedStyle, newElement.SpecifiedStyle))
-                return true;
+            // Compare by checking key layout properties
+            // AngleSharp doesn't provide a good way to compare full computed styles at once
+            var oldComputed = oldElement.ComputedStyle;
+            var newComputed = newElement.ComputedStyle;
 
-            // Check if attributes have changed
-            if (HaveAttributesChanged(oldElement.Ref, newElement.Ref))
+            if (oldComputed == null || newComputed == null)
+                return oldComputed != newComputed; // One is null, one isn't
+
+            // Check key layout-affecting properties
+            string[] keyProperties = {
+                "display", "position", "float", "width", "height",
+                "margin-top", "margin-right", "margin-bottom", "margin-left",
+                "padding-top", "padding-right", "padding-bottom", "padding-left",
+                "border-top-width", "border-right-width", "border-bottom-width", "border-left-width"
+            };
+
+            foreach (var prop in keyProperties)
+            {
+                if (oldComputed.GetPropertyValue(prop) != newComputed.GetPropertyValue(prop))
+                    return true;
+            }
+
+            // Check if attributes that affect layout have changed
+            // Class and ID changes could affect styles
+            if (oldElement.Ref.ClassName != newElement.Ref.ClassName ||
+                oldElement.Ref.Id != newElement.Ref.Id)
                 return true;
         }
 
@@ -306,337 +231,29 @@ public class RenderTreeBuilder
     }
 
     /// <summary>
-    /// Determines if styles have changed between two style declarations.
-    /// </summary>
-    /// <param name="oldStyle">The old style declaration.</param>
-    /// <param name="newStyle">The new style declaration.</param>
-    /// <returns>True if styles have changed, false otherwise.</returns>
-    private bool HaveStylesChanged(ICssStyleDeclaration oldStyle, ICssStyleDeclaration newStyle)
-    {
-        if (oldStyle == null && newStyle == null)
-            return false;
-
-        if (oldStyle == null || newStyle == null)
-            return true;
-
-        // For simplicity, we'll consider styles changed if the number of properties changed
-        if (oldStyle.Length != newStyle.Length)
-            return true;
-
-        // Check if any property values have changed
-        foreach (var property in oldStyle)
-        {
-            var oldValue = oldStyle.GetPropertyValue(property.Name);
-            var newValue = newStyle.GetPropertyValue(property.Name);
-
-            if (oldValue != newValue)
-                return true;
-        }
-
-        return false;
-    }
-
-    /// <summary>
-    /// Determines if attributes have changed between two elements.
-    /// </summary>
-    /// <param name="oldElement">The old element.</param>
-    /// <param name="newElement">The new element.</param>
-    /// <returns>True if attributes have changed, false otherwise.</returns>
-    private bool HaveAttributesChanged(IElement oldElement, IElement newElement)
-    {
-        if (oldElement == null || newElement == null)
-            return true;
-
-        // Check if the number of attributes has changed
-        if (oldElement.Attributes.Length != newElement.Attributes.Length)
-            return true;
-
-        // Check if any attribute values have changed
-        foreach (var attr in oldElement.Attributes)
-        {
-            var newValue = newElement.GetAttribute(attr.Name);
-            if (attr.Value != newValue)
-                return true;
-        }
-
-        return false;
-    }
-}
-
-/// <summary>
-/// Represents a render tree built from a DOM tree.
-/// </summary>
-public class RenderTree
-{
-    private readonly Dictionary<INode, IRenderNode> _nodeMap = new Dictionary<INode, IRenderNode>();
-
-    /// <summary>
-    /// Creates a new render tree with the specified root node.
-    /// </summary>
-    /// <param name="root">The root node of the render tree.</param>
-    public RenderTree(IRenderNode root)
-    {
-        Root = root;
-
-        // Build node map for quick lookups
-        if (root != null)
-        {
-            BuildNodeMap(root);
-        }
-    }
-
-    /// <summary>
-    /// Gets the root node of the render tree.
-    /// </summary>
-    public IRenderNode Root { get; }
-
-    /// <summary>
-    /// Finds a render node by its corresponding DOM node.
-    /// </summary>
-    /// <param name="node">The DOM node to find the render node for.</param>
-    /// <returns>The corresponding render node, or null if not found.</returns>
-    public IRenderNode FindNodeByDomNode(INode node)
-    {
-        if (_nodeMap.TryGetValue(node, out var renderNode))
-        {
-            return renderNode;
-        }
-        return null;
-    }
-
-    /// <summary>
-    /// Gets all nodes in the render tree.
-    /// </summary>
-    /// <returns>A collection of all render nodes.</returns>
-    public IEnumerable<IRenderNode> GetAllNodes()
-    {
-        if (Root == null)
-            return Enumerable.Empty<IRenderNode>();
-
-        return TraverseNodes(Root);
-    }
-
-    /// <summary>
-    /// Gets the nodes that have changed since the last render tree build.
-    /// </summary>
-    /// <returns>A collection of changed render nodes.</returns>
-    public IEnumerable<IRenderNode> GetChangedNodes()
-    {
-        // This is handled by the RenderTreeBuilder
-        return Enumerable.Empty<IRenderNode>();
-    }
-
-    /// <summary>
-    /// Gets the nodes that have been added since the last render tree build.
+    /// Gets render nodes that have been added since the last render tree build.
     /// </summary>
     /// <returns>A collection of added render nodes.</returns>
     public IEnumerable<IRenderNode> GetAddedNodes()
     {
-        // This is handled by the RenderTreeBuilder
-        return Enumerable.Empty<IRenderNode>();
+        return _addedNodes;
     }
 
     /// <summary>
-    /// Gets the nodes that have been removed since the last render tree build.
+    /// Gets render nodes that have been removed since the last render tree build.
     /// </summary>
     /// <returns>A collection of removed render nodes.</returns>
     public IEnumerable<IRenderNode> GetRemovedNodes()
     {
-        // This is handled by the RenderTreeBuilder
-        return Enumerable.Empty<IRenderNode>();
+        return _removedNodes;
     }
 
     /// <summary>
-    /// Builds a map of DOM nodes to render nodes for quick lookup.
+    /// Gets render nodes that have changed since the last render tree build.
     /// </summary>
-    /// <param name="node">The root node to start building from.</param>
-    private void BuildNodeMap(IRenderNode node)
+    /// <returns>A collection of changed render nodes.</returns>
+    public IEnumerable<IRenderNode> GetChangedNodes()
     {
-        _nodeMap[node.Ref] = node;
-
-        foreach (var child in node.Children)
-        {
-            BuildNodeMap(child);
-        }
+        return _changedNodes;
     }
-
-    /// <summary>
-    /// Traverses all nodes in the render tree.
-    /// </summary>
-    /// <param name="node">The node to start traversing from.</param>
-    /// <returns>A collection of all render nodes.</returns>
-    private IEnumerable<IRenderNode> TraverseNodes(IRenderNode node)
-    {
-        yield return node;
-
-        foreach (var child in node.Children)
-        {
-            foreach (var descendant in TraverseNodes(child))
-            {
-                yield return descendant;
-            }
-        }
-    }
-}
-
-/// <summary>
-/// A simple implementation of ICssStyleDeclaration.
-/// </summary>
-public class SimpleStyleDeclaration : ICssStyleDeclaration
-{
-    private readonly Dictionary<string, string> _properties = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, string> _priorities = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>
-    /// Sets a style property.
-    /// </summary>
-    /// <param name="name">The property name.</param>
-    /// <param name="value">The property value.</param>
-    /// <param name="priority">The property priority.</param>
-    public void SetProperty(string name, string value, string priority = "")
-    {
-        _properties[name] = value;
-        _priorities[name] = priority;
-    }
-
-    /// <summary>
-    /// Gets a style property value.
-    /// </summary>
-    /// <param name="name">The property name.</param>
-    /// <returns>The property value, or null if not set.</returns>
-    public string GetPropertyValue(string name)
-    {
-        if (_properties.TryGetValue(name, out var value))
-        {
-            return value;
-        }
-        return null;
-    }
-
-    /// <summary>
-    /// Gets a style property priority.
-    /// </summary>
-    /// <param name="name">The property name.</param>
-    /// <returns>The property priority, or empty string if not set.</returns>
-    public string GetPropertyPriority(string name)
-    {
-        if (_priorities.TryGetValue(name, out var priority))
-        {
-            return priority;
-        }
-        return "";
-    }
-
-    /// <summary>
-    /// Removes a style property.
-    /// </summary>
-    /// <param name="name">The property name to remove.</param>
-    public void RemoveProperty(string name)
-    {
-        _properties.Remove(name);
-        _priorities.Remove(name);
-    }
-
-    /// <summary>
-    /// Gets a style property.
-    /// </summary>
-    /// <param name="name">The property name.</param>
-    /// <returns>The property, or null if not set.</returns>
-    public ICssProperty GetProperty(string name)
-    {
-        if (_properties.TryGetValue(name, out var value))
-        {
-            return new SimpleCssProperty
-            {
-                Name = name,
-                Value = value,
-                Priority = _priorities.GetValueOrDefault(name, "")
-            };
-        }
-        return null;
-    }
-
-    /// <summary>
-    /// Gets all properties.
-    /// </summary>
-    /// <returns>A collection of all properties.</returns>
-    public IEnumerable<ICssProperty> GetAllProperties()
-    {
-        return _properties.Select(p => new SimpleCssProperty
-        {
-            Name = p.Key,
-            Value = p.Value,
-            Priority = _priorities.GetValueOrDefault(p.Key, "")
-        });
-    }
-
-    /// <summary>
-    /// Gets an enumerator over all properties.
-    /// </summary>
-    /// <returns>An enumerator over all properties.</returns>
-    public IEnumerator<ICssProperty> GetEnumerator()
-    {
-        return GetAllProperties().GetEnumerator();
-    }
-
-    /// <summary>
-    /// Gets an enumerator over all properties.
-    /// </summary>
-    /// <returns>An enumerator over all properties.</returns>
-    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
-    }
-
-    /// <summary>
-    /// Gets the number of properties.
-    /// </summary>
-    public int Length => _properties.Count;
-
-    /// <summary>
-    /// Gets a property by index.
-    /// </summary>
-    /// <param name="index">The index of the property.</param>
-    /// <returns>The property at the specified index.</returns>
-    public ICssProperty this[int index] => GetAllProperties().ElementAtOrDefault(index);
-
-    /// <summary>
-    /// Creates a clone of this style declaration.
-    /// </summary>
-    /// <returns>A clone of this style declaration.</returns>
-    public ICssStyleDeclaration Clone()
-    {
-        var clone = new SimpleStyleDeclaration();
-        foreach (var property in _properties)
-        {
-            clone.SetProperty(property.Key, property.Value, _priorities.GetValueOrDefault(property.Key, ""));
-        }
-        return clone;
-    }
-}
-
-/// <summary>
-/// A simple implementation of ICssProperty.
-/// </summary>
-public class SimpleCssProperty : ICssProperty
-{
-    /// <summary>
-    /// Gets or sets the property name.
-    /// </summary>
-    public string Name { get; set; }
-
-    /// <summary>
-    /// Gets or sets the property value.
-    /// </summary>
-    public string Value { get; set; }
-
-    /// <summary>
-    /// Gets or sets the property priority.
-    /// </summary>
-    public string Priority { get; set; }
-
-    /// <summary>
-    /// Gets the raw property value.
-    /// </summary>
-    public object RawValue => Value;
 }

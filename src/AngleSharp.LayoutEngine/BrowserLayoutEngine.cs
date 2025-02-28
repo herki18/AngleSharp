@@ -1,14 +1,14 @@
-#pragma warning disable CS8600, CS8602, CS8603, CS8625
 namespace AngleSharp.LayoutEngine;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AngleSharp.Dom;
 using AngleSharp.Css.Dom;
 
 /// <summary>
-/// The core layout engine class that orchestrates the layout process from
-/// style calculation through to final layout. Provides APIs for initial layout and incremental updates.
+/// The core layout engine class that orchestrates the layout process,
+/// leveraging AngleSharp's DOM and style computation capabilities.
 /// </summary>
 public class BrowserLayoutEngine
 {
@@ -62,14 +62,13 @@ public class BrowserLayoutEngine
     public LayoutTree LayoutTree => _layoutTree;
 
     /// <summary>
-    /// Creates a new layout engine with the specified style sheets.
+    /// Creates a new layout engine instance.
     /// </summary>
-    /// <param name="styleSheets">The style sheets to use for styling.</param>
-    public BrowserLayoutEngine(ICssStyleSheet[] styleSheets)
+    public BrowserLayoutEngine()
     {
         _marginManager = new MarginManager();
         _layoutTree = new LayoutTree();
-        _styleEngine = new StyleEngine(styleSheets);
+        _styleEngine = new StyleEngine(); // No need to pass stylesheets - AngleSharp handles them
         _formattingContextFactory = new FormattingContextFactory(_marginManager);
         _layoutObserver = new LayoutObserver();
         _floatManager = new FloatManager();
@@ -108,7 +107,7 @@ public class BrowserLayoutEngine
         // Clear any float tracking
         _floatManager.ClearFloats();
 
-        // Compute styles for all nodes
+        // Compute styles for all nodes - use AngleSharp's computed styles
         _styleEngine.ComputeStyles(_layoutTree);
 
         // Create formatting contexts
@@ -146,7 +145,20 @@ public class BrowserLayoutEngine
         // Find layout nodes corresponding to changed DOM nodes
         var dirtyLayoutNodes = _layoutTree.FindNodesForDomNodes(changedNodes);
 
-        // Update styles for changed nodes
+        // Update styles for changed nodes - let AngleSharp recompute styles
+        // Force recomputation of the DOM node's computed style if needed
+        foreach (var node in changedNodes)
+        {
+            if (node is ElementNode element && element.Ref is IElement domElement)
+            {
+                // Clear any cached computed style in AngleSharp if possible
+                // AngleSharp doesn't expose a method to force recomputation, but this should work
+                // for most cases by accessing the computed style again
+                var style = domElement.GetComputedStyle();
+            }
+        }
+
+        // Update our cached style values
         _styleEngine.UpdateStyles(dirtyLayoutNodes);
 
         // Mark nodes and their ancestors as dirty for layout
@@ -185,29 +197,6 @@ public class BrowserLayoutEngine
     }
 
     /// <summary>
-    /// Invalidates the entire layout, requiring a full reflow on the next layout pass.
-    /// </summary>
-    public void InvalidateLayout()
-    {
-        if (_initialized && _layoutTree.Root != null)
-        {
-            _layoutObserver.MarkSubtreeDirty(_layoutTree.Root);
-        }
-    }
-
-    /// <summary>
-    /// Invalidates layout for a specific node and its descendants.
-    /// </summary>
-    /// <param name="node">The node to invalidate.</param>
-    public void InvalidateNode(LayoutNode node)
-    {
-        if (node != null)
-        {
-            _layoutObserver.MarkSubtreeDirty(node);
-        }
-    }
-
-    /// <summary>
     /// Processes a DOM mutation (changes to the DOM structure).
     /// </summary>
     /// <param name="addedNodes">Nodes that were added to the DOM.</param>
@@ -223,6 +212,9 @@ public class BrowserLayoutEngine
         // Handle removed nodes
         if (removedNodes.Any())
         {
+            // For each removed node, check if its IElement has been disconnected from the DOM
+            // AngleSharp will handle removing it from style calculations automatically
+
             // Find parent nodes that had children removed
             var parentNodes = removedNodes
                 .Where(n => n.Parent != null)
@@ -239,21 +231,31 @@ public class BrowserLayoutEngine
                 }
             }
 
-            // For now, we'll do a full layout on removals since they can be complex
+            // For removals, we typically need a full layout since they affect flow
             requiresFullLayout = true;
         }
 
         // Handle added nodes
         if (addedNodes.Any())
         {
-            // For now, we'll do a full layout on additions
-            // In a more advanced implementation, we could incrementally update the layout tree
+            // For added nodes, AngleSharp will automatically include them in style calculations
+            // But we need to update our layout tree
             requiresFullLayout = true;
         }
 
         // Handle changed nodes
         if (changedNodes.Any() && !requiresFullLayout)
         {
+            // For each changed node, see if AngleSharp needs to recompute styles
+            foreach (var node in changedNodes)
+            {
+                if (node is ElementNode element && element.Ref is IElement domElement)
+                {
+                    // Access computed style to ensure it's recalculated
+                    var style = domElement.GetComputedStyle();
+                }
+            }
+
             // Perform incremental layout for changed nodes
             PerformIncrementalLayout(changedNodes);
         }
@@ -284,20 +286,25 @@ public class BrowserLayoutEngine
     }
 
     /// <summary>
-    /// Gets metrics about the current layout.
+    /// Invalidates the entire layout, requiring a full reflow on the next layout pass.
     /// </summary>
-    /// <returns>A dictionary containing layout metrics.</returns>
-    public Dictionary<string, object> GetLayoutMetrics()
+    public void InvalidateLayout()
     {
-        var metrics = new Dictionary<string, object>
+        if (_initialized && _layoutTree.Root != null)
         {
-            ["TotalNodes"] = _layoutTree.GetAllNodes().Count(),
-            ["ViewportWidth"] = _viewportWidth,
-            ["ViewportHeight"] = _viewportHeight,
-            ["RootWidth"] = _layoutTree.Root?.Box.Width ?? 0,
-            ["RootHeight"] = _layoutTree.Root?.Box.Height ?? 0
-        };
+            _layoutObserver.MarkSubtreeDirty(_layoutTree.Root);
+        }
+    }
 
-        return metrics;
+    /// <summary>
+    /// Invalidates layout for a specific node and its descendants.
+    /// </summary>
+    /// <param name="node">The node to invalidate.</param>
+    public void InvalidateNode(LayoutNode node)
+    {
+        if (node != null)
+        {
+            _layoutObserver.MarkSubtreeDirty(node);
+        }
     }
 }

@@ -1,3 +1,4 @@
+#pragma warning disable CS8618, CS9264
 #pragma warning disable CS8600, CS8602, CS8603, CS8625
 namespace AngleSharp.LayoutEngine;
 
@@ -81,7 +82,7 @@ public class AngleSharpLayoutProvider
         // Create or update the layout engine
         if (!_isInitialized || _layoutEngine == null)
         {
-            _layoutEngine = new LayoutEngine(GetStyleSheets(document));
+            _layoutEngine = new BrowserLayoutEngine(GetStyleSheets(document));
             _layoutEngine.Initialize(renderTree.Root, _viewportWidth, _viewportHeight);
             _isInitialized = true;
         }
