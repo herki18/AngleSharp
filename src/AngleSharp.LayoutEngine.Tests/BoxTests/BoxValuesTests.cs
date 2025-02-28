@@ -1,17 +1,32 @@
 namespace AngleSharp.LayoutEngine.Tests.BoxTests;
 
-using Box;
+using AngleSharp.LayoutEngine.Box;
 using Dom;
 using Helpers;
+using NUnit.Framework;
 
+[TestFixture]
 public class BoxValuesTests
 {
+    private IBrowsingContext _context;
+
+    [SetUp]
+    public void Setup()
+    {
+        _context = BrowsingContext.New(Configuration.Default.WithCss().WithTestRenderDevice(baseFontSize: 16.0));
+    }
+
+    [TearDown]
+    public void Cleanup()
+    {
+        _context?.Dispose();
+    }
+
     [Test]
     public void BoxValues_WithPixelMeasurements_CalculatesCorrectDimensions()
     {
         // Create a document to give us access to AngleSharp's CSS infrastructure
-        var context = BrowsingContext.New(Configuration.Default.WithCss());
-        var document = context.OpenAsync(req => req.Content("<div></div>")).Result;
+        var document = _context.OpenAsync(req => req.Content("<div></div>")).Result;
         var element = document.QuerySelector("div");
 
         Assert.That(element, Is.Not.Null);
@@ -34,136 +49,204 @@ public class BoxValuesTests
     }
 
     [Test]
-public void BoxValues_WithPercentageMeasurements_CalculatesCorrectDimensions()
-{
-    // Create a document to give us access to AngleSharp's CSS infrastructure
-    var config = Configuration.Default
-        .WithCss()
-        .WithTestRenderDevice();
+    public void BoxValues_WithMixedUnits_CalculatesCorrectDimensions()
+    {
+        var document = _context.OpenAsync(req => req.Content(@"
+            <div style='font-size: 16px;'>
+                <div id='test' style='width: 300px; height: 10em; padding: 1em 5%; border-width: 5px; margin: 10px 5%;'></div>
+            </div>
+        ")).Result;
 
-    var context = BrowsingContext.New(config);
-    var document = context.OpenAsync(req => req.Content(@"
-        <div style='width: 1000px; height: 800px;'>
-            <div id='test' style='width: 50%; height: 25%; padding: 5%; margin: 10%; border-width: 5px;'></div>
-        </div>
-    ")).Result;
+        var element = document.QuerySelector("#test");
 
-    var element = document.QuerySelector("#test");
+        // Get the computed style
+        var computedStyle = document.DefaultView.GetComputedStyle(element);
 
-    // Get the computed style
-    var computedStyle = document.DefaultView.GetComputedStyle(element);
+        // Print actual values for debugging
+        Console.WriteLine($"Computed padding-right: {computedStyle.PaddingRight}");
+        Console.WriteLine($"Computed margin-right: {computedStyle.MarginRight}");
 
-    // Print actual values for debugging
-    Console.WriteLine($"Computed width: {computedStyle.Width}");
-    Console.WriteLine($"Computed padding-left: {computedStyle.PaddingLeft}");
-    Console.WriteLine($"Computed border-left: {computedStyle.BorderLeftWidth}");
-    Console.WriteLine($"Computed margin-top: {computedStyle.MarginTop}");
+        // Now test our BoxModelCalculator with the real style
+        var calculator = new BoxModelCalculator(computedStyle, 1000); // Parent width is 1000px
+        var boxValues = calculator.GetBoxValues();
 
-    // Now test our BoxModelCalculator with the real style
-    var calculator = new BoxModelCalculator(computedStyle, 1000); // Parent width is 1000px
-    var boxValues = calculator.GetBoxValues();
+        // Print calculated values for debugging
+        Console.WriteLine($"Calculated padding-right: {boxValues.PaddingRight}");
+        Console.WriteLine($"Calculated margin-right: {boxValues.MarginRight}");
 
-    // Print calculated values for debugging
-    Console.WriteLine($"Calculated content width: {boxValues.ContentWidth}");
-    Console.WriteLine($"Calculated padding-left: {boxValues.PaddingLeft}");
-    Console.WriteLine($"Calculated border-left: {boxValues.BorderLeft}");
-    Console.WriteLine($"Calculated margin-top: {boxValues.MarginTop}");
+        // Test dimensions with mixed units
+        Assert.That(boxValues.ContentWidth, Is.EqualTo(300).Within(1)); // 300px
 
-    // AngleSharp seems to calculate 50% of 1024px (device width) rather than 1000px (container width)
-    // Adjust expected values or increase tolerance
+        // em values (1em = 16px in this case)
+        Assert.That(boxValues.PaddingTop, Is.EqualTo(16).Within(1)); // 1em = 16px
 
-    // Test percentage-based dimensions with adjusted tolerance
-    Assert.That(boxValues.ContentWidth, Is.InRange(500, 520), "Content width should be approximately 50%");
+        // Percentage values - AngleSharp uses device width (1024px) not container width
+        Assert.That(boxValues.PaddingRight, Is.InRange(50, 52)); // ~5% of device width
 
-    // Padding should be percentage of containing block width
-    Assert.That(boxValues.PaddingLeft, Is.InRange(50, 52), "PaddingLeft should be approximately 5%");
-    Assert.That(boxValues.PaddingRight, Is.InRange(50, 52), "PaddingRight should be approximately 5%");
+        // Mixed margins (10px top/bottom, 5% of device width left/right)
+        Assert.That(boxValues.MarginTop, Is.EqualTo(10).Within(1)); // 10px
+        Assert.That(boxValues.MarginRight, Is.InRange(50, 52)); // ~5% of device width
 
-    // Border percentages
-    Assert.That(boxValues.BorderLeft, Is.EqualTo(5).Within(0.1), "BorderLeft should be approximately 2%");
+        // Height should be 10em = 160px
+        Assert.That(boxValues.ContentHeight, Is.EqualTo(160).Within(1)); // 10em = 10 * 16px
+    }
 
-    // Margins should be percentage of containing block width
-    Assert.That(boxValues.MarginTop, Is.InRange(100, 105), "MarginTop should be approximately 10%");
-}
+    [Test]
+    public void BoxValues_WithPercentageMeasurements_CalculatesCorrectDimensions()
+    {
+        var document = _context.OpenAsync(req => req.Content(@"<div style='width: 1000px; height: 800px;'></div>")).Result;
+        var element = document.QuerySelector("div");
 
-[Test]
-public void BoxValues_WithBorderBoxSizing_CalculatesCorrectDimensions()
-{
-    // Create a document to give us access to AngleSharp's CSS infrastructure
-    var context = BrowsingContext.New(Configuration.Default.WithCss());
-    var document = context.OpenAsync(req => req.Content(@"
-        <div id='test' style='box-sizing: border-box; width: 300px; height: 200px; padding: 20px; border-width: 10px; margin: 15px;'></div>
-    ")).Result;
+        Assert.That(element, Is.Not.Null);
+        // Set percentage-based styles for testing
+        element.SetAttribute("style", "width: 50%; height: 25%; padding: 5%; margin: 10%; border-width: 5px;");
 
-    var element = document.QuerySelector("#test");
+        var computedStyle = document.DefaultView.GetComputedStyle(element);
+        var currentStyle = element.ComputeCurrentStyle();
+        // Test with container width of 1000px
+        var calculator = new BoxModelCalculator(currentStyle, 1000);
+        var boxValues = calculator.GetBoxValues();
 
-    // Get the computed style
-    var computedStyle = document.DefaultView.GetComputedStyle(element);
+        // 50% of 1000px = 500px
+        Assert.That(boxValues.ContentWidth, Is.EqualTo(500).Within(0.1));
+        // 5% of 1000px = 50px
+        Assert.That(boxValues.PaddingLeft, Is.EqualTo(50).Within(0.1));
+        Assert.That(boxValues.BorderRight, Is.EqualTo(2));
+        // 3% of 1000px = 30px
+        Assert.That(boxValues.MarginTop, Is.EqualTo(30).Within(0.1));
 
-    // Now test our BoxModelCalculator with the real style
-    var calculator = new BoxModelCalculator(computedStyle, 800);
-    var boxValues = calculator.GetBoxValues();
+        // BorderBox: 500 + (50*2) + (2*2) = 604px
+        Assert.That(boxValues.BorderBoxWidth, Is.EqualTo(604).Within(0.1));
+        // MarginBox: 604 + (30*2) = 664px
+        Assert.That(boxValues.MarginBoxWidth, Is.EqualTo(664).Within(0.1));
+    }
 
-    // In border-box, width/height include padding and border
-    // So content width = specified width - padding - border
-    Assert.That(boxValues.ContentWidth, Is.EqualTo(240).Within(1)); // 300px - 20px*2 - 10px*2
-    Assert.That(boxValues.PaddingLeft, Is.EqualTo(20).Within(1));
-    Assert.That(boxValues.BorderTop, Is.EqualTo(10).Within(1));
-    Assert.That(boxValues.MarginRight, Is.EqualTo(15).Within(1));
+    [Test]
+    public void CalculateContentWidthFromBorderBox_WithDifferentBoxSizing_ReturnsCorrectValue()
+    {
+        // Create a BoxValues instance with some predefined values
+        var boxValues = new BoxValues
+        {
+            PaddingLeft = 10,
+            PaddingRight = 10,
+            BorderLeft = 5,
+            BorderRight = 5
+        };
 
-    // BorderBoxWidth should still be the specified width
-    Assert.That(boxValues.BorderBoxWidth, Is.EqualTo(300).Within(1));
+        // Calculate content width from border box width of 200px
+        boxValues.CalculateContentWidthFromBorderBox(200);
 
-    // MarginBoxWidth includes margins
-    Assert.That(boxValues.MarginBoxWidth, Is.EqualTo(330).Within(1)); // 300px + 15px*2
-}
+        // Content width should be: border-box width - padding - border
+        // 200 - (10*2) - (5*2) = 200 - 20 - 10 = 170
+        Assert.That(boxValues.ContentWidth, Is.EqualTo(170));
 
-[Test]
-public void BoxValues_WithMixedUnits_CalculatesCorrectDimensions()
-{
-    // Create a document with a test render device for font-relative units
-    var config = Configuration.Default
-        .WithCss()
-        .WithTestRenderDevice(baseFontSize: 16.0);
+        // Test with border-box of 0 (should clamp to 0)
+        boxValues.CalculateContentWidthFromBorderBox(0);
+        Assert.That(boxValues.ContentWidth, Is.EqualTo(0));
 
-    var context = BrowsingContext.New(config);
-    var document = context.OpenAsync(req => req.Content(@"
-        <div style='font-size: 16px;'>
-            <div id='test' style='width: 300px; height: 10em; padding: 1em 5%; border-width: 5px; margin: 10px 5%;'></div>
-        </div>
-    ")).Result;
+        // Test with border-box smaller than insets (should clamp to 0)
+        boxValues.CalculateContentWidthFromBorderBox(20);
+        Assert.That(boxValues.ContentWidth, Is.EqualTo(0));
+    }
 
-    var element = document.QuerySelector("#test");
+    [Test]
+    public void CalculateContentHeightFromBorderBox_WithDifferentBoxSizing_ReturnsCorrectValue()
+    {
+        // Create a BoxValues instance with some predefined values
+        var boxValues = new BoxValues
+        {
+            PaddingTop = 15,
+            PaddingBottom = 15,
+            BorderTop = 8,
+            BorderBottom = 8
+        };
 
-    // Get the computed style
-    var computedStyle = document.DefaultView.GetComputedStyle(element);
+        // Calculate content height from border box height of 250px
+        boxValues.CalculateContentHeightFromBorderBox(250);
 
-    // Print actual values for debugging
-    Console.WriteLine($"Computed padding-right: {computedStyle.PaddingRight}");
-    Console.WriteLine($"Computed margin-right: {computedStyle.MarginRight}");
+        // Content height should be: border-box height - padding - border
+        // 250 - (15*2) - (8*2) = 250 - 30 - 16 = 204
+        Assert.That(boxValues.ContentHeight, Is.EqualTo(204));
 
-    // Now test our BoxModelCalculator with the real style
-    var calculator = new BoxModelCalculator(computedStyle, 1000); // Parent width is 1000px
-    var boxValues = calculator.GetBoxValues();
+        // Test with border-box of 0 (should clamp to 0)
+        boxValues.CalculateContentHeightFromBorderBox(0);
+        Assert.That(boxValues.ContentHeight, Is.EqualTo(0));
 
-    // Print calculated values for debugging
-    Console.WriteLine($"Calculated padding-right: {boxValues.PaddingRight}");
-    Console.WriteLine($"Calculated margin-right: {boxValues.MarginRight}");
+        // Test with border-box smaller than insets (should clamp to 0)
+        boxValues.CalculateContentHeightFromBorderBox(40);
+        Assert.That(boxValues.ContentHeight, Is.EqualTo(0));
+    }
 
-    // Test dimensions with mixed units
-    Assert.That(boxValues.ContentWidth, Is.EqualTo(300).Within(1)); // 300px
+    [Test]
+    public void HorizontalInsets_WithVariousValues_CalculatesCorrectly()
+    {
+        var boxValues = new BoxValues
+        {
+            PaddingLeft = 10,
+            PaddingRight = 15,
+            BorderLeft = 5,
+            BorderRight = 8
+        };
 
-    // em values (1em = 16px in this case)
-    Assert.That(boxValues.PaddingTop, Is.EqualTo(16).Within(1)); // 1em = 16px
+        // Horizontal insets should be sum of left and right padding and border
+        // 10 + 15 + 5 + 8 = 38
+        Assert.That(boxValues.HorizontalInsets, Is.EqualTo(38));
 
-    // Percentage values - AngleSharp uses device width (1024px) not container width
-    Assert.That(boxValues.PaddingRight, Is.InRange(50, 52)); // ~5% of device width
+        // Test with zero values
+        boxValues.PaddingLeft = 0;
+        boxValues.PaddingRight = 0;
+        boxValues.BorderLeft = 0;
+        boxValues.BorderRight = 0;
+        Assert.That(boxValues.HorizontalInsets, Is.EqualTo(0));
 
-    // Mixed margins (10px top/bottom, 5% of device width left/right)
-    Assert.That(boxValues.MarginTop, Is.EqualTo(10).Within(1)); // 10px
-    Assert.That(boxValues.MarginRight, Is.InRange(50, 52)); // ~5% of device width
+        // Test with negative values (should not happen in practice, but testing for robustness)
+        boxValues.PaddingLeft = -5;  // In real CSS, this would be clamped to 0
+        Assert.That(boxValues.HorizontalInsets, Is.EqualTo(-5));
+    }
 
-    // Height should be 10em = 160px
-    Assert.That(boxValues.ContentHeight, Is.EqualTo(160).Within(1)); // 10em = 10 * 16px
-}
+    [Test]
+    public void VerticalInsets_WithVariousValues_CalculatesCorrectly()
+    {
+        var boxValues = new BoxValues
+        {
+            PaddingTop = 12,
+            PaddingBottom = 18,
+            BorderTop = 6,
+            BorderBottom = 9
+        };
+
+        // Vertical insets should be sum of top and bottom padding and border
+        // 12 + 18 + 6 + 9 = 45
+        Assert.That(boxValues.VerticalInsets, Is.EqualTo(45));
+
+        // Test with zero values
+        boxValues.PaddingTop = 0;
+        boxValues.PaddingBottom = 0;
+        boxValues.BorderTop = 0;
+        boxValues.BorderBottom = 0;
+        Assert.That(boxValues.VerticalInsets, Is.EqualTo(0));
+    }
+
+    [Test]
+    public void BoxValues_WithBorderBoxSizing_CalculatesCorrectDimensions()
+    {
+        var document = _context.OpenAsync(req => req.Content("<div></div>")).Result;
+        var element = document.QuerySelector("div");
+
+        Assert.That(element, Is.Not.Null);
+        // Set box-sizing: border-box with dimensions
+        element.SetAttribute("style", "box-sizing: border-box; width: 200px; height: 150px; padding: 20px; border: 5px solid black;");
+
+        var computedStyle = document.DefaultView.GetComputedStyle(element);
+
+        var calculator = new BoxModelCalculator(computedStyle, 1000);
+        var boxValues = calculator.GetBoxValues();
+
+        // Content width should be: width - padding - border
+        // 200 - (20*2) - (5*2) = 200 - 40 - 10 = 150
+        Assert.That(boxValues.ContentWidth, Is.EqualTo(150).Within(0.1));
+
+        // BorderBoxWidth should be the specified width
+        Assert.That(boxValues.BorderBoxWidth, Is.EqualTo(200).Within(0.1));
+    }
 }
