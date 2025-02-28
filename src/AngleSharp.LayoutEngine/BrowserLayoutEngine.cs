@@ -1,3 +1,4 @@
+#pragma warning disable CS8603 // Possible null reference return.
 namespace AngleSharp.LayoutEngine;
 
 using System;

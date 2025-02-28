@@ -1,3 +1,4 @@
+#pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8618, CS9264
 #pragma warning disable CS8600, CS8602, CS8603, CS8625
 namespace AngleSharp.LayoutEngine;
@@ -82,7 +83,7 @@ public class AngleSharpLayoutProvider
         // Create or update the layout engine
         if (!_isInitialized || _layoutEngine == null)
         {
-            _layoutEngine = new BrowserLayoutEngine(GetStyleSheets(document));
+            _layoutEngine = new BrowserLayoutEngine();
             _layoutEngine.Initialize(renderTree.Root, _viewportWidth, _viewportHeight);
             _isInitialized = true;
         }
@@ -126,7 +127,7 @@ public class AngleSharpLayoutProvider
         if (!_isInitialized || _layoutEngine == null)
         {
             // If not initialized, do full layout on the element's document
-            return PerformLayout(element.Owner);
+            return PerformLayout(element.OwnerDocument);
         }
 
         // Find the corresponding render node
@@ -134,7 +135,7 @@ public class AngleSharpLayoutProvider
         if (renderNode == null)
         {
             // If node not found, refresh render tree and do full layout
-            var renderTree = _renderTreeBuilder.BuildRenderTree(element.Owner);
+            var renderTree = _renderTreeBuilder.BuildRenderTree(element.OwnerDocument);
             _layoutEngine.ProcessDomMutation(new[] { renderTree.Root }, Array.Empty<IRenderNode>(), Array.Empty<IRenderNode>());
         }
         else
