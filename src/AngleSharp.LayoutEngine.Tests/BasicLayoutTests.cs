@@ -29,6 +29,8 @@ namespace AngleSharp.LayoutEngine.Tests
             // Act
             await LoadHtmlAsync(html);
 
+            LayoutTreePrinter.PrintToConsole(LayoutResult.LayoutTree);
+
             // Assert
             AssertLayout(".box1", 0, 0, 100, 100);
             AssertLayout(".box2", 0, 100, 150, 80);
