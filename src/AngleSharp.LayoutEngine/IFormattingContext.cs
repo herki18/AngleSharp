@@ -48,6 +48,12 @@ public interface IFormattingContext
     /// </summary>
     /// <returns>An enumerable collection of formatting contexts.</returns>
     IEnumerable<IFormattingContext> GetChildFormattingContexts();
+
+    /// <summary>
+    /// Adds a child formatting context to this formatting context.
+    /// </summary>
+    /// <param name="childContext">The child formatting context to add.</param>
+    void AddChildContext(IFormattingContext childContext);
 }
 
 /// <summary>
