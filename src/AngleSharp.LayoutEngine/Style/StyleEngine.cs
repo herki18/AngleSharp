@@ -3,9 +3,11 @@
 namespace AngleSharp.LayoutEngine.Style;
 
 using System.Collections.Generic;
+using System.Linq;
 using AngleSharp.LayoutEngine.Core;
 using AngleSharp.LayoutEngine.DOM;
 using AngleSharp.LayoutEngine.FormattingContexts.Enums;
+using Dom;
 using TextNode = DOM.TextNode;
 
 /// <summary>
@@ -47,16 +49,62 @@ public class StyleEngine
     /// <param name="dirtyNodes">The nodes whose styles need to be recomputed.</param>
     public void UpdateStyles(IEnumerable<LayoutNode> dirtyNodes)
     {
+        if (dirtyNodes == null || !dirtyNodes.Any())
+            return;
+
+        // Remove existing styles from cache for dirty nodes and their descendants
         foreach (var node in dirtyNodes)
         {
-            // Remove existing cached style for this node and its descendants
             RemoveStylesRecursive(node);
+        }
 
-            // Recompute styles for this node and its descendants
+        // For each dirty node, recompute styles
+        foreach (var node in dirtyNodes)
+        {
+            // This part seems to be failing - the styles aren't being recomputed properly
+            // Let's force a refresh of the computed style from the DOM
+            var element = node.DomNode as ElementNode;
+            if (element?.Ref is IElement domElement && element.ComputedStyle != null)
+            {
+                // Force AngleSharp to re-evaluate the computed style if possible
+                var refreshedStyle = domElement.OwnerDocument!.DefaultView?.GetComputedStyle(domElement);
+
+                // Now explicitly update the node's layout properties from the refreshed style
+                // Don't rely on cached values as they might be stale
+                if (refreshedStyle != null)
+                {
+                    // Explicitly update the width property
+                    string widthValue = refreshedStyle.GetPropertyValue("width");
+                    if (!string.IsNullOrEmpty(widthValue) && widthValue != "auto")
+                    {
+                        if (widthValue.EndsWith("px") && float.TryParse(widthValue.TrimEnd('p', 'x'), out float pixels))
+                        {
+                            node.Width = StyleValue.FromPixels(pixels);
+                        }
+                        else if (widthValue.EndsWith("%") && float.TryParse(widthValue.TrimEnd('%'), out float percentage))
+                        {
+                            node.Width = StyleValue.FromPercentage(percentage);
+                        }
+                    }
+
+                    // Similar updates for other important properties
+                    string heightValue = refreshedStyle.GetPropertyValue("height");
+                    if (!string.IsNullOrEmpty(heightValue) && heightValue != "auto")
+                    {
+                        if (heightValue.EndsWith("px") && float.TryParse(heightValue.TrimEnd('p', 'x'), out float pixels))
+                        {
+                            node.Height = StyleValue.FromPixels(pixels);
+                        }
+                        else if (heightValue.EndsWith("%") && float.TryParse(heightValue.TrimEnd('%'), out float percentage))
+                        {
+                            node.Height = StyleValue.FromPercentage(percentage);
+                        }
+                    }
+                }
+            }
+
+            // Continue with the rest of the style computation
             ComputeStylesRecursive(node);
-
-            // Update layout properties for this node
-            ApplyLayoutPropertiesToNode(node);
         }
     }
 
@@ -71,6 +119,7 @@ public class StyleEngine
         {
             return style;
         }
+
         return null;
     }
 
