@@ -1,8 +1,6 @@
 #pragma warning disable CS8604 // Possible null reference argument.
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-#pragma warning disable CS8603 // Possible null reference return.
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+#pragma warning disable CS8600, CS8602, CS8603, CS8625
 namespace AngleSharp.LayoutEngine;
 
 using System;
@@ -66,6 +64,33 @@ public class RenderTreeBuilder
     }
 
     /// <summary>
+    /// Gets render nodes that have been added since the last render tree build.
+    /// </summary>
+    /// <returns>A collection of added render nodes.</returns>
+    public IEnumerable<IRenderNode> GetAddedNodes()
+    {
+        return _addedNodes;
+    }
+
+    /// <summary>
+    /// Gets render nodes that have been removed since the last render tree build.
+    /// </summary>
+    /// <returns>A collection of removed render nodes.</returns>
+    public IEnumerable<IRenderNode> GetRemovedNodes()
+    {
+        return _removedNodes;
+    }
+
+    /// <summary>
+    /// Gets render nodes that have changed since the last render tree build.
+    /// </summary>
+    /// <returns>A collection of changed render nodes.</returns>
+    public IEnumerable<IRenderNode> GetChangedNodes()
+    {
+        return _changedNodes;
+    }
+
+    /// <summary>
     /// Builds a render node for the specified DOM node.
     /// </summary>
     /// <param name="node">The DOM node to build a render node for.</param>
@@ -86,9 +111,17 @@ public class RenderTreeBuilder
         {
             // Get computed style - AngleSharp requires window and element
             ICssStyleDeclaration computedStyle = null;
+            ICssStyleDeclaration specifiedStyle = null;
+
             if (element.OwnerDocument?.DefaultView != null)
             {
                 computedStyle = element.OwnerDocument.DefaultView.GetComputedStyle(element, null);
+
+                // Get inline style directly from the element using AngleSharp's APIs
+                if (element is IHtmlElement htmlElement)
+                {
+                    specifiedStyle = (ICssStyleDeclaration?)htmlElement.Style;
+                }
             }
 
             // Create child render nodes
@@ -99,63 +132,55 @@ public class RenderTreeBuilder
                 if (childRenderNode != null)
                 {
                     children.Add(childRenderNode);
-                    // Set parent relationship after creation to avoid reference issue
-                    if (childRenderNode is ElementNode childElement)
-                    {
-                        childElement.Parent = null; // Will be set later
-                    }
-                    else if (childRenderNode is TextNode childText)
-                    {
-                        childText.Parent = null; // Will be set later
-                    }
-                    else if (childRenderNode is NonRenderableNode childNonRenderable)
-                    {
-                        childNonRenderable.Parent = null; // Will be set later
-                    }
                 }
-            }
-
-            // Get inline style from element - AngleSharp uses GetAttribute for inline styles
-            ICssStyleDeclaration specifiedStyle = null;
-            string inlineStyle = element.GetAttribute("style");
-            if (!string.IsNullOrEmpty(inlineStyle))
-            {
-                // In a real implementation, we'd parse the inline style here
-                // For simplicity, we'll use a dummy implementation
-                specifiedStyle = new DummyStyleDeclaration(inlineStyle);
             }
 
             // Create element render node
             renderNode = new ElementNode(element, children, specifiedStyle, computedStyle);
+
+            // Set parent relationship for children
+            foreach (var child in children)
+            {
+                if (child is ElementNode childElement)
+                {
+                    childElement.Parent = renderNode;
+                }
+                else if (child is TextNode childText)
+                {
+                    childText.Parent = renderNode;
+                }
+                else if (child is NonRenderableNode childNonRenderable)
+                {
+                    childNonRenderable.Parent = renderNode;
+                }
+            }
         }
         else if (node is IText text && !string.IsNullOrWhiteSpace(text.TextContent))
         {
             // Create text render node
             renderNode = new TextNode(text);
         }
-        else if (node is IComment || node is IDocumentType)
-        {
-            // Non-renderable nodes
-            renderNode = new NonRenderableNode(node, Array.Empty<IRenderNode>());
-        }
         else
         {
-            // Unknown or non-renderable node type
-            return null;
+            // Create non-renderable node for comments, document types, etc.
+            renderNode = new NonRenderableNode(node, Array.Empty<IRenderNode>());
         }
 
         // Set parent relationship
-        if (renderNode is ElementNode elementNode)
+        if (parent != null)
         {
-            elementNode.Parent = parent;
-        }
-        else if (renderNode is TextNode textNode)
-        {
-            textNode.Parent = parent;
-        }
-        else if (renderNode is NonRenderableNode nonRenderableNode)
-        {
-            nonRenderableNode.Parent = parent;
+            if (renderNode is ElementNode elementNode)
+            {
+                elementNode.Parent = parent;
+            }
+            else if (renderNode is TextNode textNode)
+            {
+                textNode.Parent = parent;
+            }
+            else if (renderNode is NonRenderableNode nonRenderableNode)
+            {
+                nonRenderableNode.Parent = parent;
+            }
         }
 
         // Store in node map
@@ -172,26 +197,6 @@ public class RenderTreeBuilder
             else if (HasNodeChanged(previousRenderNode, renderNode))
             {
                 _changedNodes.Add(renderNode);
-            }
-        }
-
-        // Update parent references for children
-        if (renderNode is ElementNode elemNode)
-        {
-            foreach (var child in elemNode.Children)
-            {
-                if (child is ElementNode childElement)
-                {
-                    childElement.Parent = renderNode;
-                }
-                else if (child is TextNode childText)
-                {
-                    childText.Parent = renderNode;
-                }
-                else if (child is NonRenderableNode childNonRenderable)
-                {
-                    childNonRenderable.Parent = renderNode;
-                }
             }
         }
 
@@ -242,76 +247,73 @@ public class RenderTreeBuilder
         if (oldNode.GetType() != newNode.GetType())
             return true;
 
-        // For elements, compare computed styles
+        // For elements, compare styles and attributes
         if (oldNode is ElementNode oldElement && newNode is ElementNode newElement)
         {
-            // Compare by checking key layout properties
-            // AngleSharp doesn't provide a good way to compare full computed styles at once
+            // Compare by checking key attributes
+            if (oldElement.Id != newElement.Id ||
+                oldElement.Ref.ClassName != newElement.Ref.ClassName)
+                return true;
+
+            // Compare computed styles
             var oldComputed = oldElement.ComputedStyle;
             var newComputed = newElement.ComputedStyle;
 
-            if ((oldComputed == null && newComputed != null) ||
-                (oldComputed != null && newComputed == null))
+            if ((oldComputed == null) != (newComputed == null))
                 return true; // One is null, one isn't
 
             if (oldComputed != null && newComputed != null)
             {
                 // Check key layout-affecting properties
                 string[] keyProperties = {
-                    "display", "position", "float", "width", "height",
+                    // Display and positioning
+                    "display", "position", "float", "z-index",
+
+                    // Box model
+                    "width", "height", "min-width", "min-height", "max-width", "max-height",
                     "margin-top", "margin-right", "margin-bottom", "margin-left",
                     "padding-top", "padding-right", "padding-bottom", "padding-left",
-                    "border-top-width", "border-right-width", "border-bottom-width", "border-left-width"
+                    "border-top-width", "border-right-width", "border-bottom-width", "border-left-width",
+                    "box-sizing",
+
+                    // Flexbox
+                    "flex", "flex-direction", "flex-wrap", "flex-flow",
+                    "justify-content", "align-items", "align-content",
+                    "order", "flex-grow", "flex-shrink", "flex-basis", "align-self",
+
+                    // Others
+                    "overflow", "visibility", "top", "right", "bottom", "left"
                 };
 
                 foreach (var prop in keyProperties)
                 {
-                    if (oldComputed.GetPropertyValue(prop) != newComputed.GetPropertyValue(prop))
+                    string oldValue = oldComputed.GetPropertyValue(prop);
+                    string newValue = newComputed.GetPropertyValue(prop);
+
+                    if (oldValue != newValue)
                         return true;
                 }
             }
 
-            // Check if attributes that affect layout have changed
-            // Class and ID changes could affect styles
-            if (oldElement.Ref.ClassName != newElement.Ref.ClassName ||
-                oldElement.Id != newElement.Id)
-                return true;
-        }
+            // Check other element attributes that could affect layout
+            string[] layoutAttrs = { "width", "height", "align", "valign", "colspan", "rowspan" };
 
+            foreach (var attr in layoutAttrs)
+            {
+                var oldValue = oldElement.Ref.GetAttribute(attr);
+                var newValue = newElement.Ref.GetAttribute(attr);
+
+                if (oldValue != newValue)
+                    return true;
+            }
+        }
         // For text nodes, check content
-        if (oldNode is TextNode oldText && newNode is TextNode newText)
+        else if (oldNode is TextNode oldText && newNode is TextNode newText)
         {
             return oldText.Ref.TextContent != newText.Ref.TextContent;
         }
 
         // No changes detected
         return false;
-    }
-
-    /// <summary>
-    /// Gets render nodes that have been added since the last render tree build.
-    /// </summary>
-    /// <returns>A collection of added render nodes.</returns>
-    public IEnumerable<IRenderNode> GetAddedNodes()
-    {
-        return _addedNodes;
-    }
-
-    /// <summary>
-    /// Gets render nodes that have been removed since the last render tree build.
-    /// </summary>
-    /// <returns>A collection of removed render nodes.</returns>
-    public IEnumerable<IRenderNode> GetRemovedNodes()
-    {
-        return _removedNodes;
-    }
-
-    /// <summary>
-    /// Gets render nodes that have changed since the last render tree build.
-    /// </summary>
-    /// <returns>A collection of changed render nodes.</returns>
-    public IEnumerable<IRenderNode> GetChangedNodes()
-    {
-        return _changedNodes;
     }
 }

@@ -23,5 +23,10 @@
         /// References the contained render children.
         /// </summary>
         IEnumerable<IRenderNode> Children { get; }
+
+        /// <summary>
+        /// References the parent render node, if any.
+        /// </summary>
+        IRenderNode? Parent { get; set; }
     }
 }
