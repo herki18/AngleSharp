@@ -176,6 +176,16 @@ namespace AngleSharp.LayoutEngine.Tests
         }
 
         /// <summary>
+        /// Creates a document from HTML string input.
+        /// </summary>
+        /// <param name="html">The HTML content to parse.</param>
+        /// <returns>The created document.</returns>
+        protected IDocument CreateDocument(string html)
+        {
+            return Context.OpenAsync(req => req.Content(html)).Result;
+        }
+
+        /// <summary>
         /// Updates the layout after modifying the document.
         /// </summary>
         /// <param name="modifiedElement">The element that was modified.</param>

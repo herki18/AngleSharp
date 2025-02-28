@@ -283,9 +283,23 @@ public class BlockFormattingContext : FormattingContext
         // If there is a previous sibling, apply margin collapsing
         if (previousNode != null)
         {
-            // The effective collapsed margin should already be calculated by the margin manager
-            // We just need to apply it
-            float collapsedMargin = node.Box.EffectiveTopMargin;
+            // The effective collapsed margin should be the maximum of the previous element's bottom margin
+            // and this element's top margin, if margin collapsing is active
+            float collapsedMargin;
+
+            if (node.Box.HasTopMarginCollapsed || previousNode.Box.HasBottomMarginCollapsed)
+            {
+                // Use the effective margin value already calculated by the margin manager
+                collapsedMargin = Math.Max(
+                    previousNode.Box.HasBottomMarginCollapsed ? previousNode.Box.EffectiveBottomMargin : previousNode.Box.MarginBottom,
+                    node.Box.HasTopMarginCollapsed ? node.Box.EffectiveTopMargin : node.Box.MarginTop);
+            }
+            else
+            {
+                // If margin collapsing wasn't active, just use the prevNode's bottom margin
+                collapsedMargin = previousNode.Box.MarginBottom;
+            }
+
             y += collapsedMargin;
         }
 
