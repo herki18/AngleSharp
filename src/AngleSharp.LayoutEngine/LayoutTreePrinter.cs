@@ -5,6 +5,8 @@ using System.Collections.Generic;
 
 namespace AngleSharp.LayoutEngine
 {
+    using Core;
+
     /// <summary>
     /// Utility class to print the layout tree structure in a readable format.
     /// Provides multiple output formats for debugging and visualization.

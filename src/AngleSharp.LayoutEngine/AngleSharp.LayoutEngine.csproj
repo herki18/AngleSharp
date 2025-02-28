@@ -6,11 +6,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Models\" />
+      <ProjectReference Include="..\AngleSharp.Css\AngleSharp.Css.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\AngleSharp.Css\AngleSharp.Css.csproj" />
+      <Folder Include="Util\" />
     </ItemGroup>
 
 </Project>
