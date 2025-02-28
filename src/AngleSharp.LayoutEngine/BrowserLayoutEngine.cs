@@ -150,12 +150,10 @@ public class BrowserLayoutEngine
         // Force recomputation of the DOM node's computed style if needed
         foreach (var node in changedNodes)
         {
-            if (node is ElementNode element && element.Ref is IElement domElement)
+            if (node is ElementNode element && element.Ref is IElement domElement && domElement.OwnerDocument?.DefaultView != null)
             {
-                // Clear any cached computed style in AngleSharp if possible
-                // AngleSharp doesn't expose a method to force recomputation, but this should work
-                // for most cases by accessing the computed style again
-                var style = domElement.GetComputedStyle();
+                // Access computed style to encourage recomputation
+                var style = domElement.OwnerDocument.DefaultView.GetComputedStyle(domElement, null);
             }
         }
 
@@ -250,10 +248,10 @@ public class BrowserLayoutEngine
             // For each changed node, see if AngleSharp needs to recompute styles
             foreach (var node in changedNodes)
             {
-                if (node is ElementNode element && element.Ref is IElement domElement)
+                if (node is ElementNode element && element.Ref is IElement domElement && domElement.OwnerDocument?.DefaultView != null)
                 {
                     // Access computed style to ensure it's recalculated
-                    var style = domElement.GetComputedStyle();
+                    var style = domElement.OwnerDocument.DefaultView.GetComputedStyle(domElement, null);
                 }
             }
 
