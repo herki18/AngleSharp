@@ -166,7 +166,7 @@ public class InlineFormattingContext : FormattingContext
             if (participant.DomNode is TextNode textNode)
             {
                 // Create fragments from text content
-                CreateTextFragmentsFromTextNode(textNode, fragments, context);
+                CreateTextFragmentsFromTextNode(participant, fragments, context);
             }
             else if (participant.DomNode is ElementNode elementNode)
             {

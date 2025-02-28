@@ -304,10 +304,10 @@ public class BlockFormattingContext : FormattingContext
         currentY = node.Box.Y + node.Box.Height + node.Box.PaddingBottom + node.Box.BorderBottom;
 
         // For auto-height elements, we need to adjust the height based on children
-        if (float.IsNaN(element.ComputedStyle.GetProperty("height")?.RawValue as float? ?? float.NaN))
-        {
-            // Height would be determined by content
-        }
+        // if (float.IsNaN(element.ComputedStyle.GetProperty("height")?.RawValue as float? ?? float.NaN))
+        // {
+        //     // Height would be determined by content
+        // }
     }
 
     /// <summary>
