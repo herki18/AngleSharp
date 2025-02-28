@@ -1,3 +1,4 @@
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 #pragma warning disable CS8600, CS8602, CS8603, CS8625
 namespace AngleSharp.LayoutEngine;
 
