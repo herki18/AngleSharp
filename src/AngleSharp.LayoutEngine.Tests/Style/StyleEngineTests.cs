@@ -341,14 +341,31 @@ public class StyleEngineTests
         var target1WidthBefore = ((StyleLengthValue)target1Before.Width).Value;
         var target2WidthBefore = ((StyleLengthValue)target2Before.Width).Value;
 
+        Assert.That(target1WidthBefore, Is.EqualTo(100));
+        Assert.That(target2WidthBefore, Is.EqualTo(100));
+
         // Act - Change style of one node and update
+        // First, update the DOM element style
         var target1Element = _document.GetElementById("target1");
         Assert.That(target1Element, Is.Not.Null);
         target1Element.SetAttribute("style", "width: 200px;");
 
-        // Get the DOM node and update just target1
+        // Force recomputation of styles in AngleSharp
+        var computedStyle = _document.DefaultView.GetComputedStyle(target1Element);
+        Console.WriteLine($"Updated computed style width: {computedStyle.Width}");
+
+        // Get the render node for this element
         var renderNode = _renderTreeBuilder.FindRenderNode(target1Element);
-        var dirtyLayoutNodes = new List<LayoutNode> { _layoutTree.FindNodeForDomNode(renderNode) };
+        Assert.NotNull(renderNode, "Render node should not be null");
+
+        // Get layout node and create dirtyLayoutNodes list
+        var dirtyLayoutNode = _layoutTree.FindNodeForDomNode(renderNode);
+        Assert.NotNull(dirtyLayoutNode, "Layout node should not be null");
+
+        var dirtyLayoutNodes = new List<LayoutNode> { dirtyLayoutNode };
+
+        // Rebuild render tree to reflect DOM changes
+        renderTree = _renderTreeBuilder.BuildRenderTree(_document);
 
         // Update styles for changed nodes
         _styleEngine.UpdateStyles(dirtyLayoutNodes);
@@ -356,14 +373,24 @@ public class StyleEngineTests
         // Assert - Check that only the changed node was updated
         var target1After = _layoutTree.FindNodeById("target1");
         var target2After = _layoutTree.FindNodeById("target2");
-        var target1WidthAfter = ((StyleLengthValue)target1After.Width).Value;
+
+        // If width is not a StyleLengthValue, print its actual type
+        if (!(target1After.Width is StyleLengthValue))
+        {
+            Console.WriteLine($"target1After.Width is of type {target1After.Width.GetType().Name}");
+        }
+
+        var target1WidthAfter = target1After.Width is StyleLengthValue ? ((StyleLengthValue)target1After.Width).Value : 0;
         var target2WidthAfter = ((StyleLengthValue)target2After.Width).Value;
 
-        // Target1 width should have changed
-        Assert.That(target1WidthAfter, Is.EqualTo(200));
+        // Target1 width should have changed to 200px
+        Assert.That(target1WidthAfter, Is.EqualTo(200),
+            "Target1 width should have been updated to 200px");
 
         // Target2 width should remain the same
-        Assert.That(target2WidthAfter, Is.EqualTo(target2WidthBefore));
-        Assert.That(target2WidthAfter, Is.EqualTo(100));
+        Assert.That(target2WidthAfter, Is.EqualTo(target2WidthBefore),
+            "Target2 width should not have changed");
+        Assert.That(target2WidthAfter, Is.EqualTo(100),
+            "Target2 width should still be 100px");
     }
 }
