@@ -2,6 +2,7 @@
 #pragma warning disable CS8603 // Possible null reference return.
 namespace AngleSharp.LayoutEngine;
 
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -322,7 +323,7 @@ public class FormattingContextFactory
         }
         else if (display == "grid" || display == "inline-grid")
         {
-            context = new GridFormattingContext(node);
+            throw new NotImplementedException("Grid layout not yet implemented.");
         }
         else if (display.StartsWith("inline") && display != "inline-block")
         {
