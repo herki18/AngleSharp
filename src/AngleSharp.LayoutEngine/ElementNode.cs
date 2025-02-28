@@ -1,10 +1,10 @@
 ﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-namespace AngleSharp.Renderer
+namespace AngleSharp.LayoutEngine
 {
     using System;
     using System.Collections.Generic;
-    using Css.Dom;
-    using Dom;
+    using AngleSharp.Css.Dom;
+    using AngleSharp.Dom;
 
     public sealed class ElementNode : IRenderNode
     {
@@ -32,8 +32,6 @@ namespace AngleSharp.Renderer
         public ICssStyleDeclaration? ComputedStyle { get; }
 
         public LayoutBox? Layout { get; set; }
-
-        public IRenderElement? Wrapper { get; set; } // This is a Unity-specific field
     }
 
     public class NonRenderableNode : IRenderNode
