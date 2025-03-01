@@ -37,7 +37,7 @@ namespace AngleSharp.LayoutEngine.Style
         {
             // Try to get the property
             var property = _style.GetProperty(propertyName) as ICssProperty;
-            if (property == null || !string.IsNullOrEmpty(property.Value))
+            if (property == null || string.IsNullOrEmpty(property.Value))
                 return defaultValue;
 
             // Check if the raw value is a length
