@@ -36,7 +36,7 @@ namespace AngleSharp.LayoutEngine.Style
         public float ResolveLengthValue(string propertyName, float defaultValue = 0, RenderMode mode = RenderMode.Horizontal)
         {
             // Try to get the property
-            var property = _style.GetProperty(propertyName) as ICssProperty;
+            ICssProperty? property = _style.GetProperty(propertyName) as ICssProperty;
             if (property == null || string.IsNullOrEmpty(property.Value))
                 return defaultValue;
 
