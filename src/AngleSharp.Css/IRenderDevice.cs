@@ -67,5 +67,12 @@ namespace AngleSharp.Css
         /// Gets the category of the device.
         /// </summary>
         DeviceCategory Category { get; }
+
+        /// <summary>
+        /// Sets the viewport dimensions.
+        /// </summary>
+        /// <param name="width">The width of the viewport.</param>
+        /// <param name="height">The height of the viewport.</param>
+        void SetViewport(Int32 width, Int32 height);
     }
 }

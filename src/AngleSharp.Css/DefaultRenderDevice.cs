@@ -103,5 +103,12 @@ namespace AngleSharp.Css
             get;
             set;
         } = 16;
+
+        /// <inheritdoc />
+        public void SetViewport(int width, int height)
+        {
+            ViewPortWidth = width;
+            ViewPortHeight = height;
+        }
     }
 }

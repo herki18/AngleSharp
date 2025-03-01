@@ -18,12 +18,12 @@ public class LayoutContext
     /// <summary>
     /// Gets the width of the viewport in pixels.
     /// </summary>
-    public float ViewportWidth { get; }
+    public float ViewportWidth { get; set; }
 
     /// <summary>
     /// Gets the height of the viewport in pixels.
     /// </summary>
-    public float ViewportHeight { get; }
+    public float ViewportHeight { get; set; }
 
     /// <summary>
     /// Gets or sets the default font size for the document, typically used for 'rem' units.
