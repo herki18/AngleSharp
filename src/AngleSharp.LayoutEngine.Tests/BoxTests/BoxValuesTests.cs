@@ -1,8 +1,12 @@
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace AngleSharp.LayoutEngine.Tests.BoxTests;
 
+using Adapters;
 using AngleSharp.LayoutEngine.Box;
 using Dom;
 using Helpers;
+using LayoutEngine.Core;
+using LayoutEngine.Style;
 using NUnit.Framework;
 
 [TestFixture]
@@ -102,23 +106,30 @@ public class BoxValuesTests
         element.SetAttribute("style", "width: 50%; height: 25%; padding: 5%; margin: 10%; border-width: 5px;");
 
         var computedStyle = document.DefaultView.GetComputedStyle(element);
-        var currentStyle = element.ComputeCurrentStyle();
-        // Test with container width of 1000px
-        var calculator = new BoxModelCalculator(currentStyle, 1000);
+
+        // Test with direct style resolver to ensure consistent percentage calculations
+        var layoutContext = new LayoutContext(1000, 800); // Make this match the parent container dimensions
+        var adapter = new AngleSharpRenderDimensionsAdapter(layoutContext);
+        var styleResolver = new DirectStyleResolver(computedStyle, adapter);
+
+        var calculator = new BoxModelCalculator(computedStyle, styleResolver);
         var boxValues = calculator.GetBoxValues();
 
         // 50% of 1000px = 500px
         Assert.That(boxValues.ContentWidth, Is.EqualTo(500).Within(0.1));
+
         // 5% of 1000px = 50px
         Assert.That(boxValues.PaddingLeft, Is.EqualTo(50).Within(0.1));
-        Assert.That(boxValues.BorderRight, Is.EqualTo(2));
-        // 3% of 1000px = 30px
-        Assert.That(boxValues.MarginTop, Is.EqualTo(30).Within(0.1));
+        Assert.That(boxValues.BorderRight, Is.EqualTo(5));
 
-        // BorderBox: 500 + (50*2) + (2*2) = 604px
-        Assert.That(boxValues.BorderBoxWidth, Is.EqualTo(604).Within(0.1));
-        // MarginBox: 604 + (30*2) = 664px
-        Assert.That(boxValues.MarginBoxWidth, Is.EqualTo(664).Within(0.1));
+        // 10% of 1000px = 100px (corrected from 30px which was inconsistent)
+        Assert.That(boxValues.MarginTop, Is.EqualTo(100).Within(0.1));
+
+        // BorderBox: 500 + (50*2) + (5*2) = 610px
+        Assert.That(boxValues.BorderBoxWidth, Is.EqualTo(610).Within(0.1));
+
+        // MarginBox: 610 + (100*2) = 810px
+        Assert.That(boxValues.MarginBoxWidth, Is.EqualTo(810).Within(0.1));
     }
 
     [Test]
@@ -200,7 +211,7 @@ public class BoxValuesTests
         Assert.That(boxValues.HorizontalInsets, Is.EqualTo(0));
 
         // Test with negative values (should not happen in practice, but testing for robustness)
-        boxValues.PaddingLeft = -5;  // In real CSS, this would be clamped to 0
+        boxValues.PaddingLeft = -5; // In real CSS, this would be clamped to 0
         Assert.That(boxValues.HorizontalInsets, Is.EqualTo(-5));
     }
 
@@ -248,5 +259,145 @@ public class BoxValuesTests
 
         // BorderBoxWidth should be the specified width
         Assert.That(boxValues.BorderBoxWidth, Is.EqualTo(200).Within(0.1));
+    }
+
+    [Test]
+    public void BoxValues_WithLayoutContext_CalculatesCorrectDimensions()
+    {
+        // Create a document to give us access to AngleSharp's CSS infrastructure
+        var document = _context.OpenAsync(req => req.Content("<div></div>")).Result;
+        var element = document.QuerySelector("div");
+
+        Assert.That(element, Is.Not.Null);
+        element.SetAttribute("style", "width: 100px; padding: 10px; border-width: 5px; margin: 15px;");
+
+        // Get the computed style
+        var computedStyle = document.DefaultView.GetComputedStyle(element);
+
+        // Create a layout context with viewport dimensions
+        var layoutContext = new LayoutContext(800, 600);
+
+        // Create calculator with new constructor
+        var calculator = new BoxModelCalculator(computedStyle, layoutContext);
+        var boxValues = calculator.GetBoxValues();
+
+        // Should produce same results as original constructor
+        Assert.That(boxValues.ContentWidth, Is.EqualTo(100));
+        Assert.That(boxValues.PaddingLeft, Is.EqualTo(10));
+        Assert.That(boxValues.BorderRight, Is.EqualTo(5));
+        Assert.That(boxValues.MarginTop, Is.EqualTo(15));
+        Assert.That(boxValues.BorderBoxWidth, Is.EqualTo(130));
+        Assert.That(boxValues.MarginBoxWidth, Is.EqualTo(160));
+    }
+
+    [Test]
+    public void BoxValues_WithDirectStyleResolver_CalculatesCorrectDimensions()
+    {
+        // Create a document to give us access to AngleSharp's CSS infrastructure
+        var document = _context.OpenAsync(req => req.Content("<div></div>")).Result;
+        var element = document.QuerySelector("div");
+
+        Assert.That(element, Is.Not.Null);
+        element.SetAttribute("style", "width: 100px; padding: 10px; border-width: 5px; margin: 15px;");
+
+        // Get the computed style
+        var computedStyle = document.DefaultView.GetComputedStyle(element);
+
+        // Create components for direct resolution
+        var layoutContext = new LayoutContext(800, 600);
+        var adapter = new AngleSharpRenderDimensionsAdapter(layoutContext);
+        var styleResolver = new DirectStyleResolver(computedStyle, adapter);
+
+        // Create calculator with resolver constructor
+        var calculator = new BoxModelCalculator(computedStyle, styleResolver);
+        var boxValues = calculator.GetBoxValues();
+
+        // Should produce same results as original constructor
+        Assert.That(boxValues.ContentWidth, Is.EqualTo(100));
+        Assert.That(boxValues.PaddingLeft, Is.EqualTo(10));
+        Assert.That(boxValues.BorderRight, Is.EqualTo(5));
+        Assert.That(boxValues.MarginTop, Is.EqualTo(15));
+        Assert.That(boxValues.BorderBoxWidth, Is.EqualTo(130));
+        Assert.That(boxValues.MarginBoxWidth, Is.EqualTo(160));
+    }
+
+    [Test]
+    public void BoxValues_WithViewportRelativeUnits_CalculatesCorrectly()
+    {
+        var document = _context.OpenAsync(req => req.Content("<div></div>")).Result;
+        var element = document.QuerySelector("div");
+
+        Assert.That(element, Is.Not.Null);
+        element.SetAttribute("style", "width: 50vw; height: 25vh; padding: 5vmin; margin: 2vmax;");
+
+        var computedStyle = document.DefaultView.GetComputedStyle(element);
+
+        // Use our enhanced calculation with viewport dimensions
+        var layoutContext = new LayoutContext(1000, 800);
+        var adapter = new AngleSharpRenderDimensionsAdapter(layoutContext);
+        var styleResolver = new DirectStyleResolver(computedStyle, adapter);
+
+        var calculator = new BoxModelCalculator(computedStyle, styleResolver);
+        var boxValues = calculator.GetBoxValues();
+
+        // 50% of viewport width (1000px) = 500px
+        Assert.That(boxValues.ContentWidth, Is.EqualTo(500).Within(0.1));
+
+        // 25% of viewport height (800px) = 200px
+        Assert.That(boxValues.ContentHeight, Is.EqualTo(200).Within(0.1));
+
+        // 5% of min(1000, 800) = 5% of 800 = 40px
+        Assert.That(boxValues.PaddingTop, Is.EqualTo(40).Within(0.1));
+
+        // 2% of max(1000, 800) = 2% of 1000 = 20px
+        Assert.That(boxValues.MarginTop, Is.EqualTo(20).Within(0.1));
+    }
+
+    [Test]
+    public void BoxValues_WithFontRelativeUnits_CalculatesCorrectly()
+    {
+        var document = _context.OpenAsync(req => req.Content(@"
+        <div style='font-size: 20px;'>
+            <div id='test' style='width: 10em; height: 5rem; padding: 0.5em; margin: 1rem;'></div>
+        </div>
+    ")).Result;
+
+        var element = document.QuerySelector("#test");
+        Assert.That(element, Is.Not.Null);
+
+        var computedStyle = document.DefaultView.GetComputedStyle(element);
+
+        // Create a layout context with font information
+        var layoutContext = new LayoutContext(1000, 800)
+        {
+            DefaultFontSize = 16 // Root font size is 16px
+        };
+
+        // Create a custom adapter to provide parent font size
+        var parentElement = document.QuerySelector("div");
+        var parentStyle = document.DefaultView.GetComputedStyle(parentElement);
+
+        // Create node structure to test em units correctly
+        var parentNode = new LayoutNode(null);
+        var testNode = new LayoutNode(null) { Parent = parentNode };
+
+        var baseAdapter = new AngleSharpRenderDimensionsAdapter(layoutContext);
+        var elementAdapter = AngleSharpRenderDimensionsAdapter.CreateForNode(testNode, baseAdapter);
+        var styleResolver = new DirectStyleResolver(computedStyle, elementAdapter);
+
+        var calculator = new BoxModelCalculator(computedStyle, styleResolver);
+        var boxValues = calculator.GetBoxValues();
+
+        // 10em * 20px = 200px (em is relative to parent font size)
+        Assert.That(boxValues.ContentWidth, Is.EqualTo(200).Within(0.1));
+
+        // 5rem * 16px = 80px (rem is relative to root font size)
+        Assert.That(boxValues.ContentHeight, Is.EqualTo(80).Within(0.1));
+
+        // 0.5em * 20px = 10px
+        Assert.That(boxValues.PaddingTop, Is.EqualTo(10).Within(0.1));
+
+        // 1rem * 16px = 16px
+        Assert.That(boxValues.MarginTop, Is.EqualTo(16).Within(0.1));
     }
 }

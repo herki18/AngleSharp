@@ -121,7 +121,7 @@ namespace AngleSharp.LayoutEngine.Box
             if (isAuto)
             {
                 // Auto width fills the available space
-                float availableWidth = (float)(_styleResolver as AngleSharpRenderDimensionsAdapter)?.RenderWidth ?? 0;
+                float availableWidth = _styleResolver.GetContainerWidth();
 
                 return isBorderBox
                     ? Math.Max(0, availableWidth - horizontalInsets)

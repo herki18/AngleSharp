@@ -120,6 +120,12 @@ public class TestRenderDevice : IRenderDevice
     /// </summary>
     public DeviceCategory Category => DeviceCategory.Screen;
 
+    public void SetViewport(int width, int height)
+    {
+        _deviceWidth = width;
+        _deviceHeight = height;
+    }
+
     /// <summary>
     /// Gets a value determining the number of colors.
     /// </summary>

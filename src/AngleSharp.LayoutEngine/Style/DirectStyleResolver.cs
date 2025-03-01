@@ -106,5 +106,23 @@ namespace AngleSharp.LayoutEngine.Style
                 ResolveLengthValue(leftProperty)
             );
         }
+
+        /// <summary>
+        /// Gets the container width for percentage calculations.
+        /// </summary>
+        /// <returns>The width of the container.</returns>
+        public float GetContainerWidth()
+        {
+            return (float)_dimensions.RenderWidth;
+        }
+
+        /// <summary>
+        /// Gets the container height for percentage calculations.
+        /// </summary>
+        /// <returns>The height of the container.</returns>
+        public float GetContainerHeight()
+        {
+            return (float)_dimensions.RenderHeight;
+        }
     }
 }
