@@ -3,7 +3,6 @@ namespace AngleSharp.Dom
     using AngleSharp.Attributes;
     using System;
     using System.Diagnostics.CodeAnalysis;
-    using ViewSync;
 
     /// <summary>
     /// A Node is an interface from which a number of DOM types inherit, and
@@ -21,7 +20,7 @@ namespace AngleSharp.Dom
         /// <summary>
         /// Gets the base url.
         /// </summary>
-        Url? BaseUrl { get; }
+        IUrl? BaseUrl { get; }
 
         /// <summary>
         /// Gets a string containing the name of the Node. The structure of the

@@ -94,7 +94,7 @@ namespace AngleSharp.Html.Dom
         /// Creates the document request from the form submitting itself.
         /// </summary>
         /// <returns>The resulting document (e.g., HTTP) request.</returns>
-        DocumentRequest? GetSubmission();
+        IDocumentRequest? GetSubmission();
 
         /// <summary>
         /// Creates the document request from the form by submitting by
@@ -102,7 +102,7 @@ namespace AngleSharp.Html.Dom
         /// </summary>
         /// <param name="sourceElement">The form's submitter.</param>
         /// <returns>The resulting document (e.g., HTTP) request.</returns>
-        DocumentRequest? GetSubmission(IHtmlElement sourceElement);
+        IDocumentRequest? GetSubmission(IHtmlElement sourceElement);
 
         /// <summary>
         /// Resets the form to the previous (default) state.

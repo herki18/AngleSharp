@@ -192,7 +192,7 @@ namespace AngleSharp.Dom
         /// </param>
         /// <returns>The event.</returns>
         [DomName("createEvent")]
-        Event CreateEvent(String type);
+        IEvent CreateEvent(String type);
 
         /// <summary>
         /// Creates a new Range object.

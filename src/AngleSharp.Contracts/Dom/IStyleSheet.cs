@@ -64,7 +64,7 @@ namespace AngleSharp.Dom
         /// <summary>
         /// Gets the underlying source.
         /// </summary>
-        TextSource Source { get; }
+        ITextSource Source { get; }
 
         /// <summary>
         /// Sets the owner of the sheet.

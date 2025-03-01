@@ -12,7 +12,7 @@ namespace AngleSharp.Io
         /// <summary>
         /// Gets the target of the download.
         /// </summary>
-        Url Target { get; }
+        IUrl Target { get; }
 
         /// <summary>
         /// Gets the originator of the download, if any.

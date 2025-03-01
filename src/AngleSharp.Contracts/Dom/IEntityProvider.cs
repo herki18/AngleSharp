@@ -28,6 +28,6 @@ namespace AngleSharp.Dom
         /// </summary>
         /// <param name="name">The name of the entity in the markup presented as string or memory reference.</param>
         /// <returns>The string with the symbol or null.</returns>
-        String? GetSymbol(StringOrMemory name);
+        String? GetSymbol(IStringOrMemory name);
     }
 }

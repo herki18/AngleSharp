@@ -19,7 +19,7 @@ namespace AngleSharp.Io
         /// <summary>
         /// Gets the url of the response.
         /// </summary>
-        Url Address { get; }
+        IUrl Address { get; }
 
         /// <summary>
         /// Gets the headers that have been send with the response.

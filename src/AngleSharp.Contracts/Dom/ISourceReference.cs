@@ -10,6 +10,6 @@ namespace AngleSharp.Dom
         /// <summary>
         /// Gets the position in the original source code.
         /// </summary>
-        TextPosition Position { get; }
+        ITextPosition Position { get; }
     }
 }

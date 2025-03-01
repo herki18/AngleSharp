@@ -54,7 +54,7 @@ namespace AngleSharp.Dom
         /// Calls the listener registered for the given event.
         /// </summary>
         /// <param name="ev">The event that asks for the listeners.</param>
-        void InvokeEventListener(Event ev);
+        void InvokeEventListener(IEvent ev);
 
         /// <summary>
         /// Dispatch an event to this EventTarget.
@@ -65,7 +65,7 @@ namespace AngleSharp.Dom
         /// event called preventDefault(). Otherwise true.
         /// </returns>
         [DomName("dispatchEvent")]
-        Boolean Dispatch(Event ev);
+        Boolean Dispatch(IEvent ev);
 
         /// <summary>
         /// An event triggered when an event is synced (added) for synchronization purposes.

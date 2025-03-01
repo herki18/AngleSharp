@@ -73,7 +73,7 @@ public interface IReadOnlyTextSource : IDisposable
     /// </summary>
     /// <param name="characters">The number of characters to read.</param>
     /// <returns>The structure which is either materialized string or a reference to Memory of Char</returns>
-    StringOrMemory ReadMemory(Int32 characters);
+    IStringOrMemory ReadMemory(Int32 characters);
 
     /// <summary>
     /// Prefetches the number of bytes by expanding the internal buffer.
