@@ -396,12 +396,12 @@ namespace AngleSharp.Dom.Events
 
         struct EventPathItem
         {
-            public EventTarget InvocationTarget;
+            public IEventTarget InvocationTarget;
             public Boolean IsInvocationTargetInShadowTree;
             public Boolean IsRootOfClosedTree;
             public Boolean IsSlotInClosedTree;
-            public EventTarget? ShadowAdjustedTarget;
-            public EventTarget? RelatedTarget;
+            public IEventTarget? ShadowAdjustedTarget;
+            public IEventTarget? RelatedTarget;
         }
     }
 }

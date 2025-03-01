@@ -611,7 +611,7 @@ namespace AngleSharp.Dom
         /// <summary>
         /// Gets the underlying source.
         /// </summary>
-        TextSource Source { get; }
+        ITextSource Source { get; }
 
         /// <summary>
         /// Gets the status code of the server's response, if any.
