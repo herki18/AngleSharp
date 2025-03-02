@@ -3,9 +3,6 @@ namespace AngleSharp.Css.Dom;
 using System;
 using System.Collections.Generic;
 
-/// <summary>
-///     Represents a CSS medium.
-/// </summary>
 public interface ICssMedium : IStyleFormattable
 {
     /// <summary>
