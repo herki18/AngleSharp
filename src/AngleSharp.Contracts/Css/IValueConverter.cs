@@ -3,9 +3,6 @@ namespace AngleSharp.Css;
 using Dom;
 using Text;
 
-/// <summary>
-///     Represents a converter for value strings.
-/// </summary>
 public interface IValueConverter
 {
     /// <summary>
