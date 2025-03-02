@@ -9,6 +9,13 @@ using Dom;
 
 public class StyleComputationEngine
 {
+    private StyleSheetManager _stylesheetManager;
+
+    public StyleComputationEngine(IBrowsingContext? context = null, IDocument? document = null)
+    {
+        _stylesheetManager = new StyleSheetManager(context, document);
+    }
+
     public ICssStyleDeclaration ComputeElementStyle(IElement element,
         ICssStyleDeclaration? parentStyle = null,
         string? pseudoElement = null)
@@ -18,6 +25,9 @@ public class StyleComputationEngine
         var window = element.OwnerDocument?.DefaultView;
         if (window is null)
             throw new InvalidOperationException("Element must be part of a document with a default view");
+
+        // 1. Get all stylesheets in the correct cascade order
+        var stylesheets = _stylesheetManager.GetStylesheets();
 
         // Get the style collection from the window
         var styles = window.GetStyleCollection();
@@ -90,10 +100,7 @@ public class StyleSheetManager
 
         _document = document;
 
-        if (document != null)
-        {
-            LoadDocumentStylesheets();
-        }
+        LoadDocumentStylesheets();
     }
 
     public void RegisterStylesheet(ICssStyleSheet stylesheet, StylesheetOrigin origin)
@@ -114,23 +121,11 @@ public class StyleSheetManager
 
     public IEnumerable<StylesheetEntry> GetStylesheets()
     {
-        // Return stylesheets in the correct order for cascade resolution
         return _stylesheets.OrderBy(e => e.Origin);
     }
 }
 
-public class StylesheetEntry
-{
-    public ICssStyleSheet Stylesheet { get; }
-    public StylesheetOrigin Origin { get; }
-
-    public StylesheetEntry(ICssStyleSheet stylesheet, StylesheetOrigin origin)
-    {
-        Stylesheet = stylesheet;
-        Origin = origin;
-    }
-}
-
+public record StylesheetEntry(ICssStyleSheet Stylesheet, StylesheetOrigin Origin);
 
 /// <summary>
 /// Represents the origin of a stylesheet, which affects cascade priority.
