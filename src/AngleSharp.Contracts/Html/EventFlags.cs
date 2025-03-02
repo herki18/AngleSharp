@@ -1,36 +1,14 @@
-namespace AngleSharp.Html
-{
-    using System;
+namespace AngleSharp.Html;
 
-    /// <summary>
-    /// A set of flags for an event.
-    /// </summary>
-    [Flags]
-    enum EventFlags : Byte
-    {
-        /// <summary>
-        /// No flags are set.
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Stop propagation has been requested.
-        /// </summary>
-        StopPropagation = 0x1,
-        /// <summary>
-        /// Stop immediate propagation has been requested.
-        /// </summary>
-        StopImmediatePropagation = 0x2,
-        /// <summary>
-        /// The event has been cancelled.
-        /// </summary>
-        Canceled = 0x4,
-        /// <summary>
-        /// The event has been initialized.
-        /// </summary>
-        Initialized = 0x8,
-        /// <summary>
-        /// The event has been dispatched.
-        /// </summary>
-        Dispatch = 0x10
-    }
+using System;
+
+[Flags]
+enum EventFlags : Byte
+{
+    None = 0,
+    StopPropagation = 0x1,
+    StopImmediatePropagation = 0x2,
+    Canceled = 0x4,
+    Initialized = 0x8,
+    Dispatch = 0x10
 }

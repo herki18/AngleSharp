@@ -1,26 +1,13 @@
-namespace AngleSharp.Dom
-{
-    using AngleSharp.Attributes;
+namespace AngleSharp.Dom;
 
-    /// <summary>
-    /// Defines the document readiness.
-    /// </summary>
-    public enum DocumentReadyState : System.Byte
-    {
-        /// <summary>
-        /// The document is still loading.
-        /// </summary>
-        [DomName("loading")]
-        Loading,
-        /// <summary>
-        /// The document is interactive, i.e. interaction possible.
-        /// </summary>
-        [DomName("interactive")]
-        Interactive,
-        /// <summary>
-        /// Loading is complete.
-        /// </summary>
-        [DomName("complete")]
-        Complete
-    }
+using Attributes;
+
+public enum DocumentReadyState : System.Byte
+{
+    [DomName("loading")]
+    Loading,
+    [DomName("interactive")]
+    Interactive,
+    [DomName("complete")]
+    Complete
 }

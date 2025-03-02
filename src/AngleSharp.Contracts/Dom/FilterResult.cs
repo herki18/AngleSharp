@@ -1,27 +1,14 @@
-namespace AngleSharp.Dom
-{
-    using AngleSharp.Attributes;
+namespace AngleSharp.Dom;
 
-    /// <summary>
-    /// An enumeration that contains the valid results of examining a node.
-    /// </summary>
-    [DomName("NodeFilter")]
-    public enum FilterResult : System.Byte
-    {
-        /// <summary>
-        /// The Node is accepted.
-        /// </summary>
-        [DomName("FILTER_ACCEPT")]
-        Accept = 1,
-        /// <summary>
-        /// The Node (and its children) are rejected.
-        /// </summary>
-        [DomName("FILTER_REJECT")]
-        Reject = 2,
-        /// <summary>
-        /// The Node is skipped. Children are still considered.
-        /// </summary>
-        [DomName("FILTER_SKIP")]
-        Skip = 3
-    }
+using Attributes;
+
+[DomName("NodeFilter")]
+public enum FilterResult : System.Byte
+{
+    [DomName("FILTER_ACCEPT")]
+    Accept = 1,
+    [DomName("FILTER_REJECT")]
+    Reject = 2,
+    [DomName("FILTER_SKIP")]
+    Skip = 3
 }
