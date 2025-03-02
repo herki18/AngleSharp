@@ -15,7 +15,21 @@ public class StyleComputationEngine
     {
         if (element is null) throw new ArgumentNullException(nameof(element));
 
-        throw new NotImplementedException();
+        var window = element.OwnerDocument?.DefaultView;
+        if (window is null)
+            throw new InvalidOperationException("Element must be part of a document with a default view");
+
+        // Get the style collection from the window
+        var styles = window.GetStyleCollection();
+
+        // If parent style is provided, we could enhance this to use it directly
+        // rather than re-computing ancestor styles, but for now we'll use
+        // the standard computation method which handles the cascade
+
+        // Compute the style declarations for the element
+        var computedStyle = styles.ComputeDeclarations(element, pseudoElement);
+
+        return computedStyle;
     }
 }
 

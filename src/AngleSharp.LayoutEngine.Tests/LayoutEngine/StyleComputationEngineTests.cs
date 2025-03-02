@@ -45,7 +45,7 @@ public class StyleComputationEngineTests
 
         // Assert
         Assert.IsNotNull(computedStyle);
-        Assert.That(computedStyle.GetPropertyValue("color"), Is.EqualTo("red"));
+        Assert.That(computedStyle.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
         Assert.That(computedStyle.GetPropertyValue("font-size"), Is.EqualTo("16px"));
     }
 
