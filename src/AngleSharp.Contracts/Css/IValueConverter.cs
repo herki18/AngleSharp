@@ -1,18 +1,17 @@
-namespace AngleSharp.Css
-{
-    using AngleSharp.Css.Dom;
-    using AngleSharp.Text;
+namespace AngleSharp.Css;
 
+using Dom;
+using Text;
+
+/// <summary>
+///     Represents a converter for value strings.
+/// </summary>
+public interface IValueConverter
+{
     /// <summary>
-    /// Represents a converter for value strings.
+    ///     Tries to convert the given source to a value.
     /// </summary>
-    public interface IValueConverter
-    {
-        /// <summary>
-        /// Tries to convert the given source to a value.
-        /// </summary>
-        /// <param name="source">The source to convert.</param>
-        /// <returns>The value if valid, otherwise null.</returns>
-        ICssValue Convert(IStringSource source);
-    }
+    /// <param name="source">The source to convert.</param>
+    /// <returns>The value if valid, otherwise null.</returns>
+    ICssValue Convert(IStringSource source);
 }

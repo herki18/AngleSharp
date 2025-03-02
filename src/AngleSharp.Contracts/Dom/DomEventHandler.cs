@@ -1,6 +1,6 @@
 namespace AngleSharp.Dom;
 
-using Events;
 using System;
+using Events;
 
 public delegate void DomEventHandler(Object sender, IEvent ev);

@@ -1,25 +1,24 @@
-namespace AngleSharp.Css
+namespace AngleSharp.Css;
+
+using System;
+
+/// <summary>
+///     Represents the render settings for an element, used to calculate relative sizes (E.G. %, rem).
+/// </summary>
+public interface IRenderDimensions
 {
-    using System;
+    /// <summary>
+    ///     Gets Width of the render box.
+    /// </summary>
+    Double RenderWidth { get; }
 
     /// <summary>
-    /// Represents the render settings for an element, used to calculate relative sizes (E.G. %, rem).
+    ///     Gets Height of the render box.
     /// </summary>
-    public interface IRenderDimensions
-    {
-        /// <summary>
-        /// Gets Width of the render box.
-        /// </summary>
-        Double RenderWidth { get; }
+    Double RenderHeight { get; }
 
-        /// <summary>
-        /// Gets Height of the render box.
-        /// </summary>
-        Double RenderHeight { get; }
-
-        /// <summary>
-        /// Gets the default font size in px.
-        /// </summary>
-        Double FontSize { get; }
-    }
+    /// <summary>
+    ///     Gets the default font size in px.
+    /// </summary>
+    Double FontSize { get; }
 }

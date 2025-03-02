@@ -1,37 +1,36 @@
-namespace AngleSharp.Browser.Dom
+namespace AngleSharp.Browser.Dom;
+
+using System;
+using Attributes;
+
+/// <summary>
+///     Holds the user-agent information.
+/// </summary>
+[DomName("NavigatorID")]
+[DomNoInterfaceObject]
+public interface INavigatorId
 {
-    using AngleSharp.Attributes;
-    using System;
+    /// <summary>
+    ///     Gets the name of the application.
+    /// </summary>
+    [DomName("appName")]
+    String Name { get; }
 
     /// <summary>
-    /// Holds the user-agent information.
+    ///     Gets the version of the application.
     /// </summary>
-    [DomName("NavigatorID")]
-    [DomNoInterfaceObject]
-    public interface INavigatorId
-    {
-        /// <summary>
-        /// Gets the name of the application.
-        /// </summary>
-        [DomName("appName")]
-        String Name { get; }
+    [DomName("appVersion")]
+    String Version { get; }
 
-        /// <summary>
-        /// Gets the version of the application.
-        /// </summary>
-        [DomName("appVersion")]
-        String Version { get; }
+    /// <summary>
+    ///     Gets the platform of the application.
+    /// </summary>
+    [DomName("platform")]
+    String Platform { get; }
 
-        /// <summary>
-        /// Gets the platform of the application.
-        /// </summary>
-        [DomName("platform")]
-        String Platform { get; }
-
-        /// <summary>
-        /// Gets the full name of the user-agent.
-        /// </summary>
-        [DomName("userAgent")]
-        String UserAgent { get; }
-    }
+    /// <summary>
+    ///     Gets the full name of the user-agent.
+    /// </summary>
+    [DomName("userAgent")]
+    String UserAgent { get; }
 }

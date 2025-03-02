@@ -1,17 +1,18 @@
-namespace AngleSharp.Io
+namespace AngleSharp.Io;
+
+using System;
+
+/// <summary>
+///     Represents the usable methods for transmitting HTTP forms.
+/// </summary>
+public enum HttpMethod : Byte
 {
-    /// <summary>
-    /// Represents the usable methods for transmitting HTTP forms.
-    /// </summary>
-    public enum HttpMethod : System.Byte
-    {
-        Get,
-        Post,
-        Put,
-        Delete,
-        Options,
-        Head,
-        Trace,
-        Connect
-    }
+    Get,
+    Post,
+    Put,
+    Delete,
+    Options,
+    Head,
+    Trace,
+    Connect
 }

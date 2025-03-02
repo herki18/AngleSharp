@@ -1,23 +1,22 @@
-namespace AngleSharp.Dom
+namespace AngleSharp.Dom;
+
+using System;
+using Attributes;
+
+/// <summary>
+///     List of possible shadow root mode states.
+/// </summary>
+[DomName("ShadowRootMode")]
+[DomLiterals]
+public enum ShadowRootMode : Byte
 {
-    using AngleSharp.Attributes;
+    /// <summary>
+    ///     Specifies open encapsulation mode.
+    /// </summary>
+    [DomName("open")] Open = 0,
 
     /// <summary>
-    /// List of possible shadow root mode states.
+    ///     Specifies closed encapsulation mode.
     /// </summary>
-    [DomName("ShadowRootMode")]
-    [DomLiterals]
-    public enum ShadowRootMode : System.Byte
-    {
-        /// <summary>
-        /// Specifies open encapsulation mode.
-        /// </summary>
-        [DomName("open")]
-        Open = 0,
-        /// <summary>
-        /// Specifies closed encapsulation mode.
-        /// </summary>
-        [DomName("closed")]
-        Closed = 1
-    }
+    [DomName("closed")] Closed = 1
 }

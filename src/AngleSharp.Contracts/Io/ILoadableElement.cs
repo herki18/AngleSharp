@@ -1,16 +1,15 @@
-namespace AngleSharp.Io
-{
-    using AngleSharp.Attributes;
+namespace AngleSharp.Io;
 
+using Attributes;
+
+/// <summary>
+///     The interface implemented by elements that may load resources.
+/// </summary>
+[DomNoInterfaceObject]
+public interface ILoadableElement
+{
     /// <summary>
-    /// The interface implemented by elements that may load resources.
+    ///     Gets the current download or resource, if any.
     /// </summary>
-    [DomNoInterfaceObject]
-    public interface ILoadableElement
-    {
-        /// <summary>
-        /// Gets the current download or resource, if any.
-        /// </summary>
-        IDownload? CurrentDownload { get; }
-    }
+    IDownload? CurrentDownload { get; }
 }

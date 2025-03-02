@@ -1,35 +1,34 @@
-namespace AngleSharp.Css.Dom
+namespace AngleSharp.Css.Dom;
+
+using System;
+
+/// <summary>
+///     Represents a CSS media feature.
+/// </summary>
+public interface IMediaFeature : IStyleFormattable
 {
-    using System;
+    /// <summary>
+    ///     Gets the name of the feature.
+    /// </summary>
+    String Name { get; }
 
     /// <summary>
-    /// Represents a CSS media feature.
+    ///     Gets if the feature represents the minimum.
     /// </summary>
-    public interface IMediaFeature : IStyleFormattable
-    {
-        /// <summary>
-        /// Gets the name of the feature.
-        /// </summary>
-        String Name { get; }
+    Boolean IsMinimum { get; }
 
-        /// <summary>
-        /// Gets if the feature represents the minimum.
-        /// </summary>
-        Boolean IsMinimum { get; }
+    /// <summary>
+    ///     Gets if the feature represents the maximum.
+    /// </summary>
+    Boolean IsMaximum { get; }
 
-        /// <summary>
-        /// Gets if the feature represents the maximum.
-        /// </summary>
-        Boolean IsMaximum { get; }
+    /// <summary>
+    ///     Gets the value of the feature, if any.
+    /// </summary>
+    String Value { get; }
 
-        /// <summary>
-        /// Gets the value of the feature, if any.
-        /// </summary>
-        String Value { get; }
-
-        /// <summary>
-        /// Gets if a value has been set for this feature.
-        /// </summary>
-        Boolean HasValue { get; }
-    }
+    /// <summary>
+    ///     Gets if a value has been set for this feature.
+    /// </summary>
+    Boolean HasValue { get; }
 }

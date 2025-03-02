@@ -3,7 +3,7 @@ namespace AngleSharp.Html;
 using System;
 
 [Flags]
-enum EventFlags : Byte
+internal enum EventFlags : Byte
 {
     None = 0,
     StopPropagation = 0x1,

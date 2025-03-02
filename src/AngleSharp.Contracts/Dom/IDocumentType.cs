@@ -1,30 +1,29 @@
-namespace AngleSharp.Dom
+namespace AngleSharp.Dom;
+
+using System;
+using Attributes;
+
+/// <summary>
+///     The DocumentType interface represents a Node containing a doctype.
+/// </summary>
+[DomName("DocumentType")]
+public interface IDocumentType : INode, IChildNode
 {
-    using AngleSharp.Attributes;
-    using System;
+    /// <summary>
+    ///     Gets or sets the name of the document type.
+    /// </summary>
+    [DomName("name")]
+    String Name { get; }
 
     /// <summary>
-    /// The DocumentType interface represents a Node containing a doctype.
+    ///     Gets or sets the public ID of the document type.
     /// </summary>
-    [DomName("DocumentType")]
-    public interface IDocumentType : INode, IChildNode
-    {
-        /// <summary>
-        /// Gets or sets the name of the document type.
-        /// </summary>
-        [DomName("name")]
-        String Name { get; }
+    [DomName("publicId")]
+    String PublicIdentifier { get; }
 
-        /// <summary>
-        /// Gets or sets the public ID of the document type.
-        /// </summary>
-        [DomName("publicId")]
-        String PublicIdentifier { get; }
-
-        /// <summary>
-        /// Gets or sets the system ID of the document type.
-        /// </summary>
-        [DomName("systemId")]
-        String SystemIdentifier { get; }
-    }
+    /// <summary>
+    ///     Gets or sets the system ID of the document type.
+    /// </summary>
+    [DomName("systemId")]
+    String SystemIdentifier { get; }
 }
