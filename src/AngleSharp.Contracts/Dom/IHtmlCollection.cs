@@ -13,17 +13,9 @@ using Attributes;
 public interface IHtmlCollection<T> : IEnumerable<T>
     where T : IElement
 {
-    /// <summary>
-    ///     Gets the number of items in the collection.
-    /// </summary>
     [DomName("length")]
     Int32 Length { get; }
 
-    /// <summary>
-    ///     Gets the specific node at the given zero-based index into the list.
-    /// </summary>
-    /// <param name="index">The zero-based index.</param>
-    /// <returns>Returns the element at the specified index.</returns>
     [DomName("item")]
     [DomAccessor(Accessors.Getter)]
     T this[Int32 index] { get; }
@@ -34,8 +26,6 @@ public interface IHtmlCollection<T> : IEnumerable<T>
     ///     resort, only in HTML, and only if the referenced element supports
     ///     the name attribute.
     /// </summary>
-    /// <param name="id">The id or name to match.</param>
-    /// <returns>Returns the element with the specified name.</returns>
     [DomName("namedItem")]
     [DomAccessor(Accessors.Getter)]
     T? this[String id] { get; }
