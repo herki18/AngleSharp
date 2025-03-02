@@ -9,6 +9,4 @@ using System;
 [AttributeUsage(
     AttributeTargets.Interface | AttributeTargets.Class | AttributeTargets.Struct,
     Inherited = false)]
-public sealed class DomNoInterfaceObjectAttribute : Attribute
-{
-}
+public sealed class DomNoInterfaceObjectAttribute : Attribute;

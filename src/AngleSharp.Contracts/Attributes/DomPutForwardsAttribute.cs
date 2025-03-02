@@ -10,19 +10,10 @@ using System;
 [AttributeUsage(AttributeTargets.Property)]
 public sealed class DomPutForwardsAttribute : Attribute
 {
-    /// <summary>
-    ///     Creates a new DomPutForwardsAttribute.
-    /// </summary>
-    /// <param name="propertyName">
-    ///     The official name of the property to forward to.
-    /// </param>
     public DomPutForwardsAttribute(String propertyName)
     {
         PropertyName = propertyName;
     }
 
-    /// <summary>
-    ///     Gets the official name of the property to forward assignments to.
-    /// </summary>
     public String PropertyName { get; }
 }

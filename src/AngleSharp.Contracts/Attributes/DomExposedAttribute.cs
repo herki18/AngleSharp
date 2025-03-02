@@ -10,19 +10,10 @@ using System;
     AllowMultiple = true, Inherited = false)]
 public sealed class DomExposedAttribute : Attribute
 {
-    /// <summary>
-    ///     Creates a new DomExposedAttribute.
-    /// </summary>
-    /// <param name="target">
-    ///     The official name of the target interface.
-    /// </param>
     public DomExposedAttribute(String target)
     {
         Target = target;
     }
 
-    /// <summary>
-    ///     Gets the official name of the target interface.
-    /// </summary>
     public String Target { get; }
 }

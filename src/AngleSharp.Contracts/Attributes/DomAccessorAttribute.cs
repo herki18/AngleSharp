@@ -11,19 +11,10 @@ using System;
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method)]
 public sealed class DomAccessorAttribute : Attribute
 {
-    /// <summary>
-    ///     Creates a new DomAccessorAttribute.
-    /// </summary>
-    /// <param name="type">
-    ///     The type of accessors to apply.
-    /// </param>
     public DomAccessorAttribute(Accessors type)
     {
         Type = type;
     }
 
-    /// <summary>
-    ///     Gets the accessor types for the given property or method.
-    /// </summary>
     public Accessors Type { get; }
 }

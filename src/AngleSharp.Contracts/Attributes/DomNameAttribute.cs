@@ -14,19 +14,10 @@ using System;
     AllowMultiple = true, Inherited = false)]
 public sealed class DomNameAttribute : Attribute
 {
-    /// <summary>
-    ///     Creates a new DomNameAttribute.
-    /// </summary>
-    /// <param name="officialName">
-    ///     The official name of the decorated type or member.
-    /// </param>
     public DomNameAttribute(String officialName)
     {
         OfficialName = officialName;
     }
 
-    /// <summary>
-    ///     Gets the official name of the given class, method or property.
-    /// </summary>
     public String OfficialName { get; }
 }
