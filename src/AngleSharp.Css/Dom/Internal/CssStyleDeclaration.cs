@@ -303,7 +303,7 @@ namespace AngleSharp.Css.Dom
 
             if (!String.IsNullOrEmpty(propertyValue))
             {
-                if (priority is null || priority.Isi(CssKeywords.Important))
+                if (String.IsNullOrEmpty(priority) || priority.Isi(CssKeywords.Important))
                 {
                     var property = CreateProperty(propertyName);
 
