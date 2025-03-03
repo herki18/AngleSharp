@@ -20,7 +20,7 @@ public class StyleComputationEngine
         _renderDevice = renderDevice ?? new DefaultRenderDevice();
         _stylesheetManager = new StyleSheetManager(context, document);
         _selectorMatcher = new SelectorMatcher(_renderDevice);
-        _cascadeResolver = new CascadeResolver();
+        _cascadeResolver = new CascadeResolver(_browsingContext);
     }
 
     public ICssStyleDeclaration ComputeElementStyle(IElement element,

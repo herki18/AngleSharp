@@ -15,7 +15,7 @@ public class CascadeResolverTests
     public void Setup()
     {
         _context = BrowsingContext.New(Configuration.Default.WithCss());
-        _resolver = new CascadeResolver();
+        _resolver = new CascadeResolver(_context);
     }
 
     [TearDown]
@@ -164,7 +164,7 @@ public class CascadeResolverTests
         var result = _resolver.ResolveCascade(rules, element);
 
         // Assert - Inline styles override other author styles
-        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
+        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("rgba(0, 128, 0, 1)"));
         Assert.That(result.GetPropertyValue("font-size"), Is.EqualTo("20px"));
     }
 

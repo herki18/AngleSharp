@@ -3,6 +3,7 @@ namespace AngleSharp.LayoutEngine.StyleComputation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AngleSharp.Css.Parser;
 using Css.Dom;
 using Dom;
 
@@ -11,6 +12,12 @@ using Dom;
 /// </summary>
 public class CascadeResolver
 {
+    private IBrowsingContext _context;
+    public CascadeResolver(IBrowsingContext context)
+    {
+        _context = context;
+    }
+
     /// <summary>
     /// Resolves the cascade by creating a style declaration with winning property values.
     /// </summary>
@@ -89,7 +96,7 @@ public class CascadeResolver
             return;
 
         // Parse the style attribute into a declaration
-        var styleDeclaration = CssStyleDeclarationParser.Parse(styleAttr);
+        var styleDeclaration = CssStyleDeclarationParser.Parse(_context, styleAttr);
 
         // Apply each property, respecting !important rules
         foreach (var property in styleDeclaration)
@@ -112,10 +119,16 @@ public class CascadeResolver
 // Helper class to parse inline style declarations from style attributes
 public static class CssStyleDeclarationParser
 {
-    public static IEnumerable<ICssProperty> Parse(string cssText)
+    public static IEnumerable<ICssProperty> Parse(IBrowsingContext context, string cssText)
     {
-        // In a real implementation, this would use AngleSharp's CSS parser
-        // For now, return an empty collection
+        var parser = context.GetService<ICssParser>();
+        var decl = parser?.ParseDeclaration(cssText);
+
+        if (decl != null)
+        {
+            return decl;
+        }
+
         return Enumerable.Empty<ICssProperty>();
     }
 }
