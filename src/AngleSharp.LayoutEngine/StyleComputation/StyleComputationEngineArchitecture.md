@@ -83,16 +83,23 @@ public class CascadeResolver
 
 ### 5. InheritanceProcessor
 
-Applies inheritance rules to pass properties from parent to child elements.
+Applies inheritance rules to pass properties from parent to child elements. Leverages AngleSharp's existing property model for inheritance flags.
 
 ```csharp
 public class InheritanceProcessor
 {
     public ICssStyleDeclaration ApplyInheritance(
-        ICssStyleDeclaration declaration,
+        ICssStyleDeclaration elementStyle,
         ICssStyleDeclaration parentStyle);
 }
 ```
+
+Key responsibilities:
+- Handles properties marked with `PropertyFlags.Inherited` in AngleSharp
+- Manages explicit inheritance via the `inherit` keyword
+- Supports CSS custom properties (variables) which always inherit
+- Manages the parent-child inheritance chain
+- Handles special cases like the root element and missing parent styles
 
 ### 6. ValueComputer
 
@@ -123,7 +130,16 @@ The engine uses the following AngleSharp interfaces:
 - `ICssStyleSheet` for stylesheet representation
 - `ICssStyleRule` for style rules
 - `ICssStyleDeclaration` for style declarations
-- `ICssProperty` for individual properties
+- `ICssProperty` for individual properties with inheritance flags
+- `ICssValue` for property values and computation
+
+### Inheritance Model
+
+Our inheritance system builds upon AngleSharp's property model:
+- AngleSharp's `CssProperty` class already maintains inheritance flags through `PropertyFlags.Inherited`
+- Properties expose `CanBeInherited` and `IsInherited` properties for inheritance decisions
+- The `Compute` method handles value transformations
+- Our InheritanceProcessor focuses on cross-element inheritance not handled by AngleSharp
 
 ## Device Information
 
@@ -136,6 +152,8 @@ Device information is used for:
 
 - **Pseudo-element support**: Computing styles for `::before`, `::after`, etc.
 - **Media query evaluation**: Filtering stylesheets based on device characteristics
-- **CSS variable resolution**: Handling custom properties (`--*`)
+- **CSS variable resolution**: Handling custom properties (`--*`) which always inherit
 - **Nested rules support**: Handling rules inside `@media`, `@supports`, etc.
 - **Important flag handling**: Proper handling of the `!important` flag
+- **Parent-child inheritance chain**: Computing parent styles when needed for inheritance
+- **Root element handling**: Special case for elements without parents
