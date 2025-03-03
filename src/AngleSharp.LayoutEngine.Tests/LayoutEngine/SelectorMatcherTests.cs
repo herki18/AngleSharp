@@ -89,25 +89,28 @@ public class SelectorMatcherTests
     {
         // Arrange
         var document = await _context.OpenAsync(req => req.Content("<html><body><div id='test'>Test</div></body></html>"));
-        var element = document.CreateElement("div");
+        var element = document.GetElementById("test"); // Use the existing element from the document
 
         var stylesheet = CreateStylesheet(
             "@media screen and (min-width: 800px) { div { color: red; } }" +
             "@media screen and (max-width: 500px) { div { color: blue; } }");
         var entry = new StylesheetEntry(stylesheet, StylesheetOrigin.Author);
 
-        // Act - first with device width 1024px
+        // Act - first with device width 1024px (this should match min-width: 800px)
+        Assert.IsNotNull(element);
         var matches = _matcher.MatchRules(element, new[] { entry }).ToList();
 
         // Assert
-        Assert.That(matches, Has.Count.EqualTo(1)); // Only the min-width: 800px rule matches
+        Assert.That(matches, Has.Count.EqualTo(1), "Only the min-width: 800px rule should match");
+        Assert.That(matches[0].Rule.Parent.CssText.Contains("min-width: 800px"), Is.True, "The matched rule should be from the min-width media query");
 
-        // Act - now with device width 400px
+        // Act - now with device width 400px (this should match max-width: 500px)
         _device.SetViewport(400, _device.ViewPortHeight);
         matches = _matcher.MatchRules(element, new[] { entry }).ToList();
 
         // Assert
-        Assert.That(matches, Has.Count.EqualTo(1)); // Only the max-width: 500px rule matches
+        Assert.That(matches, Has.Count.EqualTo(1), "Only the max-width: 500px rule should match");
+        Assert.That(matches[0].Rule.Parent.CssText.Contains("max-width: 500px"), Is.True, "The matched rule should be from the max-width media query");
     }
 
     [Test]

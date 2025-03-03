@@ -190,11 +190,13 @@ public class SelectorMatcher
     /// </summary>
     private bool MatchesMinValue(int deviceValue, string featureValue)
     {
-        if (int.TryParse(featureValue, out var value))
-            return deviceValue >= value;
-
-        // Handle unit conversions (px, em, etc.) - simplified
-        return true; // Placeholder
+        // Handle various unit formats (e.g., "800px", "800")
+        var numericValue = ParseNumericValue(featureValue);
+        if (numericValue.HasValue)
+        {
+            return deviceValue >= numericValue.Value;
+        }
+        return true; // If we can't parse, assume it matches
     }
 
     /// <summary>
@@ -202,11 +204,30 @@ public class SelectorMatcher
     /// </summary>
     private bool MatchesMaxValue(int deviceValue, string featureValue)
     {
-        if (int.TryParse(featureValue, out var value))
-            return deviceValue <= value;
+        // Handle various unit formats (e.g., "500px", "500")
+        var numericValue = ParseNumericValue(featureValue);
+        if (numericValue.HasValue)
+        {
+            return deviceValue <= numericValue.Value;
+        }
+        return true; // If we can't parse, assume it matches
+    }
 
-        // Handle unit conversions (px, em, etc.) - simplified
-        return true; // Placeholder
+    private int? ParseNumericValue(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return null;
+
+        // Try to parse as is first
+        if (int.TryParse(value, out int result))
+            return result;
+
+        // Try to extract numeric portion by removing non-digit characters
+        var numericPart = new string(value.Where(c => char.IsDigit(c) || c == '.').ToArray());
+        if (int.TryParse(numericPart, out result))
+            return result;
+
+        return null;
     }
 
     /// <summary>
@@ -229,8 +250,20 @@ public class SelectorMatcher
             {
                 yield return styleRule;
             }
+            // If it's a media rule, check if it applies before processing its nested rules
+            else if (rule is ICssMediaRule mediaRule)
+            {
+                // Only process rules inside media queries that match the current device
+                if (MediaMatches(mediaRule.Media))
+                {
+                    foreach (var nestedRule in GetAllStyleRulesFromRuleList(mediaRule.Rules))
+                    {
+                        yield return nestedRule;
+                    }
+                }
+            }
             // If it's a container rule (like @media, @supports), process its nested rules
-            else if (rule is ICssGroupingRule groupingRule)
+            else if (rule is ICssGroupingRule groupingRule && !(rule is ICssMediaRule))
             {
                 foreach (var nestedRule in GetAllStyleRulesFromRuleList(groupingRule.Rules))
                 {
