@@ -25,13 +25,17 @@ static class AllDeclaration
 
             if (identifier != null)
             {
-                // Only allow global keywords for 'all' property
-                if (identifier.Equals(CssKeywords.Inherit, StringComparison.OrdinalIgnoreCase) ||
-                    identifier.Equals(CssKeywords.Initial, StringComparison.OrdinalIgnoreCase) ||
-                    identifier.Equals(CssKeywords.Unset, StringComparison.OrdinalIgnoreCase) ||
-                    identifier.Equals(CssKeywords.Revert, StringComparison.OrdinalIgnoreCase))
+                if (identifier != null)
                 {
-                    return new CssIdentifierValue(identifier);
+                    // Normalize to canonical case versions
+                    if (identifier.Equals(CssKeywords.Inherit, StringComparison.OrdinalIgnoreCase))
+                        return new CssIdentifierValue(CssKeywords.Inherit);
+                    else if (identifier.Equals(CssKeywords.Initial, StringComparison.OrdinalIgnoreCase))
+                        return new CssIdentifierValue(CssKeywords.Initial);
+                    else if (identifier.Equals(CssKeywords.Unset, StringComparison.OrdinalIgnoreCase))
+                        return new CssIdentifierValue(CssKeywords.Unset);
+                    else if (identifier.Equals(CssKeywords.Revert, StringComparison.OrdinalIgnoreCase))
+                        return new CssIdentifierValue(CssKeywords.Revert);
                 }
             }
 

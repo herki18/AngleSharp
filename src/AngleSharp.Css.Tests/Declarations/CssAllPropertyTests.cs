@@ -67,6 +67,30 @@ namespace AngleSharp.Css.Tests.Declarations
         }
 
         [Test]
+        public void CssAllMixedCaseValid()
+        {
+            var snippet = "all: InHeRiT";
+            var property = ParseDeclaration(snippet);
+            Assert.AreEqual("all", property.Name);
+            Assert.IsFalse(property.IsImportant);
+            Assert.IsTrue(property.IsInherited);
+            Assert.IsTrue(property.HasValue);
+            Assert.AreEqual("inherit", property.Value);
+        }
+
+        [Test]
+        public void CssAllWithWhitespaceValid()
+        {
+            var snippet = "all:   initial  ";
+            var property = ParseDeclaration(snippet);
+            Assert.AreEqual("all", property.Name);
+            Assert.IsFalse(property.IsImportant);
+            Assert.IsFalse(property.IsInherited);
+            Assert.IsTrue(property.HasValue);
+            Assert.AreEqual("initial", property.Value);
+        }
+
+        [Test]
         public void CssAllNonKeywordIllegal()
         {
             var snippet = "all: none";
@@ -78,7 +102,7 @@ namespace AngleSharp.Css.Tests.Declarations
         }
 
         [Test]
-        public void CssAllColorValueIllegal()
+        public void CssAllCssValueIllegal()
         {
             var snippet = "all: red";
             var property = ParseDeclaration(snippet);
@@ -92,6 +116,17 @@ namespace AngleSharp.Css.Tests.Declarations
         public void CssAllMultipleValuesIllegal()
         {
             var snippet = "all: inherit initial";
+            var property = ParseDeclaration(snippet);
+            Assert.AreEqual("all", property.Name);
+            Assert.IsFalse(property.IsImportant);
+            Assert.IsFalse(property.IsInherited);
+            Assert.IsFalse(property.HasValue);
+        }
+
+        [Test]
+        public void CssAllEmptyValueIllegal()
+        {
+            var snippet = "all: ";
             var property = ParseDeclaration(snippet);
             Assert.AreEqual("all", property.Name);
             Assert.IsFalse(property.IsImportant);
