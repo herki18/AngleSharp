@@ -38,7 +38,7 @@ public class CascadeResolverTests
         var result = _resolver.ResolveCascade(new[] { matchedRule }, element);
 
         // Assert
-        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("red"));
+        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
         Assert.That(result.GetPropertyValue("font-size"), Is.EqualTo("16px"));
     }
 
@@ -67,7 +67,7 @@ public class CascadeResolverTests
         var result = _resolver.ResolveCascade(rules, element);
 
         // Assert - #myDiv has highest specificity, so color should be red
-        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("red"));
+        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
     }
 
     [Test]
@@ -93,7 +93,7 @@ public class CascadeResolverTests
         var result = _resolver.ResolveCascade(rules, element);
 
         // Assert - Author styles should win
-        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("red"));
+        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
     }
 
     [Test]
@@ -116,7 +116,7 @@ public class CascadeResolverTests
         var result = _resolver.ResolveCascade(rules, element);
 
         // Assert - !important from UserAgent overrides Author for color, but not for font-size
-        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("red"));
+        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
         Assert.That(result.GetPropertyValue("font-size"), Is.EqualTo("16px"));
     }
 
@@ -143,7 +143,7 @@ public class CascadeResolverTests
         var result = _resolver.ResolveCascade(rules, element);
 
         // Assert - !important follows Author > User > UserAgent
-        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("red"));
+        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
     }
 
     [Test]
@@ -164,7 +164,7 @@ public class CascadeResolverTests
         var result = _resolver.ResolveCascade(rules, element);
 
         // Assert - Inline styles override other author styles
-        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("green"));
+        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
         Assert.That(result.GetPropertyValue("font-size"), Is.EqualTo("20px"));
     }
 
@@ -186,7 +186,7 @@ public class CascadeResolverTests
         var result = _resolver.ResolveCascade(rules, element);
 
         // Assert - !important in stylesheet overrides inline style
-        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("red"));
+        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
     }
 
     // Helper method to create style rules for testing

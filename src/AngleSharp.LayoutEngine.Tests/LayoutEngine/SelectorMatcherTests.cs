@@ -72,6 +72,8 @@ public class SelectorMatcherTests
         // Arrange
         var document = await _context.OpenNewAsync();
         var element = document.CreateElement("div");
+        Assert.IsNotNull(document.Body);
+        document.Body.AppendChild(element);
 
         var stylesheet = CreateStylesheet("div::before { content: 'test'; } div { color: red; }");
         var entry = new StylesheetEntry(stylesheet, StylesheetOrigin.Author);

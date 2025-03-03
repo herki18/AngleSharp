@@ -41,12 +41,14 @@ public class SelectorMatcher
         var matches = new List<MatchedRule>();
         var index = 0; // Used for maintaining original order for rules with equal specificity
 
-        // If we have a pseudo-element, try to get the virtual element
+        // Get the target element (either the original or a pseudo-element)
         IElement targetElement = element;
-        if (!string.IsNullOrEmpty(pseudoElement))
+        bool isPseudoElementQuery = !string.IsNullOrEmpty(pseudoElement);
+
+        if (isPseudoElementQuery)
         {
-            // In AngleSharp, you can use element.Pseudo(name) to get a pseudo-element
-            targetElement = element.Pseudo(pseudoElement.TrimStart(':'));
+            // Get the pseudo-element
+            targetElement = element.Pseudo(pseudoElement!.TrimStart(':'));
 
             // If no pseudo-element could be created, we won't have any matches
             if (targetElement == null)
@@ -69,6 +71,19 @@ public class SelectorMatcher
             // For each rule in the stylesheet
             foreach (var rule in styleRules)
             {
+                // For pseudo-element queries, only consider selectors with the requested pseudo-element
+                if (isPseudoElementQuery)
+                {
+                    // Skip rules that don't target the requested pseudo-element
+                    if (!rule.SelectorText.Contains(pseudoElement))
+                        continue;
+                }
+                // For regular element queries, skip rules that target pseudo-elements
+                else if (rule.SelectorText.Contains("::"))
+                {
+                    continue;
+                }
+
                 // Try to match the rule against the target element
                 // Pass null as scope (letting AngleSharp use the document element)
                 if (rule.TryMatch(targetElement, null, out var specificity))
