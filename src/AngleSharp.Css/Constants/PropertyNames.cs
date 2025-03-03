@@ -8,6 +8,11 @@ namespace AngleSharp.Css
     public static class PropertyNames
     {
         /// <summary>
+        /// The name of the align-content property.
+        /// </summary>
+        public static readonly String All = "all";
+
+        /// <summary>
         /// The align-content declaration.
         /// </summary>
         public static readonly String AlignContent = "align-content";
@@ -676,7 +681,7 @@ namespace AngleSharp.Css
         /// The layout-grid-line declaration.
         /// </summary>
         public static readonly String LayoutGridLine = "layout-grid-line";
-        
+
         /// <summary>
         /// The grid-template-rows declaration.
         /// </summary>

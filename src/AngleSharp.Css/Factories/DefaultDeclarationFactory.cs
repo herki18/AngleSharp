@@ -12,6 +12,13 @@ namespace AngleSharp.Css
         private readonly Dictionary<String, DeclarationInfo> _declarations = new(StringComparer.OrdinalIgnoreCase)
         {
             {
+                AllDeclaration.Name, new DeclarationInfo(
+                    name: AllDeclaration.Name,
+                    converter: AllDeclaration.Converter,
+                    initialValue: AllDeclaration.InitialValue,
+                    flags: AllDeclaration.Flags)
+            },
+            {
                 BookmarkLabelDeclaration.Name, new DeclarationInfo(
                     name: BookmarkLabelDeclaration.Name,
                     converter: BookmarkLabelDeclaration.Converter,

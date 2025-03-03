@@ -203,6 +203,11 @@ namespace AngleSharp.Css
         public const String None = "none";
 
         /// <summary>
+        /// The revert keyword.
+        /// </summary>
+        public const String Revert = "revert";
+
+        /// <summary>
         /// The auto keyword.
         /// </summary>
         public const String Auto = "auto";

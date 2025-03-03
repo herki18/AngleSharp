@@ -1,0 +1,257 @@
+namespace AngleSharp.LayoutEngine.StyleComputation;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using AngleSharp.Css.Dom;
+
+/// <summary>
+/// Responsible for applying CSS inheritance rules across elements.
+/// </summary>
+public class InheritanceProcessor
+{
+    private readonly IBrowsingContext _context;
+
+    /// <summary>
+    /// Creates a new InheritanceProcessor.
+    /// </summary>
+    /// <param name="context">The browsing context.</param>
+    public InheritanceProcessor(IBrowsingContext context)
+    {
+        _context = context ?? throw new ArgumentNullException(nameof(context));
+    }
+
+    /// <summary>
+    /// Applies CSS inheritance rules to produce a new style declaration with inherited properties from parent.
+    /// </summary>
+    /// <param name="elementStyle">The element's cascaded style declaration.</param>
+    /// <param name="parentStyle">The parent element's computed style declaration, or null if no parent exists.</param>
+    /// <returns>A new style declaration with inheritance applied.</returns>
+    public ICssStyleDeclaration ApplyInheritance(ICssStyleDeclaration elementStyle, ICssStyleDeclaration? parentStyle)
+    {
+        if (elementStyle == null)
+            throw new ArgumentNullException(nameof(elementStyle));
+
+        // Nothing to inherit if there's no parent (root element)
+        if (parentStyle == null)
+            return CloneStyleDeclaration(elementStyle);
+
+        // Check for direct 'all' property usage first
+        var allValue = elementStyle.GetPropertyValue("all");
+        if (!string.IsNullOrEmpty(allValue))
+        {
+            return HandleAllProperty(allValue, elementStyle, parentStyle);
+        }
+
+        // Clone the element's style to hold the result
+        var result = CloneStyleDeclaration(elementStyle);
+
+        // Let's handle the parent style inheritance
+        if (result is CssStyleDeclaration cssResult)
+        {
+            // First, handle explicit 'inherit' values on properties
+            var inheritPropertiesFromParent = GetPropertiesWithExplicitInherit(elementStyle, parentStyle);
+            if (inheritPropertiesFromParent.Any())
+            {
+                // Use SetDeclarations for properties explicitly set to 'inherit'
+                cssResult.SetDeclarations(inheritPropertiesFromParent);
+            }
+
+            // Then, handle regular inheritance and CSS variables
+            var inheritableProperties = GetInheritableProperties(elementStyle, parentStyle);
+            if (inheritableProperties.Any())
+            {
+                // Use UpdateDeclarations which is specifically designed for inheritance
+                cssResult.UpdateDeclarations(inheritableProperties);
+            }
+        }
+        else
+        {
+            // Fallback implementation for non-CssStyleDeclaration implementations
+            HandleInheritanceFallback(result, elementStyle, parentStyle);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Handles 'all' property special cases (inherit, initial, unset).
+    /// </summary>
+    private ICssStyleDeclaration HandleAllProperty(string allValue, ICssStyleDeclaration elementStyle, ICssStyleDeclaration parentStyle)
+    {
+        var result = new CssStyleDeclaration(_context);
+
+        // Keep the 'all' property value
+        result.SetProperty("all", allValue, elementStyle.GetPropertyPriority("all"));
+        var isCssResult = result is CssStyleDeclaration cssResult;
+
+        switch (allValue.ToLowerInvariant())
+        {
+            case "inherit":
+                var parentProperties = GetParentPropertiesExceptAll(parentStyle);
+                if (isCssResult)
+                    ((CssStyleDeclaration)result).SetDeclarations(parentProperties);
+                else
+                    CopyProperties(parentProperties, result);
+                break;
+
+            case "initial":
+                // Just leave with only the 'all' property
+                break;
+
+            case "unset":
+                var inheritableProps = parentStyle.Where(p =>
+                    p.Name != "all" && (IsCssVariable(p) || (p is ICssProperty cssP && cssP.CanBeInherited))).ToList();
+
+                if (isCssResult)
+                    ((CssStyleDeclaration)result).UpdateDeclarations(inheritableProps);
+                else
+                    CopyProperties(inheritableProps, result);
+                break;
+        }
+
+        return result;
+    }
+    private void CopyProperties(IEnumerable<ICssProperty> properties, ICssStyleDeclaration target)
+    {
+        foreach (var prop in properties)
+        {
+            target.SetProperty(
+                prop.Name,
+                prop.Value,
+                prop is ICssProperty cssProp ? cssProp.IsImportant.ToString() : string.Empty);
+        }
+    }
+
+    private bool IsCssVariable(ICssProperty property) => property.Name.StartsWith("--");
+
+    /// <summary>
+    /// Gets properties from parent for properties explicitly set to 'inherit' in element style.
+    /// </summary>
+    private List<ICssProperty> GetPropertiesWithExplicitInherit(ICssStyleDeclaration elementStyle, ICssStyleDeclaration parentStyle)
+    {
+        var result = new List<ICssProperty>();
+
+        foreach (var prop in elementStyle)
+        {
+            if (prop.Value.Equals("inherit", StringComparison.OrdinalIgnoreCase))
+            {
+                var parentProp = parentStyle.GetProperty(prop.Name);
+                if (parentProp != null && !string.IsNullOrEmpty(parentProp.Value))
+                {
+                    result.Add(parentProp);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Gets properties from parent that should be inherited (inheritable properties not in element).
+    /// </summary>
+    private List<ICssProperty> GetInheritableProperties(ICssStyleDeclaration elementStyle, ICssStyleDeclaration parentStyle)
+    {
+        var result = new List<ICssProperty>();
+
+        foreach (var prop in parentStyle)
+        {
+            // Skip if property already exists in element style
+            if (!string.IsNullOrEmpty(elementStyle[prop.Name]))
+                continue;
+
+            // Add property if it's a CSS variable or inheritable
+            if (prop.Name.StartsWith("--") || (prop is ICssProperty cssProp && cssProp.CanBeInherited))
+            {
+                result.Add(prop);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Gets all properties from parent except 'all'.
+    /// </summary>
+    private List<ICssProperty> GetParentPropertiesExceptAll(ICssStyleDeclaration parentStyle)
+    {
+        return parentStyle.Where(p => p.Name != "all").ToList();
+    }
+
+    /// <summary>
+    /// Fallback implementation for non-CssStyleDeclaration objects.
+    /// </summary>
+    private void HandleInheritanceFallback(ICssStyleDeclaration result, ICssStyleDeclaration elementStyle, ICssStyleDeclaration parentStyle)
+    {
+        // Handle explicit inherit keyword
+        foreach (var prop in elementStyle)
+        {
+            if (prop.Value.Equals("inherit", StringComparison.OrdinalIgnoreCase))
+            {
+                var value = parentStyle.GetPropertyValue(prop.Name);
+                var priority = parentStyle.GetPropertyPriority(prop.Name);
+
+                if (!string.IsNullOrEmpty(value))
+                {
+                    result.SetProperty(prop.Name, value, priority);
+                }
+            }
+        }
+
+        // Handle natural inheritance and CSS variables
+        foreach (var parentProp in parentStyle)
+        {
+            // Skip properties already in element style
+            if (elementStyle.GetProperty(parentProp.Name) != null)
+                continue;
+
+            // CSS variables always inherit
+            if (parentProp.Name.StartsWith("--"))
+            {
+                result.SetProperty(
+                    parentProp.Name,
+                    parentStyle.GetPropertyValue(parentProp.Name),
+                    parentStyle.GetPropertyPriority(parentProp.Name));
+                continue;
+            }
+
+            // Only inherit naturally inheritable properties
+            if (parentProp is ICssProperty cssProp && cssProp.CanBeInherited)
+            {
+                result.SetProperty(
+                    parentProp.Name,
+                    parentStyle.GetPropertyValue(parentProp.Name),
+                    parentStyle.GetPropertyPriority(parentProp.Name));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Creates a clone of a style declaration.
+    /// </summary>
+    private ICssStyleDeclaration CloneStyleDeclaration(ICssStyleDeclaration style)
+    {
+        // Create a new style declaration
+        var clone = new CssStyleDeclaration(_context);
+
+        // Clone all properties
+        if (clone is CssStyleDeclaration cssClone)
+        {
+            // More efficient to use SetDeclarations
+            cssClone.SetDeclarations(style.ToList());
+        }
+        else
+        {
+            // Fallback
+            foreach (var property in style)
+            {
+                clone.SetProperty(
+                    property.Name,
+                    style.GetPropertyValue(property.Name),
+                    style.GetPropertyPriority(property.Name));
+            }
+        }
+
+        return clone;
+    }
+}
