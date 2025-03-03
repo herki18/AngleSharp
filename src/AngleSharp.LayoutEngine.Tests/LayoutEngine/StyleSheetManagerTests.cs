@@ -25,7 +25,7 @@ public class StyleSheetManagerTests
     public void RegisterStylesheet_AddsToCollection()
     {
         // Arrange
-        var manager = new StyleSheetManager(_context);
+        var manager = new StyleSheetManager(null);
         var stylesheet = CreateStylesheet("div { color: red; }");
 
         // Act
@@ -33,16 +33,16 @@ public class StyleSheetManagerTests
         var stylesheets = manager.GetStylesheets().ToList();
 
         // Assert
-        Assert.That(stylesheets, Has.Count.EqualTo(2));
-        Assert.That(stylesheets[1].Stylesheet, Is.SameAs(stylesheet));
-        Assert.That(stylesheets[1].Origin, Is.EqualTo(StylesheetOrigin.Author));
+        Assert.That(stylesheets, Has.Count.EqualTo(1));
+        Assert.That(stylesheets[0].Stylesheet, Is.SameAs(stylesheet));
+        Assert.That(stylesheets[0].Origin, Is.EqualTo(StylesheetOrigin.Author));
     }
 
     [Test]
     public void UnregisterStylesheet_RemovesFromCollection()
     {
         // Arrange
-        var manager = new StyleSheetManager(_context);
+        var manager = new StyleSheetManager(null);
         var stylesheet1 = CreateStylesheet("div { color: red; }");
         var stylesheet2 = CreateStylesheet("p { color: blue; }");
         manager.RegisterStylesheet(stylesheet1, StylesheetOrigin.Author);
@@ -53,15 +53,15 @@ public class StyleSheetManagerTests
         var stylesheets = manager.GetStylesheets().ToList();
 
         // Assert
-        Assert.That(stylesheets, Has.Count.EqualTo(2));
-        Assert.That(stylesheets[1].Stylesheet, Is.SameAs(stylesheet2));
+        Assert.That(stylesheets, Has.Count.EqualTo(1));
+        Assert.That(stylesheets[0].Stylesheet, Is.SameAs(stylesheet2));
     }
 
     [Test]
     public async Task SetDocument_LoadsDocumentStylesheets()
     {
         // Arrange
-        var manager = new StyleSheetManager(_context);
+        var manager = new StyleSheetManager(null);
         var document = await _context.OpenNewAsync();
         var head = document.CreateElement("head");
         document.DocumentElement.AppendChild(head);
@@ -84,7 +84,7 @@ public class StyleSheetManagerTests
     public void GetStylesheets_ReturnsInOrderOfOrigin()
     {
         // Arrange
-        var manager = new StyleSheetManager(_context);
+        var manager = new StyleSheetManager(null);
         var userAgentStylesheet = CreateStylesheet("div { color: black; }");
         var userStylesheet = CreateStylesheet("div { color: blue; }");
         var authorStylesheet = CreateStylesheet("div { color: red; }");
@@ -97,10 +97,10 @@ public class StyleSheetManagerTests
         var stylesheets = manager.GetStylesheets().ToList();
 
         // Assert
-        Assert.That(stylesheets, Has.Count.EqualTo(4));
-        Assert.That(stylesheets[1].Origin, Is.EqualTo(StylesheetOrigin.UserAgent));
-        Assert.That(stylesheets[2].Origin, Is.EqualTo(StylesheetOrigin.User));
-        Assert.That(stylesheets[3].Origin, Is.EqualTo(StylesheetOrigin.Author));
+        Assert.That(stylesheets, Has.Count.EqualTo(3));
+        Assert.That(stylesheets[0].Origin, Is.EqualTo(StylesheetOrigin.UserAgent));
+        Assert.That(stylesheets[1].Origin, Is.EqualTo(StylesheetOrigin.User));
+        Assert.That(stylesheets[2].Origin, Is.EqualTo(StylesheetOrigin.Author));
     }
 
     // Helper method to create stylesheets for testing
