@@ -98,8 +98,17 @@ Key responsibilities:
 - Handles properties marked with `PropertyFlags.Inherited` in AngleSharp
 - Manages explicit inheritance via the `inherit` keyword
 - Supports CSS custom properties (variables) which always inherit
-- Manages the parent-child inheritance chain
+- Processes the `all` property with its values (`inherit`, `initial`, `unset`)
+- Maintains proper inheritance chain from parent to child
+- Creates new style declarations to maintain immutability
+- Preserves `!important` flags during inheritance
 - Handles special cases like the root element and missing parent styles
+
+Implementation details:
+- Uses `CssStyleDeclaration.SetDeclarations` for explicitly inherited properties
+- Uses `CssStyleDeclaration.UpdateDeclarations` for natural inheritance
+- Provides fallbacks for non-CssStyleDeclaration implementations
+- Preserves property priorities during inheritance
 
 ### 6. ValueComputer
 

@@ -32,18 +32,15 @@
 - Property-level !important flag management
 - Integration with style declarations
 
-## Features In Progress
-
-🔄 **InheritanceProcessor**
+✅ **InheritanceProcessor**
 - Leveraging AngleSharp's property inheritance model
-- Implementation considerations:
-    - Parent-child inheritance chain management
-    - Root element special case handling
-    - CSS custom properties (variables) inheritance
-    - Shorthand property expansion
-    - The 'all' property support
-    - 'inherit', 'initial', and 'unset' keyword handling
-    - Possible performance optimizations
+- Parent-child inheritance chain management
+- Root element special case handling
+- CSS custom properties (variables) inheritance
+- The 'all' property support ('inherit', 'initial', 'unset')
+- Explicit 'inherit' keyword handling for individual properties
+- Integration with CssStyleDeclaration
+- Preservation of !important flags during inheritance
 
 ## Features To Be Implemented
 
@@ -52,64 +49,39 @@
 - Resolving units (px, em, rem, %, vh, vw, etc.)
 - Handling CSS variables (custom properties)
 - Converting between compatible units
+- Color value computations
+- Font relative unit handling (em, ex)
+- Viewport relative unit handling (vh, vw, vmin, vmax)
+- Root relative unit handling (rem)
 
-⬜ **StyleCollectionBuilder**
-- Integration with document styles
-- Building the complete collection of applicable styles
-- Integration with layout system
-
-⬜ **Testing**
-- Unit tests for each component
-- Integration tests for the whole system
-- Performance benchmarks
-- Conformance tests against CSS specifications
-
-## Implementation Details For InheritanceProcessor
-
-1. **Core Inheritance Model**
-    - Use AngleSharp's existing `PropertyFlags.Inherited` flag and `CanBeInherited` property
-    - Create a new style declaration containing inherited properties from parent
-    - Handle missing parent styles (e.g., for root element)
-
-2. **Special Cases**
-    - CSS Custom Properties: Always inherit regardless of flags
-    - Root element: No parent to inherit from, use initial values
-    - Empty parent style: Fall back to initial values
-    - 'inherit' keyword: Force inheritance even for non-inheritable properties
-    - 'initial' keyword: Use initial value instead of inheriting
-    - 'unset' keyword: Act as 'inherit' or 'initial' depending on property
-
-3. **Inheritance Chain**
-    - Options for traversing the parent-child chain:
-        - Recursive computation: Compute parent style if not provided
-        - Top-down traversal: Have client code compute from root down
-        - Caching solution: Cache computed styles for reuse
-
-4. **Performance Considerations**
-    - Avoid unnecessary property checks and creations
-    - Consider property lookup optimization
-    - Possible caching of computed inheritance results
+⬜ **Enhancement of StyleComputationEngine**
+- Complete pipeline integration
+- Performance optimizations
+- Error handling improvements
+- Default styling integration
 
 ## Next Steps
 
-1. Implement the InheritanceProcessor component:
-    - Start with core inheritance logic for regular properties
-    - Add support for CSS custom properties
-    - Handle edge cases (root element, missing parent)
-    - Document usage pattern for proper parent-child style computation
-
-2. Implement the ValueComputer component:
-    - Begin with basic length unit handling
+1. Implement the ValueComputer component:
+    - Begin with basic length unit handling (px, pt, in, cm, mm)
     - Add support for relative units (em, rem, %)
-    - Implement viewport-relative units (vh, vw)
+    - Implement viewport-relative units (vh, vw, vmin, vmax)
     - Add color value computations
+    - Handle CSS custom property resolution in computed values
 
-3. Create comprehensive unit tests for each component:
-    - Test inheritance of various property types
-    - Test CSS keywords handling (inherit, initial, unset)
-    - Test value computation with different units
+2. Create comprehensive unit tests for ValueComputer:
+    - Test different unit conversions
+    - Test value computation with different contexts (viewport sizes, font sizes)
+    - Test CSS keyword handling (initial, inherit, unset)
+    - Test color value normalization and computation
+
+3. Complete the StyleComputationEngine integration:
+    - Connect all components in the computation pipeline
+    - Add caching mechanisms for performance optimization
+    - Implement error handling and recovery
 
 4. Create integration tests for the whole system:
     - Test complete style computation pipeline
     - Compare results with browser rendering
     - Benchmark performance
+    - Test with real-world websites and CSS frameworks
