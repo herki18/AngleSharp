@@ -112,15 +112,15 @@ Implementation details:
 
 ### 6. ValueComputer
 
-Computes final values by resolving relative units and handling special values.
+Computes final absolute values by resolving relative units and special values.
 
 ```csharp
 public class ValueComputer
 {
     public ICssStyleDeclaration ComputeValues(
-        ICssStyleDeclaration declaration,
+        ICssStyleDeclaration inheritedStyle,
         IElement element,
-        ICssStyleDeclaration parentStyle);
+        ICssStyleDeclaration computedParentStyle);
 }
 ```
 
@@ -131,6 +131,8 @@ public class ValueComputer
 3. **Resolve Cascade**: Use CascadeResolver to determine which properties take precedence
 4. **Apply Inheritance**: Use InheritanceProcessor to inherit properties from parent
 5. **Compute Values**: Use ValueComputer to resolve all relative values to absolute ones
+
+Each step builds on the previous one, with the entire pipeline executed for parent elements before their children to ensure proper computation of relative values. The process begins at the root element (with no parent) and flows downward through the DOM tree.
 
 ## Integration with AngleSharp
 

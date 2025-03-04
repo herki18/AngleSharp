@@ -10,6 +10,8 @@ public class StyleComputationEngine
     private readonly StyleSheetManager _stylesheetManager;
     private readonly SelectorMatcher _selectorMatcher;
     private readonly CascadeResolver _cascadeResolver;
+    private readonly InheritanceProcessor _inheritanceProcessor;
+    private readonly ValueComputer _valueComputer;
     private readonly IRenderDevice _renderDevice;
     private readonly IBrowsingContext _browsingContext;
 
@@ -21,6 +23,8 @@ public class StyleComputationEngine
         _stylesheetManager = new StyleSheetManager(context, document);
         _selectorMatcher = new SelectorMatcher(_renderDevice);
         _cascadeResolver = new CascadeResolver(_browsingContext);
+        _inheritanceProcessor = new InheritanceProcessor(_browsingContext);
+        _valueComputer = new ValueComputer(_renderDevice, _browsingContext);
     }
 
     public ICssStyleDeclaration ComputeElementStyle(IElement element,
@@ -33,6 +37,12 @@ public class StyleComputationEngine
         if (window is null)
             throw new InvalidOperationException("Element must be part of a document with a default view");
 
+
+        if(parentStyle is null && element.ParentElement is not null)
+        {
+            parentStyle = ComputeElementStyle(element.ParentElement, null, pseudoElement);
+        }
+
         // 1. Get stylesheets
         var stylesheets = _stylesheetManager.GetStylesheets();
 
@@ -43,13 +53,13 @@ public class StyleComputationEngine
         var cascadedStyle = _cascadeResolver.ResolveCascade(matchedRules, element);
 
         // 4. Apply inheritance
-        // TODO: Implement InheritanceProcessor
+        var inheritedStyle = _inheritanceProcessor.ApplyInheritance(cascadedStyle, parentStyle);
 
         // 5. Compute values
-        // TODO: Implement ValueComputer
+        var computedStyle = _valueComputer.ComputeValues(inheritedStyle, element, parentStyle);
 
         // Return a placeholder style declaration for now
-        return cascadedStyle;
+        return computedStyle;
     }
 
     private ICssStyleDeclaration CreateEmptyStyleDeclaration()

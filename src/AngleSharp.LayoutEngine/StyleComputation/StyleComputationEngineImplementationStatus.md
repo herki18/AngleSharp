@@ -42,17 +42,18 @@
 - Integration with CssStyleDeclaration
 - Preservation of !important flags during inheritance
 
-## Features To Be Implemented
-
+## Currently working on
 ⬜ **ValueComputer**
-- Computing absolute values from relative values
-- Resolving units (px, em, rem, %, vh, vw, etc.)
-- Handling CSS variables (custom properties)
-- Converting between compatible units
-- Color value computations
-- Font relative unit handling (em, ex)
-- Viewport relative unit handling (vh, vw, vmin, vmax)
-- Root relative unit handling (rem)
+- Takes the inherited style and computed parent style
+- Provides final computed values with absolute units
+- Handles unit conversion (px, em, rem, vh, vw, etc.)
+- Resolves CSS variables (custom properties)
+- Processes calc() expressions
+- Handles special values (initial, unset)
+- Preserves already computed values like colors
+- Special-cases font-size computation order
+
+## Features To Be Implemented
 
 ⬜ **Enhancement of StyleComputationEngine**
 - Complete pipeline integration
@@ -66,7 +67,6 @@
     - Begin with basic length unit handling (px, pt, in, cm, mm)
     - Add support for relative units (em, rem, %)
     - Implement viewport-relative units (vh, vw, vmin, vmax)
-    - Add color value computations
     - Handle CSS custom property resolution in computed values
 
 2. Create comprehensive unit tests for ValueComputer:
