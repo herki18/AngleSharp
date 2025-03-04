@@ -37,10 +37,13 @@ public class StyleComputationEngine
         if (window is null)
             throw new InvalidOperationException("Element must be part of a document with a default view");
 
+        // Check if this is the root element
+        bool isRootElement = IsRootElement(element);
 
-        if(parentStyle is null && element.ParentElement is not null)
+        // For non-root elements, compute parent style if not provided
+        if (parentStyle is null && !isRootElement && element.ParentElement is not null)
         {
-            parentStyle = ComputeElementStyle(element.ParentElement, null, pseudoElement);
+            parentStyle = ComputeElementStyle(element.ParentElement, null, null);
         }
 
         // 1. Get stylesheets
@@ -60,5 +63,10 @@ public class StyleComputationEngine
 
         // Return a placeholder style declaration for now
         return computedStyle;
+    }
+
+    private bool IsRootElement(IElement element)
+    {
+        return element.ParentElement is null && element.OwnerDocument?.DocumentElement == element;
     }
 }
