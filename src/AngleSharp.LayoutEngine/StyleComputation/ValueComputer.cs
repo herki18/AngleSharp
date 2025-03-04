@@ -2,7 +2,6 @@ namespace AngleSharp.LayoutEngine.StyleComputation;
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Css;
 using Css.Dom;
 using Css.Values;
@@ -32,32 +31,36 @@ public class ValueComputer
     /// </summary>
     /// <param name="declaration">The cascaded and inherited style declaration.</param>
     /// <param name="element">The element being styled.</param>
-    /// <param name="parentStyle">The parent element's computed style, if available.</param>
+    /// <param name="parentStyle">The parent element's computed style.</param>
+    /// <param name="rootStyle">The root element's computed style.</param>
     /// <returns>A new style declaration with computed values.</returns>
     public ICssStyleDeclaration ComputeValues(
         ICssStyleDeclaration declaration,
         IElement element,
-        ICssStyleDeclaration? parentStyle = null)
+        ICssStyleDeclaration parentStyle,
+        ICssStyleDeclaration rootStyle)
     {
         if (declaration == null)
             throw new ArgumentNullException(nameof(declaration));
         if (element == null)
             throw new ArgumentNullException(nameof(element));
         if (parentStyle == null)
-            throw new NullReferenceException("Parent style must be provided");
+            throw new ArgumentNullException(nameof(parentStyle));
+        if (rootStyle == null)
+            throw new ArgumentNullException(nameof(rootStyle));
 
         // Step 1: Create a new declaration to hold computed values
         var computedStyle = new CssStyleDeclaration(_context);
 
         // Step 2: Calculate root and parent font sizes
-        var rootFontSize = GetRootFontSize(element);
-        var parentFontSize = GetParentFontSize(parentStyle, rootFontSize);
+        var rootFontSize = ExtractFontSizeInPixels(rootStyle);
+        var parentFontSize = ExtractFontSizeInPixels(parentStyle);
 
         // Step 3: Compute element's font-size first as other properties may depend on it
         var elementFontSize = ComputeFontSize(declaration, parentFontSize, rootFontSize);
 
         // Step 4: Create a compute context with all needed information
-        var computeContext = CreateComputeContext(declaration, element, elementFontSize, rootFontSize, parentStyle);
+        var computeContext = CreateComputeContext(declaration, element, elementFontSize, rootFontSize, parentStyle, rootStyle);
 
         // Step 5: Process all properties
         var computedProperties = ComputeAllProperties(
@@ -75,35 +78,15 @@ public class ValueComputer
     }
 
     /// <summary>
-    /// Gets the root element's font size in pixels.
+    /// Extracts the font size from a style declaration in pixels.
     /// </summary>
-    private double GetRootFontSize(IElement element)
+    private double ExtractFontSizeInPixels(ICssStyleDeclaration style)
     {
-        const double defaultRootFontSize = 16.0;
+        const double defaultFontSize = 16.0;
 
-        try
-        {
-            // Get the root element
-            var document = element.OwnerDocument;
-            if (document == null)
-                return defaultRootFontSize;
-
-            var root = document.DocumentElement;
-            if (root == null)
-                return defaultRootFontSize;
-
-            // Get the font-size property, ensuring we have a computed value
-            var rootStyle = root.GetComputedStyle();
-            if (rootStyle == null)
-                return defaultRootFontSize;
-
-            // Try to parse the font-size value - it should be in pixels in computed style
-            var fontSizeValue = rootStyle.GetPropertyValue(PropertyNames.FontSize);
-            if (string.IsNullOrEmpty(fontSizeValue))
-                return defaultRootFontSize;
-
-            // If it already ends with px, parse it directly
-            if (fontSizeValue.EndsWith("px", StringComparison.OrdinalIgnoreCase))
+        try {
+            var fontSizeValue = style.GetPropertyValue(PropertyNames.FontSize);
+            if (!string.IsNullOrEmpty(fontSizeValue) && fontSizeValue.EndsWith("px"))
             {
                 if (double.TryParse(fontSizeValue.Substring(0, fontSizeValue.Length - 2),
                     out var fontSize))
@@ -112,9 +95,10 @@ public class ValueComputer
                 }
             }
 
-            // Otherwise, check if we can access the raw value
-            var fontSizeProperty = rootStyle.GetProperty(PropertyNames.FontSize);
-            if (fontSizeProperty?.RawValue is CssLengthValue lengthValue && lengthValue.Type == CssLengthValue.Unit.Px)
+            // Try accessing the raw value
+            var fontSizeProperty = style.GetProperty(PropertyNames.FontSize);
+            if (fontSizeProperty?.RawValue is CssLengthValue lengthValue &&
+                lengthValue.Type == CssLengthValue.Unit.Px)
             {
                 return lengthValue.Value;
             }
@@ -124,43 +108,7 @@ public class ValueComputer
             // Fall back to default in case of any error
         }
 
-        return defaultRootFontSize;
-    }
-
-    /// <summary>
-    /// Gets the parent element's font size in pixels.
-    /// </summary>
-    private double GetParentFontSize(ICssStyleDeclaration? parentStyle, double rootFontSize)
-    {
-        if (parentStyle == null)
-            return rootFontSize;
-
-        try
-        {
-            // Try to get the computed font-size directly
-            var fontSizeValue = parentStyle.GetPropertyValue(PropertyNames.FontSize);
-            if (!string.IsNullOrEmpty(fontSizeValue) && fontSizeValue.EndsWith("px", StringComparison.OrdinalIgnoreCase))
-            {
-                if (double.TryParse(fontSizeValue.Substring(0, fontSizeValue.Length - 2),
-                    out var fontSize))
-                {
-                    return fontSize;
-                }
-            }
-
-            // Try to access the raw value
-            var fontSizeProperty = parentStyle.GetProperty(PropertyNames.FontSize);
-            if (fontSizeProperty?.RawValue is CssLengthValue lengthValue && lengthValue.Type == CssLengthValue.Unit.Px)
-            {
-                return lengthValue.Value;
-            }
-        }
-        catch (Exception)
-        {
-            // Fall back to root font size in case of error
-        }
-
-        return rootFontSize;
+        return defaultFontSize;
     }
 
     /// <summary>
@@ -253,7 +201,8 @@ public class ValueComputer
         IElement element,
         double fontSize,
         double rootFontSize,
-        ICssStyleDeclaration parentStyle)
+        ICssStyleDeclaration parentStyle,
+        ICssStyleDeclaration rootStyle)
     {
         return new ComputationContext(
             _device,
@@ -261,7 +210,8 @@ public class ValueComputer
             fontSize,
             rootFontSize,
             style,
-            parentStyle);
+            parentStyle,
+            rootStyle);
     }
 
     /// <summary>
@@ -285,8 +235,6 @@ public class ValueComputer
             var computedFontSize = CreateComputedProperty(
                 PropertyNames.FontSize,
                 fontSizeValue,
-                fontSizeProperty.Converter,
-                fontSizeProperty.Flags,
                 fontSizeProperty.IsImportant);
 
             computedProperties.Add(computedFontSize);
@@ -306,7 +254,7 @@ public class ValueComputer
             try
             {
                 // Process the property value
-                ICssValue computedValue = ComputePropertyValue(
+                ICssValue? computedValue = ComputePropertyValue(
                     property.Name,
                     property.RawValue,
                     fontSize,
@@ -319,8 +267,6 @@ public class ValueComputer
                     var computedProperty = CreateComputedProperty(
                         property.Name,
                         computedValue,
-                        property.Converter,
-                        property.Flags,
                         property.IsImportant);
 
                     computedProperties.Add(computedProperty);
@@ -346,15 +292,11 @@ public class ValueComputer
     /// </summary>
     private ICssValue? ComputePropertyValue(
         string propertyName,
-        ICssValue? value,
+        ICssValue value,
         double fontSize,
         double rootFontSize,
         ComputationContext context)
     {
-        // If value is null, return null
-        if (value == null)
-            return null;
-
         // Handle CSS variables
         if (value is CssVarValue varValue)
         {
@@ -402,7 +344,7 @@ public class ValueComputer
 
         // For other value types (colors, etc.), let AngleSharp handle it
         // through its own computation mechanism if possible
-        if (value is ICssValue cssValue && cssValue.Compute is not null)
+        if (value is ICssValue cssValue && cssValue.Compute != null)
         {
             try
             {
@@ -549,11 +491,13 @@ public class ValueComputer
     private ICssProperty CreateComputedProperty(
         string name,
         ICssValue value,
-        IValueConverter converter,
-        PropertyFlags flags,
         bool important)
     {
-        return new CssProperty(name, converter, flags, value, important);
+        // Create a new property using the context factory
+        var property = _context.CreateProperty(name);
+        property.RawValue = value;
+        property.IsImportant = important;
+        return property;
     }
 
     /// <summary>
@@ -596,6 +540,7 @@ public class ValueComputer
         private readonly double _rootFontSize;
         private readonly ICssStyleDeclaration _style;
         private readonly ICssStyleDeclaration _parentStyle;
+        private readonly ICssStyleDeclaration _rootStyle;
 
         public ComputationContext(
             IRenderDevice device,
@@ -603,7 +548,8 @@ public class ValueComputer
             double fontSize,
             double rootFontSize,
             ICssStyleDeclaration style,
-            ICssStyleDeclaration parentStyle)
+            ICssStyleDeclaration parentStyle,
+            ICssStyleDeclaration rootStyle)
         {
             _device = device;
             _context = context;
@@ -611,6 +557,7 @@ public class ValueComputer
             _rootFontSize = rootFontSize;
             _style = style;
             _parentStyle = parentStyle;
+            _rootStyle = rootStyle;
         }
 
         public IRenderDevice Device => _device;
@@ -646,6 +593,14 @@ public class ValueComputer
             if (_parentStyle != null)
             {
                 variable = _parentStyle.GetProperty(name);
+                if (variable?.RawValue != null)
+                    return variable.RawValue;
+            }
+
+            // Check root style if different from parent
+            if (_rootStyle != null && !ReferenceEquals(_parentStyle, _rootStyle))
+            {
+                variable = _rootStyle.GetProperty(name);
                 if (variable?.RawValue != null)
                     return variable.RawValue;
             }

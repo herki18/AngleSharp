@@ -56,16 +56,9 @@ public class StyleComputationEngine
         var inheritedStyle = _inheritanceProcessor.ApplyInheritance(cascadedStyle, parentStyle);
 
         // 5. Compute values
-        var computedStyle = _valueComputer.ComputeValues(inheritedStyle, element, parentStyle);
+        var computedStyle = _valueComputer.ComputeValues(inheritedStyle, element, parentStyle!, parentStyle!);
 
         // Return a placeholder style declaration for now
         return computedStyle;
-    }
-
-    private ICssStyleDeclaration CreateEmptyStyleDeclaration()
-    {
-        // This is a temporary implementation until we have the full pipeline working
-        // In a real implementation, this would create a proper computed style declaration
-        return new CssStyleDeclaration(_browsingContext);
     }
 }
