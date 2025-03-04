@@ -6,6 +6,7 @@
 - Overall architecture design with clear component boundaries
 - Input/output interface definition
 - Component relationship design
+- Basic pipeline orchestration implemented
 
 ✅ **StyleSheetManager**
 - Managing stylesheets from different origins (user agent, user, author)
@@ -42,46 +43,92 @@
 - Integration with CssStyleDeclaration
 - Preservation of !important flags during inheritance
 
-## Currently working on
-⬜ **ValueComputer**
-- Takes the inherited style and computed parent style
-- Provides final computed values with absolute units
-- Handles unit conversion (px, em, rem, vh, vw, etc.)
-- Resolves CSS variables (custom properties)
-- Processes calc() expressions
-- Handles special values (initial, unset)
-- Preserves already computed values like colors
-- Special-cases font-size computation order
+🔄 **ValueComputer (Partial Implementation)**
+- ✅ Basic framework for value computation
+- ✅ Font-size handling as a dependency for other properties
+- ✅ Absolute unit conversion (px, pt, in, cm, mm)
+- ✅ Relative unit handling (em, rem, %)
+- ✅ Viewport-relative units (vh, vw, vmin, vmax)
+- ✅ Basic keyword handling (inherit, initial, unset)
+- ✅ Special handling for unitless line-height values
 
-## Features To Be Implemented
+✅ **Caching Infrastructure**
+- StyleCache implementation
+- LayoutBoxCache implementation
+- Dependency tracking system
+- Invalidation mechanisms
 
-⬜ **Enhancement of StyleComputationEngine**
-- Complete pipeline integration
-- Performance optimizations
-- Error handling improvements
-- Default styling integration
+## Features To Be Implemented/Enhanced
+
+⬜ **CSS Variable Resolution System**
+- Variable registry and management
+- Complete variable resolution algorithm
+- Circular reference detection
+- Fallback value handling
+- Integration with ValueComputer
+
+⬜ **Complex calc() Expression Evaluation**
+- Full calc() expression parser
+- Mixed unit operations support
+- Handling nested calculations
+- Integration with variable resolution
+
+⬜ **Special Value Handling**
+- Property-specific value computation
+- Keyword special cases (normal, auto, etc.)
+- Value normalization
+- Type conversion logic
+
+⬜ **Robust Error Handling System**
+- Graceful recovery from computation failures
+- Fallback value management
+- Error reporting and logging
+- Invalid value normalization
+
+⬜ **StyleComputationEngine Integration Improvements**
+- Connect caching system for performance optimization
+- Add comprehensive error handling throughout the pipeline
+- Implement default styling and normalization
+- Improve parent style resolution for inheritance chain
 
 ## Next Steps
 
-1. Implement the ValueComputer component:
-    - Begin with basic length unit handling (px, pt, in, cm, mm)
-    - Add support for relative units (em, rem, %)
-    - Implement viewport-relative units (vh, vw, vmin, vmax)
-    - Handle CSS custom property resolution in computed values
+1. **Implement CSS Variable Resolution System**:
+   - Create VariableRegistry for tracking CSS variables
+   - Implement VariableResolver for handling var() references
+   - Add circular reference detection and fallback value support
+   - Integrate with ValueComputer
 
-2. Create comprehensive unit tests for ValueComputer:
-    - Test different unit conversions
-    - Test value computation with different contexts (viewport sizes, font sizes)
-    - Test CSS keyword handling (initial, inherit, unset)
-    - Test color value normalization and computation
+2. **Develop Complex calc() Expression Evaluation**:
+   - Create expression parser for calc() expressions
+   - Implement unit conversion and mixing logic
+   - Support nested calculations
+   - Handle variables within calc() expressions
 
-3. Complete the StyleComputationEngine integration:
-    - Connect all components in the computation pipeline
-    - Add caching mechanisms for performance optimization
-    - Implement error handling and recovery
+3. **Implement Special Value Handling**:
+   - Add property-specific computation logic
+   - Implement keyword special cases
+   - Create value normalization system
+   - Add type conversion
 
-4. Create integration tests for the whole system:
-    - Test complete style computation pipeline
-    - Compare results with browser rendering
-    - Benchmark performance
-    - Test with real-world websites and CSS frameworks
+4. **Create Robust Error Handling System**:
+   - Implement error recovery mechanisms
+   - Add fallback value management
+   - Create error reporting system
+   - Add value validation
+
+5. **Enhance Caching Integration**:
+   - Connect StyleCache to ValueComputer
+   - Implement dependency tracking for efficient invalidation
+   - Add cache invalidation triggers for DOM mutations
+
+6. **Finalize StyleComputationEngine Integration**:
+   - Review and complete pipeline connections
+   - Add error handling throughout the pipeline
+   - Implement performance optimizations
+
+7. **Testing and Validation**:
+   - Create comprehensive test suite for CSS variable resolution
+   - Add integration tests for complete style computation
+   - Compare results with browser rendering
+   - Benchmark performance
