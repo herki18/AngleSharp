@@ -310,6 +310,34 @@ public class ValueComputer
             return value; // Keep as is if can't resolve
         }
 
+        // Process specific properties that need special handling
+        switch (propertyName)
+        {
+            case PropertyNames.LineHeight:
+                // Special handling for unitless line-height values
+                if (value is CssNumberValue numberValue)
+                {
+                    // Convert unitless line-height to pixels by multiplying by font-size
+                    return CreatePixelLengthValue(numberValue.Value * fontSize);
+                }
+                break;
+
+            case PropertyNames.FontWeight:
+                // Special handling for numeric font weights
+                if (value is CssNumberValue fontWeightValue)
+                {
+                    // Keep numeric font-weight values as is (100-900)
+                    return value;
+                }
+                break;
+
+            case PropertyNames.LetterSpacing:
+            case PropertyNames.WordSpacing:
+                // These properties may need special handling like line-height
+                // For now, standard length processing applies
+                break;
+        }
+
         // Handle calc() expressions
         if (value is CssCalcValue calcValue)
         {
