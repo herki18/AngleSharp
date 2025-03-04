@@ -46,10 +46,6 @@ public class ValueComputer
             throw new ArgumentNullException(nameof(declaration));
         if (element == null)
             throw new ArgumentNullException(nameof(element));
-        if (parentStyle == null)
-            throw new ArgumentNullException(nameof(parentStyle));
-        if (rootStyle == null)
-            throw new ArgumentNullException(nameof(rootStyle));
 
         // Step 1: Create a new declaration to hold computed values
         var computedStyle = new CssStyleDeclaration(_context);
