@@ -14,6 +14,7 @@ public class ValueComputer
 {
     private readonly IRenderDevice _device;
     private readonly IBrowsingContext _context;
+    private IDeclarationFactory _factory;
 
     /// <summary>
     /// Creates a new ValueComputer.
@@ -24,6 +25,7 @@ public class ValueComputer
     {
         _device = device ?? throw new ArgumentNullException(nameof(device));
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _factory = context.GetService<IDeclarationFactory>() ?? throw new ArgumentNullException(nameof(context));
     }
 
     /// <summary>
@@ -322,8 +324,9 @@ public class ValueComputer
             switch (specialValue.CssText)
             {
                 case CssKeywords.Initial:
-                    // Would return the initial value for this property
-                    return value;
+                    // Get the initial value from the property factory
+                    var declarationInfo = _factory.Create(propertyName);
+                    return declarationInfo.InitialValue;
                 case CssKeywords.Inherit:
                     // Would use the parent value
                     return context.GetInheritedValue(propertyName);

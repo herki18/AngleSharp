@@ -280,6 +280,91 @@ public class ValueComputerTests
     }
 
     [Test]
+    public void ComputeValues_LineHeightUnitless_DifferentFontSizes_ComputesCorrectly()
+    {
+        // Arrange
+        var element = CreateElement("<div></div>");
+        var rootStyle = CreateStyle("font-size: 16px;");
+        var parentStyle = CreateStyle("font-size: 16px;");
+
+        // Test case 1: 24px font size
+        var elementStyle1 = CreateStyle("font-size: 24px; line-height: 1.5;");
+        var result1 = _valueComputer.ComputeValues(elementStyle1, element, parentStyle, rootStyle);
+        var computedLineHeight1 = result1.GetPropertyValue("line-height");
+        Assert.That(computedLineHeight1, Is.EqualTo("36px")); // 24px * 1.5
+
+        // Test case 2: 18px font size
+        var elementStyle2 = CreateStyle("font-size: 18px; line-height: 1.2;");
+        var result2 = _valueComputer.ComputeValues(elementStyle2, element, parentStyle, rootStyle);
+        var computedLineHeight2 = result2.GetPropertyValue("line-height");
+        Assert.That(computedLineHeight2, Is.EqualTo("21.6px")); // 18px * 1.2
+    }
+
+    [Test]
+    public void ComputeValues_LineHeightEmVsUnitless_ComputesConsistently()
+    {
+        // Arrange
+        var element = CreateElement("<div></div>");
+        var rootStyle = CreateStyle("font-size: 16px;");
+        var parentStyle = CreateStyle("font-size: 16px;");
+
+        // Test with unitless value
+        var elementStyleUnitless = CreateStyle("font-size: 20px; line-height: 1.5;");
+        var resultUnitless = _valueComputer.ComputeValues(elementStyleUnitless, element, parentStyle, rootStyle);
+        var computedLineHeightUnitless = resultUnitless.GetPropertyValue("line-height");
+
+        // Test with em value
+        var elementStyleEm = CreateStyle("font-size: 20px; line-height: 1.5em;");
+        var resultEm = _valueComputer.ComputeValues(elementStyleEm, element, parentStyle, rootStyle);
+        var computedLineHeightEm = resultEm.GetPropertyValue("line-height");
+
+        // Both should compute to 30px, but the behavior is different when inherited
+        Assert.That(computedLineHeightUnitless, Is.EqualTo("30px"));
+        Assert.That(computedLineHeightEm, Is.EqualTo("30px"));
+    }
+
+    [Test]
+    public void ComputeValues_LineHeightInheritance_UnitlessValueIsRelativeToChildsFontSize()
+    {
+        // Arrange
+        var element = CreateElement("<div></div>");
+        var rootStyle = CreateStyle("font-size: 16px;");
+        var parentStyle = CreateStyle("font-size: 16px; line-height: 1.5;");
+        var elementStyle = CreateStyle("font-size: 20px;"); // Inherits line-height: 1.5
+
+        // Act
+        var result = _valueComputer.ComputeValues(elementStyle, element, parentStyle, rootStyle);
+
+        // Assert
+        var computedLineHeight = result.GetPropertyValue("line-height");
+
+        // When inheriting unitless line-height, it scales with the element's font-size
+        Assert.That(computedLineHeight, Is.EqualTo("30px")); // 20px * 1.5
+    }
+
+    [Test]
+    public void ComputeValues_LineHeightNormalKeyword_ComputesReasonableValue()
+    {
+        // Arrange
+        var element = CreateElement("<div></div>");
+        var rootStyle = CreateStyle("font-size: 16px;");
+        var parentStyle = CreateStyle("font-size: 16px;");
+        var elementStyle = CreateStyle("font-size: 20px; line-height: normal;");
+
+        // Act
+        var result = _valueComputer.ComputeValues(elementStyle, element, parentStyle, rootStyle);
+
+        // Assert
+        var computedLineHeight = result.GetPropertyValue("line-height");
+
+        // "normal" typically computes to a value between 1.0 and 1.2 times the font size
+        var lineHeightValue = double.Parse(computedLineHeight.Replace("px", ""));
+        var ratio = lineHeightValue / 20.0; // divide by font-size to get the ratio
+
+        Assert.That(ratio, Is.GreaterThanOrEqualTo(1.0).And.LessThanOrEqualTo(1.2));
+    }
+
+    [Test]
     public void ComputeValues_InvalidInput_HandlesGracefully()
     {
         // Arrange
