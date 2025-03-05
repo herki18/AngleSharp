@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Cache Module/Diagrams/Caching Integration with Style Computation Pipeline.md",
-                "mode": "preview",
+                "file": "Document Lifecycle Module/Implementation/DocumentLifecycleManager Implementation Status.md",
+                "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Caching Integration with Style Computation Pipeline"
+              "title": "DocumentLifecycleManager Implementation Status"
             }
           }
         ]
@@ -170,8 +170,17 @@
   },
   "active": "13ab5b168f3048ba",
   "lastOpenFiles": [
-    "Cache Module/Diagrams/Cache Dependency and Invalidation Flow.md",
+    "Overall/Diagrams/AngleSharp Layout Engine - Complete System Architecture.md",
+    "Document Lifecycle Module/Implementation/DocumentLifecycleManager Implementation Status.md",
+    "Document Lifecycle Module/Implementation",
+    "Document Lifecycle Module/Arhitecture",
+    "Overall/Arhitecture/AngleSharp Layout Engine - Complete Architecture Overview.md",
+    "Style Computation Module/Implementation/StyleComputationEngineImplementationStatus.md",
+    "Document Lifecycle Module/Document Lifecycle-Driven Invalidation System.md",
+    "Document Lifecycle Module/Arhitecture/Document Lifecycle Architecture.md",
+    "Layout Engine Module/Architecture Layout.md",
     "Cache Module/Diagrams/Caching Integration with Style Computation Pipeline.md",
+    "Cache Module/Diagrams/Cache Dependency and Invalidation Flow.md",
     "Cache Module/Diagrams/AngleSharp.LayoutEngine Caching Architecture.md",
     "Cache Module/Implementation/AngleSharp.LayoutEngine Caching Implementation Plan.md",
     "Cache Module/Diagrams",
@@ -180,11 +189,8 @@
     "Cache Module/Arhitecture/AngleSharp.LayoutEngine Caching Architecture.md",
     "Cache Module/Implementation",
     "Cache Module/Arhitecture",
-    "Layout Engine Module/Architecture Layout.md",
     "Overall/Diagrams/AngleSharp Layout Engine - System Data Flow.md",
-    "Overall/Diagrams/AngleSharp Layout Engine - Complete System Architecture.md",
     "Overall/Implementation/AngleSharp Layout Engine - Implementation Roadmap.md",
-    "Overall/Arhitecture/AngleSharp Layout Engine - Complete Architecture Overview.md",
     "Overall/Implementation",
     "Overall/Architecture Design AngleSharp Layout Engine with Mutation-Aware Caching.md",
     "Overall/Diagrams",
@@ -195,17 +201,11 @@
     "Style Computation Module/Reference/AngleSharp CSS Declaration Handling - Quick Reference.md",
     "Style Computation Module/Future Plans/CSS Variable Implementation Plan for ValueComputer.md",
     "Style Computation Module/Future Plans",
-    "Style Computation Module/Implementation/StyleComputationEngineImplementationStatus.md",
     "Style Computation Module/Style Computation Architecture.md",
-    "Style Computation Module/Implementation",
-    "Style Computation Module/Reference",
     "Style Computation Module/Instructions/Instructions.md",
     "Style Computation Module/Rules.md",
-    "Document Lifecycle Module/Document Lifecycle Architecture.md",
-    "Document Lifecycle Module/Document Lifecycle-Driven Invalidation System.md",
     "Document Lifecycle Module/Rev 1/Modules.md",
     "Document Lifecycle Module/Rev 1/Document Lifecycle-Driven Invalidation Process Flow.md",
-    "Document Lifecycle Module/Rev 1/Document Lifecycle-Driven Invalidation System Architecture.md",
     "Untitled.canvas"
   ]
 }
