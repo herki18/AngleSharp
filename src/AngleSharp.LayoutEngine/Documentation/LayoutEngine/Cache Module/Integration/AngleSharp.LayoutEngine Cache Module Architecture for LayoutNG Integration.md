@@ -1,4 +1,4 @@
-# Cache Module - Updated for LayoutNG Integration
+# AngleSharp.LayoutEngine Cache Module: Architecture for LayoutNG Integration
 
 ## Overview
 

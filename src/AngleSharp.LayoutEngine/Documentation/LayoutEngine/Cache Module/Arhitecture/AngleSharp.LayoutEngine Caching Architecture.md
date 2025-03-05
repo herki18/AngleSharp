@@ -1,171 +1,292 @@
 # AngleSharp.LayoutEngine Caching Architecture
 
-## Overview
+## Enhanced for LayoutNG Integration
 
-The caching system in AngleSharp.LayoutEngine is designed to optimize style and layout computation performance by avoiding redundant calculations. It implements a sophisticated dependency tracking mechanism that ensures proper cache invalidation while maintaining memory efficiency.
+## 1. Architecture Overview
 
-The system provides specialized caches for style declarations and layout boxes, with a versioning mechanism to efficiently invalidate entries when dependencies change. It maintains proper separation of concerns by having distinct cache strategies for different computation types while sharing a common dependency tracking infrastructure.
+The caching architecture for AngleSharp.LayoutEngine is being enhanced to support both the existing layout approach and the new LayoutNG-inspired architecture. This unified caching system optimizes performance by avoiding redundant calculations while supporting immutable fragments, constraint-based layout, and phase separation.
 
-## Core Components
+### 1.1 Core Design Principles
 
-### Cache Interfaces
+- **Immutable Fragment Support**: Cache immutable layout fragments rather than mutable box models
+- **Phase-Specific Caching**: Separate caches for intrinsic sizes, layout fragments, and positioning
+- **Constraint-Based Keys**: Cache keys that incorporate layout constraints for precise invalidation
+- **Hierarchical Dependency Tracking**: Enhanced tracking for formatting contexts and logical layout
+- **Memory Efficiency**: Optimized storage for immutable objects with versioning
 
-- **IComputationCache<TKey, TValue>**: The foundational generic interface for all computation caches
-    - Defines methods for adding, retrieving, and invalidating cache entries
-    - Provides a consistent API regardless of what's being cached
+### 1.2 System Components
 
-### Base Implementation
+The enhanced caching system extends the existing architecture with new components to support LayoutNG:
 
-- **LayoutEngineCache<TKey, TValue>**: Base implementation for all cache types
-    - Implements versioning for efficient mass invalidation
-    - Handles key transformation for specialized caching needs
-    - Provides thread-safe operations using ConcurrentDictionary
+#### Core Interfaces (From Existing System)
 
-### Specialized Cache Types
+- **IComputationCache<TKey, TValue>**: Foundational generic interface for all computation caches
+- **LayoutEngineCache<TKey, TValue>**: Base implementation with versioning support
 
-- **StyleCache**: Caches computed style declarations for elements
+#### Enhanced Components for LayoutNG
+
+- **FragmentCache**: Specialized cache for immutable layout fragments
+- **IntrinsicSizeCache**: Dedicated cache for min/max content sizes
+- **ConstraintSpaceCache**: Optional cache for frequently reused constraint spaces
+
+#### Enhanced Key Types
+
+- **FragmentCacheKey**: Identifies fragment computations (element + constraint space + writing mode)
+- **IntrinsicSizesCacheKey**: Identifies intrinsic size computations (element + writing mode)
+- **VersionedKey<T>**: Enhanced with support for constraint-sensitive versioning
+
+#### Dependency Tracking
+
+- **EnhancedDependencyTracker**: Extended from existing CacheDependencyTracker with:
+    - Formatting context dependency tracking
+    - Logical relationship tracking (writing-mode aware)
+    - Constraint-based dependency tracking
+    - Fragment assembly dependencies
+
+#### Central Management
+
+- **LayoutEngineCacheManager**: Enhanced to coordinate all cache types, including new LayoutNG caches
+
+## 2. Key Components in Detail
+
+### 2.1 FragmentCache
+
+Specialized for caching immutable layout fragments produced by the LayoutNG system:
+
+- **Purpose**: Store and retrieve immutable layout fragments
+- **Key Structure**: Element + ConstraintSpace + Optional PseudoElement
+- **Dependencies**: Tracks relationships between elements, fragments, and formatting contexts
+- **Integration**: Works directly with the LayoutEngine to cache layout results
+- **Versioning**: Uses the versioning system for efficient invalidation
+- **Memory Management**: Implements strategies for efficient storage of immutable fragments
+
+### 2.2 IntrinsicSizeCache
+
+Dedicated to caching intrinsic size calculations (min/max content sizes):
+
+- **Purpose**: Store and retrieve min/max content size calculations
+- **Key Structure**: Element + WritingMode + Optional PseudoElement
+- **Dependencies**: Tracks content and writing mode dependencies
+- **Integration**: Works with the intrinsic size calculation phase of layout
+- **Performance**: Optimized for frequent access during layout calculations
+- **Invalidation**: Selectively invalidated when content or style changes affect sizing
+
+### 2.3 Enhanced Cache Keys
+
+Keys for the LayoutNG caching system that capture the necessary context:
+
+- **FragmentCacheKey**: Captures the full context for layout fragment generation
     
-    - Keys based on element and optional pseudo-element
-    - Integrates with dependency tracking for style relationships
-- **LayoutBoxCache<TLayoutData>**: Caches layout calculations
+    - Element reference
+    - Constraint space (available size, percentage resolution base, etc.)
+    - Optional pseudo-element identifier
+    - Writing mode and direction information
+- **IntrinsicSizesCacheKey**: Captures the context for intrinsic size calculation
     
-    - Keys based on element and container dimensions
-    - Handles dependencies between layout computations
+    - Element reference
+    - Writing mode information
+    - Optional pseudo-element identifier
 
-### Dependency Tracking
+### 2.4 EnhancedDependencyTracker
 
-- **CacheDependencyTracker**: Maintains relationships between cached items
-    - Tracks element hierarchical dependencies
-    - Tracks style dependencies
-    - Tracks document dependencies
-    - Tracks layout dependencies
-    - Enables targeted invalidation of dependent entries
+Extended dependency tracking for LayoutNG requirements:
 
-### Keys and Versioning
+- **Formatting Context Dependencies**: Track which elements depend on specific formatting contexts
+- **Constraint Dependencies**: Track relationships between elements and constraint spaces
+- **Intrinsic Size Dependencies**: Track dependencies for size calculations across writing modes
+- **Fragment Assembly Dependencies**: Track parent-child relationships in fragment trees
+- **Logical Layout Awareness**: Account for writing mode in dependency relationships
+- **Query Capabilities**: Retrieve elements affected by specific context changes
+- **Invalidation Assistance**: Provide information for targeted invalidation
 
-- **StyleCacheKey**: Identifies style computations (element + pseudo-element)
-- **LayoutCacheKey**: Identifies layout computations (element + container dimensions)
-- **VersionedKey<T>**: Wraps keys with version information for invalidation
+### 2.5 Enhanced LayoutEngineCacheManager
 
-### Central Management
+Extended to support LayoutNG caching requirements:
 
-- **LayoutEngineCacheManager**: Coordinates all caches in the system
-    - Provides access to specialized caches
-    - Orchestrates invalidation across multiple cache types
-    - Maintains a shared dependency tracker
+- **Unified Management**: Coordinates all cache types in the system
+- **Cache Access**: Provides access to specialized caches (style, fragment, intrinsic sizes)
+- **Invalidation Coordination**: Orchestrates invalidation across multiple cache types
+- **Dependency Integration**: Works with the EnhancedDependencyTracker
+- **Backward Compatibility**: Maintains support for existing cache types
+- **Memory Management**: Coordinates memory usage across cache types
 
-## Caching Strategies
+## 3. LayoutNG Integration Strategies
 
-The caching system employs multiple strategies to balance performance and correctness:
+### 3.1 Fragment-Based Caching
 
-### 1. Hierarchical Dependency Tracking
+Unlike the current box-model caching, fragment-based caching stores immutable layout fragments:
 
-Style and layout computations often depend on parent elements. The system tracks these relationships to ensure that changes to parent elements correctly invalidate cached values for their descendants.
+- **Immutable Results**: Store complete, immutable layout results
+- **Hierarchical Structure**: Cache fragments with their hierarchical structure intact
+- **Box Properties**: Store all box properties (margins, borders, padding) within fragments
+- **Coordinate Systems**: Support both logical and physical coordinate systems
+- **Fragment Identity**: Maintain identity for fragment lookup and dependency tracking
 
-```csharp
-// When caching a style for an element, track its parent dependency
-var parent = key.Element.ParentElement;
-if (parent != null)
-{
-    _dependencyTracker.TrackDependency(
-        key.Element,
-        parent,
-        CacheDependencyOptions.TrackElementDependencies |
-        CacheDependencyOptions.TrackStyleDependencies);
-}
+### 3.2 Phase-Separated Caching
+
+The LayoutNG architecture separates intrinsic size calculation from layout:
+
+- **Separate Phase Caches**: Distinct caches for different layout phases
+- **Intrinsic Size Phase**: Cache min/max content sizes independently
+- **Layout Phase**: Cache layout fragments with their full structure
+- **Positioning Phase**: Potentially separate cache for positioned elements
+- **Inter-Phase Dependencies**: Track relationships between phases
+- **Phase-Specific Invalidation**: Invalidate only affected phases when possible
+
+### 3.3 Constraint-Aware Invalidation
+
+Fragment invalidation must consider constraint spaces:
+
+- **Constraint-Sensitive Keys**: Cache keys that incorporate constraint information
+- **Partial Invalidation**: Invalidate only entries affected by specific constraint changes
+- **Constraint Propagation**: Track how constraint changes affect descendant elements
+- **Writing Mode Awareness**: Consider writing mode in invalidation decisions
+- **Formatting Context Boundaries**: Respect formatting context boundaries during invalidation
+- **Style-Constraint Relationships**: Track how style changes affect constraints
+
+### 3.4 Logical Layout Compatibility
+
+The enhanced caching system handles logical layout:
+
+- **Writing Mode Support**: Cache entries specific to writing modes
+- **Direction Awareness**: Account for text direction in caching and invalidation
+- **Logical Properties**: Support logical property dependencies
+- **Physical Conversion**: Handle conversion between logical and physical coordinates
+- **Directional Invalidation**: Invalidate appropriately when writing mode or direction changes
+
+## 4. Backward Compatibility
+
+### 4.1 Legacy API Support
+
+The enhanced system maintains compatibility with existing code:
+
+- **Existing Interfaces**: Maintain support for IStyleCache and ILayoutBoxCache
+- **Adapter Pattern**: Use adapters to bridge between old and new systems
+- **Data Conversion**: Convert between mutable boxes and immutable fragments as needed
+- **Dual Operation**: Allow both systems to operate concurrently during transition
+- **Compatible Methods**: Provide equivalent methods for common operations
+
+### 4.2 Transition Strategy
+
+A gradual transition allows incremental adoption:
+
+1. **Phase 1**: Keep both systems side-by-side
+    - Create adapters between old and new cache types
+    - Allow clients to choose which system to use
+2. **Phase 2**: Gradually migrate to LayoutNG
+    - Convert most common layout scenarios first
+    - Use adapters for edge cases
+3. **Phase 3**: Complete transition
+    - Full migration to fragment-based caching
+    - Legacy API maintained through adapters
+
+## 5. Optimizations and Performance
+
+### 5.1 Memory Efficiency
+
+The immutable nature of fragments requires memory optimizations:
+
+- **Fragment Pooling**: Reuse fragment objects for similar layouts
+- **Structural Sharing**: Common parts of fragments can be shared
+- **Adaptive Caching**: Cache size adjusts based on available memory
+- **Memory Monitoring**: Track fragment cache memory usage
+
+### 5.2 Computation Efficiency
+
+Optimize the cache for performance:
+
+- **Key Hashing Optimization**: Efficient hash codes for cache keys
+- **Two-Level Caching**: In-memory and serialized caching for large documents
+- **Lazy Fragment Assembly**: Only compute detailed fragments when needed
+- **Partial Recalculation**: Update only affected parts of fragments
+
+### 5.3 Concurrent Access
+
+Support for multi-threaded scenarios:
+
+- **Thread-Safe Cache Operations**: All cache operations are thread-safe
+- **Concurrent Computation**: Layout computations can happen concurrently
+- **Read/Write Splitting**: Multiple reads with coordinated writes
+
+## 6. Integration with Document Lifecycle
+
+The caching system integrates with the Document Lifecycle module:
+
+- **Mutation Observation**: Integration with mutation detection system
+- **Invalidation Coordination**: Coordinate with InvalidationManager
+- **Lifecycle State Awareness**: Respect document lifecycle states
+- **Update Scheduling**: Work with SchedulingService for optimal update timing
+- **Batch Processing**: Support batch invalidation and recalculation
+- **Priority-Based Updates**: Prioritize updates for visible content
+
+## 7. Component Relationships
+
+### 7.1 Component Diagram
+
+```
+LayoutEngine
+    ├── StyleComputationModule
+    │   └── StyleCache
+    ├── LayoutEngineModule
+    │   ├── FragmentCache
+    │   ├── IntrinsicSizeCache
+    │   └── ConstraintSpaceCache
+    ├── CacheModule
+    │   ├── LayoutEngineCacheManager
+    │   └── EnhancedDependencyTracker
+    └── DocumentLifecycleModule
+        ├── InvalidationManager
+        ├── StyleInvalidationTracker
+        └── LayoutInvalidationTracker
 ```
 
-### 2. Versioned Cache Entries
+### 7.2 Data Flow
 
-Rather than removing all entries when a significant change occurs, the system can increment a version counter and effectively invalidate all entries at once.
-
-```csharp
-// Invalidate by incrementing version
-public virtual void Invalidate(bool clearItems = true)
-{
-    Interlocked.Increment(ref _version);
-    if (clearItems)
-    {
-        Clear();
-    }
-}
-```
-
-### 3. Selective Invalidation
-
-For targeted updates, the system can selectively invalidate only the affected elements and their dependents.
-
-```csharp
-// Invalidate a specific element and its dependents
-public void InvalidateElement(IElement element)
-{
-    // Remove direct entry
-    _cache.Remove(new StyleCacheKey(element));
+1. **Layout Request**:
     
-    // Also invalidate dependents
-    foreach (var dependent in _dependencyTracker.GetStyleDependents(element))
-    {
-        _cache.Remove(new StyleCacheKey(dependent));
-    }
-}
-```
-
-### 4. Document-Level Invalidation
-
-When a document changes significantly, all elements within that document can be invalidated.
-
-```csharp
-// Invalidate all elements in a document
-public void InvalidateDocument(IDocument document)
-{
-    foreach (var element in _dependencyTracker.GetDocumentDependents(document))
-    {
-        InvalidateElement(element);
-    }
-}
-```
-
-## Integration with Style Computation
-
-The caching system integrates directly with the `StyleComputationEngine` to provide transparent caching of computed styles:
-
-```csharp
-public ICssStyleDeclaration ComputeElementStyle(IElement element,
-    ICssStyleDeclaration? parentStyle = null,
-    string? pseudoElement = null)
-{
-    // Create a cache key
-    var cacheKey = new StyleCacheKey(element, pseudoElement);
-
-    // Try to get from cache first
-    if (_cacheManager.StyleCache.TryGetValue(cacheKey, out var cachedStyle))
-    {
-        return cachedStyle;
-    }
-
-    // If not in cache, compute and store for future use
-    return _cacheManager.StyleCache.GetOrAdd(cacheKey, _ => {
-        // Compute style...
-        return computedStyle;
-    });
-}
-```
-
-## Performance Considerations
-
-The caching system is designed with performance in mind:
-
-1. **Memory Efficiency**:
+    - Client requests layout for element
+    - LayoutEngine checks FragmentCache for cached fragment
+    - If cache miss, compute fragment using appropriate formatting context
+    - Store result in FragmentCache
+    - Return fragment to client
+2. **Intrinsic Size Calculation**:
     
-    - Uses key versioning to avoid keeping multiple copies of the same data
-    - Allows for selective clearing of caches
-2. **CPU Efficiency**:
+    - Client requests intrinsic sizes
+    - Check IntrinsicSizeCache for cached sizes
+    - If cache miss, compute sizes
+    - Store result in IntrinsicSizeCache
+    - Return sizes to client
+3. **DOM Mutation**:
     
-    - Minimizes redundant style and layout computations
-    - Targets invalidations to affected elements only
-    - Uses thread-safe concurrent collections for multi-threaded scenarios
-3. **Scalability**:
+    - MutationObserver detects change
+    - InvalidationManager determines affected elements
+    - StyleInvalidationTracker and LayoutInvalidationTracker mark elements as invalid
+    - CacheManager invalidates affected cache entries
+    - DocumentLifecycleManager schedules recalculation
+4. **Invalidation Chain**:
     
-    - Supports large DOM trees through targeted invalidation
-    - Handles complex dependency chains efficiently
-    - Maintains separate caches for different computation types
+    - Element style changes
+    - StyleCache entry invalidated
+    - EnhancedDependencyTracker identifies dependent fragments
+    - FragmentCache entries invalidated
+    - Dependent elements' fragments invalidated recursively
+
+### 7.3 Dependency Relationships
+
+- **StyleCache → FragmentCache**: Fragment calculations depend on computed styles
+- **IntrinsicSizeCache → FragmentCache**: Fragment layout may depend on intrinsic sizes
+- **FragmentCache → FragmentCache**: Parent fragments depend on child fragments
+- **ConstraintSpace → FragmentCache**: Fragments depend on their constraint spaces
+- **EnhancedDependencyTracker → All Caches**: Provides dependency information for invalidation
+- **MutationObserver → InvalidationManager → CacheManager**: Mutation flow for invalidation
+
+## 8. Future Extensibility
+
+The architecture is designed for future extensions:
+
+- **New Layout Models**: Support for additional CSS layout models
+- **Custom Formatting Contexts**: Extensible for new formatting context types
+- **Alternative Rendering Models**: Support for print, pagination, or variable containers
+- **Advanced Caching Strategies**: Framework for plugging in new caching algorithms
+- **Specialized Optimizations**: Extension points for specific layout scenarios
+- **Rendering Integration**: Future connection points for rendering systems

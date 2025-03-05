@@ -13,12 +13,32 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Cache Module/Arhitecture/Cache Module - Updated for LayoutNG Integration.md",
+                "file": "Cache Module/Diagrams/Caching Integration with Style Computation Pipeline.md",
+                "mode": "preview",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Caching Integration with Style Computation Pipeline"
+            }
+          }
+        ]
+      },
+      {
+        "id": "61436724212251d0",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "506832713f399763",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Cache Module/Implementation/AngleSharp.LayoutEngine Caching Implementation Plan.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Cache Module - Updated for LayoutNG Integration"
+              "title": "AngleSharp.LayoutEngine Caching Implementation Plan"
             }
           }
         ]
@@ -94,7 +114,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Cache Module/Arhitecture/Cache Module - Updated for LayoutNG Integration.md",
+                "file": "Cache Module/Diagrams/Caching Integration with Style Computation Pipeline.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +124,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Cache Module - Updated for LayoutNG Integration"
+              "title": "Backlinks for Caching Integration with Style Computation Pipeline"
             }
           },
           {
@@ -169,14 +189,26 @@
   },
   "active": "13ab5b168f3048ba",
   "lastOpenFiles": [
+    "Cache Module/Diagrams/Cache Dependency and Invalidation Flow.md",
+    "Cache Module/Diagrams/AngleSharp.LayoutEngine Caching Architecture.md",
+    "Cache Module/Integration/AngleSharp.LayoutEngine Cache Module Architecture for LayoutNG Integration.md",
+    "Cache Module/Integration",
+    "Cache Module/Implementation/AngleSharp.LayoutEngine Caching Implementation Plan.md",
     "Cache Module/Arhitecture/AngleSharp.LayoutEngine Caching Architecture.md",
-    "Cache Module/Arhitecture/Cache Module - Updated for LayoutNG Integration.md",
-    "Document Lifecycle Module/Arhitecture/Document Lifecycle Module - Updated for LayoutNG Integration.md",
+    "Cache Module/Arhitecture/integrated-cache-architecture.md",
+    "Style Computation Module/Implementation/StyleComputationEngineImplementationStatus.md",
     "Style Computation Module/Arhitecture/StyleComputationModule - Updated for LayoutNG Integration.md",
-    "Layout Engine Module/AngleSharp Layout Engine Architecture Document.md",
     "Style Computation Module/Arhitecture/StyleComputationEngineArchitecture.md",
-    "Layout Engine Module/Diagrams/CSS Variable Resolution Integration with Layout Engine.md",
+    "Document Lifecycle Module/Implementation/DocumentLifecycleManager Implementation Status.md",
+    "Document Lifecycle Module/Arhitecture/Document Lifecycle Module - Updated for LayoutNG Integration.md",
+    "Document Lifecycle Module/Arhitecture/Document Lifecycle Architecture.md",
     "Layout Engine Module/Diagrams/Document Lifecycle and Layout Engine Integration.md",
+    "Layout Engine Module/Diagrams/CSS Variable Resolution Integration with Layout Engine.md",
+    "Overall/Diagrams/AngleSharp Layout Engine - Complete System Architecture.md",
+    "Overall/Arhitecture/AngleSharp Layout Engine - Complete Architecture Overview.md",
+    "Cache Module/Diagrams/Caching Integration with Style Computation Pipeline.md",
+    "Cache Module/References/AngleSharp.LayoutEngine Caching Quick Reference.md",
+    "Layout Engine Module/AngleSharp Layout Engine Architecture Document.md",
     "Layout Engine Module/Diagrams/Layout Engine Module Integration.md",
     "Layout Engine Module/Diagrams/Layout Engine Process Phases.md",
     "Layout Engine Module/Diagrams/LayoutNG-Inspired Architecture Overview.md",
@@ -184,18 +216,6 @@
     "Style Computation Module/Future Plans/CSS Variable Implementation Plan for ValueComputer.md",
     "Style Computation Module/Reference/AngleSharp CSS Declaration Handling - Quick Reference.md",
     "Document Lifecycle Module/Document Lifecycle-Driven Invalidation System.md",
-    "Document Lifecycle Module/Implementation/DocumentLifecycleManager Implementation Status.md",
-    "Document Lifecycle Module/Arhitecture/Document Lifecycle Architecture.md",
-    "Cache Module/References/AngleSharp.LayoutEngine Caching Quick Reference.md",
-    "Cache Module/Implementation/AngleSharp.LayoutEngine Caching Implementation Plan.md",
-    "Cache Module/Diagrams/Caching Integration with Style Computation Pipeline.md",
-    "Cache Module/Diagrams/Cache Dependency and Invalidation Flow.md",
-    "Cache Module/Diagrams/AngleSharp.LayoutEngine Caching Architecture.md",
-    "Overall/Diagrams/AngleSharp Layout Engine - Complete System Architecture.md",
-    "Overall/Diagrams/AngleSharp Layout Engine - System Data Flow.md",
-    "Overall/Diagrams/AngleSharp Layout Engine - Updated Architecture with LayoutNG Approach.md",
-    "Overall/Implementation/AngleSharp Layout Engine - Implementation Roadmap.md",
-    "Overall/Architecture Design AngleSharp Layout Engine with Mutation-Aware Caching.md",
     "Document Lifecycle Module/Implementation",
     "Document Lifecycle Module/Arhitecture",
     "Cache Module/Diagrams",
@@ -204,7 +224,6 @@
     "Cache Module/Arhitecture",
     "Overall/Implementation",
     "Overall/Diagrams",
-    "Overall/Arhitecture",
     "Untitled.canvas"
   ]
 }
