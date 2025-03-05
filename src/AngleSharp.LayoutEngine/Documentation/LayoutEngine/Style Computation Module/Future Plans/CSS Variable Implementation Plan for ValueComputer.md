@@ -1,5 +1,3 @@
-# CSS Variable Implementation Plan for ValueComputer
-
 This document combines the ValueComputer Implementation Plan with the CSS Variable Resolution Architecture to create a comprehensive roadmap for implementing robust CSS variable support in the AngleSharp LayoutEngine.
 
 ## 1. Variable Resolution System
