@@ -2,141 +2,273 @@
 
 ## Features To Be Implemented
 
+### Core Components
+
 ⬜ **DocumentLifecycleManager Core Architecture**
 
 - Overall architecture design with document lifecycle states
+- Extended state machine for LayoutNG integration (IntrinsicSizes, Constraints, Fragments states)
 - State transition validation and enforcement
 - Event system for state changes
 - Interface definition for module interactions
-- Integration points with StyleComputationEngine
+- Integration points with StyleComputationEngine and LayoutEngine
 
 ⬜ **InvalidationManager Foundation**
 
 - Core invalidation tracking infrastructure
 - Element dirty flag management
-- Invalidation type classification (Style, Layout, Visual)
-- Basic subtree invalidation
-- API for manual invalidation
+- Extended invalidation classification for LayoutNG support
+- Subtree invalidation system
+- Manual invalidation API
+- Integration with tracking systems
 
 ⬜ **SchedulingService**
 
-- Immediate update scheduling implementation
-- Basic deferred update support
-- Interface for scheduling strategy plugins
-- Priority-based scheduling framework
+- Scheduling strategies framework
+- Update coordination system
+- Multi-phase update ordering
+- Priority-based scheduling
+- Performance monitoring hooks
 - Integration with DocumentLifecycleManager
 
 ⬜ **MutationObserverAdapter**
 
-- Bridging with AngleSharp's MutationObserver
-- Basic mutation event subscription
-- Configuration options for observation
-- Mutation filtering infrastructure
-- Connection to InvalidationManager
+- AngleSharp MutationObserver integration
+- Mutation event subscription system
+- Configuration framework
+- Mutation filtering system
+- Integration with InvalidationManager
+- Support for LayoutNG-aware mutation processing
+
+### Tracking Components
 
 ⬜ **StyleInvalidationTracker**
 
-- Basic structure for tracking style-dirty elements
-- Integration with cache invalidation system
-- Support for element-level invalidation
-- Integration with StyleComputationEngine
-- Advanced selector-based dependency tracking
-- CSS variable dependency tracking
-
-⬜ **MutationBatchProcessor**
-
-- Grouping related mutations for efficiency
-- Redundancy elimination in mutation batches
-- Priority-based mutation processing
-- Ordering mutations for optimal processing
-- Metadata generation for debugging
-
-⬜ **Enhanced Dependency Tracking**
-
-- Complete selector-based dependency tracking
-- CSS variable usage tracking
-- Property-specific invalidation handling
-- Containment boundary detection
-- Efficient relationship lookup tables
+- Style-dirty element tracking
+- Selector-based dependency tracking
+- CSS variable dependency handling
+- Integration with cache invalidation
+- Performance optimization for large documents
+- Debugging and monitoring capabilities
 
 ⬜ **LayoutInvalidationTracker**
 
-- Tracking elements needing layout recalculation
-- Layout containment boundary detection
-- Geometry change propagation
-- Integration with future LayoutEngine
-- Layout-specific dependency tracking
+- Multi-aspect tracking (intrinsic sizes, constraints, fragments)
+- Formatting context change tracking
+- Layout containment boundary handling
+- Element collection optimization
+- Integration with LayoutEngine
+- Performance monitoring capabilities
 
-⬜ **Advanced Scheduling Strategies**
+⬜ **FormattingContextTracker**
 
-- Throttled update scheduling
-- Animation frame-based scheduling
-- Idle-time scheduling
-- Batch update coordination
-- Dynamic priority adjustments
+- Formatting context establishment tracking
+- Formatting context dependency tracking
+- Support for multiple formatting context types
+- Integration with constraint-based layout
+- Dependency relationship management
+- Performance optimization
 
-⬜ **Performance Monitoring and Diagnostics**
+### Processing Components
 
-- Lifecycle state transition logging
-- Invalidation statistics collection
-- Scheduling performance metrics
-- Memory usage monitoring
-- Debugging tools for tracking invalidation chains
+⬜ **MutationBatchProcessor**
+
+- Mutation batch collection
+- Redundancy elimination
+- Mutation classification for LayoutNG
+- Priority-based processing
+- Performance optimization for large batches
+- Integration with scheduling system
+
+⬜ **EnhancedDependencyTracker**
+
+- Element hierarchy dependency tracking
+- Selector-based dependency management
+- Property-specific invalidation handling
+- Formatting context dependency tracking
+- Constraint and fragment dependency support
+- Performance optimization for large documents
+
+### LayoutNG Support Components
+
+⬜ **ConstraintSpaceManager**
+
+- Constraint space creation and management
+- Constraint propagation handling
+- Formatting context integration
+- Writing mode support
+- Caching integration
+- Performance optimization
+
+⬜ **FragmentManager**
+
+- Fragment storage and retrieval
+- Fragment hierarchy management
+- Pseudo-element support
+- Caching integration
+- Performance optimization
+- Debugging capabilities
 
 ## Implementation Priorities
 
-1. **Foundation Components** (Estimated 2-3 weeks)
+### Phase 1: Foundation Extension
+
+1. **Extended Lifecycle Architecture**
     
-    - Implement DocumentLifecycleManager with state machine
-    - Create basic InvalidationManager for change detection
-    - Develop simple StyleInvalidationTracker
-    - Implement SchedulingService with immediate strategy
-    - Add unit tests and integration testing foundation
-2. **Mutation Observation & Basic Invalidation** (Estimated 2-3 weeks)
+    - Define expanded lifecycle states
+    - Design state transition validation
+    - Create event notification system
+    - Define integration interfaces
+2. **Enhanced Invalidation System**
     
-    - Implement MutationObserverAdapter to detect DOM changes
-    - Create basic MutationBatchProcessor
-    - Add simple invalidation logic based on mutation types
-    - Enhance SchedulingService with deferred option
-    - Add testing for mutation-to-invalidation flows
-3. **Advanced Invalidation & Integration** (Estimated 3-4 weeks)
+    - Design extended invalidation classification
+    - Create invalidation tracking framework
+    - Define subtree invalidation system
+    - Design manual invalidation API
+3. **LayoutNG Support Components**
     
-    - Develop Enhanced Dependency Tracking
-    - Improve StyleInvalidationTracker with selector awareness
-    - Create LayoutInvalidationTracker foundation
-    - Integrate with StyleComputationModule
-    - Enhance caching integration
-    - Add comprehensive invalidation testing
-4. **Enhancement & System-Wide Optimization** (Estimated 2-3 weeks)
+    - Design ConstraintSpaceManager architecture
+    - Create FragmentManager framework
+    - Define FormattingContextTracker system
+    - Design integration interfaces
+4. **Testing Framework**
     
-    - Refine MutationBatchProcessor with advanced features
-    - Implement advanced scheduling strategies
-    - Add performance monitoring and metrics
-    - Create debugging tools for invalidation
-    - Optimize for common mutation patterns
-    - Add stress testing and benchmarking
-5. **Refinement & Future Layout Integration** (Estimated 2-3 weeks)
+    - Create unit testing framework
+    - Design integration testing approach
+    - Define performance testing methodology
+    - Create validation framework
+
+### Phase 2: Invalidation Enhancement
+
+1. **Advanced Tracking Systems**
     
-    - Finalize public API and documentation
-    - Enhance error handling and resilience
-    - Optimize for performance
-    - Prepare integration with future Layout Engine
-    - Complete comprehensive test suite
-    - Add developer documentation and examples
+    - Design multi-aspect invalidation tracking
+    - Create dependency tracking framework
+    - Define containment boundary handling
+    - Design formatting context tracking
+2. **Mutation Processing**
+    
+    - Design mutation classification system
+    - Create batch processing framework
+    - Define mutation optimization approach
+    - Design integration with invalidation system
+3. **Scheduling Framework**
+    
+    - Design scheduling strategies
+    - Create multi-phase processing coordination
+    - Define priority-based scheduling
+    - Design performance monitoring
+4. **Testing Enhancement**
+    
+    - Expand unit tests
+    - Create integration tests
+    - Design performance benchmarks
+    - Define validation criteria
+
+### Phase 3: LayoutNG Integration
+
+1. **Complete Lifecycle Management**
+    
+    - Finalize state transitions
+    - Create multi-phase processing
+    - Define update coordination
+    - Design incremental update framework
+2. **Full Invalidation System**
+    
+    - Complete invalidation trackers
+    - Finalize dependency tracking
+    - Define constraint-based invalidation
+    - Design fragment invalidation
+3. **LayoutNG Component Integration**
+    
+    - Connect with StyleComputationEngine
+    - Integrate with LayoutEngine
+    - Define constraint and fragment flow
+    - Create formatting context handling
+4. **Testing Completion**
+    
+    - Complete unit test coverage
+    - Finalize integration tests
+    - Create performance benchmarks
+    - Define validation suite
+
+### Phase 4: Performance Optimization
+
+1. **Invalidation Optimization**
+    
+    - Optimize invalidation scope
+    - Enhance dependency tracking
+    - Improve containment handling
+    - Refine subtree invalidation
+2. **Processing Optimization**
+    
+    - Optimize batch processing
+    - Enhance scheduling
+    - Improve update coordination
+    - Refine priority handling
+3. **Resource Management**
+    
+    - Optimize memory usage
+    - Enhance cache integration
+    - Improve object lifecycle
+    - Refine resource allocation
+4. **Performance Testing**
+    
+    - Create comprehensive benchmarks
+    - Define performance metrics
+    - Design optimization validation
+    - Create monitoring framework
+
+### Phase 5: Complete Integration
+
+1. **API Finalization**
+    
+    - Finalize public interfaces
+    - Create documentation
+    - Define extension points
+    - Design configuration framework
+2. **Integration Completion**
+    
+    - Ensure StyleComputationEngine integration
+    - Complete LayoutEngine integration
+    - Finalize CacheModule integration
+    - Create comprehensive system tests
+3. **Backward Compatibility**
+    
+    - Define compatibility layer
+    - Create transition helpers
+    - Design migration path
+    - Ensure legacy support
+4. **Final Testing**
+    
+    - Complete test coverage
+    - Perform stress testing
+    - Validate performance
+    - Create final validation suite
 
 ## Next Steps
 
-1. **Begin DocumentLifecycleManager Implementation**:
+1. **Document Lifecycle Extension**
     
-    - Create lifecycle state enum (Initial, StyleDirty, LayoutDirty, etc.)
-    - Implement state transition validation
-    - Add event system for state change notifications
-    - Provide API for manual state transitions
-    - Create extension methods for document integration
-2. **Develop InvalidationManager**:
+    - Define expanded lifecycle states
+    - Design state transition validation
+    - Create foundation for multi-phase processing
+    - Design event notification system
+2. **Initial Invalidation Framework**
     
-    - Implement element dirty flag tracking
-    - Create invalidation type system (Style, Layout, Visual)
-    - Add subtree invalidation capability
-    - Implement API for manual invalidation
-    - Create diagnostic logging for invalidation events
+    - Define invalidation types for LayoutNG
+    - Create basic tracking component interfaces
+    - Design initial dependency tracking
+    - Define integration points
+3. **LayoutNG Component Design**
+    
+    - Create ConstraintSpaceManager architecture
+    - Design FragmentManager system
+    - Define FormattingContextTracker
+    - Create integration interfaces
+4. **Testing Foundation**
+    
+    - Design unit testing approach
+    - Create integration test framework
+    - Define validation methodology
+    - Design performance testing
