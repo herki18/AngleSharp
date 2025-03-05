@@ -4,39 +4,20 @@
     "type": "split",
     "children": [
       {
-        "id": "fe06253464d34e14",
+        "id": "7202af703773e2a8",
         "type": "tabs",
         "children": [
           {
-            "id": "1de879896fb745aa",
+            "id": "a1c586c1346b1360",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Arhitecture.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "Arhitecture"
-            }
-          },
-          {
-            "id": "3d0c609ef964ed62",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Untitled.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Untitled"
+              "title": "New tab"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -109,7 +90,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Untitled.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -119,7 +99,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Untitled"
+              "title": "Backlinks"
             }
           },
           {
@@ -128,12 +108,11 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Untitled.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Untitled"
+              "title": "Outgoing links"
             }
           },
           {
@@ -157,13 +136,12 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Untitled.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Untitled"
+              "title": "Outline"
             }
           }
         ]
@@ -183,11 +161,15 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "3d0c609ef964ed62",
+  "active": "a1c586c1346b1360",
   "lastOpenFiles": [
-    "Arhitecture.md",
-    "Untitled.md",
-    "Untitled",
+    "Document Lifecycle Module/Document Lifecycle Architecture.md",
+    "Cache Module/Cache Arhitecture.md",
+    "Document Lifecycle Module",
+    "Style Computation Module/Style Computation Architecture.md",
+    "Overall/Arhitecture.md",
+    "Overall/Overall Layout.md",
+    "Layout Engine Module/Architecture Layout.md",
     "Cache Module",
     "Layout Engine Module",
     "Layout Engine",
