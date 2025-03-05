@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Overall/Untitled 3.md",
+                "file": "Document Lifecycle Module/Document Lifecycle Architecture.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Untitled 3"
+              "title": "Document Lifecycle Architecture"
             }
           }
         ]
@@ -78,7 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 494.5
   },
   "right": {
     "id": "8989d77b04c133bb",
@@ -170,27 +170,31 @@
   },
   "active": "8c94303aad60522a",
   "lastOpenFiles": [
-    "Overall/Untitled 2.md",
-    "Overall/Untitled 3.md",
-    "Overall/Untitled 1.md",
-    "Style Computation Module/Style Computation Architecture.md",
-    "Overall/Overall Layout.md",
-    "Overall/Untitled.md",
-    "Document Lifecycle Module/Rev 1/Untitled 1.md",
-    "Document Lifecycle Module/Rev 1/Untitled.md",
+    "Document Lifecycle Module/Document Lifecycle-Driven Invalidation System.md",
     "Document Lifecycle Module/Document Lifecycle Architecture.md",
+    "Document Lifecycle Module/Rev 1/Modules.md",
+    "Document Lifecycle Module/Rev 1/Document Lifecycle-Driven Invalidation Process Flow.md",
     "Document Lifecycle Module/Rev 1/Document Lifecycle-Driven Invalidation System Architecture.md",
+    "Document Lifecycle Module/Rev 1/Document Lifecycle-Driven Invalidation System Implementation Steps.md",
+    "Document Lifecycle Module/Rev 2/Document Lifecycle-Driven Invalidation System Implementation Steps.md",
+    "Document Lifecycle Module/Rev 2/Document Lifecycle-Driven Invalidation System Architecture.md",
     "Document Lifecycle Module/Rev 2/Untitled 3.md",
     "Document Lifecycle Module/Rev 2/Untitled 2.md",
-    "Document Lifecycle Module/Rev 2/Untitled 1.md",
-    "Document Lifecycle Module/Rev 2/Untitled.md",
+    "Document Lifecycle Module/Rev 1/Document Lifecycle-Driven Invalidation System Architecture 1.md",
+    "Overall/Untitled.md",
+    "Style Computation Module/CSS Variable Resolution Architecture.md",
+    "Overall/Untitled 3.md",
+    "Style Computation Module/StyleComputationEngine.md",
+    "Overall/Untitled 1.md",
+    "Overall/Untitled 2.md",
+    "Overall/Overall Layout.md",
+    "Overall/Arhitecture.md",
+    "Style Computation Module/Style Computation Architecture.md",
     "Untitled.canvas",
-    "Document Lifecycle Module/Rev 1/Document Lifecycle-Driven Invalidation System Implementation Steps.md",
     "Document Lifecycle Module/Rev 2",
     "Document Lifecycle Module/Rev 1",
     "New Text Document.txt",
     "Style Computation Module",
-    "Overall/Arhitecture.md",
     "Overall",
     "Layout Engine Module/Architecture Layout.md",
     "Layout Engine Module",
