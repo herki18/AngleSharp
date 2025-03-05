@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Document Lifecycle Module/Integration/Document Lifecycle Module - Updated for LayoutNG Integration.md",
+                "file": "Style Computation Module/Arhitecture/StyleComputationEngineArchitecture.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Document Lifecycle Module - Updated for LayoutNG Integration"
+              "title": "StyleComputationEngineArchitecture"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Document Lifecycle Module/Integration/Document Lifecycle Module - Updated for LayoutNG Integration.md",
+                "file": "Style Computation Module/Arhitecture/StyleComputationEngineArchitecture.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Document Lifecycle Module - Updated for LayoutNG Integration"
+              "title": "Backlinks for StyleComputationEngineArchitecture"
             }
           },
           {
@@ -169,10 +169,14 @@
   },
   "active": "13ab5b168f3048ba",
   "lastOpenFiles": [
+    "Style Computation Module/Implementation/StyleComputationEngineImplementationStatus.md",
+    "Style Computation Module/Arhitecture/StyleComputationEngineArchitecture.md",
+    "Style Computation Module/Integration/StyleComputationModule - Updated for LayoutNG Integration.md",
+    "Style Computation Module/Integration",
+    "Document Lifecycle Module/Integration/Document Lifecycle Module - Updated for LayoutNG Integration.md",
     "Document Lifecycle Module/Implementation/DocumentLifecycleManager Implementation Status.md",
     "Document Lifecycle Module/Integration",
     "Document Lifecycle Module/Arhitecture/Document Lifecycle Architecture.md",
-    "Document Lifecycle Module/Integration/Document Lifecycle Module - Updated for LayoutNG Integration.md",
     "Cache Module/Implementation/AngleSharp.LayoutEngine Caching Implementation Plan.md",
     "Cache Module/Diagrams/AngleSharp.LayoutEngine Caching Architecture.md",
     "Cache Module/Diagrams/Cache Dependency and Invalidation Flow.md",
@@ -181,9 +185,6 @@
     "Cache Module/Integration",
     "Cache Module/Arhitecture/AngleSharp.LayoutEngine Caching Architecture.md",
     "Cache Module/Arhitecture/integrated-cache-architecture.md",
-    "Style Computation Module/Implementation/StyleComputationEngineImplementationStatus.md",
-    "Style Computation Module/Arhitecture/StyleComputationModule - Updated for LayoutNG Integration.md",
-    "Style Computation Module/Arhitecture/StyleComputationEngineArchitecture.md",
     "Layout Engine Module/Diagrams/Document Lifecycle and Layout Engine Integration.md",
     "Layout Engine Module/Diagrams/CSS Variable Resolution Integration with Layout Engine.md",
     "Overall/Diagrams/AngleSharp Layout Engine - Complete System Architecture.md",
@@ -203,7 +204,6 @@
     "Cache Module/References",
     "Cache Module/Implementation",
     "Cache Module/Arhitecture",
-    "Overall/Implementation",
     "Untitled.canvas"
   ]
 }
