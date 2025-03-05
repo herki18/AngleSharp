@@ -1,5 +1,6 @@
 namespace AngleSharp.LayoutEngine.Tests.LayoutEngine;
 
+using Css;
 using Dom;
 using StyleComputation;
 
@@ -7,13 +8,13 @@ using StyleComputation;
 public class StyleComputationEngineIntegrationTests
 {
     private IBrowsingContext _context;
-    private StyleComputationEngine _engine;
+    private IRenderDevice _device;
 
     [SetUp]
     public void Setup()
     {
         _context = BrowsingContext.New(Configuration.Default.WithCss());
-        _engine = new StyleComputationEngine(null, _context);
+        _device = new MockRenderDevice();
     }
 
     [TearDown]
@@ -43,12 +44,15 @@ public class StyleComputationEngineIntegrationTests
         var document = await _context.OpenAsync(req => req.Content(html));
         var element = document.GetElementById("myDiv") as IElement;
 
+        // Create engine with the document already loaded
+        var engine = new StyleComputationEngine(_device, _context, document);
+
         // Act
         Assert.IsNotNull(element);
-        var style = _engine.ComputeElementStyle(element);
+        var style = engine.ComputeElementStyle(element);
 
         // Assert
-        Assert.That(style.GetPropertyValue("color"), Is.EqualTo("red"));
+        Assert.That(style.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
         Assert.That(style.GetPropertyValue("font-size"), Is.EqualTo("16px"));
         Assert.That(style.GetPropertyValue("margin"), Is.EqualTo("10px"));
     }
@@ -74,12 +78,15 @@ public class StyleComputationEngineIntegrationTests
         var document = await _context.OpenAsync(req => req.Content(html));
         var element = document.GetElementById("myDiv") as IElement;
 
+        // Create engine with the document already loaded
+        var engine = new StyleComputationEngine(_device, _context, document);
+
         // Act
         Assert.IsNotNull(element);
-        var style = _engine.ComputeElementStyle(element);
+        var style = engine.ComputeElementStyle(element);
 
         // Assert - ID selector should win
-        Assert.That(style.GetPropertyValue("color"), Is.EqualTo("red"));
+        Assert.That(style.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
     }
 
     [Test]
@@ -101,12 +108,15 @@ public class StyleComputationEngineIntegrationTests
         var document = await _context.OpenAsync(req => req.Content(html));
         var element = document.GetElementById("myDiv") as IElement;
 
+        // Create engine with the document already loaded
+        var engine = new StyleComputationEngine(_device, _context, document);
+
         // Act
         Assert.IsNotNull(element);
-        var style = _engine.ComputeElementStyle(element);
+        var style = engine.ComputeElementStyle(element);
 
         // Assert - Inline styles should win
-        Assert.That(style.GetPropertyValue("color"), Is.EqualTo("green"));
+        Assert.That(style.GetPropertyValue("color"), Is.EqualTo("rgba(0, 128, 0, 1)"));
     }
 
     [Test]
@@ -128,12 +138,15 @@ public class StyleComputationEngineIntegrationTests
         var document = await _context.OpenAsync(req => req.Content(html));
         var element = document.GetElementById("myDiv") as IElement;
 
+        // Create engine with the document already loaded
+        var engine = new StyleComputationEngine(_device, _context, document);
+
         // Act
         Assert.IsNotNull(element);
-        var style = _engine.ComputeElementStyle(element);
+        var style = engine.ComputeElementStyle(element);
 
         // Assert - !important should override inline
-        Assert.That(style.GetPropertyValue("color"), Is.EqualTo("red"));
+        Assert.That(style.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
     }
 
     [Test]
@@ -163,21 +176,22 @@ public class StyleComputationEngineIntegrationTests
 
         // Create a device with width 1000px
         var device = new MockRenderDevice { ViewPortWidth = 1000, ViewPortHeight = 800 };
-        var engineWithDevice = new StyleComputationEngine(device, _context, document);
+        var engine = new StyleComputationEngine(device, _context, document);
 
         // Act
         Assert.IsNotNull(element);
-        var style = engineWithDevice.ComputeElementStyle(element);
+        var style = engine.ComputeElementStyle(element);
 
         // Assert - min-width: 800px rule should apply
-        Assert.That(style.GetPropertyValue("color"), Is.EqualTo("red"));
+        Assert.That(style.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
 
         // Now test with a smaller device
         device.ViewPortWidth = 500;
-        style = engineWithDevice.ComputeElementStyle(element);
+        engine = new StyleComputationEngine(device, _context, document);
+        style = engine.ComputeElementStyle(element);
 
         // Assert - max-width: 600px rule should apply
-        Assert.That(style.GetPropertyValue("color"), Is.EqualTo("blue"));
+        Assert.That(style.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 255, 1)"));
     }
 
     [Test]
@@ -200,16 +214,19 @@ public class StyleComputationEngineIntegrationTests
         var document = await _context.OpenAsync(req => req.Content(html));
         var element = document.GetElementById("myDiv") as IElement;
 
+        // Create engine with the document already loaded
+        var engine = new StyleComputationEngine(_device, _context, document);
+
         // Act
         Assert.IsNotNull(element);
-        var beforeStyle = _engine.ComputeElementStyle(element, null, "::before");
-        var afterStyle = _engine.ComputeElementStyle(element, null, "::after");
+        var beforeStyle = engine.ComputeElementStyle(element, null, "::before");
+        var afterStyle = engine.ComputeElementStyle(element, null, "::after");
 
         // Assert
-        Assert.That(beforeStyle.GetPropertyValue("content"), Is.EqualTo("'prefix'"));
-        Assert.That(beforeStyle.GetPropertyValue("color"), Is.EqualTo("red"));
+        Assert.That(beforeStyle.GetPropertyValue("content"), Is.EqualTo("\"prefix\""));
+        Assert.That(beforeStyle.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
 
-        Assert.That(afterStyle.GetPropertyValue("content"), Is.EqualTo("'suffix'"));
-        Assert.That(afterStyle.GetPropertyValue("color"), Is.EqualTo("blue"));
+        Assert.That(afterStyle.GetPropertyValue("content"), Is.EqualTo("\"suffix\""));
+        Assert.That(afterStyle.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 255, 1)"));
     }
 }
