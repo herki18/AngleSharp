@@ -1,5 +1,3 @@
-# Architecture Design: AngleSharp Layout Engine with Mutation-Aware Caching
-
 ## 1. Overall Architecture Document
 
 ### 1.1 System Overview
