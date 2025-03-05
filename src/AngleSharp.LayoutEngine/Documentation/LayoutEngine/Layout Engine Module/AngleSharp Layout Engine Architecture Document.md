@@ -1,50 +1,188 @@
-# AngleSharp Layout Engine Architecture Document
+# AngleSharp Layout Engine - Updated Architecture Overview
 
-## Blink LayoutNG-Inspired Approach
+## 1. System Overview
 
-## 1. Executive Summary
+The AngleSharp Layout Engine is a comprehensive system that extends AngleSharp with full styling, layout computation, and rendering capabilities. It is designed as a modular system with clear boundaries between components, allowing for independent development, testing, and maintenance.
 
-This document outlines the architecture for implementing a Blink LayoutNG-inspired layout engine within the AngleSharp ecosystem. The layout engine will adopt modern approaches from Chromium's LayoutNG, including constraint-based layout, immutable fragment output, and clearly separated layout phases. This approach will provide better performance, more accurate layout results, and better support for complex CSS features compared to a traditional mutable box model approach.
+The system consists of four primary modules:
 
-## 2. Key Design Principles
+1. **Style Computation Module**: Computes CSS styles for DOM elements
+2. **Document Lifecycle Module**: Tracks DOM mutations and manages invalidation
+3. **Layout Engine Module**: Computes element layout and positioning using a modern constraint-based approach
+4. **Caching Module**: Provides efficient caching with dependency tracking
 
-### 2.1 Core Concepts from LayoutNG
+These modules work together to provide a complete pipeline from DOM mutations to final rendering, with optimizations at each stage to ensure performance.
 
-1. **Constraint-Based Layout**: Layout is driven by explicitly defined constraints that flow down the tree
-2. **Fragment-Based Output**: Layout produces immutable fragments rather than modifying mutable boxes
-3. **Phase Separation**: Clear separation between intrinsic size calculation, layout, and positioning
-4. **Logical Layout**: Use of logical (writing-mode independent) coordinates first, with conversion to physical coordinates
-5. **Formatting Contexts**: Explicit modeling of formatting contexts with specialized layout algorithms
-6. **Incremental Layout**: Designed for efficient incremental updates with minimal recalculation
+## 2. Core Architecture Principles
 
-## 3. System Components
+The architecture is guided by the following principles:
 
-### 3.1 LayoutEngine
+1. **Clear Module Boundaries**: Each module has a well-defined responsibility and interface
+2. **Reactive Updates**: Changes to the DOM trigger appropriate invalidations and recalculations
+3. **Minimal Recomputation**: Only affected elements are recalculated
+4. **Efficient Caching**: Results are cached with intelligent invalidation
+5. **Browser-Like Architecture**: Follows patterns used in modern browser engines
+6. **Performance Optimization**: Designed for efficient handling of complex documents
+7. **Immutable Output**: Layout produces immutable fragments rather than modifying mutable boxes
+8. **Constraint-Based Layout**: Layout is driven by explicitly defined constraints
+9. **Phase Separation**: Clear separation between intrinsic size calculation, layout, and positioning
 
-The central orchestrator of the layout system, providing the main public API:
+## 3. Module Descriptions
+
+### 3.1 Style Computation Module
+
+The Style Computation Module is responsible for computing CSS styles for DOM elements. It processes style rules, matches them against elements, and computes final property values.
+
+#### Key Components:
+
+- **StyleComputationEngine**: Main orchestrator for style computation
+- **StyleSheetManager**: Manages stylesheets from different origins
+- **SelectorMatcher**: Matches selectors against elements
+- **CascadeResolver**: Resolves property conflicts
+- **InheritanceProcessor**: Handles inheritance chains
+- **ValueComputer**: Computes final property values
+- **VariableResolver**: Resolves CSS custom property (variable) references
+- **VariableRegistry**: Tracks and manages CSS variables
+
+#### Primary Interfaces:
 
 ```csharp
+// Main entry point for style computation
+public interface IStyleComputationEngine
+{
+    ICssStyleDeclaration ComputeElementStyle(IElement element, 
+        ICssStyleDeclaration parentStyle = null, 
+        string pseudoElement = null);
+        
+    // New method to support layout-specific property access
+    T GetComputedValue<T>(IElement element, string propertyName);
+}
+
+// Manages stylesheets from different origins
+public interface IStyleSheetManager
+{
+    void RegisterStylesheet(ICssStyleSheet stylesheet, StylesheetOrigin origin);
+    void UnregisterStylesheet(ICssStyleSheet stylesheet);
+    void SetDocument(IDocument document);
+    IEnumerable<StylesheetEntry> GetStylesheets();
+}
+
+// New interface for logical property resolution
+public interface IStylePropertyResolver
+{
+    LogicalLength GetInlineSize(ICssStyleDeclaration style, WritingMode writingMode);
+    LogicalLength GetBlockSize(ICssStyleDeclaration style, WritingMode writingMode);
+    Edges GetLogicalMargins(ICssStyleDeclaration style, WritingMode writingMode);
+    Edges GetLogicalPadding(ICssStyleDeclaration style, WritingMode writingMode);
+    Edges GetLogicalBorders(ICssStyleDeclaration style, WritingMode writingMode);
+}
+```
+
+### 3.2 Document Lifecycle Module
+
+The Document Lifecycle Module is responsible for observing DOM mutations, determining what needs to be invalidated, and coordinating updates.
+
+#### Key Components:
+
+- **DocumentLifecycleManager**: Manages document state and transitions
+- **MutationObserverAdapter**: Bridges to AngleSharp's MutationObserver
+- **InvalidationManager**: Determines what needs invalidation
+- **StyleInvalidationTracker**: Tracks elements needing style recalculation
+- **LayoutInvalidationTracker**: Tracks elements needing layout recalculation
+- **IntrinsicSizesInvalidationTracker**: New component for tracking intrinsic size invalidation
+- **SchedulingService**: Controls when updates happen
+
+#### Primary Interfaces:
+
+```csharp
+// Central coordinator for document lifecycle
+public interface IDocumentLifecycleManager
+{
+    LifecycleState CurrentState { get; }
+    void ScheduleStyleUpdate();
+    void ScheduleIntrinsicSizesUpdate(); // New method for intrinsic size phase
+    void ScheduleLayoutUpdate();
+    void ProcessPendingUpdates();
+    event EventHandler<LifecycleStateChangedEventArgs> StateChanged;
+}
+
+// Manages invalidation across different aspects
+public interface IInvalidationManager
+{
+    void ProcessMutation(IMutationRecord mutation);
+    void InvalidateElement(IElement element, InvalidationFlags flags);
+    void InvalidateElementIntrinsicSizes(IElement element); // New method for size invalidation
+    void InvalidateElementFragments(IElement element); // New method for fragment invalidation
+    void InvalidateStylesheet(ICssStyleSheet stylesheet);
+}
+
+// Enhanced lifecycle states with intrinsic sizing phase
+public enum LifecycleState
+{
+    Initial,
+    StyleDirty,
+    StyleClean,
+    IntrinsicSizesDirty, // New state for intrinsic sizing phase
+    IntrinsicSizesClean, // New state for completed intrinsic sizing
+    LayoutDirty,
+    LayoutClean,
+    PaintDirty,
+    PaintClean
+}
+```
+
+### 3.3 Layout Engine Module (LayoutNG-Inspired)
+
+The Layout Engine Module is responsible for computing element layout and positioning using a modern constraint-based approach inspired by browser engines like Blink's LayoutNG.
+
+#### Key Components:
+
+- **LayoutEngine**: Main orchestrator for layout computation
+- **FormattingContextFactory**: Creates appropriate formatting contexts
+- **LayoutFragmentTree**: Manages the tree of layout fragments
+- **BoxGeometryResolver**: Computes box model dimensions
+- **ConstraintSpace**: Encapsulates layout constraints and available space
+- **MarginCollapsingEngine**: Handles margin collapsing per CSS spec
+- **IntrinsicSizesCalculator**: Calculates min/max content sizes
+- **LineBreaker**: Handles text wrapping and line creation
+
+#### Formatting Contexts:
+
+- **BlockFormattingContext**: Handles block layout
+- **InlineFormattingContext**: Handles inline and text layout
+- **FlexFormattingContext**: Handles flexbox layout
+- **GridFormattingContext**: Handles grid layout
+
+#### Data Structures:
+
+- **LayoutFragment**: Immutable result of layout computation
+- **FragmentBuilder**: Helper for constructing fragments
+- **LayoutResult**: Container for complete layout results
+- **MinMaxSizes**: Contains intrinsic size information
+
+#### Primary Interfaces:
+
+```csharp
+// Main entry point for layout computation
 public interface ILayoutEngine
 {
-    // Main entry point for layout
+    // Main layout method
     LayoutResult Layout(IElement element, ConstraintSpace constraintSpace = null);
     
-    // Calculate intrinsic sizes without performing full layout
+    // Intrinsic size calculation (separate from full layout)
     MinMaxSizes ComputeMinMaxSizes(IElement element);
     
-    // Layout with specific formatting contexts
+    // Create constraint space
+    ConstraintSpace CreateConstraintSpace(IElement element, ICssStyleDeclaration style);
+    
+    // Specialized layout methods
     LayoutResult LayoutBlock(IElement element, BlockConstraintSpace constraintSpace);
     LayoutResult LayoutInline(IElement element, InlineConstraintSpace constraintSpace);
     LayoutResult LayoutFlex(IElement element, FlexConstraintSpace constraintSpace);
     LayoutResult LayoutGrid(IElement element, GridConstraintSpace constraintSpace);
 }
-```
 
-### 3.2 ConstraintSpace
-
-Encapsulates all constraints for layout operations and helps with coordinate transformations:
-
-```csharp
+// Constraint space for layout
 public interface IConstraintSpace
 {
     // Available space for layout
@@ -53,11 +191,11 @@ public interface IConstraintSpace
     // Size to resolve percentages against
     Size PercentageResolutionSize { get; }
     
-    // Writing mode and direction
+    // Writing mode properties
     WritingMode WritingMode { get; }
     TextDirection Direction { get; }
     
-    // Formatting context properties
+    // Formatting context flags
     bool IsNewFormattingContext { get; }
     bool IsFloatContextEnabled { get; }
     
@@ -67,22 +205,27 @@ public interface IConstraintSpace
     // For positioned elements
     Point BfcOffset { get; }
     
-    // Create a new constraint space for a child
+    // Create child constraint space
     IConstraintSpace CreateChildConstraintSpace(IElement child, ICssStyleDeclaration style);
 }
-```
 
-### 3.3 LayoutFragment
+// Formatting context interface
+public interface IFormattingContext
+{
+    // Perform layout in this formatting context
+    LayoutFragment Layout(IElement element, IConstraintSpace constraintSpace);
+    
+    // Calculate intrinsic sizes
+    MinMaxSizes ComputeIntrinsicSizes(IElement element);
+}
 
-The immutable output of a layout operation:
-
-```csharp
+// Immutable layout result
 public class LayoutFragment
 {
     // Associated element
     public IElement Element { get; }
     
-    // Box type (block, inline, etc.)
+    // Box type
     public BoxType BoxType { get; }
     
     // Fragment geometry
@@ -108,708 +251,325 @@ public class LayoutFragment
 }
 ```
 
-### 3.4 FormattingContexts
+### 3.4 Caching Module
 
-Specialized objects that implement layout algorithms:
+The Caching Module provides efficient caching of computed styles and layouts with dependency tracking for intelligent invalidation.
 
-```csharp
-public interface IFormattingContext
-{
-    // Perform layout in this formatting context
-    LayoutFragment Layout(IElement element, IConstraintSpace constraintSpace);
-    
-    // Calculate intrinsic sizes without full layout
-    MinMaxSizes ComputeIntrinsicSizes(IElement element);
-}
+#### Key Components:
 
-public class BlockFormattingContext : IFormattingContext { /* ... */ }
-public class InlineFormattingContext : IFormattingContext { /* ... */ }
-public class FlexFormattingContext : IFormattingContext { /* ... */ }
-public class GridFormattingContext : IFormattingContext { /* ... */ }
-```
+- **LayoutEngineCacheManager**: Central cache coordinator
+- **StyleCache**: Caches computed styles
+- **FragmentCache**: Caches layout fragments (NEW)
+- **IntrinsicSizeCache**: Caches intrinsic sizes (NEW)
+- **CacheDependencyTracker**: Tracks dependencies for invalidation
+- **EnhancedDependencyTracker**: Enhanced dependency tracking
 
-### 3.5 BoxGeometryResolver
-
-Handles box model calculations:
+#### Primary Interfaces:
 
 ```csharp
-public class BoxGeometryResolver
+// Generic caching interface
+public interface IComputationCache<TKey, TValue> where TKey : notnull
 {
-    // Calculate content box dimensions
-    public LogicalSize ComputeContentBoxLogical(ICssStyleDeclaration style, IConstraintSpace space);
+    TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory);
+    bool TryGetValue(TKey key, out TValue value);
+    void AddOrUpdate(TKey key, TValue value);
+    bool Remove(TKey key);
+    void Clear();
+    int Count { get; }
+}
+
+// Central cache manager with new fragment caching
+public interface ILayoutEngineCacheManager
+{
+    IStyleCache StyleCache { get; }
+    IFragmentCache FragmentCache { get; } // NEW: Fragment cache
+    IIntrinsicSizeCache IntrinsicSizeCache { get; } // NEW: Intrinsic size cache
+    ILayoutBoxCache<TLayoutData> GetLayoutCache<TLayoutData>();
+    void InvalidateAll();
+    void InvalidateElement(IElement element);
+    void InvalidateDocument(IDocument document);
+    void InvalidateFragments(IElement element); // NEW: Fragment invalidation
+    void InvalidateIntrinsicSizes(IElement element); // NEW: Size invalidation
+}
+
+// NEW: Fragment cache key
+public class FragmentCacheKey : IEquatable<FragmentCacheKey>
+{
+    public IElement Element { get; }
+    public IConstraintSpace ConstraintSpace { get; }
     
-    // Calculate box model properties
-    public Edges ComputeMargins(ICssStyleDeclaration style, IConstraintSpace space);
-    public Edges ComputeBorders(ICssStyleDeclaration style);
-    public Edges ComputePadding(ICssStyleDeclaration style, IConstraintSpace space);
+    // Equality and hashing implementation
+}
+
+// NEW: Intrinsic size cache key
+public class IntrinsicSizeCacheKey : IEquatable<IntrinsicSizeCacheKey>
+{
+    public IElement Element { get; }
     
-    // Resolve percentage-based values
-    public LogicalSize ResolvePercentages(LogicalSize size, IConstraintSpace space);
+    // Equality and hashing implementation
 }
 ```
 
-### 3.6 MarginCollapsingEngine
+## 4. Cross-Module Interactions
 
-Handles margin collapsing according to CSS specifications:
+The modules interact in the following ways:
 
-```csharp
-public class MarginCollapsingEngine
-{
-    // Collapse adjacent margins
-    public MarginStrut CollapseAdjacentMargins(MarginStrut previous, MarginStrut current);
-    
-    // Determine if an element's margins can collapse
-    public bool IsMarginCollapsible(ICssStyleDeclaration style);
-    
-    // Handle special case of empty blocks
-    public bool IsEmptyBlockCollapsible(LayoutFragment fragment);
-}
-```
+### 4.1 DOM Mutation → Lifecycle → Style → Layout Pipeline
 
-### 3.7 Specialized Components
+1. **DOM Mutation Detection**:
+    - `MutationObserver` detects DOM changes
+    - `MutationObserverAdapter` processes mutation records
+2. **Invalidation Analysis**:
+    - `InvalidationManager` analyzes mutations
+    - `DependencyTracker` identifies affected elements
+    - Specialized trackers mark elements for different invalidation types
+3. **Document Lifecycle Management**:
+    - `DocumentLifecycleManager` updates document state
+    - `SchedulingService` schedules updates
+4. **Style Recalculation**:
+    - `StyleComputationEngine` recalculates styles for invalidated elements
+    - `StyleCache` is updated with new computed styles
+5. **Intrinsic Size Calculation** (NEW):
+    - `IntrinsicSizesCalculator` calculates min/max sizes
+    - Results are stored in `IntrinsicSizeCache`
+6. **Layout Calculation**:
+    - `LayoutEngine` creates constraint spaces
+    - Appropriate `FormattingContext` runs layout algorithm
+    - Produces `LayoutFragment` tree
+    - Results stored in `FragmentCache`
 
-Additional components for specific layout needs:
+### 4.2 Constraint Propagation and Fragment Assembly
 
-- **LineBreaker**: Handles line breaking for inline layout
-- **IntrinsicSizesCalculator**: Calculates min/max content sizes
-- **BlockFragmentationEngine**: Handles pagination and multicol fragmentation
-- **LayoutCacheAdapter**: Interfaces with the caching system
+The layout process now follows a two-phase approach:
 
-## 4. Layout Process
-
-### 4.1 Layout Phases
-
-The layout process is divided into clear phases:
-
-1. **Intrinsic Size Calculation**
-    
-    - Measure intrinsic min/max content sizes
-    - Happens before actual layout
-    - Needed for certain layout algorithms
-    - Results can be cached independently
-2. **Constraint Space Creation**
-    
-    - Create appropriate constraint space for element
-    - Establish formatting context
-    - Set up available space and percentage resolution size
-    - Determine writing mode and direction
-3. **Layout Algorithm Selection**
-    
-    - Based on display property and other style attributes
-    - Select appropriate formatting context
-    - Determine layout strategy (block, inline, flex, grid, etc.)
-4. **Layout Execution**
-    
-    - Perform actual layout calculations
-    - Calculate box model dimensions
-    - Position children as appropriate
-    - Resolve auto values
-5. **Fragment Construction**
-    
-    - Build immutable fragment representing layout result
-    - Assemble child fragments
-    - Apply positioning
-    - Create final layout result
-
-### 4.2 Calculation Flow
-
-1. **Top-down constraint propagation**
-    
-    - Constraints flow from parent to children
-    - Each parent creates appropriate constraints for its children
-2. **Bottom-up fragment assembly**
-    
-    - Layout starts from leaf nodes
+1. **Top-down Constraint Propagation**:
+    - Parent elements create constraint spaces for children
+    - Constraints flow down the DOM tree
+    - Each element receives an appropriate `ConstraintSpace`
+2. **Bottom-up Fragment Assembly**:
+    - Leaf nodes (elements without children) are laid out first
     - Child fragments are assembled into parent fragments
-    - Final fragments represent complete layout
-3. **Interleaved intrinsic size calculation**
-    
-    - Some layout algorithms require knowledge of intrinsic sizes
-    - Calculated on demand and cached
-
-### 4.3 Specialized Layout Algorithms
-
-1. **Block Formatting Context**
-    
-    - Handles normal flow block layout
-    - Manages margin collapsing
-    - Calculates block dimensions according to CSS rules
-2. **Inline Formatting Context**
-    
-    - Creates and positions line boxes
-    - Handles text layout
-    - Manages inline box positioning
-3. **Flex Formatting Context**
-    
-    - Implements flexbox layout algorithm
-    - Distributes space according to flex factors
-    - Handles alignment and justification
-4. **Grid Formatting Context**
-    
-    - Establishes grid tracks
-    - Places items in grid cells
-    - Handles alignment and spanning
+    - Final fragments represent the complete layout
+
+### 4.3 Style → Layout Integration
+
+The integration between Style Computation and Layout Engine is enhanced:
+
+1. **Computed Style Access**:
+    - Layout engine accesses computed style properties through efficient APIs
+    - `StylePropertyResolver` provides logical property resolution based on writing mode
+2. **CSS Variable Resolution**:
+    - CSS variables resolved during style computation
+    - Layout accesses fully resolved values
+    - Changes to variables trigger appropriate invalidation
+3. **Logical Properties**:
+    - Writing-mode aware style resolution
+    - Conversion between logical and physical coordinates
+    - Support for all logical box model properties
+
+### 4.4 Cache Invalidation Paths
+
+1. **DOM Mutation → Cache Invalidation**:
+    - Mutations trigger cache invalidation through the invalidation system
+    - `InvalidationManager` determines which cache entries to invalidate
+    - `CacheDependencyTracker` provides information about dependencies
+2. **Style Update → Size and Layout Cache Invalidation**:
+    - Style changes invalidate related size and layout cache entries
+    - `StyleInvalidationTracker` informs `IntrinsicSizesInvalidationTracker` and `LayoutInvalidationTracker`
+3. **Intrinsic Size Update → Layout Cache Invalidation**:
+    - Size changes invalidate related layout cache entries
+    - `IntrinsicSizesInvalidationTracker` informs `LayoutInvalidationTracker`
+4. **Stylesheet Change → Style Cache Invalidation**:
+    - Stylesheet changes invalidate affected style cache entries
+    - `InvalidationManager.InvalidateStylesheet` triggers appropriate invalidation
+
+## 5. Data Flow
+
+The flow of data through the system follows a clear pattern:
+
+1. **Input**:
+    - DOM structure and changes
+    - CSS stylesheets and rules
+    - Layout constraints
+2. **Processing**:
+    - Mutation analysis and invalidation
+    - Style computation for invalidated elements
+    - Intrinsic size calculation
+    - Constraint space creation
+    - Formatting context layout algorithms
+    - Fragment construction and assembly
+3. **Output**:
+    - Computed styles for all elements
+    - Intrinsic sizes (min/max content sizes)
+    - Layout fragments with positions and dimensions
+    - Rendering information (future)
 
-## 5. Integration with Existing Modules
+At each stage, results are cached and dependencies are tracked to optimize future updates.
 
-### 5.1 Style Computation Module Integration
+## 6. System States and Transitions
 
-The existing StyleComputationEngine will need minimal changes but will be used differently:
-
-**Current Usage**:
-
-```csharp
-// Current direct usage
-var style = _styleEngine.ComputeElementStyle(element);
-```
-
-**LayoutNG-style Usage**:
-
-```csharp
-// More optimized property access
-var style = _styleEngine.ComputeElementStyle(element);
-var display = style.GetComputedValue(CssProperties.Display);
-var position = style.GetComputedValue(CssProperties.Position);
-
-// Use style in constraint-based calculations
-var constraintSpace = CreateConstraintSpace(style);
-var fragment = _formattingContext.Layout(element, constraintSpace);
-```
-
-**Recommended Enhancements**:
-
-1. Add fast-path property access methods for layout-critical properties
-2. Consider adding computed value caching for repeated property access
-3. Ensure efficient handling of logical properties based on writing mode
-
-### 5.2 Cache Module Integration
-
-The existing caching system needs significant enhancement to support fragment-based caching:
-
-**Current Approach**:
-
-```csharp
-// Current element-based caching
-var key = new LayoutCacheKey(element, containerWidth, containerHeight);
-var layoutBox = _layoutCache.GetOrAdd(key, _ => ComputeLayout(element, constraints));
-```
-
-**LayoutNG-style Approach**:
-
-```csharp
-// Fragment and constraint-based caching
-var key = new FragmentCacheKey(element, constraintSpace);
-var fragment = _fragmentCache.GetOrAdd(key, _ => {
-    // Only compute if not in cache
-    return _formattingContext.Layout(element, constraintSpace);
-});
-
-// Separate caching for intrinsic sizes
-var sizeKey = new IntrinsicSizesCacheKey(element);
-var minMaxSizes = _intrinsicSizesCache.GetOrAdd(sizeKey, _ => {
-    return _intrinsicSizesCalculator.ComputeMinMaxSizes(element);
-});
-```
-
-**Recommended Enhancements**:
-
-1. Create a dedicated FragmentCache to store immutable fragments
-2. Implement separate IntrinsicSizeCache for min/max size calculations
-3. Develop more sophisticated cache keys that incorporate constraint properties
-4. Enhance dependency tracking to support fragment invalidation
-
-### 5.3 Document Lifecycle Module Integration
-
-The DocumentLifecycleModule will need enhancements to support fine-grained invalidation:
-
-**Current Approach**:
-
-```csharp
-// Current element-level invalidation
-_invalidationManager.InvalidateElement(element, InvalidationType.Layout);
-```
-
-**LayoutNG-style Approach**:
-
-```csharp
-// More granular invalidation
-_invalidationManager.InvalidateElementLayout(element, InvalidationReason.StyleChange);
-_invalidationManager.InvalidateFragmentsInSubtree(element, subtreeRoot);
-_invalidationManager.InvalidateIntrinsicSizes(element);
-```
-
-**Recommended Enhancements**:
-
-1. Add more granular invalidation types (intrinsic sizes, fragments, constraints)
-2. Enhance LayoutInvalidationTracker to track fragment dependencies
-3. Implement containment-aware invalidation for performance
-4. Create special handling for layout-impacting style changes
-
-## 6. Key Data Structures
-
-### 6.1 ConstraintSpace
-
-The ConstraintSpace is central to the layout process:
-
-```csharp
-public class BlockConstraintSpace : IConstraintSpace
-{
-    // Available size for content
-    public Size AvailableSize { get; }
-    
-    // Size for percentage resolution
-    public Size PercentageResolutionSize { get; }
-    
-    // Writing mode properties
-    public WritingMode WritingMode { get; }
-    public TextDirection Direction { get; }
-    
-    // Formatting context flags
-    public bool IsNewFormattingContext { get; }
-    public bool IsFloatContextEnabled { get; }
-    public bool IsInsideFloatContext { get; }
-    
-    // Margin collapsing state
-    public MarginStrut MarginStrut { get; }
-    
-    // For absolute positioning
-    public Point BfcOffset { get; }
-    
-    // Create a constraint space for children
-    public IConstraintSpace CreateChildConstraintSpace(IElement child, ICssStyleDeclaration style)
-    {
-        // Determine if child creates a new formatting context
-        bool isNewBfc = DetermineIfNewFormattingContext(style);
-        
-        // Calculate available size for child
-        Size childAvailableSize = CalculateAvailableSizeForChild(style);
-        
-        // Create appropriate constraint space
-        return new BlockConstraintSpace
-        {
-            AvailableSize = childAvailableSize,
-            PercentageResolutionSize = this.PercentageResolutionSize,
-            WritingMode = DetermineWritingMode(style, this.WritingMode),
-            Direction = DetermineDirection(style, this.Direction),
-            IsNewFormattingContext = isNewBfc,
-            // Other properties...
-        };
-    }
-}
-```
-
-### 6.2 LayoutResult
-
-The output of layout operations:
-
-```csharp
-public class LayoutResult
-{
-    // The root fragment of this layout operation
-    public LayoutFragment Fragment { get; }
-    
-    // Intrinsic sizes
-    public MinMaxSizes IntrinsicSizes { get; }
-    
-    // Overflow information
-    public OverflowData OverflowData { get; }
-    
-    // For fragmentation (pagination/multicol)
-    public BreakToken BreakToken { get; }
-    public bool HasBlockFragmentation { get; }
-    
-    // For positioned elements
-    public IReadOnlyList<OutOfFlowFragment> OutOfFlowFragments { get; }
-}
-```
-
-### 6.3 FragmentBuilder
-
-Helper for constructing fragments:
-
-```csharp
-public class FragmentBuilder
-{
-    // Associated element and style
-    public IElement Element { get; set; }
-    public ICssStyleDeclaration Style { get; set; }
-    
-    // Box properties
-    public BoxType BoxType { get; set; }
-    public LogicalSize LogicalSize { get; set; }
-    public LogicalOffset LogicalOffset { get; set; }
-    public Edges Margins { get; set; }
-    public Edges Borders { get; set; }
-    public Edges Paddings { get; set; }
-    
-    // Child fragments
-    public List<LayoutFragment> Children { get; } = new List<LayoutFragment>();
-    
-    // Build the fragment
-    public LayoutFragment ToFragment()
-    {
-        return new LayoutFragment(
-            Element,
-            BoxType,
-            LogicalSize,
-            LogicalOffset,
-            Margins,
-            Borders,
-            Paddings,
-            Children.AsReadOnly());
-    }
-}
-```
-
-## 7. Changes to Existing Modules
-
-### 7.1 Style Computation Module Changes
-
-1. **Add Layout-Optimized Property Access**
-    
-    ```csharp
-    // Add specialized methods for layout access patterns
-    public static class StyleExtensions 
-    {
-        public static Display GetDisplay(this ICssStyleDeclaration style) 
-        {
-            // Fast-path for display property
-            // Cache result for repeated access
-        }
-        
-        public static Position GetPosition(this ICssStyleDeclaration style) 
-        {
-            // Fast-path for position property
-        }
-        
-        // More specialized accessors
-    }
-    ```
-    
-2. **Enhance Logical Property Support**
-    
-    ```csharp
-    // Add logical property resolution
-    public static LogicalLength GetInlineSize(this ICssStyleDeclaration style, WritingMode writingMode)
-    {
-        // Return width or height depending on writing mode
-    }
-    
-    public static LogicalLength GetBlockSize(this ICssStyleDeclaration style, WritingMode writingMode)
-    {
-        // Return height or width depending on writing mode
-    }
-    ```
-    
-
-### 7.2 Cache Module Changes
-
-1. **Create Fragment Cache Classes**
-    
-    ```csharp
-    public class FragmentCache : IComputationCache<FragmentCacheKey, LayoutFragment>
-    {
-        // Similar to existing cache but with fragment-specific optimizations
-    }
-    
-    public class IntrinsicSizeCache : IComputationCache<IntrinsicSizesCacheKey, MinMaxSizes>
-    {
-        // Specialized for caching min/max sizes
-    }
-    ```
-    
-2. **Enhance Layout Cache Keys**
-    
-    ```csharp
-    public class FragmentCacheKey : IEquatable<FragmentCacheKey>
-    {
-        public IElement Element { get; }
-        public IConstraintSpace ConstraintSpace { get; }
-        
-        // Add equality and hashing implementation
-    }
-    ```
-    
-3. **Update LayoutEngineCacheManager**
-    
-    ```csharp
-    public interface ILayoutEngineCacheManager
-    {
-        // Add new methods
-        FragmentCache FragmentCache { get; }
-        IntrinsicSizeCache IntrinsicSizeCache { get; }
-        
-        // Specialized invalidation
-        void InvalidateFragments(IElement element);
-        void InvalidateIntrinsicSizes(IElement element);
-    }
-    ```
-    
-
-### 7.3 Document Lifecycle Module Changes
-
-1. **Enhance LayoutInvalidationTracker**
-    
-    ```csharp
-    public class LayoutInvalidationTracker
-    {
-        // Add granular tracking
-        private HashSet<IElement> _fragmentsDirty = new HashSet<IElement>();
-        private HashSet<IElement> _intrinsicSizesDirty = new HashSet<IElement>();
-        
-        // Specialized methods
-        public void MarkFragmentsDirty(IElement element)
-        {
-            _fragmentsDirty.Add(element);
-        }
-        
-        public void MarkIntrinsicSizesDirty(IElement element)
-        {
-            _intrinsicSizesDirty.Add(element);
-        }
-        
-        // Getters for dirty elements
-        public IEnumerable<IElement> GetFragmentsDirtyElements() => _fragmentsDirty;
-        public IEnumerable<IElement> GetIntrinsicSizesDirtyElements() => _intrinsicSizesDirty;
-    }
-    ```
-    
-2. **Update DocumentLifecycleManager**
-    
-    ```csharp
-    // Add new states
-    public enum LifecycleState
-    {
-        Initial,
-        StyleDirty,
-        StyleClean,
-        IntrinsicSizesDirty,
-        IntrinsicSizesClean,
-        LayoutDirty,
-        LayoutClean,
-        // Other states...
-    }
-    
-    // Update process method
-    public void ProcessPendingUpdates()
-    {
-        if (CurrentState == LifecycleState.StyleDirty)
-        {
-            RecalculateStyles();
-            CurrentState = LifecycleState.StyleClean;
-        }
-        
-        if (CurrentState == LifecycleState.IntrinsicSizesDirty)
-        {
-            RecalculateIntrinsicSizes();
-            CurrentState = LifecycleState.IntrinsicSizesClean;
-        }
-        
-        if (CurrentState == LifecycleState.LayoutDirty)
-        {
-            RecalculateLayouts();
-            CurrentState = LifecycleState.LayoutClean;
-        }
-    }
-    ```
-    
-
-## 8. Implementation Strategy and Phasing
-
-### 8.1 Implementation Phases
-
-1. **Phase 1: Foundation (2-3 months)**
-    
-    - Implement core data structures (ConstraintSpace, LayoutFragment, etc.)
-    - Create basic BoxGeometryResolver
-    - Develop fragment construction mechanism
-    - Set up fragment-based caching foundation
-    - Update document lifecycle for fragment invalidation
-2. **Phase 2: Block Layout (2-3 months)**
-    
-    - Implement block formatting context
-    - Create margin collapsing engine
-    - Develop basic block layout algorithms
-    - Add intrinsic size calculation
-    - Build integration with style computation
-3. **Phase 3: Positioned Elements (1-2 months)**
-    
-    - Implement positioning algorithms
-    - Add absolute/fixed positioning
-    - Develop relative positioning
-    - Create stacking context handling
-    - Implement z-index sorting
-4. **Phase 4: Inline Layout (2-3 months)**
-    
-    - Implement inline formatting context
-    - Create line breaking algorithm
-    - Add text measurement and layout
-    - Implement inline box model
-    - Develop mixed inline/block contexts
-5. **Phase 5: Modern Layout Models (3-4 months)**
-    
-    - Implement flex formatting context
-    - Create grid formatting context
-    - Add multi-column layout
-    - Develop table layout algorithm
-    - Implement specialized layouts
-6. **Phase 6: Optimization & Finalization (2-3 months)**
-    
-    - Implement containment optimization
-    - Add incremental layout improvements
-    - Optimize performance
-    - Implement threading support
-    - Finalize APIs and documentation
-
-### 8.2 Transition Strategy
-
-1. **Parallel Development**
-    
-    - Develop the LayoutNG-inspired engine alongside existing components
-    - Create adapters to work with current StyleComputation and Cache modules
-    - Build unit tests to validate layout against browser results
-2. **Incremental Integration**
-    
-    - Update StyleComputation Module first
-    - Enhance Cache Module for fragment support
-    - Modify DocumentLifecycle for new invalidation model
-    - Integrate gradually with client code
-3. **Bridge Classes**
-    
-    - Create adapter classes to expose traditional box-model interface
-    - Allow gradual transition from old APIs to new ones
-    - Maintain backward compatibility where possible
-4. **Evaluation Metrics**
-    
-    - Define clear success criteria for each phase
-    - Create performance benchmarks to measure improvement
-    - Implement visual regression testing against browsers
-    - Track memory and CPU usage
-
-## 9. Component Responsibilities and Interactions
-
-### 9.1 LayoutEngine Responsibilities
-
-- Serve as the main entry point for layout operations
-- Select appropriate formatting context for elements
-- Create initial constraint space
-- Coordinate with caching system
-- Handle interruption and resumption of layout
-- Provide API for layout operations
-
-### 9.2 FormattingContext Responsibilities
-
-- Implement specific layout algorithms
-- Layout children according to CSS rules
-- Calculate intrinsic sizes when needed
-- Position fragments within the formatting context
-- Handle specialized layout features
-
-### 9.3 BoxGeometryResolver Responsibilities
-
-- Calculate box model dimensions
-- Resolve percentage-based values
-- Apply 'box-sizing' rules
-- Handle min/max constraints
-- Compute margins, borders, padding
-
-### 9.4 LayoutFragmentTree Responsibilities
-
-- Build the fragment tree from layout operations
-- Assemble child fragments into parent fragments
-- Apply writing mode transformations
-- Handle fragment geometry updates
-- Provide access to the fragment tree
-
-### 9.5 Key Component Interactions
-
-1. **Layout Request Flow**
-    
-    ```
-    Client → LayoutEngine → FormattingContextFactory → 
-    Appropriate FormattingContext → BoxGeometryResolver →
-    Child Layout Operations → Fragment Construction → 
-    Layout Result
-    ```
-    
-2. **Caching Interaction**
-    
-    ```
-    LayoutEngine → Check Cache → Cache Hit → Return Cached Fragment
-                               → Cache Miss → Perform Layout → 
-                                              Store in Cache → Return Fragment
-    ```
-    
-3. **Invalidation Flow**
-    
-    ```
-    DOM Mutation → InvalidationManager → LayoutInvalidationTracker →
-    Mark Elements Dirty → DocumentLifecycleManager → 
-    Schedule Layout Updates → ProcessPendingUpdates →
-    LayoutEngine → Perform Layout on Dirty Elements
-    ```
-    
-
-## 10. Technical Considerations and Challenges
-
-### 10.1 Performance Considerations
-
-1. **Memory Usage**
-    
-    - Immutable fragments may increase memory usage
-    - Implement fragment pooling for reuse
-    - Consider object sharing for common values
-    - Add memory monitoring utilities
-2. **CPU Efficiency**
-    
-    - Optimize constraint space creation
-    - Implement fast paths for common layout scenarios
-    - Use specialized algorithms for different layout types
-    - Consider JIT-friendly data structures
-3. **Layout Speed**
-    
-    - Focus on incremental layout for dynamic content
-    - Implement containment optimization
-    - Leverage multi-threading where possible
-    - Optimize critical layout paths
-
-### 10.2 Technical Challenges
-
-1. **Margin Collapsing**
-    
-    - Complex CSS specification rules
-    - Interaction with BFCs
-    - Empty blocks handling
-    - Nested collapsing cases
-2. **Writing Modes Support**
-    
-    - Logical vs. physical coordinates
-    - BiDi text handling
-    - Complex writing mode transformations
-    - Unified algorithm for all writing modes
-3. **Float Layout**
-    
-    - Complex positioning requirements
-    - Interaction with BFCs
-    - Clear property handling
-    - Line breaking around floats
-4. **Flexbox and Grid**
-    
-    - Complex distribution algorithms
-    - Intrinsic sizing dependencies
-    - Auto placement algorithms
-    - Track sizing complexity
-5. **Incremental Layout**
-    
-    - Determining minimal subtree to relayout
-    - Preserving layout information
-    - Handling dependencies between elements
-    - Balancing performance and accuracy
-
-## 11. Conclusion
-
-The proposed LayoutNG-inspired architecture for AngleSharp provides a modern, high-performance approach to CSS layout that aligns with current browser engine design principles. By adopting constraint-based layout, immutable fragments, and clear phase separation, the system will be able to handle complex CSS features accurately while providing good performance characteristics.
-
-The implementation strategy acknowledges the complexity involved and proposes a phased approach that builds incrementally toward the full vision. Integration with existing AngleSharp modules is carefully considered, with appropriate changes recommended to support the new architecture.
-
-While more complex than a traditional mutable box model approach, this architecture offers significant benefits in terms of correctness, performance, and future extensibility. The system will be better positioned to handle modern CSS features and will provide more accurate layout results that match browser behavior.
+The system maintains state through the `DocumentLifecycleManager`, which tracks the current state of the document and manages transitions between states:
+
+### 6.1 Enhanced Lifecycle States
+
+- **Initial**: Document is in its initial state
+- **StyleDirty**: Document needs style recalculation
+- **StyleClean**: Styles are up to date
+- **IntrinsicSizesDirty**: Document needs intrinsic size recalculation
+- **IntrinsicSizesClean**: Intrinsic sizes are up to date
+- **LayoutDirty**: Document needs layout recalculation
+- **LayoutClean**: Layout is up to date
+- **PaintDirty**: Document needs visual update (future)
+- **PaintClean**: Visual representation is up to date (future)
+
+### 6.2 Key State Transitions
+
+1. **DOM Mutation → StyleDirty**: Mutations that affect styles
+2. **StyleDirty → StyleClean**: Style recalculation completes
+3. **StyleClean → IntrinsicSizesDirty**: Style changes affect intrinsic sizes
+4. **IntrinsicSizesDirty → IntrinsicSizesClean**: Size recalculation completes
+5. **IntrinsicSizesClean → LayoutDirty**: Size changes affect layout
+6. **LayoutDirty → LayoutClean**: Layout recalculation completes
+7. **LayoutClean → PaintDirty**: Layout changes affect visual representation
+8. **PaintDirty → PaintClean**: Visual update completes
+
+The system enforces valid state transitions to ensure consistent operation.
+
+## 7. Performance Optimization Strategies
+
+The architecture includes several performance optimization strategies:
+
+### 7.1 Minimal Recalculation
+
+- Only elements affected by changes are recalculated
+- Dependency tracking identifies precisely what needs updating
+- Containment boundaries limit the scope of changes
+- Separate intrinsic size and layout phases avoid unnecessary calculations
+
+### 7.2 Efficient Caching
+
+- Style, intrinsic size, and layout results are cached
+- Constraint-based cache keys for precise invalidation
+- Intelligent invalidation based on detailed dependency tracking
+- Different cache entries for different contexts (e.g., viewport sizes)
+
+### 7.3 Batched Processing
+
+- Related mutations are processed together
+- Updates are scheduled in batches
+- Non-critical updates can be deferred
+
+### 7.4 Formatting Context Optimizations
+
+- Specialized algorithms for different layout types
+- Fast paths for common layout scenarios
+- Skip unnecessary phases when possible
+- Reuse fragments when appropriate
+
+### 7.5 Fragment Immutability Benefits
+
+- Thread safety for concurrent operations
+- Simpler memory management
+- Easier debugging and testing
+- Efficient change detection
+
+## 8. Error Handling and Resilience
+
+The system includes robust error handling:
+
+### 8.1 Graceful Degradation
+
+- If part of the system fails, it can fall back to simpler approaches
+- Default styles and layouts are provided as fallbacks
+- System continues to function even with partial failures
+
+### 8.2 Error Recovery
+
+- The system can recover from invalid states
+- Timeouts prevent infinite loops or excessive computation
+- Error boundaries contain failures to specific components
+
+### 8.3 Logging and Diagnostics
+
+- Comprehensive error logging helps diagnose issues
+- Performance metrics identify bottlenecks
+- Diagnostic tools help understand system behavior
+
+## 9. Extension Points
+
+The architecture includes several extension points:
+
+### 9.1 Custom Formatting Contexts
+
+- Additional formatting contexts can be implemented
+- Specialized layout algorithms can be added
+- Custom box types can be created
+
+### 9.2 Layout Algorithm Extensions
+
+- Custom layout algorithms can be added
+- Special rendering modes can be implemented
+- Domain-specific optimizations can be integrated
+
+### 9.3 Constraint Space Extensions
+
+- Custom constraints can be added
+- Specialized constraint types for specific layouts
+- Additional context information for algorithms
+
+### 9.4 Rendering Integration (Future)
+
+- The system can be extended to integrate with different rendering backends
+- Custom visualization can be implemented
+- Export capabilities can be added
+
+## 10. Implementation Considerations
+
+When implementing the system, consider the following:
+
+### 10.1 Threading Model
+
+- The system primarily operates on a single thread
+- Long-running operations could use background processing
+- Thread safety is important for shared state
+
+### 10.2 Memory Management
+
+- Cached results should use appropriate memory management
+- Immutable fragments help with memory safety
+- Weak references may be appropriate for some caching
+- Disposal of unused resources is important
+
+### 10.3 Performance Benchmarking
+
+- Create benchmarks for key operations
+- Compare with browser performance where possible
+- Use performance data to guide optimization
+
+### 10.4 Progressive Enhancement
+
+- Implement core functionality first
+- Add advanced features incrementally
+- Ensure system works well with partial implementation
+
+## 11. Integration with AngleSharp
+
+The system integrates with AngleSharp's existing components:
+
+### 11.1 DOM Integration
+
+- Uses AngleSharp's DOM implementation
+- Extends functionality without modifying core AngleSharp classes
+- Provides extension methods for easy access
+
+### 11.2 CSS Integration
+
+- Uses AngleSharp's CSS parser and model
+- Extends styling capabilities
+- Integrates with existing style sheet handling
+
+### 11.3 Configuration Integration
+
+- Adds layout engine to AngleSharp configuration
+- Provides configuration options for performance tuning
+- Allows selective enabling of features

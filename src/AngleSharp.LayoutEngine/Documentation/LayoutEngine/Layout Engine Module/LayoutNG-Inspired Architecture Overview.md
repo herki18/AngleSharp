@@ -1,160 +1,166 @@
 ```mermaid
 classDiagram
+    %% Main Layout Engine Class
     class LayoutEngine {
-        +StyleComputationEngine styleEngine
-        +LayoutEngineCacheManager cacheManager
-        +DocumentLifecycleManager lifecycleManager
-        +Layout(IElement element, ConstraintSpace constraintSpace) LayoutResult
-        +LayoutBlock(IElement element, BlockConstraintSpace constraintSpace) LayoutResult
-        +LayoutInline(IElement element, InlineConstraintSpace constraintSpace) LayoutResult
-        +LayoutFlex(IElement element, FlexConstraintSpace constraintSpace) LayoutResult
-        +LayoutGrid(IElement element, GridConstraintSpace constraintSpace) LayoutResult
+        +ComputeElementStyle() ICssStyleDeclaration
+        +Layout(IElement, ConstraintSpace) LayoutResult
+        +ComputeMinMaxSizes(IElement) MinMaxSizes
+        +CreateConstraintSpace(IElement, ICssStyleDeclaration) ConstraintSpace
     }
-
-    class LayoutFragmentTree {
-        +BuildFragmentTree(IElement rootElement, ConstraintSpace initialConstraint) LayoutFragment
-        +ComputeMinMaxSizes(IElement element) MinMaxSizes
-        +CreateLayoutResult(LayoutFragment fragment) LayoutResult
+    
+    %% Formatting Context Factory
+    class FormattingContextFactory {
+        +CreateFormattingContext(ICssStyleDeclaration) IFormattingContext
+        +IsNewFormattingContext(ICssStyleDeclaration) bool
     }
-
+    
+    %% Constraint Space
     class ConstraintSpace {
         +AvailableSize Size
         +PercentageResolutionSize Size
+        +WritingMode WritingMode
+        +Direction TextDirection
+        +IsNewFormattingContext bool
         +MarginStrut MarginStrut
         +BfcOffset Point
-        +IsNewFormattingContext bool
-        +TextDirection TextDirection
-        +IsAnonymous bool
-        +IsInsideFloatContext bool
-        +CreateChildConstraintSpace(IElement child) ConstraintSpace
+        +CreateChildConstraintSpace(ICssStyleDeclaration) ConstraintSpace
     }
-
+    
+    %% Formatting Context Interface
+    class IFormattingContext {
+        <<interface>>
+        +Layout(IElement, ConstraintSpace) LayoutFragment
+        +ComputeIntrinsicSizes(IElement) MinMaxSizes
+    }
+    
+    %% Specialized Formatting Contexts
+    class BlockFormattingContext {
+        +Layout(IElement, ConstraintSpace) LayoutFragment
+        +ComputeIntrinsicSizes(IElement) MinMaxSizes
+        +PositionChildren(List~LayoutFragment~) void
+    }
+    
+    class InlineFormattingContext {
+        +Layout(IElement, ConstraintSpace) LayoutFragment
+        +ComputeIntrinsicSizes(IElement) MinMaxSizes
+        +CreateLineBoxes(List~InlineItem~) List~LineBox~
+    }
+    
+    class FlexFormattingContext {
+        +Layout(IElement, ConstraintSpace) LayoutFragment
+        +ComputeIntrinsicSizes(IElement) MinMaxSizes
+        +DistributeFlexSpace(List~FlexItem~) void
+    }
+    
+    class GridFormattingContext {
+        +Layout(IElement, ConstraintSpace) LayoutFragment
+        +ComputeIntrinsicSizes(IElement) MinMaxSizes
+        +CreateGridTracks(ICssStyleDeclaration) GridTrackCollection
+    }
+    
+    %% Helper Components
+    class BoxGeometryResolver {
+        +ComputeContentBox(ICssStyleDeclaration, ConstraintSpace) LogicalSize
+        +ComputeMargins(ICssStyleDeclaration, ConstraintSpace) Edges
+        +ComputeBorders(ICssStyleDeclaration) Edges
+        +ComputePaddings(ICssStyleDeclaration, ConstraintSpace) Edges
+    }
+    
+    class MarginCollapsingEngine {
+        +CollapseMargins(MarginStrut, MarginStrut) MarginStrut
+        +IsMarginCollapsible(ICssStyleDeclaration) bool
+        +IsEmptyBlockCollapsible(LayoutFragment) bool
+    }
+    
+    class IntrinsicSizesCalculator {
+        +ComputeMinMaxSizes(IElement, ICssStyleDeclaration) MinMaxSizes
+        +ComputeReplacedElementSizes(IElement) MinMaxSizes
+        +ComputeContainerSizes(IElement) MinMaxSizes
+    }
+    
+    class LineBreaker {
+        +BreakText(string, float) List~LineBreak~
+        +CreateLineBoxes(List~InlineItem~, float) List~LineBox~
+        +HandleTrailingWhitespace(LineBox) void
+    }
+    
+    %% Data Structures
     class LayoutFragment {
-        +IElement element
-        +BoxType boxType
-        +PhysicalSize size
-        +PhysicalOffset offset
-        +LogicalSize logicalSize
-        +LogicalOffset logicalOffset
-        +IReadOnlyList~LayoutFragment~ children
+        +Element IElement
+        +BoxType BoxType
+        +LogicalSize LogicalSize
+        +LogicalOffset LogicalOffset
+        +PhysicalSize PhysicalSize
+        +PhysicalOffset PhysicalOffset
+        +Children List~LayoutFragment~
         +Margins Edges
         +Borders Edges
         +Paddings Edges
-        +IsPositioned bool
-        +PositionType positionType
-        +CopyWithNewGeometry(Size newSize, Point newOffset) LayoutFragment
+        +CopyWithNewGeometry(LogicalSize, LogicalOffset) LayoutFragment
     }
-
-    class LayoutResult {
-        +LayoutFragment fragment
-        +OverflowData overflowData
-        +BreakToken breakToken
-        +MinMaxSizes minMaxSizes
-        +bool hasBlockFragmentation
-    }
-
-    class BlockFragmentationEngine {
-        +FragmentBlock(IElement element, ConstraintSpace constraintSpace) List~LayoutFragment~
-        +CreateBreakToken(LayoutFragment fragment) BreakToken
-        +CanBreakBefore(IElement element) bool
-    }
-
+    
     class FragmentBuilder {
-        +ICssStyleDeclaration style
-        +BoxType boxType
-        +List~LayoutFragment~ children
-        +PhysicalSize size
-        +PhysicalOffset offset
-        +LogicalSize logicalSize
-        +LogicalOffset logicalOffset
-        +Edges margins
-        +Edges borders
-        +Edges paddings
-        +ToFragment() LayoutFragment
+        +Element IElement
+        +Style ICssStyleDeclaration
+        +BoxType BoxType
+        +LogicalSize LogicalSize
+        +LogicalOffset LogicalOffset
+        +Children List~LayoutFragment~
+        +Margins Edges
+        +Borders Edges
+        +Paddings Edges
+        +Build() LayoutFragment
     }
-
-    class BoxGeometryResolver {
-        +ComputeContentBoxLogical(ICssStyleDeclaration style, ConstraintSpace space) LogicalSize
-        +ComputeMargins(ICssStyleDeclaration style, ConstraintSpace space) Edges
-        +ComputeBorders(ICssStyleDeclaration style) Edges
-        +ComputePadding(ICssStyleDeclaration style, ConstraintSpace space) Edges
-        +ResolvePercentages(LogicalSize size, ConstraintSpace space) LogicalSize
+    
+    class MinMaxSizes {
+        +Min float
+        +Max float
+        +IsDefinite bool
     }
-
-    class FormattingContextFactory {
-        +CreateFormattingContext(IElement element, ICssStyleDeclaration style) FormattingContext
-        +DoesTriggerNewFormattingContext(ICssStyleDeclaration style) bool
+    
+    class LayoutResult {
+        +Fragment LayoutFragment
+        +MinMaxSizes MinMaxSizes
+        +OverflowRect Rect
+        +BreakToken BreakToken
+        +HasBlockFragmentation bool
     }
-
-    class BlockFormattingContext {
-        +Layout(IElement element, BlockConstraintSpace constraints) LayoutFragment
-        +ComputeIntrinsicSizes(IElement element) MinMaxSizes
-        +PlaceChildren(LayoutFragment container, List~LayoutFragment~ children) void
-    }
-
-    class InlineFormattingContext {
-        +Layout(IElement element, InlineConstraintSpace constraints) LayoutFragment
-        +ComputeIntrinsicSizes(IElement element) MinMaxSizes
-        +BuildLineBoxes(IElement element, List~InlineItem~ items) List~LineBox~
-    }
-
-    class FlexFormattingContext {
-        +Layout(IElement element, FlexConstraintSpace constraints) LayoutFragment
-        +ComputeIntrinsicSizes(IElement element) MinMaxSizes
-        +ComputeFlexItemSizes(List~IElement~ flexItems, FlexConstraintSpace constraints) List~Size~
-    }
-
-    class GridFormattingContext {
-        +Layout(IElement element, GridConstraintSpace constraints) LayoutFragment
-        +ComputeIntrinsicSizes(IElement element) MinMaxSizes
-        +EstablishGridTracks(ICssStyleDeclaration style, Size availableSize) GridTrackCollection
-    }
-
-    class LineBreaker {
-        +BreakInlineContent(List~InlineItem~ items, float availableWidth) List~LineBox~
-        +ComputeLineBoxFragments(LineBox lineBox) List~LayoutFragment~
-        +HandleTrailingWhitespace(LineBox lineBox) void
-    }
-
-    class MarginCollapsingEngine {
-        +CollapseAdjacentMargins(MarginStrut previousMargin, MarginStrut currentMargin) MarginStrut
-        +IsMarginCollapsible(ICssStyleDeclaration style) bool
-        +IsEmptyBlockCollapsible(LayoutFragment fragment) bool
-    }
-
-    class IntrinsicSizesCalculator {
-        +ComputeMinMaxSizes(IElement element, ICssStyleDeclaration style) MinMaxSizes
-        +ComputeBlockContainerIntrinsicSizes(IElement container) MinMaxSizes
-        +ComputeReplacedElementIntrinsicSizes(IElement element) MinMaxSizes
-    }
-
+    
+    %% Cache Integration
     class LayoutCacheAdapter {
-        +TryGetCachedFragment(IElement element, ConstraintSpace constraints) LayoutFragment
-        +StoreCachedFragment(IElement element, ConstraintSpace constraints, LayoutFragment fragment) void
-        +TryGetCachedMinMaxSizes(IElement element) MinMaxSizes
-        +StoreCachedMinMaxSizes(IElement element, MinMaxSizes sizes) void
+        +TryGetCachedFragment(IElement, ConstraintSpace) LayoutFragment
+        +StoreFragment(IElement, ConstraintSpace, LayoutFragment) void
+        +TryGetCachedMinMaxSizes(IElement) MinMaxSizes
+        +StoreMinMaxSizes(IElement, MinMaxSizes) void
     }
-
-    LayoutEngine --> LayoutFragmentTree
-    LayoutEngine --> FormattingContextFactory
-    LayoutEngine --> BoxGeometryResolver
-    LayoutEngine --> LayoutCacheAdapter
-    LayoutEngine --> MarginCollapsingEngine
-    LayoutEngine --> IntrinsicSizesCalculator
     
-    LayoutFragmentTree --> FragmentBuilder
-    LayoutFragmentTree --> FormattingContextFactory
+    %% Relationships
+    LayoutEngine --> FormattingContextFactory : creates
+    LayoutEngine --> ConstraintSpace : creates
+    LayoutEngine --> LayoutCacheAdapter : uses
+    LayoutEngine --> LayoutResult : produces
     
-    FormattingContextFactory --> BlockFormattingContext
-    FormattingContextFactory --> InlineFormattingContext 
-    FormattingContextFactory --> FlexFormattingContext
-    FormattingContextFactory --> GridFormattingContext
+    FormattingContextFactory --> IFormattingContext : creates
+    IFormattingContext <|-- BlockFormattingContext : implements
+    IFormattingContext <|-- InlineFormattingContext : implements
+    IFormattingContext <|-- FlexFormattingContext : implements
+    IFormattingContext <|-- GridFormattingContext : implements
     
-    BlockFormattingContext --> BoxGeometryResolver
-    BlockFormattingContext --> MarginCollapsingEngine
-    InlineFormattingContext --> LineBreaker
-    FlexFormattingContext --> BoxGeometryResolver
-    GridFormattingContext --> BoxGeometryResolver
+    BlockFormattingContext --> BoxGeometryResolver : uses
+    BlockFormattingContext --> MarginCollapsingEngine : uses
+    InlineFormattingContext --> LineBreaker : uses
     
-    FragmentBuilder --> LayoutFragment
+    BlockFormattingContext --> LayoutFragment : produces
+    InlineFormattingContext --> LayoutFragment : produces
+    FlexFormattingContext --> LayoutFragment : produces
+    GridFormattingContext --> LayoutFragment : produces
+    
+    LayoutFragment --> FragmentBuilder : built by
+    LayoutResult --> LayoutFragment : contains
+    
+    IntrinsicSizesCalculator --> MinMaxSizes : produces
+    IFormattingContext --> IntrinsicSizesCalculator : uses
+    
+    LayoutCacheAdapter -- LayoutFragment : caches
+    LayoutCacheAdapter -- MinMaxSizes : caches
 ```

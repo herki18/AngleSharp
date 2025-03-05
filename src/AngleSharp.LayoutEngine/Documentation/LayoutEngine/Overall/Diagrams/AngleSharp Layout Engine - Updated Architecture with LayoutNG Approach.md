@@ -1,5 +1,4 @@
-
-```mermaid
+```meridan
 graph TB
     %% Main Modules
     subgraph StyleComputation["Style Computation Module (Implemented)"]
