@@ -4,17 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "7202af703773e2a8",
+        "id": "ee957e60f0f7864e",
         "type": "tabs",
         "children": [
           {
-            "id": "a1c586c1346b1360",
+            "id": "8c94303aad60522a",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "Overall/Untitled 3.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "Untitled 3"
             }
           }
         ]
@@ -90,6 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
+                "file": "Untitled.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -99,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks"
+              "title": "Backlinks for Untitled"
             }
           },
           {
@@ -108,11 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "Untitled.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links"
+              "title": "Outgoing links from Untitled"
             }
           },
           {
@@ -136,12 +142,13 @@
             "state": {
               "type": "outline",
               "state": {
+                "file": "Untitled.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline"
+              "title": "Outline of Untitled"
             }
           }
         ]
@@ -161,19 +168,38 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "a1c586c1346b1360",
+  "active": "8c94303aad60522a",
   "lastOpenFiles": [
-    "Document Lifecycle Module/Document Lifecycle Architecture.md",
-    "Cache Module/Cache Arhitecture.md",
-    "Document Lifecycle Module",
+    "Overall/Untitled 2.md",
+    "Overall/Untitled 3.md",
+    "Overall/Untitled 1.md",
     "Style Computation Module/Style Computation Architecture.md",
-    "Overall/Arhitecture.md",
     "Overall/Overall Layout.md",
-    "Layout Engine Module/Architecture Layout.md",
-    "Cache Module",
-    "Layout Engine Module",
-    "Layout Engine",
+    "Overall/Untitled.md",
+    "Document Lifecycle Module/Rev 1/Untitled 1.md",
+    "Document Lifecycle Module/Rev 1/Untitled.md",
+    "Document Lifecycle Module/Document Lifecycle Architecture.md",
+    "Document Lifecycle Module/Rev 1/Document Lifecycle-Driven Invalidation System Architecture.md",
+    "Document Lifecycle Module/Rev 2/Untitled 3.md",
+    "Document Lifecycle Module/Rev 2/Untitled 2.md",
+    "Document Lifecycle Module/Rev 2/Untitled 1.md",
+    "Document Lifecycle Module/Rev 2/Untitled.md",
+    "Untitled.canvas",
+    "Document Lifecycle Module/Rev 1/Document Lifecycle-Driven Invalidation System Implementation Steps.md",
+    "Document Lifecycle Module/Rev 2",
+    "Document Lifecycle Module/Rev 1",
+    "New Text Document.txt",
     "Style Computation Module",
-    "Overall"
+    "Overall/Arhitecture.md",
+    "Overall",
+    "Layout Engine Module/Architecture Layout.md",
+    "Layout Engine Module",
+    "Document Lifecycle Module",
+    "Cache Module/Cache Arhitecture.md",
+    "Cache Module",
+    "Arhitecture.md",
+    "Untitled.md",
+    "Untitled",
+    "Layout Engine"
   ]
 }
