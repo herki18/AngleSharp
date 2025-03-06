@@ -83,12 +83,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Instructions for LLM Guiding Architecture Documentation Creation.md",
+                "file": "Modules/Style System/CSS Variable Resolution Integration with LayoutSystem.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Instructions for LLM Guiding Architecture Documentation Creation"
+              "title": "CSS Variable Resolution Integration with LayoutSystem"
             }
           }
         ],
@@ -165,7 +165,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Instructions for LLM Guiding Architecture Documentation Creation.md",
+                "file": "Modules/Style System/CSS Variable Resolution Integration with LayoutSystem.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -175,7 +175,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Instructions for LLM Guiding Architecture Documentation Creation"
+              "title": "Backlinks for CSS Variable Resolution Integration with LayoutSystem"
             }
           },
           {
@@ -240,9 +240,11 @@
   },
   "active": "e499fdad36b62cf5",
   "lastOpenFiles": [
-    "AngleSharp Layout Engine Implementation Plan Template.md",
+    "Modules/Style System/Arhitecture/StyleSystem - Updated for LayoutNG Integration.md",
+    "AngleSharp.LayoutEngine Naming Conventions.md",
     "Instructions for LLM Guiding Architecture Documentation Creation.md",
     "AngleSharp Layout Engine Implementation Status Template.md",
+    "AngleSharp Layout Engine Implementation Plan Template.md",
     "AngleSharp Layout Engine Architecture Documentation TemplateAngleSharp Layout Engine Architecture Documentation TemplateUntitled.md",
     "Modules/Style System/Reference/StyleComputationEngine.md",
     "Modules/Style System/Reference/AngleSharp CSS Declaration Handling - Quick Reference.md",
@@ -251,8 +253,6 @@
     "Modules/Style System/Instructions/Instructions.md",
     "Modules/Style System/Implementation/StyleComputationEngineImplementationStatus.md",
     "Modules/Style System/Future Plans/CSS Variable Implementation Plan for ValueComputer.md",
-    "Modules/Style System/Arhitecture/StyleSystem - Updated for LayoutNG Integration.md",
-    "AngleSharp.LayoutEngine Naming Conventions.md",
     "Modules/Lifecycle System/Arhitecture/Document Lifecycle Architecture.md",
     "Modules",
     "Modules/Layout System/Layout System Architecture Document.md",
