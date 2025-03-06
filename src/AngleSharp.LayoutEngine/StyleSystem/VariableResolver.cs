@@ -192,7 +192,7 @@
         /// <param name="element">The context element</param>
         /// <param name="context">The resolution context</param>
         /// <returns>A calc expression with resolved variables</returns>
-        private ICssValue ResolveCalcExpression(CssCalcValue calcValue, IElement element, ResolverContext context)
+        public ICssValue ResolveCalcExpression(CssCalcValue calcValue, IElement element, ResolverContext context)
         {
             // Resolve any variables in the expression
             var resolvedExpression = ResolveNestedReferences(calcValue.Expression, element, context);
