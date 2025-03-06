@@ -101,10 +101,11 @@ namespace AngleSharp.Css.Values
     /// <summary>
     /// Represents a CSS value list.
     /// </summary>
-    sealed class CssListValue : CssListValue<ICssValue>
+    public sealed class CssListValue : CssListValue<ICssValue>
     {
         #region ctor
 
+        /// <inheritdoc />
         public CssListValue(ICssValue[] items = null)
             : base(items)
         {
