@@ -1,9 +1,8 @@
-
 ```mermaid
 graph TB
-    %% Main Modules
-    subgraph StyleComputation["Style Computation Module (Implemented)"]
-        SCE[StyleComputationEngine]
+    %% Main Systems
+    subgraph StyleSystem["StyleSystem (Implemented)"]
+        SCE[StyleEngine]
         SM[StyleSheetManager]
         SELM[SelectorMatcher]
         CR[CascadeResolver]
@@ -11,8 +10,8 @@ graph TB
         VC[ValueComputer]
     end
     
-    subgraph DocumentLifecycle["Document Lifecycle Module (Planned)"]
-        DLM[DocumentLifecycleManager]
+    subgraph LifecycleSystem["LifecycleSystem (Planned)"]
+        DLM[LifecycleManager]
         MOA[MutationObserverAdapter]
         IM[InvalidationManager]
         SIT[StyleInvalidationTracker]
@@ -20,7 +19,7 @@ graph TB
         SS[SchedulingService]
     end
     
-    subgraph CacheModule["Cache Module (Implemented)"]
+    subgraph CacheSystem["CacheSystem (Implemented)"]
         LECM[LayoutEngineCacheManager]
         SC[StyleCache]
         FC[FragmentCache]:::new
@@ -29,7 +28,7 @@ graph TB
         EDT[EnhancedDependencyTracker]
     end
     
-    subgraph LayoutEngine["Layout Engine Module (LayoutNG-Inspired)"]
+    subgraph LayoutSystem["LayoutSystem (LayoutNG-Inspired)"]
         LE[LayoutEngine]
         FCTF[FormattingContextFactory]:::new
         LFT[LayoutFragmentTree]:::new

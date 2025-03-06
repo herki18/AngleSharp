@@ -1,23 +1,23 @@
-# Layout System - Architecture Overview
+# LayoutSystem - Architecture Overview
 
 ## 1. System Overview
 
-The AngleSharp Layout System is a comprehensive system that extends AngleSharp with full styling, layout computation, and rendering capabilities. It is designed as a modular system with clear boundaries between components, allowing for independent development, testing, and maintenance.
+The AngleSharp LayoutSystem is a comprehensive system that extends AngleSharp with full styling, layout computation, and rendering capabilities. It is designed as a modular system with clear boundaries between components, allowing for independent development, testing, and maintenance.
 
-The system consists of four primary modules:
+The system consists of four primary systems:
 
-1. **Style Computation Module**: Computes CSS styles for DOM elements
-2. **Document Lifecycle Module**: Tracks DOM mutations and manages invalidation
-3. **Layout Engine Module**: Computes element layout and positioning using a modern constraint-based approach
-4. **Caching Module**: Provides efficient caching with dependency tracking
+1. **StyleSystem**: Computes CSS styles for DOM elements
+2. **LifecycleSystem**: Tracks DOM mutations and manages invalidation
+3. **LayoutSystem**: Computes element layout and positioning using a modern constraint-based approach
+4. **CacheSystem**: Provides efficient caching with dependency tracking
 
-These modules work together to provide a complete pipeline from DOM mutations to final rendering, with optimizations at each stage to ensure performance.
+These systems work together to provide a complete pipeline from DOM mutations to final rendering, with optimizations at each stage to ensure performance.
 
 ## 2. Core Architecture Principles
 
 The architecture is guided by the following principles:
 
-1. **Clear Module Boundaries**: Each module has a well-defined responsibility and interface
+1. **Clear System Boundaries**: Each system has a well-defined responsibility and interface
 2. **Reactive Updates**: Changes to the DOM trigger appropriate invalidations and recalculations
 3. **Minimal Recomputation**: Only affected elements are recalculated
 4. **Efficient Caching**: Results are cached with intelligent invalidation
@@ -28,15 +28,15 @@ The architecture is guided by the following principles:
 9. **Phase Separation**: Clear separation between box tree construction, intrinsic size calculation, layout, and positioning
 10. **Intermediate Representation**: Box tree provides an optimized intermediate representation for layout algorithms
 
-## 3. Module Descriptions
+## 3. System Descriptions
 
-### 3.1 Style Computation Module
+### 3.1 StyleSystem
 
-The Style Computation Module is responsible for computing CSS styles for DOM elements. It processes style rules, matches them against elements, and computes final property values.
+The StyleSystem is responsible for computing CSS styles for DOM elements. It processes style rules, matches them against elements, and computes final property values.
 
 #### Key Components:
 
-- **StyleComputationEngine**: Main orchestrator for style computation
+- **StyleEngine**: Main orchestrator for style computation
 - **StyleSheetManager**: Manages stylesheets from different origins
 - **SelectorMatcher**: Matches selectors against elements
 - **CascadeResolver**: Resolves property conflicts
@@ -49,7 +49,7 @@ The Style Computation Module is responsible for computing CSS styles for DOM ele
 
 ```csharp
 // Main entry point for style computation
-public interface IStyleComputationEngine
+public interface IStyleEngine
 {
     ICssStyleDeclaration ComputeElementStyle(IElement element, 
         ICssStyleDeclaration parentStyle = null, 
@@ -79,13 +79,13 @@ public interface IStylePropertyResolver
 }
 ```
 
-### 3.2 Document Lifecycle Module
+### 3.2 LifecycleSystem
 
-The Document Lifecycle Module is responsible for observing DOM mutations, determining what needs to be invalidated, and coordinating updates.
+The LifecycleSystem is responsible for observing DOM mutations, determining what needs to be invalidated, and coordinating updates.
 
 #### Key Components:
 
-- **DocumentLifecycleManager**: Manages document state and transitions
+- **LifecycleManager**: Manages document state and transitions
 - **MutationObserverAdapter**: Bridges to AngleSharp's MutationObserver
 - **InvalidationManager**: Determines what needs invalidation
 - **StyleInvalidationTracker**: Tracks elements needing style recalculation
@@ -98,7 +98,7 @@ The Document Lifecycle Module is responsible for observing DOM mutations, determ
 
 ```csharp
 // Central coordinator for document lifecycle
-public interface IDocumentLifecycleManager
+public interface ILifecycleManager
 {
     LifecycleState CurrentState { get; }
     void ScheduleStyleUpdate();
@@ -137,9 +137,9 @@ public enum LifecycleState
 }
 ```
 
-### 3.3 Layout Engine Module (LayoutNG-Inspired)
+### 3.3 LayoutSystem (LayoutNG-Inspired)
 
-The Layout Engine Module is responsible for computing element layout and positioning using a modern constraint-based approach inspired by browser engines like Blink's LayoutNG.
+The LayoutSystem is responsible for computing element layout and positioning using a modern constraint-based approach inspired by browser engines like Blink's LayoutNG.
 
 #### Key Components:
 
@@ -259,53 +259,11 @@ public interface IFormattingContext
     // Calculate intrinsic sizes
     MinMaxSizes ComputeIntrinsicSizes(INGBox box);
 }
-
-// Box tree builder interface
-public interface IBoxTreeBuilder
-{
-    // Build box tree for an element
-    NGBox BuildBoxTree(IElement element, ICssStyleDeclaration style = null);
-    
-    // Update existing box tree
-    NGBox UpdateBoxTree(NGBox existingBox, IElement element, ICssStyleDeclaration style = null);
-    
-    // Special box creation
-    NGBlockBox CreateAnonymousBlockBox();
-    NGInlineBox CreateAnonymousInlineBox();
-}
-
-// Immutable layout result
-public class LayoutFragment
-{
-    // Associated box
-    public INGBox SourceBox { get; }
-    
-    // Fragment geometry
-    public LogicalSize LogicalSize { get; }
-    public LogicalOffset LogicalOffset { get; }
-    public PhysicalSize PhysicalSize { get; }
-    public PhysicalOffset PhysicalOffset { get; }
-    
-    // Box model properties
-    public Edges Margins { get; }
-    public Edges Borders { get; }
-    public Edges Paddings { get; }
-    
-    // Child fragments
-    public IReadOnlyList<LayoutFragment> Children { get; }
-    
-    // For positioned elements
-    public bool IsPositioned { get; }
-    public PositionType PositionType { get; }
-    
-    // Create a new fragment with updated geometry
-    public LayoutFragment CopyWithNewGeometry(LogicalSize newSize, LogicalOffset newOffset);
-}
 ```
 
-### 3.4 Caching Module
+### 3.4 CacheSystem
 
-The Caching Module provides efficient caching of computed styles and layouts with dependency tracking for intelligent invalidation.
+The CacheSystem provides efficient caching of computed styles and layouts with dependency tracking for intelligent invalidation.
 
 #### Key Components:
 
@@ -345,33 +303,6 @@ public interface ILayoutEngineCacheManager
     void InvalidateBoxTree(IElement element); // New: Box tree invalidation
     void InvalidateFragments(IElement element);
     void InvalidateIntrinsicSizes(IElement element);
-}
-
-// Box tree cache key
-public class BoxTreeCacheKey : IEquatable<BoxTreeCacheKey>
-{
-    public IElement Element { get; }
-    public string PseudoElement { get; }
-    
-    // Equality and hashing implementation
-}
-
-// Fragment cache key
-public class FragmentCacheKey : IEquatable<FragmentCacheKey>
-{
-    public INGBox Box { get; } // Changed from Element to Box
-    public IConstraintSpace ConstraintSpace { get; }
-    
-    // Equality and hashing implementation
-}
-
-// Intrinsic size cache key
-public class IntrinsicSizeCacheKey : IEquatable<IntrinsicSizeCacheKey>
-{
-    public INGBox Box { get; } // Changed from Element to Box
-    public WritingMode WritingMode { get; }
-    
-    // Equality and hashing implementation
 }
 ```
 
@@ -426,35 +357,9 @@ NGBox (abstract base)
 
 Each box type encapsulates specialized behavior for different layout models and CSS features.
 
-### 4.4 Anonymous Box Creation
+## 5. Cross-System Interactions
 
-The Box Tree handles creation of anonymous boxes required by CSS:
-
-1. **Block-in-Inline Fixup**: Creates anonymous block boxes when block children appear within inline parents
-2. **Text Wrapper**: Creates anonymous inline boxes to contain text nodes within block containers
-3. **Table Structure**: Creates anonymous table structure boxes for proper table layout
-4. **Flex/Grid Items**: Creates anonymous flex/grid items as needed for proper container layout
-
-### 4.5 Integration with Layout Process
-
-The Box Tree integrates with the layout process as follows:
-
-1. **Construction Phase**:
-    
-    - DOM + Styles → Box Tree
-    - Cached when possible for performance
-2. **Intrinsic Size Phase**:
-    
-    - Box Tree → Intrinsic Sizes
-    - Calculated on box tree nodes
-3. **Layout Phase**:
-    
-    - Box Tree + Constraints → Layout Fragments
-    - Fragments reference their source boxes
-
-## 5. Cross-Module Interactions
-
-The modules interact in the following ways:
+The systems interact in the following ways:
 
 ### 5.1 DOM Mutation → Lifecycle → Style → Box Tree → Layout Pipeline
 
@@ -465,11 +370,11 @@ The modules interact in the following ways:
     - `InvalidationManager` analyzes mutations
     - `DependencyTracker` identifies affected elements
     - Specialized trackers mark elements for different invalidation types
-3. **Document Lifecycle Management**:
-    - `DocumentLifecycleManager` updates document state
+3. **Lifecycle Management**:
+    - `LifecycleManager` updates document state
     - `SchedulingService` schedules updates
 4. **Style Recalculation**:
-    - `StyleComputationEngine` recalculates styles for invalidated elements
+    - `StyleEngine` recalculates styles for invalidated elements
     - `StyleCache` is updated with new computed styles
 5. **Box Tree Construction**:
     - `BoxTreeBuilder` constructs the box tree for elements with updated styles
@@ -498,7 +403,7 @@ The layout process follows a two-phase approach:
 
 ### 5.3 Style → Box Tree → Layout Integration
 
-The integration between modules is enhanced with the box tree:
+The integration between systems is enhanced with the box tree:
 
 1. **Style to Box Tree Integration**:
     - Computed styles determine box types
@@ -527,7 +432,7 @@ The integration between modules is enhanced with the box tree:
 
 ## 6. System States and Transitions
 
-The system maintains state through the `DocumentLifecycleManager`, which tracks the current state of the document and manages transitions between states:
+The system maintains state through the `LifecycleManager`, which tracks the current state of the document and manages transitions between states:
 
 ### 6.1 Enhanced Lifecycle States
 

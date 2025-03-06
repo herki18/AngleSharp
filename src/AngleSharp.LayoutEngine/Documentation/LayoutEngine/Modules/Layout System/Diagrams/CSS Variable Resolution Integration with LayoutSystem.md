@@ -1,8 +1,8 @@
 ```mermaid
 flowchart TD
     %% Style Computation Main Components
-    subgraph StyleComputation[Style Computation Module]
-        SCE[StyleComputationEngine]
+    subgraph StyleSystem[StyleSystem]
+        SCE[StyleEngine]
         VC[ValueComputer]
         VR[VariableResolver]:::new
         VReg[VariableRegistry]:::new
@@ -10,7 +10,7 @@ flowchart TD
     end
     
     %% Layout Engine Main Components
-    subgraph LayoutEngine[Layout Engine Module]
+    subgraph LayoutSystem[LayoutSystem]
         LE[LayoutEngine]
         CS[ConstraintSpace]
         BGR[BoxGeometryResolver]
