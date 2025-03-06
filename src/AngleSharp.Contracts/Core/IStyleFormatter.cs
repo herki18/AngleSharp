@@ -3,9 +3,6 @@ namespace AngleSharp;
 using System;
 using System.Collections.Generic;
 
-/// <summary>
-///     Basic interface for CSS node serialization.
-/// </summary>
 public interface IStyleFormatter
 {
     /// <summary>
