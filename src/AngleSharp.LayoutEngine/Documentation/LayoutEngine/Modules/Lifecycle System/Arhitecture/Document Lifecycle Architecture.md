@@ -1,8 +1,8 @@
-# Document Lifecycle Architecture: LayoutNG Integration Guidelines
+# LifecycleSystem Architecture: LayoutNG Integration Guidelines
 
 ## 1. Architecture Overview
 
-This document outlines architectural guidance for integrating the Document Lifecycle Module with the LayoutNG-inspired approach. The integration preserves the reactive nature of the Document Lifecycle system while adapting it to support the constraint-based, multi-phase layout process that LayoutNG introduces.
+This document outlines architectural guidance for integrating the LifecycleSystem with the LayoutNG-inspired approach. The integration preserves the reactive nature of the LifecycleSystem while adapting it to support the constraint-based, multi-phase layout process that LayoutNG introduces.
 
 ## 2. Core Architectural Principles
 
@@ -49,7 +49,7 @@ This granularity enables targeted updates and minimizes unnecessary computation.
 
 The integrated architecture includes these primary components:
 
-- **DocumentLifecycleManager**: Orchestrates the multi-phase lifecycle
+- **LifecycleManager**: Orchestrates the multi-phase lifecycle
 - **InvalidationManager**: Coordinates invalidation across different aspects
 - **MutationObserverAdapter**: Bridges DOM changes to invalidation system
 - **SchedulingService**: Manages update scheduling and prioritization
@@ -64,7 +64,7 @@ Specialized components track what needs updating:
 
 ### 3.3 LayoutNG Integration Components
 
-New components that bridge Document Lifecycle with LayoutNG:
+New components that bridge LifecycleSystem with LayoutNG:
 
 - **ConstraintSpaceManager**: Manages constraint spaces for layout
 - **FragmentManager**: Manages layout fragments and their relationships
@@ -78,7 +78,7 @@ New components that bridge Document Lifecycle with LayoutNG:
 2. MutationObserverAdapter detects and classifies the mutation
 3. InvalidationManager determines affected aspects (style, intrinsic sizes, constraints, fragments)
 4. Appropriate trackers mark affected elements
-5. DocumentLifecycleManager updates lifecycle state
+5. LifecycleManager updates lifecycle state
 6. SchedulingService coordinates update timing
 
 ### 4.2 Multi-Phase Processing Flow
@@ -110,7 +110,7 @@ New components that bridge Document Lifecycle with LayoutNG:
 
 ### 4.3 Fragment Creation Flow
 
-1. StyleComputationEngine provides computed styles
+1. StyleEngine provides computed styles
 2. IntrinsicSizesCalculator determines min/max content sizes
 3. ConstraintSpaceManager creates appropriate constraint space
 4. LayoutEngine performs layout within constraints
@@ -118,23 +118,23 @@ New components that bridge Document Lifecycle with LayoutNG:
 
 ## 5. Integration Guidelines
 
-### 5.1 StyleComputationModule Integration
+### 5.1 StyleSystem Integration
 
-- Maintain existing StyleComputationEngine interfaces
+- Maintain existing StyleEngine interfaces
 - Add enhanced property access patterns for layout-critical properties
 - Ensure computed styles include properties needed for constraint-based layout
 - Support logical property resolution based on writing mode
 
-### 5.2 CacheModule Integration
+### 5.2 CacheSystem Integration
 
 - Extend caching to support fragments and constraint spaces
 - Create specialized cache keys that incorporate constraint properties
 - Add support for intrinsic sizes caching
 - Enhance dependency tracking for fragment invalidation
 
-### 5.3 LayoutEngineModule Integration
+### 5.3 LayoutSystem Integration
 
-- Define clear interfaces between Document Lifecycle and LayoutEngine
+- Define clear interfaces between LifecycleSystem and LayoutEngine
 - Establish pattern for transitioning from lifecycle states to layout operations
 - Create framework for incremental layout with fragments
 - Define dependencies between lifecycle phases and layout operations
@@ -164,7 +164,7 @@ New components that bridge Document Lifecycle with LayoutNG:
 
 ## 7. Component Responsibilities
 
-### 7.1 DocumentLifecycleManager
+### 7.1 LifecycleManager
 
 - Maintain document lifecycle state
 - Enforce valid state transitions
@@ -254,7 +254,7 @@ New components that bridge Document Lifecycle with LayoutNG:
 
 ### Phase 1: Foundation Extension
 
-- Extend the DocumentLifecycleManager to support LayoutNG states
+- Extend the LifecycleManager to support LayoutNG states
 - Enhance InvalidationManager for multi-aspect invalidation
 - Create basic integration interfaces for LayoutNG components
 

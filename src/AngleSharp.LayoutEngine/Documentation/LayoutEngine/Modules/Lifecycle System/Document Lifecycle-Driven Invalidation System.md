@@ -1,6 +1,8 @@
+# LifecycleSystem-Driven Invalidation System
+
 ## 1. Overview
 
-The **Document Lifecycle-Driven Invalidation System** is a comprehensive solution for managing:
+The **LifecycleSystem-Driven Invalidation System** is a comprehensive solution for managing:
 
 - **DOM Mutations**: Detecting and batching DOM changes
 - **Cache Invalidation**: Determining when style, layout, or visual caches should be invalidated
@@ -13,9 +15,9 @@ This system is **inspired by production browser engines** (e.g., WebKit, Blink) 
 
 ## 2. Core Components
 
-Below is an overview of the key architectural components that form the Document Lifecycle-Driven Invalidation System. Each component has distinct responsibilities but works closely with the others:
+Below is an overview of the key architectural components that form the LifecycleSystem-Driven Invalidation System. Each component has distinct responsibilities but works closely with the others:
 
-1. **DocumentLifecycleManager**
+1. **LifecycleManager**
 2. **InvalidationManager**
 3. **MutationObserverAdapter**
 4. **StyleInvalidationTracker**
@@ -25,14 +27,14 @@ Below is an overview of the key architectural components that form the Document 
 8. **SchedulingService** / **UpdateScheduler**
 9. **MutationBatchProcessor**
 
-### 2.1 DocumentLifecycleManager
+### 2.1 LifecycleManager
 
 Central coordinator that maintains the **current lifecycle state** of the document and **enforces valid state transitions**. It ensures that operations such as layout calculation never happen while styles are still out of date, and it orchestrates the scheduling of updates.
 
 - **Responsibilities**:
     
     - Maintain the current lifecycle state (e.g., _StyleDirty_, _StyleClean_, _LayoutDirty_, _LayoutClean_, _PaintDirty_, _PaintClean_)
-    - Enforce valid state transitions (e.g., can’t do layout if style is dirty)
+    - Enforce valid state transitions (e.g., can't do layout if style is dirty)
     - Schedule updates based on document state, delegating to the scheduling service
     - Provide a centralized point for tracking and debugging document state
 - **Key Methods** (Examples):
@@ -63,13 +65,13 @@ Responsible for **determining what needs to be recalculated** when DOM mutations
 
 ### 2.3 MutationObserverAdapter
 
-Bridges AngleSharp’s **MutationObserver** with the invalidation system. It **configures** and **manages** mutation observers, processes mutation records, and then forwards relevant information to the **InvalidationManager**.
+Bridges AngleSharp's **MutationObserver** with the invalidation system. It **configures** and **manages** mutation observers, processes mutation records, and then forwards relevant information to the **InvalidationManager**.
 
 - **Responsibilities**:
     
     - Create and configure `MutationObserver` instances
     - Filter and batch mutation records to avoid redundant processing
-    - Translate AngleSharp mutation records into the system’s internal format
+    - Translate AngleSharp mutation records into the system's internal format
     - Schedule invalidation processing after collecting batches of mutations
 - **Key Methods**:
     
@@ -125,7 +127,7 @@ An enhanced version of `CacheDependencyTracker` that maintains **complex relatio
     - Provide different scheduling strategies (e.g., immediate for testing, batch updates to reduce overhead, etc.)
     - Prioritize visible content if relevant
     - Batch and throttle updates to prevent performance bottlenecks
-    - Integrate with the DocumentLifecycleManager to trigger style/layout calculations
+    - Integrate with the LifecycleManager to trigger style/layout calculations
 - **Key Methods**:
     
     - `ScheduleUpdate(UpdateType type)` – Request a scheduled update for a given type (style, layout, or paint)
@@ -152,7 +154,7 @@ Below is a high-level flow showing how the components interact once the DOM chan
 
 1. **DOM Mutation → MutationObserverAdapter**
     
-    - DOM changes trigger AngleSharp’s `MutationObserver`
+    - DOM changes trigger AngleSharp's `MutationObserver`
     - The `MutationObserverAdapter` batches and preprocesses them using `MutationBatchProcessor`
 2. **MutationObserverAdapter → InvalidationManager**
     
@@ -165,18 +167,18 @@ Below is a high-level flow showing how the components interact once the DOM chan
 4. **Trackers → EnhancedDependencyTracker**
     
     - For each mutation, dependency tracking is consulted to figure out which additional elements might be affected (e.g., through inheritance or variable usage)
-5. **InvalidationManager → DocumentLifecycleManager**
+5. **InvalidationManager → LifecycleManager**
     
-    - The `InvalidationManager` updates the `DocumentLifecycleManager` about the document’s “dirty” states
-6. **DocumentLifecycleManager → SchedulingService / UpdateScheduler**
+    - The `InvalidationManager` updates the `LifecycleManager` about the document's "dirty" states
+6. **LifecycleManager → SchedulingService / UpdateScheduler**
     
-    - The `DocumentLifecycleManager` requests style/layout updates at the appropriate time
+    - The `LifecycleManager` requests style/layout updates at the appropriate time
     - The `SchedulingService` decides how and when these updates should be processed (immediate, deferred, throttled, etc.)
-7. **SchedulingService → StyleComputationEngine / LayoutEngine**
+7. **SchedulingService → StyleEngine / LayoutEngine**
     
     - When the scheduled time arrives, style or layout recalculation is triggered
     - Only affected elements (as identified by the trackers) are updated
-8. **StyleComputationEngine / LayoutEngine → Cache**
+8. **StyleEngine / LayoutEngine → Cache**
     
     - Newly computed results are cached
     - `EnhancedDependencyTracker` is updated with any new or removed dependencies
@@ -202,10 +204,10 @@ Below is a high-level flow showing how the components interact once the DOM chan
 4. **Mark Elements & Update Lifecycle**
     
     - `StyleInvalidationTracker` and/or `LayoutInvalidationTracker` mark elements as dirty
-    - `DocumentLifecycleManager` moves to the correct “dirty” state (e.g., _StyleDirty_ or _LayoutDirty_)
+    - `LifecycleManager` moves to the correct "dirty" state (e.g., _StyleDirty_ or _LayoutDirty_)
 5. **Scheduling**
     
-    - `DocumentLifecycleManager` notifies `SchedulingService` of pending updates
+    - `LifecycleManager` notifies `SchedulingService` of pending updates
     - `SchedulingService` decides when to process them
 6. **Recalculation**
     
@@ -219,14 +221,14 @@ Below is a high-level flow showing how the components interact once the DOM chan
     - `StyleInvalidationTracker` provides a set of elements needing style updates
 2. **Compute Styles**
     
-    - The `StyleComputationEngine` recalculates style for those elements, using data from the `EnhancedDependencyTracker` (e.g., selector matches, variable usage)
+    - The `StyleEngine` recalculates style for those elements, using data from the `EnhancedDependencyTracker` (e.g., selector matches, variable usage)
 3. **Propagate Changes**
     
     - If a style change affects inherited properties or CSS variables, the tracker may expand the set of invalidated elements
 4. **Update State**
     
     - Updated styles are stored in the `StyleCache`
-    - `DocumentLifecycleManager` transitions to _StyleClean_ state (unless layout is still dirty)
+    - `LifecycleManager` transitions to _StyleClean_ state (unless layout is still dirty)
 
 ### 4.3 Layout Recalculation (Future or Optional)
 
@@ -242,7 +244,7 @@ Below is a high-level flow showing how the components interact once the DOM chan
 4. **Update State**
     
     - New layout data is stored (e.g., `LayoutCache`)
-    - `DocumentLifecycleManager` transitions to _LayoutClean_ state
+    - `LifecycleManager` transitions to _LayoutClean_ state
     - If paint is needed, transitions to _PaintDirty_ and schedules paint updates
 
 ### 4.4 Mutation Batch Optimization
@@ -262,23 +264,23 @@ Below is a high-level flow showing how the components interact once the DOM chan
 
 ---
 
-## 5. Integration with Existing and Future Modules
+## 5. Integration with Existing and Future Systems
 
-### 5.1 Integration with StyleComputationModule
+### 5.1 Integration with StyleSystem
 
-- **Triggering Recalculation**: `SchedulingService` notifies the `StyleComputationEngine` to recalc styles when `StyleDirty`
+- **Triggering Recalculation**: `SchedulingService` notifies the `StyleEngine` to recalc styles when `StyleDirty`
 - **Dependency Tracking**: The `EnhancedDependencyTracker` uses data from the `StyleCache` to track relationships (e.g., selector matches, variable usage)
 - **Optimization**: The `StyleInvalidationTracker` narrows down which elements need updating
 - **Cache Coordination**: Caches are invalidated or updated based on changes
 
-### 5.2 Integration with CacheModule
+### 5.2 Integration with CacheSystem
 
 - **Cache Invalidation**: `InvalidationManager` determines which cache entries to invalidate
 - **Dependency Updates**: When style or layout changes, the `EnhancedDependencyTracker` recalculates dependencies
 - **Selective Invalidation**: Only the necessary entries are cleared or recalculated
 - **Lifecycle Awareness**: The cache can hook into the document lifecycle to optimize data retrieval
 
-### 5.3 Integration with LayoutEngineModule (Future)
+### 5.3 Integration with LayoutSystem (Future)
 
 - **Layout Invalidation**: `LayoutInvalidationTracker` triggers geometry updates
 - **Dependency Information**: The `EnhancedDependencyTracker` supports layout relationships (e.g., block formatting contexts)
@@ -291,7 +293,7 @@ Below is a high-level flow showing how the components interact once the DOM chan
 
 - **Graceful Degradation**: If part of the system fails, fallback to full document recalculation
 - **Timeout Protection**: Long-running operations can be aborted to preserve responsiveness
-- **State Recovery**: `DocumentLifecycleManager` can revert or reset states if something goes wrong
+- **State Recovery**: `LifecycleManager` can revert or reset states if something goes wrong
 - **Logging & Diagnostics**: Comprehensive logs to assist in debugging issues
 - **Failure Isolation**: Errors in style invalidation do not necessarily break layout invalidation, and vice versa
 
@@ -346,11 +348,11 @@ Below is a high-level flow showing how the components interact once the DOM chan
 
 ## 9. Integration Interface (Example)
 
-A sample C#-style interface for how external modules or consumers might interact with the system:
+A sample C#-style interface for how external systems or consumers might interact with the system:
 
 ```csharp
-// Main interface for the module
-public interface IDocumentLifecycle
+// Main interface for the system
+public interface ILifecycleSystem
 {
     LifecycleState CurrentState { get; }
     void InvalidateElement(IElement element, InvalidationType type);
@@ -391,16 +393,16 @@ public enum UpdateType
 }
 ```
 
-This example illustrates how **external** modules (e.g., style computation engine, higher-level application code) could trigger invalidation or ensure the document is in a fully up-to-date state (style, layout, or both).
+This example illustrates how **external** systems (e.g., style computation engine, higher-level application code) could trigger invalidation or ensure the document is in a fully up-to-date state (style, layout, or both).
 
 ---
 
 ## 10. Conclusion
 
-The **Document Lifecycle-Driven Invalidation System** provides a **robust**, **scalable**, and **high-performance** mechanism for handling DOM mutations and orchestrating the resulting style/layout recalculations in AngleSharp. By combining **lifecycle state management**, **fine-grained dependency tracking**, **batched mutation processing**, and **flexible scheduling**, the system ensures that:
+The **LifecycleSystem-Driven Invalidation System** provides a **robust**, **scalable**, and **high-performance** mechanism for handling DOM mutations and orchestrating the resulting style/layout recalculations in AngleSharp. By combining **lifecycle state management**, **fine-grained dependency tracking**, **batched mutation processing**, and **flexible scheduling**, the system ensures that:
 
 1. Only the necessary elements are recalculated
 2. Expensive operations (like layout) are deferred until absolutely needed
-3. The document’s state transitions remain valid and logically consistent
+3. The document's state transitions remain valid and logically consistent
 
-This design draws on the best practices from modern browser engines while remaining adaptable to AngleSharp’s unique constraints and extensibility requirements. As AngleSharp expands (e.g., with a future layout engine), this system is designed to **seamlessly integrate** new modules or advanced features like paint invalidation and more complex scheduling policies.
+This design draws on the best practices from modern browser engines while remaining adaptable to AngleSharp's unique constraints and extensibility requirements. As AngleSharp expands (e.g., with a future layout engine), this system is designed to **seamlessly integrate** new modules or advanced features like paint invalidation and more complex scheduling policies.

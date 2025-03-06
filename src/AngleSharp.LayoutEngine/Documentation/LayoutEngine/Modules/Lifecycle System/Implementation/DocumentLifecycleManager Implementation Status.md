@@ -1,17 +1,17 @@
-# DocumentLifecycleManager Implementation Status
+# LifecycleManager Implementation Status
 
 ## Features To Be Implemented
 
 ### Core Components
 
-⬜ **DocumentLifecycleManager Core Architecture**
+⬜ **LifecycleManager Core Architecture**
 
 - Overall architecture design with document lifecycle states
 - Extended state machine for LayoutNG integration (IntrinsicSizes, Constraints, Fragments states)
 - State transition validation and enforcement
 - Event system for state changes
-- Interface definition for module interactions
-- Integration points with StyleComputationEngine and LayoutEngine
+- Interface definition for system interactions
+- Integration points with StyleEngine and LayoutEngine
 
 ⬜ **InvalidationManager Foundation**
 
@@ -29,7 +29,7 @@
 - Multi-phase update ordering
 - Priority-based scheduling
 - Performance monitoring hooks
-- Integration with DocumentLifecycleManager
+- Integration with LifecycleManager
 
 ⬜ **MutationObserverAdapter**
 
@@ -181,7 +181,7 @@
     - Design fragment invalidation
 3. **LayoutNG Component Integration**
     
-    - Connect with StyleComputationEngine
+    - Connect with StyleEngine
     - Integrate with LayoutEngine
     - Define constraint and fragment flow
     - Create formatting context handling
@@ -229,9 +229,9 @@
     - Design configuration framework
 2. **Integration Completion**
     
-    - Ensure StyleComputationEngine integration
+    - Ensure StyleEngine integration
     - Complete LayoutEngine integration
-    - Finalize CacheModule integration
+    - Finalize CacheSystem integration
     - Create comprehensive system tests
 3. **Backward Compatibility**
     
@@ -248,7 +248,7 @@
 
 ## Next Steps
 
-1. **Document Lifecycle Extension**
+1. **Lifecycle Extension**
     
     - Define expanded lifecycle states
     - Design state transition validation
