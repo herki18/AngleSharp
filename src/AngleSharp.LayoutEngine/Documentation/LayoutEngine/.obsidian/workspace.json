@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "AngleSharp.LayoutEngine Naming Conventions.md",
+                "file": "Modules/Style System/Reference/StyleComputationEngine.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "AngleSharp.LayoutEngine Naming Conventions"
+              "title": "StyleComputationEngine"
             }
           }
         ],
@@ -109,7 +109,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "AngleSharp.LayoutEngine Naming Conventions.md",
+                "file": "Modules/Style System/Reference/StyleComputationEngine.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -119,7 +119,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for AngleSharp.LayoutEngine Naming Conventions"
+              "title": "Backlinks for StyleComputationEngine"
             }
           },
           {
@@ -182,18 +182,23 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "9e59a4600312f45f",
+  "active": "c5c1852e895c4c99",
   "lastOpenFiles": [
-    "Modules/Lifecycle System/Arhitecture/Document Lifecycle Architecture.md",
+    "Modules/Style System/Reference/AngleSharp CSS Declaration Handling - Quick Reference.md",
+    "Modules/Style System/Integration/StyleComputationModule - Updated for LayoutNG Integration.md",
+    "Modules/Style System/CSS Variable Resolution Integration with LayoutSystem.md",
+    "Modules/Style System/Reference/StyleComputationEngine.md",
+    "Modules/Style System/Instructions/Instructions.md",
+    "Modules/Style System/Implementation/StyleComputationEngineImplementationStatus.md",
+    "Modules/Style System/Future Plans/CSS Variable Implementation Plan for ValueComputer.md",
+    "Modules/Style System/Arhitecture/StyleSystem - Updated for LayoutNG Integration.md",
     "AngleSharp.LayoutEngine Naming Conventions.md",
+    "Modules/Lifecycle System/Arhitecture/Document Lifecycle Architecture.md",
     "Modules",
-    "Modules/Style System/Arhitecture/StyleComputationEngineArchitecture.md",
     "Modules/Layout System/Layout System Architecture Document.md",
     "Modules/Layout System/Implementation",
     "Modules/Layout System/Diagrams/Document Lifecycle and Layout Engine Integration.md",
     "Modules/Layout System/Diagrams/CSS Variable Resolution Integration with Layout Engine.md",
-    "Modules/Style System/Implementation/StyleComputationEngineImplementationStatus.md",
-    "Modules/Style System/Integration/StyleComputationModule - Updated for LayoutNG Integration.md",
     "Modules/Style System/Integration",
     "Modules/Lifecycle System/Integration/Document Lifecycle Module - Updated for LayoutNG Integration.md",
     "Modules/Lifecycle System/Implementation/DocumentLifecycleManager Implementation Status.md",
@@ -210,12 +215,7 @@
     "Overall/Arhitecture/AngleSharp Layout Engine - Complete Architecture Overview.md",
     "Modules/Cache System/References/AngleSharp.LayoutEngine Caching Quick Reference.md",
     "Modules/Layout System/Diagrams/Layout Engine Module Integration.md",
-    "Modules/Layout System/Diagrams/Layout Engine Process Phases.md",
-    "Modules/Layout System/Diagrams/LayoutNG-Inspired Architecture Overview.md",
     "Modules/Layout System/Diagrams",
-    "Modules/Style System/Future Plans/CSS Variable Implementation Plan for ValueComputer.md",
-    "Modules/Style System/Reference/AngleSharp CSS Declaration Handling - Quick Reference.md",
-    "Modules/Lifecycle System/Document Lifecycle-Driven Invalidation System.md",
     "Modules/Lifecycle System/Implementation",
     "Modules/Lifecycle System/Arhitecture",
     "Modules/Cache System/Diagrams",

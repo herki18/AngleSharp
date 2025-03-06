@@ -1,8 +1,8 @@
-# StyleComputationEngine Implementation Status
+# StyleEngine Implementation Status
 
 ## Implemented Features
 
-✅ **StyleComputationEngine Core Architecture**
+✅ **StyleEngine Core Architecture**
 
 - Overall architecture design with clear component boundaries
 - Input/output interface definition
@@ -96,7 +96,7 @@
 - Error reporting and logging
 - Invalid value normalization
 
-⬜ **StyleComputationEngine Integration Improvements**
+⬜ **StyleEngine Integration Improvements**
 
 - Connect caching system for performance optimization
 - Add comprehensive error handling throughout the pipeline
@@ -105,7 +105,7 @@
 
 ## LayoutNG Integration Requirements
 
-The following architectural enhancements are required to support integration with the LayoutNG-inspired layout engine:
+The following architectural enhancements are required to support integration with the LayoutNG-inspired layout system:
 
 ⬜ **Logical Property System**
 
@@ -121,7 +121,7 @@ The following architectural enhancements are required to support integration wit
 - Layout-optimized property access APIs
 - Property type conversion for layout operations
 - Cached access to frequently used layout properties
-- Export interface for LayoutEngine consumption
+- Export interface for LayoutSystem consumption
 
 ⬜ **Constraint-Based Property Resolution**
 
@@ -196,7 +196,7 @@ The following architectural enhancements are required to support integration wit
     - Connect StyleCache to ValueComputer
     - Implement dependency tracking for efficient invalidation
     - Add cache invalidation triggers for DOM mutations
-6. **Finalize StyleComputationEngine Integration**:
+6. **Finalize StyleEngine Integration**:
     
     - Review and complete pipeline connections
     - Add error handling throughout the pipeline
@@ -216,37 +216,37 @@ The following architectural enhancements are required to support integration wit
     - Create writing mode context support
     - Implement logical-to-physical transformations
     - Add bidirectional text support
-9. **Create Style Adaptation Layer**:
+2. **Create Style Adaptation Layer**:
     
     - Design layout-optimized property access APIs
     - Implement property type conversion for layout
     - Create caching system for frequently used properties
-    - Build LayoutEngine integration interfaces
-10. **Develop Constraint-Based Resolution**:
+    - Build LayoutSystem integration interfaces
+3. **Develop Constraint-Based Resolution**:
     
     - Design constraint space integration
     - Implement percentage resolution in constraint context
     - Add intrinsic size calculation
     - Create automatic sizing algorithms
-11. **Enhance Box Model Computation**:
+4. **Enhance Box Model Computation**:
     
     - Extend ValueComputer for constraint-based box model
     - Add margin collapsing awareness
     - Implement box sizing model support
     - Create position and offset calculation
-12. **Optimize for Layout Performance**:
+5. **Optimize for Layout Performance**:
     
     - Design layout-specific property caching
     - Implement batch property access
     - Add layout-aware computation ordering
     - Create memory-efficient computation strategies
-13. **Implement Fine-Grained Invalidation**:
+6. **Implement Fine-Grained Invalidation**:
     
     - Design property-level dependency tracking
     - Create layout-specific invalidation triggers
     - Implement containment-aware invalidation
     - Add writing mode change handling
-14. **Testing and Validation for LayoutNG Integration**:
+7. **Testing and Validation for LayoutNG Integration**:
     
     - Create test suite for logical property handling
     - Add constraint-based resolution tests

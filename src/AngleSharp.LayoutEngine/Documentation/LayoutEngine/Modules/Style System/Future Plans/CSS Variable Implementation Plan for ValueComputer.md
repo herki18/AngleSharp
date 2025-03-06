@@ -1,4 +1,6 @@
-This document combines the ValueComputer Implementation Plan with the CSS Variable Resolution Architecture to create a comprehensive roadmap for implementing robust CSS variable support in the AngleSharp LayoutEngine.
+# CSS Variable Implementation Plan for ValueComputer
+
+This document outlines a comprehensive roadmap for implementing robust CSS variable support in the AngleSharp.LayoutEngine StyleSystem.
 
 ## 1. Variable Resolution System
 
@@ -6,7 +8,8 @@ This document combines the ValueComputer Implementation Plan with the CSS Variab
 
 **Purpose**: Track and manage all CSS variables defined in the document style context.
 
-**Files to create/modify**: 
+**Files to create/modify**:
+
 - `VariableRegistry.cs` (new)
 - `ValueComputer.cs`
 
@@ -99,6 +102,7 @@ public class VariableDefinition
 **Purpose**: Resolve `var()` references to their computed values.
 
 **Files to create/modify**:
+
 - `VariableResolver.cs` (new)
 - `ValueComputer.cs`
 
@@ -239,6 +243,7 @@ public class VariableResolver
 **Purpose**: Maintain state during the variable resolution process.
 
 **Files to create/modify**:
+
 - `ResolverContext.cs` (new)
 - `VariableResolver.cs`
 
@@ -306,6 +311,7 @@ public class ResolverContext
 **Purpose**: Extend the existing ComputationContext to support variable resolution.
 
 **Files to modify**:
+
 - `ValueComputer.cs`
 
 **Implementation details**:
@@ -410,6 +416,7 @@ private class ComputationContext : ICssComputeContext
 **Purpose**: Collect and register all CSS variables before property computation.
 
 **Files to modify**:
+
 - `ValueComputer.cs`
 
 **Implementation details**:
@@ -529,6 +536,7 @@ public ICssStyleDeclaration ComputeValues(
 **Purpose**: Update the property computation to handle variables.
 
 **Files to modify**:
+
 - `ValueComputer.cs`
 
 **Implementation details**:
@@ -574,6 +582,7 @@ private ICssValue? ComputePropertyValue(
 **Purpose**: Handle complex calc() expressions with variables.
 
 **Files to create/modify**:
+
 - `CalcExpressionEvaluator.cs` (new)
 - `ValueComputer.cs`
 
@@ -675,6 +684,7 @@ public class CalcExpressionEvaluator
 **Purpose**: Handle operations between different units in calc().
 
 **Files to modify**:
+
 - `CalcExpressionEvaluator.cs`
 
 **Implementation details**:
@@ -732,6 +742,7 @@ private double ConvertToPixels(double value, string unit)
 **Purpose**: Add robust error handling to the variable resolution system.
 
 **Files to modify**:
+
 - `VariableResolver.cs`
 - `ValueComputer.cs`
 
@@ -809,6 +820,7 @@ private ICssValue? GetDefaultForProperty(string propertyName)
 **Purpose**: Add validation to prevent invalid variable usage.
 
 **Files to modify**:
+
 - `ResolverContext.cs`
 - `VariableResolver.cs`
 
@@ -856,19 +868,20 @@ private ICssValue? HandleCircularReference(CssVarValue varValue, ResolverContext
 }
 ```
 
-## 5. Integration with StyleComputationEngine
+## 5. Integration with StyleEngine
 
 ### 5.1 Update ComputeElementStyle Method
 
-**Purpose**: Integrate variable resolution into the main StyleComputationEngine.
+**Purpose**: Integrate variable resolution into the main StyleEngine.
 
 **Files to modify**:
-- `StyleComputationEngine.cs`
+
+- `StyleEngine.cs`
 
 **Implementation details**:
 
 ```csharp
-// Update StyleComputationEngine.ComputeElementStyle method
+// Update StyleEngine.ComputeElementStyle method
 public ICssStyleDeclaration ComputeElementStyle(
     IElement element,
     ICssStyleDeclaration? parentStyle = null,
@@ -948,6 +961,7 @@ private ICssStyleDeclaration GetRootStyle(IElement element)
 **Purpose**: Update the ValueComputer interface to support variable registry.
 
 **Files to modify**:
+
 - `ValueComputer.cs`
 
 **Implementation details**:
@@ -973,6 +987,7 @@ public ICssStyleDeclaration ComputeValues(
 **Purpose**: Optimize variable resolution performance with caching.
 
 **Files to modify**:
+
 - `VariableResolver.cs`
 - `ResolverContext.cs`
 
@@ -1034,6 +1049,7 @@ public class ResolverContext
 **Purpose**: Optimize performance by batching variable resolutions.
 
 **Files to modify**:
+
 - `ValueComputer.cs`
 
 **Implementation details**:
@@ -1132,6 +1148,7 @@ private HashSet<string> ExtractVarDependencies(CssVarValue varValue)
 **Purpose**: Verify correct variable resolution behavior.
 
 **Test cases to implement**:
+
 - Basic variable resolution
 - Nested variable references
 - Circular reference detection
@@ -1211,6 +1228,7 @@ public async Task VariableResolver_NestedVariables_ResolvesCorrectly()
 **Purpose**: Verify variable resolution within the full style computation pipeline.
 
 **Test cases to implement**:
+
 - Variables in complex stylesheets
 - Variables with media queries
 - Variables with calc() expressions
@@ -1256,11 +1274,13 @@ public async Task StyleComputation_VariablesWithCalc_ComputesCorrectly()
 ## 8. Implementation Phases
 
 ### Phase 1: Basic Variable Support
+
 - Implement VariableRegistry
 - Add basic variable resolution without handling nested references
 - Create unit tests for basic functionality
 
 ### Phase 2: Complete Variable Resolution
+
 - Add support for nested variable references
 - Implement fallback value handling
 - Add circular reference detection
@@ -1268,12 +1288,14 @@ public async Task StyleComputation_VariablesWithCalc_ComputesCorrectly()
 - Expand test coverage
 
 ### Phase 3: Advanced Features and Integration
+
 - Integrate with calc() expression evaluation
 - Add support for variables in other contexts
 - Implement caching and performance optimizations
 - Create comprehensive integration tests
 
 ### Phase 4: Performance Optimization and Refinement
+
 - Optimize resolution algorithm
 - Add debugging and error reporting
 - Implement dependency tracking for cache invalidation
@@ -1281,6 +1303,6 @@ public async Task StyleComputation_VariablesWithCalc_ComputesCorrectly()
 
 ## Conclusion
 
-This implementation plan provides a comprehensive roadmap for implementing CSS variable support in the AngleSharp LayoutEngine's ValueComputer component. By following this architecture, the system will be able to correctly resolve CSS custom properties while respecting the CSS cascade, properly handling inheritance, and efficiently processing nested references.
+This implementation plan provides a comprehensive roadmap for implementing CSS variable support in the AngleSharp.LayoutEngine StyleSystem's ValueComputer component. By following this architecture, the system will be able to correctly resolve CSS custom properties while respecting the CSS cascade, properly handling inheritance, and efficiently processing nested references.
 
 The implementation follows a modular approach with clear separation of concerns, making it maintainable and testable. The phased implementation strategy allows for incremental development and testing, ensuring that each component works correctly before building on it.

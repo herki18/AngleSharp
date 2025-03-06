@@ -1,18 +1,19 @@
+# StyleSystem - Updated for LayoutNG Integration
 
 ## Overview
 
-The StyleComputationModule is responsible for computing CSS styles for DOM elements, following the CSS cascade, inheritance, and computation rules. This updated architecture incorporates enhancements needed to support the LayoutNG-inspired layout engine, including logical property resolution, efficient property access, and CSS variable integration.
+The StyleSystem in AngleSharp.LayoutEngine is responsible for computing CSS styles for DOM elements. This updated architecture incorporates enhancements to support the LayoutNG-inspired layout system, including logical property resolution, efficient property access, and CSS variable integration.
 
 ## System Architecture
 
-The module is designed with the following core components:
+The system is designed with the following core components:
 
-### 1. StyleComputationEngine
+### 1. StyleEngine
 
 The main entry point that orchestrates the style computation process. It has been enhanced with new methods to support layout-optimized property access.
 
 ```csharp
-public class StyleComputationEngine
+public class StyleEngine
 {
     // Original method for computing element style
     public ICssStyleDeclaration ComputeElementStyle(
@@ -229,7 +230,7 @@ public static class StyleExtensions
 
 ### 2. Logical Property Support
 
-The layout engine requires support for logical properties that automatically adjust based on writing mode:
+The layout system requires support for logical properties that automatically adjust based on writing mode:
 
 ```csharp
 // Logical dimensions
@@ -342,11 +343,11 @@ The style computation process has been enhanced to support the LayoutNG requirem
 7. **Compute Values**: Use ValueComputer to resolve all relative values to absolute ones
 8. **Perform Logical Conversion**: Convert logical properties to physical properties based on writing mode
 
-This process ensures that all CSS properties are fully resolved, including variables, and properly adjusted for writing mode, providing the layout engine with the complete information needed for constraint-based layout.
+This process ensures that all CSS properties are fully resolved, including variables, and properly adjusted for writing mode, providing the layout system with the complete information needed for constraint-based layout.
 
-## Integration with Layout Engine
+## Integration with LayoutSystem
 
-The StyleComputationModule integrates with the Layout Engine through the following interfaces:
+The StyleSystem integrates with the LayoutSystem through the following interfaces:
 
 ```csharp
 // Style interface used by LayoutEngine
@@ -365,12 +366,12 @@ public interface IStyleProvider
     LogicalEdges GetLogicalPadding(IElement element, WritingMode writingMode);
 }
 
-// Implementation using StyleComputationEngine
+// Implementation using StyleEngine
 public class StyleComputationProvider : IStyleProvider
 {
-    private readonly StyleComputationEngine _engine;
+    private readonly StyleEngine _engine;
     
-    public StyleComputationProvider(StyleComputationEngine engine)
+    public StyleComputationProvider(StyleEngine engine)
     {
         _engine = engine;
     }
@@ -381,7 +382,7 @@ public class StyleComputationProvider : IStyleProvider
 
 ## Caching Integration
 
-The updated StyleComputationModule includes enhanced caching integration:
+The updated StyleSystem includes enhanced caching integration:
 
 ```csharp
 // Enhanced style cache for layout properties
@@ -419,7 +420,7 @@ public class StylePropertyCache
 
 ## Style Invalidation
 
-The module supports fine-grained invalidation for LayoutNG integration:
+The system supports fine-grained invalidation for LayoutNG integration:
 
 ```csharp
 // Enhanced style invalidation
@@ -512,16 +513,3 @@ public static class LogicalPropertyResolver
     }
 }
 ```
-
-## Conclusion
-
-The enhanced StyleComputationModule provides comprehensive support for the LayoutNG-inspired layout engine. The additions include:
-
-1. Efficient property access for layout-critical properties
-2. Logical property resolution based on writing mode
-3. Full CSS variable resolution
-4. Enhanced caching for specific style properties
-5. Fine-grained style invalidation
-6. Integration interfaces for the layout engine
-
-These enhancements ensure that the StyleComputationModule can provide the layout engine with all the information it needs for modern, constraint-based layout calculations while maintaining optimal performance.

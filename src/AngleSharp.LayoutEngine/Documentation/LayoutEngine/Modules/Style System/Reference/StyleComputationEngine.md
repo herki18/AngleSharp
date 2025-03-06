@@ -1,8 +1,8 @@
-# StyleComputationEngine: Input/Output Interface Guide
+# StyleEngine: Input/Output Interface Guide
 
 ## Quick Integration Reference
 
-This guide shows how to use the StyleComputationEngine API in the simplest terms - what to provide as input and what you'll receive as output.
+This guide shows how to use the StyleEngine API in the simplest terms - what to provide as input and what you'll receive as output.
 
 ## Basic Usage
 
@@ -19,7 +19,7 @@ var context = BrowsingContext.New(Configuration.Default.WithCss());
 var document = await context.OpenAsync(req => req.Content("<html><body><div id='target'>Test</div></body></html>"));
 
 // Create the engine
-var engine = new StyleComputationEngine(context: context, document: document);
+var engine = new StyleEngine(context: context, document: document);
 
 // Get an element to compute styles for
 var element = document.GetElementById("target");
@@ -39,7 +39,7 @@ string display = computedStyle.GetPropertyValue("display");
 
 ```csharp
 // All parameters are optional - shown with defaults
-var engine = new StyleComputationEngine(
+var engine = new StyleEngine(
     renderDevice: null,  // Provides screen dimensions and media capabilities
     context: null,       // AngleSharp browsing context
     document: null,      // Document containing elements to style
@@ -85,7 +85,7 @@ foreach (var property in computedStyle)
 // Input: HTML document and engine
 // Output: Rendering commands with styles applied
 
-void RenderDocument(IDocument document, StyleComputationEngine engine)
+void RenderDocument(IDocument document, StyleEngine engine)
 {
     // Process all elements in the document
     foreach (var element in document.QuerySelectorAll("*"))
@@ -121,7 +121,7 @@ LayoutBox CalculateLayout(IElement element, double containerWidth, double contai
     };
 
     // Create engine with this device
-    var engine = new StyleComputationEngine(renderDevice: device);
+    var engine = new StyleEngine(renderDevice: device);
 
     // Get computed style
     var style = engine.ComputeElementStyle(element);
@@ -149,7 +149,7 @@ string ProcessDocument(string html)
     var document = context.OpenAsync(req => req.Content(html)).Result;
 
     // Create engine
-    var engine = new StyleComputationEngine(context: context, document: document);
+    var engine = new StyleEngine(context: context, document: document);
 
     // Process each text-containing element
     var result = new StringBuilder();
@@ -175,6 +175,7 @@ string ProcessDocument(string html)
 ## Summary
 
 ### Inputs
+
 - **IElement**: DOM element to compute styles for
 - **IRenderDevice** (optional): Screen/device information for units and media queries
 - **IBrowsingContext**: AngleSharp context for document processing
@@ -182,6 +183,7 @@ string ProcessDocument(string html)
 - **string**: Optional pseudo-element selector
 
 ### Outputs
+
 - **ICssStyleDeclaration**: Object containing all computed CSS properties
     - Property names are standard CSS kebab-case (e.g., "font-size")
     - Values are computed to their final form (e.g., "16px", "rgba(255, 0, 0, 1)")
