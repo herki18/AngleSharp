@@ -36,9 +36,9 @@ When the user asks for help with a specific component, check the feature list be
 - [x] StyleEngine (main orchestrator)
 - [x] StyleSheetManager (stylesheet collection and management)
 - [x] SelectorMatcher (selector matching and specificity)
-- [ ] CascadeResolver (cascade resolution)
-- [ ] InheritanceProcessor (property inheritance)
-- [ ] ValueComputer (value computation and unit conversion)
+- [x] CascadeResolver (cascade resolution)
+- [x] InheritanceProcessor (property inheritance)
+- [x] ValueComputer (value computation and unit conversion)
 
 ### Key Algorithms
 

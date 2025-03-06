@@ -1,4 +1,4 @@
-# AngleSharp.LayoutEngine Caching Quick Reference
+# AngleSharp.LayoutEngine CacheSystem Quick Reference
 
 ## Getting Started
 
@@ -12,8 +12,8 @@ The caching system in AngleSharp.LayoutEngine improves performance by reusing co
 // Create a new cache manager
 var cacheManager = new LayoutEngineCacheManager();
 
-// Use it with the style computation engine
-var engine = new StyleComputationEngine(
+// Use it with the style engine
+var engine = new StyleEngine(
     renderDevice, 
     context, 
     document, 

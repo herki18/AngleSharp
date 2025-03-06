@@ -1,10 +1,8 @@
-# AngleSharp.LayoutEngine Caching Architecture
-
-## Enhanced for LayoutNG Integration
+# AngleSharp.LayoutEngine CacheSystem Architecture
 
 ## 1. Architecture Overview
 
-The caching architecture for AngleSharp.LayoutEngine is being enhanced to support both the existing layout approach and the new LayoutNG-inspired architecture. This unified caching system optimizes performance by avoiding redundant calculations while supporting immutable fragments, constraint-based layout, and phase separation.
+The caching architecture for AngleSharp.LayoutEngine is designed to support both the existing layout approach and the new LayoutNG-inspired architecture. This unified caching system optimizes performance by avoiding redundant calculations while supporting immutable fragments, constraint-based layout, and phase separation.
 
 ### 1.1 Core Design Principles
 
@@ -76,13 +74,11 @@ Dedicated to caching intrinsic size calculations (min/max content sizes):
 Keys for the LayoutNG caching system that capture the necessary context:
 
 - **FragmentCacheKey**: Captures the full context for layout fragment generation
-    
     - Element reference
     - Constraint space (available size, percentage resolution base, etc.)
     - Optional pseudo-element identifier
     - Writing mode and direction information
 - **IntrinsicSizesCacheKey**: Captures the context for intrinsic size calculation
-    
     - Element reference
     - Writing mode information
     - Optional pseudo-element identifier
@@ -208,9 +204,9 @@ Support for multi-threaded scenarios:
 - **Concurrent Computation**: Layout computations can happen concurrently
 - **Read/Write Splitting**: Multiple reads with coordinated writes
 
-## 6. Integration with Document Lifecycle
+## 6. Integration with LifecycleSystem
 
-The caching system integrates with the Document Lifecycle module:
+The caching system integrates with the LifecycleSystem:
 
 - **Mutation Observation**: Integration with mutation detection system
 - **Invalidation Coordination**: Coordinate with InvalidationManager
@@ -225,16 +221,16 @@ The caching system integrates with the Document Lifecycle module:
 
 ```
 LayoutEngine
-    ├── StyleComputationModule
+    ├── StyleSystem
     │   └── StyleCache
-    ├── LayoutEngineModule
+    ├── LayoutSystem
     │   ├── FragmentCache
     │   ├── IntrinsicSizeCache
     │   └── ConstraintSpaceCache
-    ├── CacheModule
+    ├── CacheSystem
     │   ├── LayoutEngineCacheManager
     │   └── EnhancedDependencyTracker
-    └── DocumentLifecycleModule
+    └── LifecycleSystem
         ├── InvalidationManager
         ├── StyleInvalidationTracker
         └── LayoutInvalidationTracker
@@ -262,7 +258,7 @@ LayoutEngine
     - InvalidationManager determines affected elements
     - StyleInvalidationTracker and LayoutInvalidationTracker mark elements as invalid
     - CacheManager invalidates affected cache entries
-    - DocumentLifecycleManager schedules recalculation
+    - LifecycleManager schedules recalculation
 4. **Invalidation Chain**:
     
     - Element style changes

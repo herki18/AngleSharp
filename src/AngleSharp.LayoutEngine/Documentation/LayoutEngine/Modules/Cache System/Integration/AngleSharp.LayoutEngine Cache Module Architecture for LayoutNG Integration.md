@@ -1,8 +1,8 @@
-# AngleSharp.LayoutEngine Cache Module: Architecture for LayoutNG Integration
+# CacheSystem Architecture for LayoutNG Integration
 
 ## Overview
 
-The Cache Module in AngleSharp.LayoutEngine optimizes performance by avoiding redundant style and layout computations. This updated architecture incorporates enhancements to support the LayoutNG-inspired approach, particularly the caching of immutable fragments and intrinsic sizes as separate concerns.
+The CacheSystem in AngleSharp.LayoutEngine optimizes performance by avoiding redundant style and layout computations. This updated architecture incorporates enhancements to support the LayoutNG-inspired approach, particularly the caching of immutable fragments and intrinsic sizes as separate concerns.
 
 The system provides specialized caches for style declarations, layout fragments, and intrinsic sizes, with a sophisticated dependency tracking mechanism that ensures proper cache invalidation while maintaining memory efficiency.
 
@@ -398,208 +398,14 @@ public void InvalidateFragmentsWithContainment(IElement element)
 }
 ```
 
-### 5. Selective Property Invalidation
+## Integration with Other Systems
 
-Optimize invalidation based on which properties actually changed:
+### Integration with StyleSystem
 
-```csharp
-// Example of property-aware invalidation
-public void InvalidateByPropertyChange(IElement element, string propertyName)
-{
-    // Always invalidate style cache
-    _styleCache.InvalidateElementStyle(element);
-    
-    // Check if property affects intrinsic sizes
-    if (_propertyAnalyzer.AffectsIntrinsicSizes(propertyName))
-    {
-        _intrinsicSizeCache.InvalidateElement(element);
-        
-        // Sizes affect fragments
-        _fragmentCache.InvalidateElement(element);
-    }
-    // Check if property only affects geometry without changing sizes
-    else if (_propertyAnalyzer.AffectsGeometryOnly(propertyName))
-    {
-        // Skip intrinsic size invalidation, just invalidate fragments
-        _fragmentCache.InvalidateElement(element);
-    }
-    
-    // Check if property affects writing mode
-    if (_propertyAnalyzer.AffectsWritingMode(propertyName))
-    {
-        _intrinsicSizeCache.InvalidateByWritingMode(element);
-        _fragmentCache.InvalidateByConstraintChange(element);
-    }
-}
-```
-
-## LayoutNG-Specific Cache Features
-
-### 1. Fragment Builder Caching
-
-Accelerate fragment creation by caching intermediate builder state:
+The CacheSystem integrates with the StyleSystem through selective invalidation:
 
 ```csharp
-public class FragmentBuilderCache : LayoutEngineCache<FragmentBuilderCacheKey, FragmentBuilder>
-{
-    // Store partial fragment builders to speed up construction
-    public void StorePartialBuilder(IElement element, FragmentBuilder builder);
-    
-    // Retrieve and complete a builder
-    public FragmentBuilder GetOrCreateBuilder(IElement element, IConstraintSpace constraintSpace);
-    
-    // Invalidate builders
-    public void InvalidateBuilders(IElement element);
-}
-```
-
-### 2. Constraint Space Caching
-
-Optimize creation of frequently used constraint spaces:
-
-```csharp
-public class ConstraintSpaceCache : LayoutEngineCache<ConstraintSpaceCacheKey, IConstraintSpace>
-{
-    // Create a constraint space or get from cache
-    public IConstraintSpace GetOrCreateConstraintSpace(
-        IElement element, 
-        Size availableSize, 
-        WritingMode writingMode);
-    
-    // Create a child constraint space
-    public IConstraintSpace GetOrCreateChildConstraintSpace(
-        IConstraintSpace parentSpace, 
-        IElement childElement);
-}
-
-// Key for constraint space cache
-public class ConstraintSpaceCacheKey : IEquatable<ConstraintSpaceCacheKey>
-{
-    public IElement TargetElement { get; }
-    public Size AvailableSize { get; }
-    public WritingMode WritingMode { get; }
-    public bool IsNewFormattingContext { get; }
-    
-    // Equality and hashing implementation
-}
-```
-
-### 3. Layout Result Caching
-
-Cache complete layout results including fragments and intrinsic sizes:
-
-```csharp
-public class LayoutResultCache : LayoutEngineCache<LayoutResultCacheKey, LayoutResult>
-{
-    // Get or create a complete layout result
-    public LayoutResult GetOrCreateResult(
-        IElement element, 
-        IConstraintSpace constraintSpace, 
-        LayoutOptions options);
-    
-    // Try to find a usable layout result
-    public bool TryGetUsableResult(
-        IElement element, 
-        IConstraintSpace constraintSpace, 
-        out LayoutResult result);
-}
-
-// Key for layout result cache
-public class LayoutResultCacheKey : IEquatable<LayoutResultCacheKey>
-{
-    public IElement Element { get; }
-    public IConstraintSpace ConstraintSpace { get; }
-    public LayoutOptions Options { get; }
-    
-    // Equality and hashing implementation
-}
-
-// Options for layout operation
-public class LayoutOptions
-{
-    public bool IncludeIntrinsicSizes { get; set; }
-    public bool IncludeOverflow { get; set; }
-    public bool AllowFragmentation { get; set; }
-}
-```
-
-## Memory Management for Caching
-
-### Efficient Memory Usage
-
-The system includes mechanisms to manage memory efficiently:
-
-```csharp
-public class CacheMemoryManager
-{
-    // Monitor memory usage
-    public long GetTotalMemoryUsage();
-    public long GetCacheTypeMemoryUsage<T>();
-    
-    // Memory management policies
-    public void SetCacheSizeLimit(Type cacheType, long maxBytes);
-    public void SetGlobalSizeLimit(long maxBytes);
-    
-    // Trim methods
-    public void TrimToSize(Type cacheType, long targetBytes);
-    public void TrimAll(float percentToKeep = 0.7f);
-    
-    // Eviction strategies
-    public void SetEvictionStrategy(CacheEvictionStrategy strategy);
-    
-    // Memory pressure handling
-    public void RegisterForMemoryPressureNotifications();
-    public void HandleMemoryPressure(MemoryPressureLevel level);
-}
-
-// Eviction strategies
-public enum CacheEvictionStrategy
-{
-    LeastRecentlyUsed,
-    MostMemoryConsuming,
-    LeastValuable // Based on computation cost vs memory usage
-}
-
-// Memory pressure levels
-public enum MemoryPressureLevel
-{
-    Low,
-    Medium,
-    High,
-    Critical
-}
-```
-
-### Fragment Pooling
-
-Reduce allocation pressure by reusing fragment data structures:
-
-```csharp
-public class FragmentPool
-{
-    // Get a fragment from the pool or create new
-    public LayoutFragment GetFragment();
-    
-    // Return a fragment to the pool
-    public void ReturnFragment(LayoutFragment fragment);
-    
-    // Create a new fragment from builder with pooling
-    public LayoutFragment CreateFromBuilder(FragmentBuilder builder);
-    
-    // Pool statistics
-    public int PoolSize { get; }
-    public int ActiveFragments { get; }
-}
-```
-
-## Integration with Other Modules
-
-### Integration with Style Computation Module
-
-The Cache Module integrates with the Style Computation Module through selective invalidation:
-
-```csharp
-// Style computation integration
+// Style integration
 public interface IStyleCacheIntegration
 {
     // Invalidate based on selectors
@@ -614,12 +420,12 @@ public interface IStyleCacheIntegration
 }
 ```
 
-### Integration with Layout Engine Module
+### Integration with LayoutSystem
 
-The Cache Module integrates with the Layout Engine Module through constraint awareness:
+The CacheSystem integrates with the LayoutSystem through constraint awareness:
 
 ```csharp
-// Layout engine integration
+// Layout integration
 public interface ILayoutCacheIntegration
 {
     // Fragment caching with constraints
@@ -635,12 +441,12 @@ public interface ILayoutCacheIntegration
 }
 ```
 
-### Integration with Document Lifecycle Module
+### Integration with LifecycleSystem
 
-The Cache Module integrates with the Document Lifecycle Module through invalidation handling:
+The CacheSystem integrates with the LifecycleSystem through invalidation handling:
 
 ```csharp
-// Document lifecycle integration
+// Lifecycle integration
 public interface ILifecycleCacheIntegration
 {
     // Handle various invalidation triggers
@@ -659,7 +465,7 @@ public interface ILifecycleCacheIntegration
 
 ## Conclusion
 
-The enhanced Cache Module provides comprehensive support for the LayoutNG-inspired layout engine. The additions include:
+The enhanced CacheSystem provides comprehensive support for the LayoutNG-inspired layout engine. The additions include:
 
 1. Fragment-based caching with constraint awareness
 2. Separate intrinsic size caching
@@ -669,4 +475,4 @@ The enhanced Cache Module provides comprehensive support for the LayoutNG-inspir
 6. Constraint space caching
 7. Fragment pooling for memory efficiency
 
-These enhancements ensure that the Cache Module can efficiently store and manage the immutable fragments and constraint-based layout results produced by the LayoutNG approach, while maintaining optimal performance and memory usage.
+These enhancements ensure that the CacheSystem can efficiently store and manage the immutable fragments and constraint-based layout results produced by the LayoutNG approach, while maintaining optimal performance and memory usage.
