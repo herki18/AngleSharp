@@ -1,8 +1,8 @@
-# AngleSharp Layout Engine - Updated Architecture Overview
+# Layout System - Architecture Overview
 
 ## 1. System Overview
 
-The AngleSharp Layout Engine is a comprehensive system that extends AngleSharp with full styling, layout computation, and rendering capabilities. It is designed as a modular system with clear boundaries between components, allowing for independent development, testing, and maintenance.
+The AngleSharp Layout System is a comprehensive system that extends AngleSharp with full styling, layout computation, and rendering capabilities. It is designed as a modular system with clear boundaries between components, allowing for independent development, testing, and maintenance.
 
 The system consists of four primary modules:
 
