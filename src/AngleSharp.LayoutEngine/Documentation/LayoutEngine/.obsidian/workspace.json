@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Modules/Layout System/Layout System Architecture Document.md",
-                "mode": "preview",
+                "file": "Overall/Diagrams/AngleSharp Layout Engine - Updated Architecture with LayoutNG Approach.md",
+                "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Layout System Architecture Document"
+              "title": "AngleSharp Layout Engine - Updated Architecture with LayoutNG Approach"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Modules/Layout System/Layout System Architecture Document.md",
+                "file": "Overall/Diagrams/AngleSharp Layout Engine - Updated Architecture with LayoutNG Approach.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Layout System Architecture Document"
+              "title": "Backlinks for AngleSharp Layout Engine - Updated Architecture with LayoutNG Approach"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Modules/Layout System/Layout System Architecture Document.md",
+                "file": "Overall/Diagrams/AngleSharp Layout Engine - Updated Architecture with LayoutNG Approach.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Layout System Architecture Document"
+              "title": "Outgoing links from AngleSharp Layout Engine - Updated Architecture with LayoutNG Approach"
             }
           },
           {
@@ -142,13 +142,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Modules/Layout System/Layout System Architecture Document.md",
+                "file": "Overall/Diagrams/AngleSharp Layout Engine - Updated Architecture with LayoutNG Approach.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Layout System Architecture Document"
+              "title": "Outline of AngleSharp Layout Engine - Updated Architecture with LayoutNG Approach"
             }
           }
         ],
@@ -171,13 +171,20 @@
   },
   "active": "8a97c254eff15c68",
   "lastOpenFiles": [
+    "Overall/Diagrams/AngleSharp Layout Engine - Complete System Architecture.md",
+    "Overall/Diagrams/AngleSharp Layout Engine - System Data Flow.md",
+    "Overall/Diagrams/AngleSharp Layout Engine - Updated Architecture with LayoutNG Approach.md",
+    "Overall/AngleSharp Layout Engine - System Data Flow.md",
+    "Overall/Diagrams/Untitled.md",
+    "Overall/AngleSharp Layout Engine - Implementation Roadmap.md",
+    "Overall/Architecture Design AngleSharp Layout Engine with Mutation-Aware Caching.md",
+    "Modules/Layout System/Layout System Architecture Document.md",
     "Modules/Layout System/Diagrams/LayoutNG-Inspired Architecture Overview.md",
     "Modules/Layout System/Diagrams/Layout System Process Phases.md",
     "Modules/Layout System/Diagrams/CSS Variable Resolution Integration with LayoutSystem.md",
     "Modules/Layout System/Diagrams/LayoutSystem Integration with Other Systems.md",
     "Modules/Layout System/Diagrams/LifecycleSystem and LayoutSystem Integration.md",
     "Modules/Layout System/Diagrams/Layout Engine Module Integration.md",
-    "Modules/Layout System/Layout System Architecture Document.md",
     "Modules/Lifecycle System/Integration/Document Lifecycle Module - Updated for LayoutNG Integration.md",
     "Modules/Layout System/Diagrams/Document Lifecycle and Layout Engine Integration.md",
     "Modules/Lifecycle System/Diagrams/LifecycleSystem and LayoutSystem Integration.md",
@@ -185,19 +192,12 @@
     "Modules/Lifecycle System/Implementation/DocumentLifecycleManager Implementation Status.md",
     "Modules/Lifecycle System/Document Lifecycle-Driven Invalidation System.md",
     "Modules/Lifecycle System/Arhitecture/Document Lifecycle Architecture.md",
-    "Overall/Diagrams/AngleSharp Layout Engine - System Data Flow.md",
-    "Overall/Diagrams/AngleSharp Layout Engine - Complete System Architecture.md",
     "Modules/Cache System/Integration/AngleSharp.LayoutEngine Cache Module Architecture for LayoutNG Integration.md",
     "Modules/Cache System/Integration/CacheSystem Integration with StyleSystem Pipeline.md",
     "Modules/Cache System/References/AngleSharp.LayoutEngine Caching Quick Reference.md",
     "Modules/Cache System/Arhitecture/AngleSharp.LayoutEngine Caching Architecture.md",
     "Modules/Style System/Arhitecture/StyleSystem - Updated for LayoutNG Integration.md",
     "Modules/Style System/Arhitecture/Untitled.md",
-    "Modules/Style System/Reference/AngleSharp CSS Declaration Handling - Quick Reference.md",
-    "Overall/Arhitecture/AngleSharp Layout Engine - Complete Architecture Overview.md",
-    "Overall/Implementation/AngleSharp Layout Engine - Implementation Roadmap.md",
-    "Overall/Diagrams/AngleSharp Layout Engine - Updated Architecture with LayoutNG Approach.md",
-    "Modules/Style System/Instructions/Instructions.md",
     "Modules",
     "Modules/Layout System/Implementation",
     "Modules/Style System/Integration",

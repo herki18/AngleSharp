@@ -1,256 +1,417 @@
-## 1. Overall Architecture Document
+# AngleSharp Layout Engine - Complete Architecture Overview
 
-### 1.1 System Overview
+## 1. System Overview
 
-The AngleSharp Layout Engine is designed as a modular system that computes CSS styles, calculates layout information, and efficiently manages state through a specialized caching system. The architecture follows these core principles:
+The AngleSharp Layout Engine is a comprehensive system that extends AngleSharp with full styling, layout computation, and rendering capabilities. It is designed as a modular system with clear boundaries between components, allowing for independent development, testing, and maintenance.
 
-- **Separation of concerns**: Each component has clear boundaries and responsibilities
-- **Reactive updates**: DOM changes trigger selective invalidation of affected styles and layouts
-- **Performance optimization**: Caching with granular invalidation to minimize recomputation
-- **Modularity**: Components are organized into cohesive modules for maintainability
+The system consists of four primary systems:
 
-![System Overview Diagram](https://mermaid.ink/img/pako:eNqNlMtu2zAQRX9loJUDJG62Bfy0EMcOAsRt0aZ2V1mIEselIlIkSo6NCvr3DmVZrhOkSVeizNx7OA85fEaKcQkR8sSRO06EtcgKhZwFDfTWFoTHMJFoDKkfbvgCSqeYUGdZbQv4LmDCbMYyA1PhU9-UR9kT3BHBNKLs4I93H95_gvOrC9g8hfMruHkLITgEJJ9X9w8P97AP8LbP3W_Rtn6B4PBCYqt_CrFvZ2CNyHLXoJCb1HJ_DqevTuH68vo8fSrVopZg9aaRjW1ySOZUqfEfpQeD5MF0-F9MPVaJsGJ8FKdH8ddJXEoOm63VDnqVLkP3u2NVdgbJm6F31rGZa0Y_YT51Sm1NLHSW0z9NKpbqhpvKNqj3iZVDUotk6Z9V8-jvDrQunrRUzVCm-oCp-0o76PcN7t12I0BZRTDhlsltrIwlgjamrF3D7pQQiJeXVrRN-s1XEJXlRjghuJkr7rDa1eK3pZXJ2QJHKGqoSkZ4FOqSJnCbcNbqgI0aV-a_q7a88LVLTmZLJnAqaxJxxGv-pYrHZLlEHrn4CeV-qrQkWclN9YvuCdKsKsozGK3pFaVpNPIm9aMJBRiN0KXNRFtUo_3ZqB94nwO1o46Xvf9aL46iVlE4pBx1iTqaQmPoD6zJHZMQMW4tl_0I_TA1wztSgVrLxFOUhQgCn_fCh4OI_wDOZTdP?type=png)
+1. **StyleSystem**: Computes CSS styles for DOM elements
+2. **LifecycleSystem**: Tracks DOM mutations and manages invalidation
+3. **LayoutSystem**: Computes element layout and positioning (future)
+4. **CacheSystem**: Provides efficient caching with dependency tracking
 
-### 1.2 Component Architecture
+These systems work together to provide a complete pipeline from DOM mutations to final rendering, with optimizations at each stage to ensure performance.
 
-#### 1.2.1 StyleComputation System
+## 2. Core Architecture Principles
 
-The StyleComputation system is responsible for computing CSS styles for DOM elements. It follows the CSS cascade, inheritance, and computation specification.
+The architecture is guided by the following principles:
 
-**Key Components:**
+1. **Clear System Boundaries**: Each system has a well-defined responsibility and interface
+2. **Reactive Updates**: Changes to the DOM trigger appropriate invalidations and recalculations
+3. **Minimal Recomputation**: Only affected elements are recalculated
+4. **Efficient Caching**: Results are cached with intelligent invalidation
+5. **Browser-Like Architecture**: Follows patterns used in modern browser engines
+6. **Performance Optimization**: Designed for efficient handling of complex documents
 
-- **StyleComputationEngine**: Orchestrates the style computation process
+## 3. System Descriptions
+
+### 3.1 StyleSystem
+
+The StyleSystem is responsible for computing CSS styles for DOM elements. It processes style rules, matches them against elements, and computes final property values.
+
+#### Key Components:
+
+- **StyleEngine**: Main orchestrator for style computation
 - **StyleSheetManager**: Manages stylesheets from different origins
-- **SelectorMatcher**: Matches CSS selectors against elements
-- **CascadeResolver**: Resolves property conflicts based on specificity, origin, and importance
-- **InheritanceProcessor**: Handles CSS property inheritance
-- **ValueComputer**: Resolves relative values to absolute values
+- **SelectorMatcher**: Matches selectors against elements
+- **CascadeResolver**: Resolves property conflicts
+- **InheritanceProcessor**: Handles inheritance chains
+- **ValueComputer**: Computes final property values
 
-#### 1.2.2 Cache System
+#### Primary Interfaces:
 
-The Cache system efficiently stores and manages computed styles and layouts, providing mechanisms for precise invalidation when DOM changes occur.
+```csharp
+// Main entry point for style computation
+public interface IStyleEngine
+{
+    ICssStyleDeclaration ComputeElementStyle(IElement element, 
+        ICssStyleDeclaration parentStyle = null, 
+        string pseudoElement = null);
+}
 
-**Key Components:**
-
-- **LayoutEngineCacheManager**: Central coordinator for all caches
-- **StyleCache**: Stores computed CSS styles per element
-- **LayoutBoxCache**: Stores computed layout information
-- **CacheDependencyTracker**: Tracks dependencies between elements for targeted invalidation
-
-#### 1.2.3 Layout Calculation System
-
-The Layout Calculation system computes box model dimensions (width, height, margin, padding, border) from the computed styles.
-
-**Key Components:**
-
-- **LayoutEngine**: Main entry point for layout calculations
-- **BoxModelCalculator**: Computes box dimensions based on CSS box model rules
-- **FlexboxLayoutCalculator**: Handles flexbox layout calculations
-- **GridLayoutCalculator**: Handles grid layout calculations
-- **InlineLayoutCalculator**: Handles inline element layout
-- **BlockLayoutCalculator**: Handles block element layout
-
-#### 1.2.4 Mutation Layer
-
-The Mutation layer detects DOM changes and triggers selective cache invalidation.
-
-**Key Components:**
-
-- **MutationManager**: Coordinates mutation observation and invalidation
-- **StyleInvalidator**: Handles invalidation of affected styles
-- **LayoutInvalidator**: Handles invalidation of affected layouts
-- **MutationObserverIntegration**: Connects with AngleSharp's MutationObserver
-- **BatchProcessor**: Batches invalidation and recalculation for performance
-
-### 1.3 Module Organization
-
-The system is organized into these logical modules:
-
-- **Core Module**: Base interfaces and abstractions
-- **StyleComputationModule**: Style computation components
-- **LayoutCalculationModule**: Layout calculation components
-- **CacheModule**: Caching and invalidation components
-- **MutationModule**: Mutation detection and processing
-
-### 1.4 Interaction Flows
-
-#### 1.4.1 Style Computation Flow
-
-1. **Request for element style** triggers StyleComputationEngine
-2. Engine checks StyleCache for computed style
-3. If not cached, StyleComputationEngine:
-    - Uses StyleSheetManager to get applicable stylesheets
-    - Passes to SelectorMatcher to match rules
-    - Passes to CascadeResolver to resolve conflicts
-    - Passes to InheritanceProcessor to apply inheritance
-    - Passes to ValueComputer to compute final values
-4. Result is stored in StyleCache
-5. Computed style is returned
-
-#### 1.4.2 Mutation Handling Flow
-
-1. **DOM mutation occurs** and is detected by MutationObserver
-2. MutationManager processes mutation batch
-3. For each mutation record:
-    - StyleInvalidator determines affected styles
-    - LayoutInvalidator determines affected layouts
-    - CacheDependencyTracker provides element dependencies
-4. Affected cache entries are invalidated
-5. High-priority recomputations happen immediately
-6. Low-priority recomputations are scheduled
-
-#### 1.4.3 Layout Calculation Flow
-
-1. **Request for element layout** triggers LayoutEngine
-2. Engine checks LayoutBoxCache for cached layout
-3. If not cached, LayoutEngine:
-    - Gets computed style from StyleComputationEngine
-    - Determines layout algorithm based on display property
-    - Calculates box model dimensions
-    - Handles positioning and flow
-4. Result is stored in LayoutBoxCache
-5. Computed layout is returned
-
-### 1.5 Extension Points
-
-- **Custom Layout Algorithms**: Interface for adding specialized layout algorithms
-- **Style Processors**: Hook for adding custom style processing logic
-- **Cache Strategies**: Extensible caching strategies for different scenarios
-- **Mutation Filters**: Configuration to control which mutations trigger invalidation
-
-## 2. Implementation Plan
-
-### Phase 1: Foundation and Integration
-
-1. **Complete StyleComputation System**
-    
-    - Finalize ValueComputer implementation
-    - Ensure CSS variable resolution works correctly
-    - Add support for complex calculations
-2. **Enhance Cache System**
-    
-    - Improve dependency tracking granularity
-    - Add support for partial invalidation
-    - Implement cache priority levels
-3. **Create Mutation Layer Foundations**
-    
-    - Design MutationManager interface
-    - Create StyleInvalidator and LayoutInvalidator
-    - Establish the batch processing mechanism
-
-### Phase 2: Mutation Layer Implementation
-
-1. **Implement MutationObserver Integration**
-    
-    - Create adapters for AngleSharp's MutationObserver
-    - Implement mutation filtering and classification
-    - Build queue management for mutation records
-5. **Develop Invalidation Logic**
-    
-    - Implement element-specific invalidation
-    - Add subtree invalidation for structural changes
-    - Create attribute-specific invalidation for style-related attributes
-6. **Build Batch Processing**
-    
-    - Implement the batch collection mechanism
-    - Add priority-based processing
-    - Create throttling and debouncing utilities
-
-### Phase 3: Layout System Foundation
-
-1. **Design Layout Calculation Framework**
-    
-    - Define interfaces for layout algorithms
-    - Create layout context and constraint models
-    - Implement BoxModelCalculator
-8. **Implement Core Layout Algorithms**
-    
-    - Create BlockLayoutCalculator
-    - Implement basic InlineLayoutCalculator
-    - Add initial positioning logic
-9. **Connect Layout to Cache System**
-    
-    - Enhance LayoutBoxCache for layout results
-    - Link dependency tracking with layout relationships
-    - Implement layout-specific invalidation
-
-### Phase 4: Integration and Refinement
-
-1. **Connect Layout and Style Systems**
-    
-    - Create interfaces between StyleComputation and LayoutCalculation
-    - Implement style-to-layout property mapping
-    - Add style change impact analysis for layout
-11. **Enhance Mutation Management**
-    
-    - Add performance optimizations for common mutations
-    - Implement predictive invalidation for recurring patterns
-    - Create mutation transaction grouping
-12. **Final System Integration**
-    
-    - Connect all components into cohesive system
-    - Implement module boundaries and APIs
-    - Create unified orchestration layer
-
-### Phase 5: Advanced Features
-
-1. **Implement Advanced Layout Features**
-    
-    - Add flexbox layout support
-    - Implement grid layout support
-    - Create handling for complex positioning scenarios
-14. **Add Performance Optimizations**
-    
-    - Implement lazy evaluation strategies
-    - Add speculative computation for likely needs
-    - Create background processing for non-critical updates
-15. **Complete Testing Infrastructure**
-    
-    - Build comprehensive test suites for each module
-    - Create integration tests across modules
-    - Implement performance benchmarking tools
-
-## 3. Implementation Details
-
-### 3.1 Detailed Mutation Layer Architecture
-
-The Mutation Layer will integrate with AngleSharp's existing MutationObserver system while providing specialized handling for style and layout invalidation:
-
-```
-MutationManager
-├── MutationObserverAdapter
-│   ├── DomMutationFilter
-│   └── MutationRecordMapper
-├── InvalidationController
-│   ├── StyleInvalidator
-│   ├── LayoutInvalidator
-│   └── DependencyResolver
-└── BatchProcessor
-    ├── MutationBatch
-    ├── PriorityQueue
-    └── SchedulingService
+// Manages stylesheets from different origins
+public interface IStyleSheetManager
+{
+    void RegisterStylesheet(ICssStyleSheet stylesheet, StylesheetOrigin origin);
+    void UnregisterStylesheet(ICssStyleSheet stylesheet);
+    void SetDocument(IDocument document);
+    IEnumerable<StylesheetEntry> GetStylesheets();
+}
 ```
 
-### 3.2 Cache Invalidation Strategies
+### 3.2 LifecycleSystem
 
-Invalidation will employ these strategies for optimal performance:
+The LifecycleSystem is responsible for observing DOM mutations, determining what needs to be invalidated, and coordinating updates.
 
-1. **Selective Invalidation**: Only invalidate what's actually affected
-2. **Hierarchical Invalidation**: Use DOM structure to optimize invalidation
-3. **Attribute-Specific Invalidation**: Only invalidate styles affected by changed attributes
-4. **Delayed Recalculation**: Only recalculate when values are actually needed
-5. **Partial Recalculation**: Recalculate only affected properties when possible
+#### Key Components:
 
-### 3.3 Module Dependency Diagram
+- **LifecycleManager**: Manages document state and transitions
+- **MutationObserverAdapter**: Bridges to AngleSharp's MutationObserver
+- **InvalidationManager**: Determines what needs invalidation
+- **StyleInvalidationTracker**: Tracks elements needing style recalculation
+- **LayoutInvalidationTracker**: Tracks elements needing layout recalculation
+- **SchedulingService**: Controls when updates happen
 
-![Module Dependencies](https://mermaid.ink/img/pako:eNqNk01uwjAQha8y8qqVgkq7YsWPGyVSJdpuwAYNdkis2o6wB1Fx9864IZSfquwi8czz9-x5OVshbhgERHKBWc1RGIm54NbQFPKjroH5sGSoNcrX4YrnoDRhoXJZqQL-clgym7KVhiXylB_6KHOGHeZMIYp-jw_Pd-M7mDxMYP1hJg9wfQbOXV2F8fRuOr2Haw8Xnn9fQ6-7v6_QlQdXy3d9jHX4BUbbdc50uhRVBIVKGHgEeafwKT6FfgknN1S1MJjWAQoRv7pL1UaKCLXOpO4fhcU5eBP_yP8QdeS9JayBTdmIxSWC3-SYspZKDLIZUmvQ-fRFYAHyiEjM8y4QhV9FUMlL6E9_qUNsGz0IkV_KWEOvNu1jR_9rRs2qr6jZrTpJ88p6NJUqgPE2NTNZ9aQeAF8BDUTpQ0gYlsomjO_w9c2Wr9jw14Ye6QZVuaBHoQtq4Jp5TGmdgLGcRRUUXegpVUDoBzp0vqh3PlRbUvC9SwZLpZnG1CgSBKRg_7JoTJZJZIHbPyAN562iWFwxvT1JKyAKhdo5GKz2lHK1Ox2cCcVnw7ug9mAaRWvfDvYnXuNAjbHl-17_sFmcjRpB_phyVCWqYAUmoy-YZToTEPjMKMb6IbqwmsMakYPSktFaFMAxyPN-8OZ50L_gLMd0?type=png)
+#### Primary Interfaces:
 
-### 3.4 Strategic Considerations
+```csharp
+// Central coordinator for document lifecycle
+public interface ILifecycleManager
+{
+    LifecycleState CurrentState { get; }
+    void ScheduleStyleUpdate();
+    void ScheduleLayoutUpdate();
+    void ProcessPendingUpdates();
+    event EventHandler<LifecycleStateChangedEventArgs> StateChanged;
+}
 
-- **Virtual DOM Diffing**: Consider implementing a lightweight virtual DOM to optimize mutation handling
-- **Incremental Layout**: Design for incremental layout recalculation rather than full reflows
-- **Worker Thread Processing**: Move non-critical processing to worker threads where applicable
-- **Lazy Initialization**: Only initialize components when needed for better startup performance
-- **Memory Management**: Implement cache eviction strategies for memory-constrained environments
+// Manages invalidation across different aspects
+public interface IInvalidationManager
+{
+    void ProcessMutation(IMutationRecord mutation);
+    void InvalidateElement(IElement element, InvalidationFlags flags);
+    void InvalidateStylesheet(ICssStyleSheet stylesheet);
+}
+```
 
-This architecture provides a comprehensive foundation for building a high-performance style and layout system that can efficiently respond to DOM mutations while minimizing unnecessary recomputation.
+### 3.3 LayoutSystem (Future)
+
+The LayoutSystem will be responsible for computing element layout and positioning. It will calculate box dimensions, positions, and handle different layout algorithms.
+
+#### Planned Components:
+
+- **LayoutEngine**: Main orchestrator for layout computation
+- **BoxModelComputer**: Computes box model dimensions
+- **FlexLayoutComputer**: Handles flexbox layout
+- **GridLayoutComputer**: Handles grid layout
+- **PositioningComputer**: Handles element positioning
+- **TextLayoutComputer**: Computes text layout
+
+#### Primary Interfaces (Preliminary):
+
+```csharp
+// Main entry point for layout computation
+public interface ILayoutEngine
+{
+    ILayoutBox ComputeLayout(IElement element, 
+        ComputedStyle style, 
+        LayoutConstraints constraints);
+}
+
+// Represents a computed layout box
+public interface ILayoutBox
+{
+    float X { get; }
+    float Y { get; }
+    float Width { get; }
+    float Height { get; }
+    IBoxEdges Margin { get; }
+    IBoxEdges Border { get; }
+    IBoxEdges Padding { get; }
+    ILayoutBoxCollection Children { get; }
+}
+```
+
+### 3.4 CacheSystem
+
+The CacheSystem provides efficient caching of computed styles and layouts with dependency tracking for intelligent invalidation.
+
+#### Key Components:
+
+- **LayoutEngineCacheManager**: Central cache coordinator
+- **StyleCache**: Caches computed styles
+- **LayoutBoxCache**: Caches computed layouts
+- **CacheDependencyTracker**: Tracks dependencies for invalidation
+- **EnhancedDependencyTracker**: Enhanced dependency tracking
+
+#### Primary Interfaces:
+
+```csharp
+// Generic caching interface
+public interface IComputationCache<TKey, TValue> where TKey : notnull
+{
+    TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory);
+    bool TryGetValue(TKey key, out TValue value);
+    void AddOrUpdate(TKey key, TValue value);
+    bool Remove(TKey key);
+    void Clear();
+    int Count { get; }
+}
+
+// Central cache manager
+public interface ILayoutEngineCacheManager
+{
+    IStyleCache StyleCache { get; }
+    ILayoutBoxCache<TLayoutData> GetLayoutCache<TLayoutData>();
+    void InvalidateAll();
+    void InvalidateElement(IElement element);
+    void InvalidateDocument(IDocument document);
+}
+```
+
+## 4. Cross-System Interactions
+
+The systems interact in the following ways:
+
+### 4.1 DOM Mutation → Lifecycle → Style → Layout Pipeline
+
+1. **DOM Mutation Detection**:
+    
+    - `MutationObserver` detects DOM changes
+    - `MutationObserverAdapter` processes mutation records
+2. **Invalidation Analysis**:
+    
+    - `InvalidationManager` analyzes mutations
+    - `DependencyTracker` identifies affected elements
+    - Specialized trackers mark elements for different invalidation types
+3. **Document Lifecycle Management**:
+    
+    - `LifecycleManager` updates document state
+    - `SchedulingService` schedules updates
+4. **Style Recalculation**:
+    
+    - `StyleEngine` recalculates styles for invalidated elements
+    - `StyleCache` is updated with new computed styles
+5. **Layout Recalculation (Future)**:
+    
+    - `LayoutEngine` recalculates layout for elements with updated styles
+    - `LayoutBoxCache` is updated with new computed layouts
+
+### 4.2 Style → Layout Dependency
+
+- Computed styles serve as input for layout calculations
+- Style invalidation triggers layout invalidation for affected elements
+- Layout depends on style, but style does not depend on layout
+
+### 4.3 Cache Invalidation Paths
+
+1. **DOM Mutation → Cache Invalidation**:
+    
+    - Mutations trigger cache invalidation through the invalidation system
+    - `InvalidationManager` determines which cache entries to invalidate
+    - `CacheDependencyTracker` provides information about dependencies
+2. **Style Update → Layout Cache Invalidation**:
+    
+    - Style changes invalidate related layout cache entries
+    - `StyleInvalidationTracker` informs `LayoutInvalidationTracker`
+3. **Stylesheet Change → Style Cache Invalidation**:
+    
+    - Stylesheet changes invalidate affected style cache entries
+    - `InvalidationManager.InvalidateStylesheet` triggers appropriate invalidation
+
+## 5. Data Flow
+
+The flow of data through the system follows a clear pattern:
+
+1. **Input**:
+    
+    - DOM structure and changes
+    - CSS stylesheets and rules
+    - Layout constraints
+2. **Processing**:
+    
+    - Mutation analysis and invalidation
+    - Style computation for invalidated elements
+    - Layout computation based on computed styles
+3. **Output**:
+    
+    - Computed styles for all elements
+    - Computed layout boxes with positions and dimensions
+    - Rendering information (future)
+
+At each stage, results are cached and dependencies are tracked to optimize future updates.
+
+## 6. System States and Transitions
+
+The system maintains state through the `LifecycleManager`, which tracks the current state of the document and manages transitions between states:
+
+### 6.1 Lifecycle States
+
+- **Initial**: Document is in its initial state
+- **StyleDirty**: Document needs style recalculation
+- **StyleClean**: Styles are up to date
+- **LayoutDirty**: Document needs layout recalculation
+- **LayoutClean**: Layout is up to date
+- **PaintDirty**: Document needs visual update (future)
+- **PaintClean**: Visual representation is up to date (future)
+
+### 6.2 Key State Transitions
+
+1. **DOM Mutation → StyleDirty**: Mutations that affect styles
+2. **StyleDirty → StyleClean**: Style recalculation completes
+3. **StyleClean → LayoutDirty**: Style changes affect layout
+4. **LayoutDirty → LayoutClean**: Layout recalculation completes
+5. **LayoutClean → PaintDirty**: Layout changes affect visual representation
+6. **PaintDirty → PaintClean**: Visual update completes
+
+The system enforces valid state transitions to ensure consistent operation.
+
+## 7. Performance Optimization Strategies
+
+The architecture includes several performance optimization strategies:
+
+### 7.1 Minimal Recalculation
+
+- Only elements affected by changes are recalculated
+- Dependency tracking identifies precisely what needs updating
+- Containment boundaries limit the scope of changes
+
+### 7.2 Efficient Caching
+
+- Style and layout results are cached
+- Intelligent invalidation based on detailed dependency tracking
+- Different cache entries for different contexts (e.g., viewport sizes)
+
+### 7.3 Batched Processing
+
+- Related mutations are processed together
+- Updates are scheduled in batches
+- Non-critical updates can be deferred
+
+### 7.4 Priority-Based Processing
+
+- Visible elements are processed first
+- Off-screen elements can be processed with lower priority
+- Critical paths receive higher priority
+
+## 8. Error Handling and Resilience
+
+The system includes robust error handling:
+
+### 8.1 Graceful Degradation
+
+- If part of the system fails, it can fall back to simpler approaches
+- Default styles and layouts are provided as fallbacks
+- System continues to function even with partial failures
+
+### 8.2 Error Recovery
+
+- The system can recover from invalid states
+- Timeouts prevent infinite loops or excessive computation
+- Error boundaries contain failures to specific components
+
+### 8.3 Logging and Diagnostics
+
+- Comprehensive error logging helps diagnose issues
+- Performance metrics identify bottlenecks
+- Diagnostic tools help understand system behavior
+
+## 9. Extension Points
+
+The architecture includes several extension points:
+
+### 9.1 Custom Invalidation Strategies
+
+- Additional invalidation strategies can be added
+- Custom dependency tracking mechanisms can be implemented
+- Specialized trackers for different aspects can be created
+
+### 9.2 Layout Algorithm Extensions
+
+- Custom layout algorithms can be added
+- Special rendering modes can be implemented
+- Domain-specific optimizations can be integrated
+
+### 9.3 Rendering Integration (Future)
+
+- The system can be extended to integrate with different rendering backends
+- Custom visualization can be implemented
+- Export capabilities can be added
+
+## 10. Implementation Considerations
+
+When implementing the system, consider the following:
+
+### 10.1 Threading Model
+
+- The system primarily operates on a single thread
+- Long-running operations could use background processing
+- Thread safety is important for shared state
+
+### 10.2 Memory Management
+
+- Cached results should use appropriate memory management
+- Weak references may be appropriate for some caching
+- Disposal of unused resources is important
+
+### 10.3 Performance Benchmarking
+
+- Create benchmarks for key operations
+- Compare with browser performance where possible
+- Use performance data to guide optimization
+
+### 10.4 Progressive Enhancement
+
+- Implement core functionality first
+- Add advanced features incrementally
+- Ensure system works well with partial implementation
+
+## 11. Integration with AngleSharp
+
+The system integrates with AngleSharp's existing components:
+
+### 11.1 DOM Integration
+
+- Uses AngleSharp's DOM implementation
+- Extends functionality without modifying core AngleSharp classes
+- Provides extension methods for easy access
+
+### 11.2 CSS Integration
+
+- Uses AngleSharp's CSS parser and model
+- Extends styling capabilities
+- Integrates with existing style sheet handling
+
+### 11.3 Configuration Integration
+
+- Adds layout engine to AngleSharp configuration
+- Provides configuration options for performance tuning
+- Allows selective enabling of features
+
+## 12. Next Steps
+
+The recommended path forward for implementation:
+
+1. **Complete StyleSystem**:
+    
+    - Finalize CSS variable resolution
+    - Complete value computation
+    - Add comprehensive error handling
+2. **Implement LifecycleSystem**:
+    
+    - Create `LifecycleManager`
+    - Develop `MutationObserverAdapter`
+    - Implement invalidation system
+3. **Enhance CacheSystem**:
+    
+    - Implement enhanced dependency tracking
+    - Improve cache invalidation strategies
+    - Add performance optimizations
+4. **Prepare for LayoutSystem**:
+    
+    - Define interfaces and data structures
+    - Plan integration with existing systems
+    - Research layout algorithms
+
+By following this path, a complete styling and layout engine can be built incrementally, with each stage providing value and building toward the final system.
