@@ -1,5 +1,0 @@
-- **AngleSharp.LayoutEngine** - Keep this as the overall project name
-- **StyleSystem** - Instead of "StyleComputation Module"
-- **LayoutSystem** - Instead of "Layout Engine Module"
-- **LifecycleSystem** - Instead of "Document Lifecycle Module"
-- **CacheSystem** - Instead of "Cache Module"
