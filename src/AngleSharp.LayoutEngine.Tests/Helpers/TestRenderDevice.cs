@@ -1,6 +1,6 @@
 namespace AngleSharp.LayoutEngine.Tests.Helpers;
 
-using AngleSharp.Css;
+using Css;
 
 /// <summary>
 /// Test implementation of IRenderDevice that provides consistent font metrics for tests.

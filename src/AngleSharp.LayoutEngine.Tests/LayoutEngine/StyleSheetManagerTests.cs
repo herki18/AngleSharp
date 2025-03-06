@@ -2,7 +2,7 @@ namespace AngleSharp.LayoutEngine.Tests.LayoutEngine;
 
 using Css.Dom;
 using Css.Parser;
-using StyleComputation;
+using StyleSystem;
 
 [TestFixture]
 public class StyleSheetManagerTests

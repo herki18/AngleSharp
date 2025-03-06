@@ -6,8 +6,8 @@ using AngleSharp.Css.Dom;
 using Css.Parser;
 using Dom;
 using Html.Parser;
-using StyleComputation;
 using NUnit.Framework;
+using StyleSystem;
 
 [TestFixture]
 public class ValueComputerTests

@@ -1,9 +1,10 @@
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
-using AngleSharp.LayoutEngine.StyleComputation;
 
 namespace AngleSharp.LayoutEngine.Tests.LayoutEngine;
+
+using StyleSystem;
 
 [TestFixture]
 public class SelectorMatcherTests

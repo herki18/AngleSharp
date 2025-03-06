@@ -3,7 +3,7 @@ namespace AngleSharp.LayoutEngine.Tests.LayoutEngine;
 using Css;
 using Css.Dom;
 using Css.Parser;
-using StyleComputation;
+using StyleSystem;
 
 [TestFixture]
 public class CascadeResolverTests

@@ -4,8 +4,8 @@ using System;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
 using AngleSharp.Dom;
-using AngleSharp.LayoutEngine.StyleComputation;
 using NUnit.Framework;
+using StyleSystem;
 
 [TestFixture]
 public class InheritanceProcessorTests
