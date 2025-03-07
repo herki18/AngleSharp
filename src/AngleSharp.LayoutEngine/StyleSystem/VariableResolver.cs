@@ -20,6 +20,8 @@
         private readonly IRenderDevice _device;
         private const int MaxInheritanceDepth = 100;
         private const string LogPrefix = "[VariableResolver] ";
+        private readonly Dictionary<string, ICssValue> _originalFallbacks = new Dictionary<string, ICssValue>();
+
 
         /// <summary>
         /// Creates a new variable resolver.
@@ -38,23 +40,46 @@
         public ICssValue? ResolveVariable(CssVarValue varValue, IElement element, ResolverContext resolverContext)
         {
             string name = varValue.VariableName;
+
+            // Store the fallback for this variable if it has one
+            if (varValue.DefaultValue != null && !_originalFallbacks.ContainsKey(name))
+            {
+                _originalFallbacks[name] = varValue.DefaultValue;
+                Debug.WriteLine($"{LogPrefix}Storing fallback for {name}: {varValue.DefaultValue.CssText}");
+            }
+
             string fallbackDesc = varValue.DefaultValue != null ? $"with fallback: {varValue.DefaultValue.CssText}" : "without fallback";
-            Console.WriteLine($"{LogPrefix}Resolving variable {name} {fallbackDesc} | Element: {element.NodeName} | Depth: {resolverContext.CurrentDepth}");
+            Debug.WriteLine($"{LogPrefix}Resolving variable {name} {fallbackDesc} | Element: {element.NodeName} | Depth: {resolverContext.CurrentDepth}");
 
             // Log the current resolution chain
             if (resolverContext.CurrentDepth > 0)
             {
                 var chain = string.Join(" -> ", resolverContext.GetCurrentResolutionChain());
-                Console.WriteLine($"{LogPrefix}Current resolution chain: {chain}");
+                Debug.WriteLine($"{LogPrefix}Current resolution chain: {chain}");
             }
 
             // Check for circular reference before attempting to enter variable resolution
             var (hasCycle, path) = resolverContext.DetectCycle(name);
             if (hasCycle)
             {
-                Console.WriteLine($"{LogPrefix}CIRCULAR REFERENCE DETECTED: {string.Join(" -> ", path)} -> {name}");
-                Console.WriteLine($"{LogPrefix}Returning fallback value: {varValue.DefaultValue?.CssText ?? "null"}");
-                return varValue.DefaultValue; // Return fallback immediately when circular reference is detected
+                Debug.WriteLine($"{LogPrefix}CIRCULAR REFERENCE DETECTED: {string.Join(" -> ", path)} -> {name}");
+
+                // First check immediate fallback
+                if (varValue.DefaultValue != null)
+                {
+                    Debug.WriteLine($"{LogPrefix}Using immediate fallback due to circular reference: {varValue.DefaultValue.CssText}");
+                    return varValue.DefaultValue;
+                }
+
+                // Then check stored fallback
+                if (_originalFallbacks.TryGetValue(name, out var storedFallback))
+                {
+                    Debug.WriteLine($"{LogPrefix}Using stored fallback for {name}: {storedFallback.CssText}");
+                    return storedFallback;
+                }
+
+                Debug.WriteLine($"{LogPrefix}No fallback available for circular reference");
+                return null;
             }
 
             if (!resolverContext.TryEnterVariable(name))

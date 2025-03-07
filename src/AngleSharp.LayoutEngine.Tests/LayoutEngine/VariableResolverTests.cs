@@ -127,7 +127,7 @@ public class VariableResolverTests
         // Arrange
         var element = CreateElement("<div></div>");
         var fallbackValue = new CssColorValue(0, 0, 255, 1); // blue
-
+        var test = fallbackValue.CssText;
         // Create circular references
         var varA = new CssVarValue("--var-b", null);
         var varB = new CssVarValue("--var-a", null);
