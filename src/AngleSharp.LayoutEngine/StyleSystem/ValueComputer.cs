@@ -2,13 +2,17 @@ namespace AngleSharp.LayoutEngine.StyleSystem;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Values;
 using AngleSharp.Dom;
 
 /// <summary>
-/// Computes final CSS values by resolving relative units and handling special values.
+/// Computes final CSS property values by resolving relative units,
+/// special values, and CSS variables.
 /// </summary>
 public class ValueComputer
 {
@@ -17,12 +21,13 @@ public class ValueComputer
     private readonly IDeclarationFactory _factory;
     private readonly VariableRegistry _variableRegistry;
     private readonly VariableResolver _variableResolver;
+    private const string LogPrefix = "[ValueComputer] ";
 
     /// <summary>
-    /// Creates a new ValueComputer.
+    /// Creates a new value computer for CSS property computation.
     /// </summary>
-    /// <param name="device">The render device used for viewport-relative units.</param>
-    /// <param name="context">The browsing context for CSS operations.</param>
+    /// <param name="device">The render device providing dimensions and other context.</param>
+    /// <param name="context">The browsing context.</param>
     public ValueComputer(IRenderDevice device, IBrowsingContext context)
     {
         _device = device ?? throw new ArgumentNullException(nameof(device));
@@ -30,12 +35,13 @@ public class ValueComputer
         _factory = context.GetService<IDeclarationFactory>() ?? throw new ArgumentNullException(nameof(context));
         _variableRegistry = new VariableRegistry();
         _variableResolver = new VariableResolver(_variableRegistry, context, device);
+        Console.WriteLine($"{LogPrefix}Initialized with device {device.GetType().Name} and context {context.GetType().Name}");
     }
 
     /// <summary>
-    /// Computes absolute values for all properties in the provided style declaration.
+    /// Computes the final CSS values for a declaration.
     /// </summary>
-    /// <param name="declaration">The cascaded and inherited style declaration.</param>
+    /// <param name="declaration">The CSS style declaration to compute values for.</param>
     /// <param name="element">The element being styled.</param>
     /// <param name="parentStyle">The parent element's computed style.</param>
     /// <param name="rootStyle">The root element's computed style.</param>
@@ -46,95 +52,119 @@ public class ValueComputer
         ICssStyleDeclaration parentStyle,
         ICssStyleDeclaration rootStyle)
     {
+        Console.WriteLine($"{LogPrefix}Computing values for element {element.NodeName}#{element.Id ?? ""}");
+
         if (declaration == null)
             throw new ArgumentNullException(nameof(declaration));
         if (element == null)
             throw new ArgumentNullException(nameof(element));
 
-        // Step 1: Create a new declaration to hold computed values
         var computedStyle = new CssStyleDeclaration(_context);
-
-        // Step 2: Calculate root and parent font sizes
         var rootFontSize = ExtractFontSizeInPixels(rootStyle);
         var parentFontSize = ExtractFontSizeInPixels(parentStyle);
 
-        // Step 3: Compute element's font-size first as other properties may depend on it
-        var elementFontSize = ComputeFontSize(declaration, parentFontSize, rootFontSize);
+        Console.WriteLine($"{LogPrefix}Root font size: {rootFontSize}px, Parent font size: {parentFontSize}px");
 
-        // Step 4: Extract and register CSS custom properties (variables)
+        var elementFontSize = ComputeFontSize(declaration, parentFontSize, rootFontSize);
+        Console.WriteLine($"{LogPrefix}Computed element font size: {elementFontSize}px");
+
+        var resolverContext = new ResolverContext();
+
+        // Extract and register variables
+        Console.WriteLine($"{LogPrefix}Extracting and registering CSS variables");
         ExtractAndRegisterVariables(declaration, element);
 
-        // Step 5: Create a computation context with all needed information
-        var computeContext = CreateComputationContext(declaration, element, elementFontSize,
-            rootFontSize, parentStyle, rootStyle);
+        // Log all registered variables
+        var variables = _variableRegistry.GetVariableNames().ToList();
+        Console.WriteLine($"{LogPrefix}Registered {variables.Count} variables: {string.Join(", ", variables)}");
 
-        // Step 6: Process all properties
+        // Create the computation context
+        Console.WriteLine($"{LogPrefix}Creating computation context");
+        var computeContext = CreateComputationContext(
+            declaration,
+            element,
+            elementFontSize,
+            rootFontSize,
+            parentStyle,
+            rootStyle,
+            resolverContext);
+
+        // Compute all properties
+        Console.WriteLine($"{LogPrefix}Computing properties for declaration with {declaration.Length} properties");
         var computedProperties = ComputeAllProperties(
             declaration,
             element,
             elementFontSize,
             rootFontSize,
             parentStyle,
-            computeContext);
+            computeContext,
+            resolverContext);
 
-        // Step 7: Apply the computed properties to our result
+        Console.WriteLine($"{LogPrefix}Setting {computedProperties.Count()} computed properties to result");
         computedStyle.SetDeclarations(computedProperties);
 
+        // Log summary of computed properties
+        Console.WriteLine($"{LogPrefix}Computed style now has {computedStyle.Length} properties");
         return computedStyle;
     }
 
-    /// <summary>
-    /// Extracts the font size from a style declaration in pixels.
-    /// </summary>
     private double ExtractFontSizeInPixels(ICssStyleDeclaration style)
     {
         const double defaultFontSize = 16.0;
+        Console.WriteLine($"{LogPrefix}Extracting font size from style");
 
         try {
             var fontSizeValue = style.GetPropertyValue(PropertyNames.FontSize);
+            Console.WriteLine($"{LogPrefix}Font size value string: '{fontSizeValue}'");
+
             if (!string.IsNullOrEmpty(fontSizeValue) && fontSizeValue.EndsWith("px"))
             {
                 if (double.TryParse(fontSizeValue.Substring(0, fontSizeValue.Length - 2),
                     out var fontSize))
                 {
+                    Console.WriteLine($"{LogPrefix}Parsed pixel font size: {fontSize}px");
                     return fontSize;
                 }
+                Console.WriteLine($"{LogPrefix}Failed to parse pixel font size from '{fontSizeValue}'");
             }
 
-            // Try accessing the raw value
             var fontSizeProperty = style.GetProperty(PropertyNames.FontSize);
             if (fontSizeProperty?.RawValue is CssLengthValue lengthValue &&
                 lengthValue.Type == CssLengthValue.Unit.Px)
             {
+                Console.WriteLine($"{LogPrefix}Found CssLengthValue font size: {lengthValue.Value}px");
                 return lengthValue.Value;
             }
+            Console.WriteLine($"{LogPrefix}No direct pixel font size found, using default");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Fall back to default in case of any error
+            Console.WriteLine($"{LogPrefix}Error extracting font size: {ex.Message}");
         }
 
+        Console.WriteLine($"{LogPrefix}Using default font size: {defaultFontSize}px");
         return defaultFontSize;
     }
 
-    /// <summary>
-    /// Computes the font-size property for an element, which needs special handling.
-    /// </summary>
     private double ComputeFontSize(ICssStyleDeclaration style, double parentFontSize, double rootFontSize)
     {
+        Console.WriteLine($"{LogPrefix}Computing font size");
+
         try
         {
-            // Get the font-size property
             var fontSizeProperty = style.GetProperty(PropertyNames.FontSize);
             if (fontSizeProperty == null || fontSizeProperty.RawValue == null)
-                return parentFontSize; // Inherit from parent if not specified
+            {
+                Console.WriteLine($"{LogPrefix}No font-size property found, using parent font size: {parentFontSize}px");
+                return parentFontSize;
+            }
 
             var value = fontSizeProperty.RawValue;
+            Console.WriteLine($"{LogPrefix}Font size raw value type: {value.GetType().Name}, value: {value.CssText}");
 
-            // Handle absolute size keywords
             if (value is CssConstantValue<CssLengthValue> constValue)
             {
-                return constValue.CssText switch
+                var result = constValue.CssText switch
                 {
                     CssKeywords.XxSmall => 9.0 / 16.0 * rootFontSize,
                     CssKeywords.XSmall => 10.0 / 16.0 * rootFontSize,
@@ -144,112 +174,94 @@ public class ValueComputer
                     CssKeywords.XLarge => 24.0 / 16.0 * rootFontSize,
                     CssKeywords.XxLarge => 32.0 / 16.0 * rootFontSize,
                     CssKeywords.XxxLarge => 48.0 / 16.0 * rootFontSize,
-
-                    // Relative keywords
                     CssKeywords.Smaller => parentFontSize / 1.2,
                     CssKeywords.Larger => parentFontSize * 1.2,
-
-                    // Special values
                     CssKeywords.Inherit => parentFontSize,
                     CssKeywords.Initial => rootFontSize,
-                    CssKeywords.Unset => parentFontSize, // font-size is inheritable
-
-                    _ => rootFontSize // Default fallback
+                    CssKeywords.Unset => parentFontSize,
+                    _ => rootFontSize
                 };
+                Console.WriteLine($"{LogPrefix}Computed font size from keyword '{constValue.CssText}': {result}px");
+                return result;
             }
 
-            // Handle length values
             if (value is CssLengthValue lengthValue)
             {
-                return lengthValue.Type switch
+                var result = lengthValue.Type switch
                 {
-                    // Absolute units
                     CssLengthValue.Unit.Px => lengthValue.Value,
-                    // Convert other absolute units using device DPI
                     CssLengthValue.Unit.Pt => lengthValue.ToPixel(_device),
                     CssLengthValue.Unit.In => lengthValue.ToPixel(_device),
                     CssLengthValue.Unit.Cm => lengthValue.ToPixel(_device),
                     CssLengthValue.Unit.Mm => lengthValue.ToPixel(_device),
-
-                    // Relative units
                     CssLengthValue.Unit.Em => lengthValue.Value * parentFontSize,
                     CssLengthValue.Unit.Rem => lengthValue.Value * rootFontSize,
-                    CssLengthValue.Unit.Ex => lengthValue.Value * parentFontSize * 0.5, // Approximation
-
-                    // Viewport relative units
+                    CssLengthValue.Unit.Ex => lengthValue.Value * parentFontSize * 0.5,
                     CssLengthValue.Unit.Vh => lengthValue.Value * _device.ViewPortHeight / 100.0,
                     CssLengthValue.Unit.Vw => lengthValue.Value * _device.ViewPortWidth / 100.0,
                     CssLengthValue.Unit.Vmin => lengthValue.Value * Math.Min(_device.ViewPortHeight, _device.ViewPortWidth) / 100.0,
                     CssLengthValue.Unit.Vmax => lengthValue.Value * Math.Max(_device.ViewPortHeight, _device.ViewPortWidth) / 100.0,
-
-                    // Percentage
                     CssLengthValue.Unit.Percent => lengthValue.Value * parentFontSize / 100.0,
-
-                    _ => parentFontSize // Default fallback
+                    _ => parentFontSize
                 };
+                Console.WriteLine($"{LogPrefix}Computed font size from {lengthValue.Type}: {result}px");
+                return result;
             }
 
-            // Handle fallback case
+            Console.WriteLine($"{LogPrefix}Unhandled font size value type, using parent font size: {parentFontSize}px");
             return parentFontSize;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // If computation fails, return the parent font size
+            Console.WriteLine($"{LogPrefix}Error computing font size: {ex.Message}");
+            Console.WriteLine($"{LogPrefix}Using parent font size: {parentFontSize}px");
             return parentFontSize;
         }
     }
 
-    /// <summary>
-    /// Extracts and registers CSS custom properties (variables) from the style declaration.
-    /// </summary>
-    /// <param name="declaration">The style declaration containing custom properties</param>
-    /// <param name="element">The element context</param>
     private void ExtractAndRegisterVariables(ICssStyleDeclaration declaration, IElement element)
     {
+        Console.WriteLine($"{LogPrefix}Extracting variables from declaration");
+        int count = 0;
+
         foreach (var property in declaration)
         {
-            // Custom properties start with --
             if (property.Name.StartsWith("--") && property.RawValue != null)
             {
-                // Get the selector specificity from the element's rule
                 var specificity = GetSpecificityForElement(element, property.Name);
+                Console.WriteLine($"{LogPrefix}Registering variable {property.Name} = {property.RawValue.CssText} (important: {property.IsImportant})");
 
-                // Register the variable with its value
                 _variableRegistry.RegisterVariable(
                     property.Name,
                     property.RawValue,
-                    StylesheetOrigin.Author,  // Using Author origin as default
+                    StylesheetOrigin.Author,
                     specificity,
                     property.IsImportant);
+                count++;
             }
         }
+
+        Console.WriteLine($"{LogPrefix}Registered {count} variables from declaration");
     }
 
-    /// <summary>
-    /// Gets the specificity for an element's matching rule for a property.
-    /// </summary>
-    /// <param name="element">The element</param>
-    /// <param name="propertyName">The property name</param>
-    /// <returns>The highest matching specificity</returns>
     private Priority GetSpecificityForElement(IElement element, string propertyName)
     {
-        // For simplicity, using a default specificity
-        // In a full implementation, we would determine this from the
-        // selector that matched the element for this property
+        // This is a simplification - in a real implementation, we would calculate
+        // the specificity based on the selector that set the variable
         return new Priority(0, 0, 0, 1);
     }
 
-    /// <summary>
-    /// Creates a computation context for resolving CSS values.
-    /// </summary>
     private CssComputationContext CreateComputationContext(
         ICssStyleDeclaration style,
         IElement element,
         double fontSize,
         double rootFontSize,
         ICssStyleDeclaration parentStyle,
-        ICssStyleDeclaration rootStyle)
+        ICssStyleDeclaration rootStyle,
+        ResolverContext resolverContext)
     {
+        Console.WriteLine($"{LogPrefix}Creating CssComputationContext");
+
         return new CssComputationContext(
             _device,
             _context,
@@ -259,322 +271,394 @@ public class ValueComputer
             parentStyle,
             rootStyle,
             element,
-            _variableRegistry);
+            _variableRegistry,
+            resolverContext);
     }
 
-    /// <summary>
-    /// Computes values for all properties in the style declaration.
-    /// </summary>
     private IEnumerable<ICssProperty> ComputeAllProperties(
         ICssStyleDeclaration style,
         IElement element,
         double fontSize,
         double rootFontSize,
         ICssStyleDeclaration parentStyle,
-        CssComputationContext context)
+        CssComputationContext context,
+        ResolverContext resolverContext)
     {
+        Console.WriteLine($"{LogPrefix}Computing all properties (total: {style.Length})");
         List<ICssProperty> computedProperties = new List<ICssProperty>();
 
-        // First, compute the font-size property to add to the list
+        // Handle font-size first as other em-based properties depend on it
         var fontSizeProperty = style.GetProperty(PropertyNames.FontSize);
         if (fontSizeProperty != null)
         {
             var fontSizeValue = CreatePixelLengthValue(fontSize);
+            Console.WriteLine($"{LogPrefix}Creating computed font-size property: {fontSizeValue.CssText}");
+
             var computedFontSize = CreateComputedProperty(
                 PropertyNames.FontSize,
                 fontSizeValue,
                 fontSizeProperty.IsImportant);
 
             computedProperties.Add(computedFontSize);
+            Console.WriteLine($"{LogPrefix}Added computed font-size property");
         }
 
         // Process all other properties
         foreach (var property in style)
         {
-            // Skip custom properties (variables) as they're not directly computed
-            // They are resolved as needed during value computation
+            // Skip CSS variables and font-size (already handled)
             if (property.Name.StartsWith("--"))
+            {
+                Console.WriteLine($"{LogPrefix}Skipping CSS variable: {property.Name}");
                 continue;
+            }
 
-            // Skip font-size as we've already handled it
             if (property.Name == PropertyNames.FontSize)
+            {
+                Console.WriteLine($"{LogPrefix}Skipping font-size (already processed)");
                 continue;
+            }
 
-            // Skip properties without values
             if (property.RawValue == null)
+            {
+                Console.WriteLine($"{LogPrefix}Skipping property with null value: {property.Name}");
                 continue;
+            }
+
+            Console.WriteLine($"{LogPrefix}Computing property: {property.Name} = {property.Value} ({property.RawValue.GetType().Name})");
 
             try
             {
-                // Process the property value
                 ICssValue? computedValue = ComputePropertyValue(
                     property.Name,
                     property.RawValue,
                     fontSize,
                     rootFontSize,
-                    context);
+                    context,
+                    resolverContext);
 
-                // Create a new property with the computed value
                 if (computedValue != null)
                 {
+                    Console.WriteLine($"{LogPrefix}Property {property.Name} computed to: {computedValue.CssText}");
+
                     var computedProperty = CreateComputedProperty(
                         property.Name,
                         computedValue,
                         property.IsImportant);
 
                     computedProperties.Add(computedProperty);
+                    Console.WriteLine($"{LogPrefix}Added computed property: {property.Name}");
                 }
                 else
                 {
-                    // If we couldn't compute the value, add the original property
+                    Console.WriteLine($"{LogPrefix}Property {property.Name} computed to null, keeping original");
                     computedProperties.Add(property);
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error computing property {property.Name}: {ex.Message}");
-                // If computation fails, add the original property
+                Console.WriteLine($"{LogPrefix}ERROR computing property {property.Name}: {ex.Message}");
+                Console.WriteLine($"{LogPrefix}Stack trace: {ex.StackTrace}");
+                Console.WriteLine($"{LogPrefix}Keeping original property: {property.Name}");
                 computedProperties.Add(property);
             }
         }
 
+        Console.WriteLine($"{LogPrefix}Computed {computedProperties.Count} properties");
         return computedProperties;
     }
 
-    /// <summary>
-    /// Computes the value for a specific CSS property.
-    /// </summary>
     private ICssValue? ComputePropertyValue(
         string propertyName,
         ICssValue value,
         double fontSize,
         double rootFontSize,
-        CssComputationContext context)
+        CssComputationContext context,
+        ResolverContext resolverContext)
     {
-        // Create a resolver context for tracking variable resolution
-        var resolverContext = new ResolverContext();
-
-        // Handle CSS variables
-        if (value is CssVarValue varValue)
+        if (resolverContext.CurrentDepth >= ResolverContext.MaxResolutionDepth)
         {
-            var resolvedValue = _variableResolver.ResolveVariable(varValue, context.Element, resolverContext);
-            if (resolvedValue != null)
-            {
-                // Process the resolved value further if needed
-                return ComputePropertyValue(propertyName, resolvedValue, fontSize, rootFontSize, context);
-            }
-            return value; // Keep as is if can't resolve
+            Console.WriteLine($"{LogPrefix}Maximum variable resolution depth reached for {propertyName}");
+            return value;
         }
 
-        // Handle calc() expressions that might contain variables
-        if (value is CssCalcValue calcValue)
+        Console.WriteLine($"{LogPrefix}Computing value for property {propertyName}, value: {value.CssText} ({value.GetType().Name})");
+
+        try
         {
-            var resolvedCalc = _variableResolver.ResolveCalcExpression(calcValue, context.Element, resolverContext);
-
-            // If we got a fully resolved value (not a calc expression anymore),
-            // compute it further as needed
-            if (resolvedCalc is not CssCalcValue)
+            if (value is CssVarValue varValue)
             {
-                return ComputePropertyValue(propertyName, resolvedCalc, fontSize, rootFontSize, context);
-            }
+                Console.WriteLine($"{LogPrefix}Property {propertyName} has var() reference: {varValue.VariableName}");
+                var resolvedValue = _variableResolver.SafeResolveVariable(varValue, context.Element, resolverContext);
 
-            // Otherwise, evaluate the calc expression
-            var calculator = new CalcExpressionEvaluator(context.Element, fontSize, rootFontSize, _device, context);
-            if (resolvedCalc is CssCalcValue cssCalcValue)
-            {
-                return calculator.EvaluateCalc(cssCalcValue);
-            }
-            return resolvedCalc; // Fall back to the resolved value if it's not a CssCalcValue
-        }
-
-        // Process specific properties that need special handling
-        switch (propertyName)
-        {
-            case PropertyNames.LineHeight:
-                // Special handling for unitless line-height values
-                if (value is CssNumberValue numberValue)
+                if (resolvedValue != null)
                 {
-                    // Convert unitless line-height to pixels by multiplying by font-size
-                    return CreatePixelLengthValue(numberValue.Value * fontSize);
-                }
-                break;
+                    Console.WriteLine($"{LogPrefix}Var reference {varValue.VariableName} resolved to: {resolvedValue.CssText}");
 
-            case PropertyNames.FontWeight:
-                // Special handling for numeric font weights
-                if (value is CssNumberValue fontWeightValue)
-                {
-                    // Keep numeric font-weight values as is (100-900)
-                    return value;
-                }
-                break;
-
-            case PropertyNames.LetterSpacing:
-            case PropertyNames.WordSpacing:
-                // These properties may need special handling like line-height
-                // For now, standard length processing applies
-                break;
-        }
-
-        // Handle special values
-        if (value is ICssSpecialValue specialValue)
-        {
-            switch (specialValue.CssText)
-            {
-                case CssKeywords.Initial:
-                    // Get the initial value from the property factory
-                    var declarationInfo = _factory.Create(propertyName);
-                    return declarationInfo.InitialValue;
-                case CssKeywords.Inherit:
-                    // Would use the parent value
-                    return context.GetInheritedValue(propertyName);
-                case CssKeywords.Unset:
-                    // Inherit if inheritable, initial otherwise
-                    if (IsInheritable(propertyName))
-                        return context.GetInheritedValue(propertyName);
-                    return value;
-            }
-        }
-
-        // Handle length values
-        if (value is CssLengthValue lengthValue)
-        {
-            // Convert relative units to absolute pixels
-            return ConvertLengthToPixels(lengthValue, propertyName, fontSize, rootFontSize);
-        }
-
-        // Handle list values that might contain variables or calc expressions
-        if (value is ICssMultipleValue multiValue)
-        {
-            var resolvedItems = new List<ICssValue>();
-
-            for (var i = 0; i < multiValue.Count; i++)
-            {
-                var item = multiValue[i];
-                var resolvedItem = ComputePropertyValue(propertyName, item, fontSize, rootFontSize, context);
-
-                if (resolvedItem != null)
-                {
-                    resolvedItems.Add(resolvedItem);
+                    if (!ReferenceEquals(resolvedValue, value))
+                    {
+                        Console.WriteLine($"{LogPrefix}Recursively computing resolved value");
+                        return ComputePropertyValue(propertyName, resolvedValue, fontSize, rootFontSize, context, resolverContext);
+                    }
                 }
                 else
                 {
-                    resolvedItems.Add(item); // Keep original if resolution failed
+                    Console.WriteLine($"{LogPrefix}Var reference {varValue.VariableName} resolved to null");
+                }
+
+                return resolvedValue ?? value;
+            }
+
+            if (value is CssCalcValue calcValue)
+            {
+                Console.WriteLine($"{LogPrefix}Property {propertyName} has calc() expression");
+                var resolvedCalc = _variableResolver.ResolveCalcExpression(calcValue, context.Element, resolverContext);
+
+                if (resolvedCalc is not CssCalcValue && !ReferenceEquals(resolvedCalc, value))
+                {
+                    Console.WriteLine($"{LogPrefix}Calc expression resolved to non-calc value: {resolvedCalc.CssText}");
+                    return ComputePropertyValue(propertyName, resolvedCalc, fontSize, rootFontSize, context, resolverContext);
+                }
+
+                Console.WriteLine($"{LogPrefix}Evaluating calc expression: {resolvedCalc.CssText}");
+                var calculator = new CalcExpressionEvaluator(context.Element, fontSize, rootFontSize, _device, context);
+
+                if (resolvedCalc is CssCalcValue cssCalcValue)
+                {
+                    var result = calculator.EvaluateCalc(cssCalcValue);
+                    Console.WriteLine($"{LogPrefix}Calc expression evaluated to: {result.CssText}");
+                    return result;
+                }
+
+                Console.WriteLine($"{LogPrefix}Using resolved calc value: {resolvedCalc.CssText}");
+                return resolvedCalc;
+            }
+
+            // Special property-specific handling
+            switch (propertyName)
+            {
+                case PropertyNames.LineHeight:
+                    if (value is CssNumberValue numberValue)
+                    {
+                        var result = CreatePixelLengthValue(numberValue.Value * fontSize);
+                        Console.WriteLine($"{LogPrefix}Unitless line-height {numberValue.Value} computed to: {result.CssText}");
+                        return result;
+                    }
+                    break;
+
+                case PropertyNames.FontWeight:
+                    if (value is CssNumberValue fontWeightValue)
+                    {
+                        Console.WriteLine($"{LogPrefix}Font weight kept as is: {fontWeightValue.CssText}");
+                        return value;
+                    }
+                    break;
+
+                case PropertyNames.LetterSpacing:
+                case PropertyNames.WordSpacing:
+                    // Special handling could be added here
+                    break;
+            }
+
+            // Handle special values (initial, inherit, etc.)
+            if (value is ICssSpecialValue specialValue)
+            {
+                Console.WriteLine($"{LogPrefix}Processing special value: {specialValue.CssText}");
+
+                switch (specialValue.CssText)
+                {
+                    case CssKeywords.Initial:
+                        Console.WriteLine($"{LogPrefix}Getting initial value for {propertyName}");
+                        var declarationInfo = _factory.Create(propertyName);
+                        var initialValue = declarationInfo.InitialValue;
+                        Console.WriteLine($"{LogPrefix}Initial value for {propertyName}: {initialValue?.CssText ?? "null"}");
+                        return initialValue;
+
+                    case CssKeywords.Inherit:
+                        Console.WriteLine($"{LogPrefix}Getting inherited value for {propertyName}");
+                        var inheritedValue = context.GetInheritedValue(propertyName);
+                        Console.WriteLine($"{LogPrefix}Inherited value for {propertyName}: {inheritedValue?.CssText ?? "null"}");
+                        return inheritedValue;
+
+                    case CssKeywords.Unset:
+                        if (IsInheritable(propertyName))
+                        {
+                            Console.WriteLine($"{LogPrefix}Property {propertyName} is inheritable, getting inherited value for 'unset'");
+                            var unsetValue = context.GetInheritedValue(propertyName);
+                            Console.WriteLine($"{LogPrefix}Unset value for {propertyName}: {unsetValue?.CssText ?? "null"}");
+                            return unsetValue;
+                        }
+                        Console.WriteLine($"{LogPrefix}Property {propertyName} is not inheritable, 'unset' behaves like 'initial'");
+                        return value; // Will be handled by initial value in real cases
                 }
             }
 
-            return new CssListValue(resolvedItems.ToArray());
-        }
+            // Handle length values
+            if (value is CssLengthValue lengthValue)
+            {
+                Console.WriteLine($"{LogPrefix}Converting length value {lengthValue.CssText} to pixels");
+                var result = ConvertLengthToPixels(lengthValue, propertyName, fontSize, rootFontSize);
+                Console.WriteLine($"{LogPrefix}Length value converted to: {result.CssText}");
+                return result;
+            }
 
-        // For other value types (colors, etc.), let AngleSharp handle it
-        // through its own computation mechanism if possible
-        if (value is ICssValue cssValue && cssValue.Compute != null)
+            // Handle multiple values (e.g., border: 1px solid black)
+            if (value is ICssMultipleValue multiValue)
+            {
+                Console.WriteLine($"{LogPrefix}Processing multiple value with {multiValue.Count} items");
+                var resolvedItems = new List<ICssValue>();
+
+                for (var i = 0; i < multiValue.Count; i++)
+                {
+                    var item = multiValue[i];
+                    Console.WriteLine($"{LogPrefix}Computing item {i}: {item.CssText}");
+
+                    var resolvedItem = ComputePropertyValue(propertyName, item, fontSize, rootFontSize, context, resolverContext);
+
+                    if (resolvedItem != null)
+                    {
+                        Console.WriteLine($"{LogPrefix}Item {i} computed to: {resolvedItem.CssText}");
+                        resolvedItems.Add(resolvedItem);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"{LogPrefix}Item {i} computed to null, keeping original");
+                        resolvedItems.Add(item);
+                    }
+                }
+
+                var result = new CssListValue(resolvedItems.ToArray());
+                Console.WriteLine($"{LogPrefix}Multiple value computed to: {result.CssText}");
+                return result;
+            }
+
+            // Use ICssValue's own computation method if available
+            if (value is ICssValue cssValue && cssValue.Compute != null)
+            {
+                try
+                {
+                    Console.WriteLine($"{LogPrefix}Using value's own Compute method");
+                    var result = cssValue.Compute(context);
+                    Console.WriteLine($"{LogPrefix}Value computed itself to: {result?.CssText ?? "null"}");
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"{LogPrefix}Error using value's own Compute method: {ex.Message}");
+                    Console.WriteLine($"{LogPrefix}Keeping original value");
+                    return value;
+                }
+            }
+
+            Console.WriteLine($"{LogPrefix}No special computation needed for {propertyName}, keeping original: {value.CssText}");
+            return value;
+        }
+        catch (Exception ex)
         {
-            try
-            {
-                return cssValue.Compute(context);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error computing value: {ex.Message}");
-                // If computation fails, return the original value
-                return value;
-            }
+            Console.WriteLine($"{LogPrefix}ERROR computing value for {propertyName}: {ex.Message}");
+            Console.WriteLine($"{LogPrefix}Stack trace: {ex.StackTrace}");
+            Console.WriteLine($"{LogPrefix}Keeping original value: {value.CssText}");
+            return value;
         }
-
-        // Keep other values as they are
-        return value;
     }
 
-    /// <summary>
-    /// Converts a CSS length value to pixels based on context.
-    /// </summary>
     private ICssValue ConvertLengthToPixels(
         CssLengthValue lengthValue,
         string propertyName,
         double fontSize,
         double rootFontSize)
     {
-        // If already in pixels, return as is
+        Console.WriteLine($"{LogPrefix}Converting {lengthValue.Type} value {lengthValue.Value} to pixels");
+
         if (lengthValue.Type == CssLengthValue.Unit.Px)
+        {
+            Console.WriteLine($"{LogPrefix}Already in pixels: {lengthValue.Value}px");
             return lengthValue;
+        }
 
         double pixelValue;
 
         switch (lengthValue.Type)
         {
-            // Absolute units
             case CssLengthValue.Unit.Pt:
             case CssLengthValue.Unit.In:
             case CssLengthValue.Unit.Cm:
             case CssLengthValue.Unit.Mm:
             case CssLengthValue.Unit.Pc:
-                // Use device to convert absolute units to pixels
                 pixelValue = lengthValue.ToPixel(_device);
+                Console.WriteLine($"{LogPrefix}Absolute unit {lengthValue.Type} converted to {pixelValue}px");
                 break;
 
-            // Font-relative units
             case CssLengthValue.Unit.Em:
                 pixelValue = lengthValue.Value * fontSize;
+                Console.WriteLine($"{LogPrefix}em value {lengthValue.Value} converted to {pixelValue}px using font size {fontSize}px");
                 break;
+
             case CssLengthValue.Unit.Rem:
                 pixelValue = lengthValue.Value * rootFontSize;
-                break;
-            case CssLengthValue.Unit.Ex:
-                // Approximate ex as 0.5em
-                pixelValue = lengthValue.Value * fontSize * 0.5;
-                break;
-            case CssLengthValue.Unit.Ch:
-                // Approximate ch as 0.5em
-                pixelValue = lengthValue.Value * fontSize * 0.5;
+                Console.WriteLine($"{LogPrefix}rem value {lengthValue.Value} converted to {pixelValue}px using root font size {rootFontSize}px");
                 break;
 
-            // Viewport-relative units
+            case CssLengthValue.Unit.Ex:
+                pixelValue = lengthValue.Value * fontSize * 0.5;
+                Console.WriteLine($"{LogPrefix}ex value {lengthValue.Value} converted to {pixelValue}px using font size {fontSize}px * 0.5");
+                break;
+
+            case CssLengthValue.Unit.Ch:
+                pixelValue = lengthValue.Value * fontSize * 0.5;
+                Console.WriteLine($"{LogPrefix}ch value {lengthValue.Value} converted to {pixelValue}px using font size {fontSize}px * 0.5");
+                break;
+
             case CssLengthValue.Unit.Vh:
                 pixelValue = lengthValue.Value * _device.ViewPortHeight / 100.0;
+                Console.WriteLine($"{LogPrefix}vh value {lengthValue.Value} converted to {pixelValue}px using viewport height {_device.ViewPortHeight}");
                 break;
+
             case CssLengthValue.Unit.Vw:
                 pixelValue = lengthValue.Value * _device.ViewPortWidth / 100.0;
+                Console.WriteLine($"{LogPrefix}vw value {lengthValue.Value} converted to {pixelValue}px using viewport width {_device.ViewPortWidth}");
                 break;
+
             case CssLengthValue.Unit.Vmin:
                 pixelValue = lengthValue.Value * Math.Min(_device.ViewPortHeight, _device.ViewPortWidth) / 100.0;
+                Console.WriteLine($"{LogPrefix}vmin value {lengthValue.Value} converted to {pixelValue}px");
                 break;
+
             case CssLengthValue.Unit.Vmax:
                 pixelValue = lengthValue.Value * Math.Max(_device.ViewPortHeight, _device.ViewPortWidth) / 100.0;
+                Console.WriteLine($"{LogPrefix}vmax value {lengthValue.Value} converted to {pixelValue}px");
                 break;
 
-            // Percentage values - context dependent
             case CssLengthValue.Unit.Percent:
                 pixelValue = HandlePercentageValue(lengthValue.Value, propertyName, fontSize);
+                Console.WriteLine($"{LogPrefix}Percentage value {lengthValue.Value}% converted to {pixelValue}px");
                 break;
 
-            // For other or unknown units, keep the original value
             default:
+                Console.WriteLine($"{LogPrefix}Unhandled unit type {lengthValue.Type}, keeping original");
                 return lengthValue;
         }
 
-        // Create and return a new length value in pixels
-        return CreatePixelLengthValue(pixelValue);
+        var result = CreatePixelLengthValue(pixelValue);
+        Console.WriteLine($"{LogPrefix}Final converted value: {result.CssText}");
+        return result;
     }
 
-    /// <summary>
-    /// Handles percentage values based on property context.
-    /// </summary>
     private double HandlePercentageValue(double percentValue, string propertyName, double fontSize)
     {
-        // Convert percentage to decimal
+        Console.WriteLine($"{LogPrefix}Handling percentage value {percentValue}% for property {propertyName}");
+
         double fraction = percentValue / 100.0;
 
-        // Different properties use percentages differently
         switch (propertyName)
         {
-            // Font-relative properties
             case PropertyNames.FontSize:
             case PropertyNames.LineHeight:
             case PropertyNames.VerticalAlign:
-                return fraction * fontSize;
+                var result = fraction * fontSize;
+                Console.WriteLine($"{LogPrefix}Font-relative percentage: {percentValue}% = {result}px");
+                return result;
 
-            // Width/height would be relative to containing block width/height
-            // For simplicity, we'll return the raw percentage for these
             case PropertyNames.Width:
             case PropertyNames.Height:
             case PropertyNames.MinWidth:
@@ -591,45 +675,38 @@ public class ValueComputer
             case PropertyNames.PaddingRight:
             case PropertyNames.PaddingTop:
             case PropertyNames.PaddingBottom:
-                // These should ideally be computed based on containing block
-                // For now, leave as percentage
-                return percentValue;
+                Console.WriteLine($"{LogPrefix}Box model percentage: keeping as {percentValue}%");
+                return percentValue; // Keep as percentage for layout properties
 
-            // Default to font-size-relative
             default:
-                return fraction * fontSize;
+                var defaultResult = fraction * fontSize;
+                Console.WriteLine($"{LogPrefix}Default percentage handling: {percentValue}% = {defaultResult}px");
+                return defaultResult;
         }
     }
 
-    /// <summary>
-    /// Creates a CssLengthValue with a pixel unit.
-    /// </summary>
     private CssLengthValue CreatePixelLengthValue(double pixelValue)
     {
-        return new CssLengthValue(pixelValue, CssLengthValue.Unit.Px);
+        var result = new CssLengthValue(pixelValue, CssLengthValue.Unit.Px);
+        Console.WriteLine($"{LogPrefix}Created pixel length value: {result.CssText}");
+        return result;
     }
 
-    /// <summary>
-    /// Creates a computed CSS property with the given value.
-    /// </summary>
     private ICssProperty CreateComputedProperty(
         string name,
         ICssValue value,
         bool important)
     {
-        // Create a new property using the context factory
+        Console.WriteLine($"{LogPrefix}Creating computed property: {name} = {value.CssText}" + (important ? " !important" : ""));
+
         var property = _context.CreateProperty(name);
         property.RawValue = value;
         property.IsImportant = important;
         return property;
     }
 
-    /// <summary>
-    /// Determines if a CSS property is inheritable by default.
-    /// </summary>
     private bool IsInheritable(string propertyName)
     {
-        // This list is not exhaustive - would need to be expanded
         HashSet<string> inheritableProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             PropertyNames.Color,
@@ -650,98 +727,8 @@ public class ValueComputer
             PropertyNames.WordSpacing
         };
 
-        return inheritableProperties.Contains(propertyName);
-    }
-
-    /// <summary>
-    /// Context class for CSS value computation.
-    /// </summary>
-    private class ComputationContext : ICssComputeContext
-    {
-        private readonly IRenderDevice _device;
-        private readonly IBrowsingContext _context;
-        private readonly double _fontSize;
-        private readonly double _rootFontSize;
-        private readonly ICssStyleDeclaration _style;
-        private readonly ICssStyleDeclaration _parentStyle;
-        private readonly ICssStyleDeclaration _rootStyle;
-
-        public ComputationContext(
-            IRenderDevice device,
-            IBrowsingContext context,
-            double fontSize,
-            double rootFontSize,
-            ICssStyleDeclaration style,
-            ICssStyleDeclaration parentStyle,
-            ICssStyleDeclaration rootStyle)
-        {
-            _device = device;
-            _context = context;
-            _fontSize = fontSize;
-            _rootFontSize = rootFontSize;
-            _style = style;
-            _parentStyle = parentStyle;
-            _rootStyle = rootStyle;
-        }
-
-        public IRenderDevice Device => _device;
-
-        public IBrowsingContext Context => _context;
-
-        public IValueConverter? Converter => null;
-
-        public ICssValue? Resolve(string name)
-        {
-            // If it's a CSS variable, resolve it
-            if (name.StartsWith("--"))
-            {
-                return ResolveVariable(name);
-            }
-
-            // For other property references
-            var property = _style?.GetProperty(name);
-            return property?.RawValue;
-        }
-
-        /// <summary>
-        /// Resolves a CSS variable by name.
-        /// </summary>
-        public ICssValue? ResolveVariable(string name)
-        {
-            // Check current style first
-            var variable = _style?.GetProperty(name);
-            if (variable?.RawValue != null)
-                return variable.RawValue;
-
-            // Check parent style if variable not found
-            if (_parentStyle != null)
-            {
-                variable = _parentStyle.GetProperty(name);
-                if (variable?.RawValue != null)
-                    return variable.RawValue;
-            }
-
-            // Check root style if different from parent
-            if (_rootStyle != null && !ReferenceEquals(_parentStyle, _rootStyle))
-            {
-                variable = _rootStyle.GetProperty(name);
-                if (variable?.RawValue != null)
-                    return variable.RawValue;
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Gets the inherited value for a property from parent style.
-        /// </summary>
-        public ICssValue? GetInheritedValue(string propertyName)
-        {
-            if (_parentStyle == null)
-                return null;
-
-            var property = _parentStyle.GetProperty(propertyName);
-            return property?.RawValue;
-        }
+        var result = inheritableProperties.Contains(propertyName);
+        Console.WriteLine($"{LogPrefix}Property {propertyName} is{(result ? "" : " not")} inheritable");
+        return result;
     }
 }

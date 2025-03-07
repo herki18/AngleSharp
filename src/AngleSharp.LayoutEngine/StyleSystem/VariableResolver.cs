@@ -3,146 +3,198 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
+    using System.Text;
     using AngleSharp.Css;
     using AngleSharp.Css.Dom;
     using AngleSharp.Css.Values;
     using AngleSharp.Dom;
 
     /// <summary>
-    /// Resolves CSS variables (custom properties) to their computed values.
+    /// Resolves CSS variable references according to the CSS specification.
     /// </summary>
     public class VariableResolver
     {
         private readonly VariableRegistry _registry;
         private readonly IBrowsingContext _context;
         private readonly IRenderDevice _device;
+        private const int MaxInheritanceDepth = 100;
+        private const string LogPrefix = "[VariableResolver] ";
 
         /// <summary>
         /// Creates a new variable resolver.
         /// </summary>
-        /// <param name="registry">The variable registry containing defined variables</param>
-        /// <param name="context">The browsing context</param>
-        /// <param name="device">The render device for unit conversion</param>
         public VariableResolver(VariableRegistry registry, IBrowsingContext context, IRenderDevice device)
         {
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _device = device ?? throw new ArgumentNullException(nameof(device));
+            Console.WriteLine($"{LogPrefix}Initialized with registry containing {_registry.GetVariableNames().Count()} variables");
         }
 
         /// <summary>
         /// Resolves a CSS variable reference to its computed value.
         /// </summary>
-        /// <param name="varValue">The var() function to resolve</param>
-        /// <param name="element">The context element</param>
-        /// <param name="resolverContext">The resolution context for tracking references</param>
-        /// <returns>The resolved CSS value, or null if unresolvable</returns>
         public ICssValue? ResolveVariable(CssVarValue varValue, IElement element, ResolverContext resolverContext)
         {
             string name = varValue.VariableName;
+            string fallbackDesc = varValue.DefaultValue != null ? $"with fallback: {varValue.DefaultValue.CssText}" : "without fallback";
+            Console.WriteLine($"{LogPrefix}Resolving variable {name} {fallbackDesc} | Element: {element.NodeName} | Depth: {resolverContext.CurrentDepth}");
 
-            // Check if we're already trying to resolve this variable (circular reference)
+            // Log the current resolution chain
+            if (resolverContext.CurrentDepth > 0)
+            {
+                var chain = string.Join(" -> ", resolverContext.GetCurrentResolutionChain());
+                Console.WriteLine($"{LogPrefix}Current resolution chain: {chain}");
+            }
+
+            // Check for circular reference before attempting to enter variable resolution
+            var (hasCycle, path) = resolverContext.DetectCycle(name);
+            if (hasCycle)
+            {
+                Console.WriteLine($"{LogPrefix}CIRCULAR REFERENCE DETECTED: {string.Join(" -> ", path)} -> {name}");
+                Console.WriteLine($"{LogPrefix}Returning fallback value: {varValue.DefaultValue?.CssText ?? "null"}");
+                return varValue.DefaultValue; // Return fallback immediately when circular reference is detected
+            }
+
             if (!resolverContext.TryEnterVariable(name))
             {
-                // Circular reference detected, use fallback without recursive resolution
-                Debug.WriteLine($"Circular CSS variable reference detected for: {name}");
-
-                // Use fallback directly rather than recursively resolving it
-                // This prevents nested circular references in fallbacks
-                return varValue.DefaultValue;
+                Console.WriteLine($"{LogPrefix}Failed to enter variable {name} - max depth exceeded or already in resolution chain");
+                Console.WriteLine($"{LogPrefix}Returning fallback value: {varValue.DefaultValue?.CssText ?? "null"}");
+                return varValue.DefaultValue; // Return fallback value
             }
+
+            Console.WriteLine($"{LogPrefix}Successfully entered variable {name}, depth now: {resolverContext.CurrentDepth}");
 
             try
             {
+                // Check registry
                 var value = _registry.GetVariableValue(name);
+                if (value != null)
+                {
+                    Console.WriteLine($"{LogPrefix}Found {name} in registry: {value.CssText}");
+                }
+                else
+                {
+                    Console.WriteLine($"{LogPrefix}{name} not found in registry, checking inheritance");
+                }
+
+                // Try inheritance if not in registry
                 if (value == null && element.ParentElement != null)
                 {
-                    value = TryGetInheritedValue(name, element);
+                    Console.WriteLine($"{LogPrefix}Trying to inherit {name} from parent");
+                    value = TryGetInheritedValue(name, element, 0);
+                    if (value != null)
+                    {
+                        Console.WriteLine($"{LogPrefix}Inherited {name} with value: {value.CssText}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"{LogPrefix}Failed to inherit {name}");
+                    }
                 }
 
                 if (value == null)
                 {
-                    return ResolveFallback(varValue.DefaultValue, element, resolverContext);
+                    Console.WriteLine($"{LogPrefix}No value found for {name}, resolving fallback");
+                    var result = ResolveFallback(varValue.DefaultValue!, element, resolverContext);
+                    Console.WriteLine($"{LogPrefix}Fallback for {name} resolved to: {result?.CssText ?? "null"}");
+                    return result;
                 }
 
-                return ResolveNestedReferences(value, element, resolverContext);
+                Console.WriteLine($"{LogPrefix}Resolving nested references in value for {name}");
+                var resolved = ResolveNestedReferences(value, element, resolverContext);
+                Console.WriteLine($"{LogPrefix}Finished resolving {name}: {resolved?.CssText ?? "null"}");
+                return resolved;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{LogPrefix}ERROR resolving {name}: {ex.Message}\n{ex.StackTrace}");
+                return varValue.DefaultValue;
             }
             finally
             {
-                // Always exit the variable when done
                 resolverContext.ExitVariable(name);
+                Console.WriteLine($"{LogPrefix}Exited variable {name}, depth now: {resolverContext.CurrentDepth}");
             }
         }
 
         /// <summary>
-        /// Safely resolves a variable reference with error handling.
+        /// Safely resolves a CSS variable with error handling.
         /// </summary>
-        /// <param name="varValue">The var() function to resolve</param>
-        /// <param name="element">The context element</param>
-        /// <param name="resolverContext">The resolution context for tracking references</param>
-        /// <returns>The resolved CSS value, or null if resolution failed</returns>
         public ICssValue? SafeResolveVariable(CssVarValue varValue, IElement element, ResolverContext resolverContext)
         {
             try
             {
-                return ResolveVariable(varValue, element, resolverContext);
+                Console.WriteLine($"{LogPrefix}SafeResolveVariable called for {varValue.VariableName}");
+                var result = ResolveVariable(varValue, element, resolverContext);
+                Console.WriteLine($"{LogPrefix}SafeResolveVariable result for {varValue.VariableName}: {result?.CssText ?? "null"}");
+                return result;
             }
             catch (Exception ex)
             {
-                // Log error
-                Debug.WriteLine($"Error resolving CSS variable {varValue.VariableName}: {ex.Message}");
+                Console.WriteLine($"{LogPrefix}CRITICAL ERROR in SafeResolveVariable for {varValue.VariableName}: {ex.Message}\n{ex.StackTrace}");
 
-                // Try fallback if available
                 if (varValue.DefaultValue != null)
                 {
+                    Console.WriteLine($"{LogPrefix}Using fallback value: {varValue.DefaultValue.CssText}");
                     try
                     {
-                        return ResolveFallback(varValue.DefaultValue, element, resolverContext);
+                        return varValue.DefaultValue;
                     }
-                    catch
+                    catch (Exception fallbackEx)
                     {
-                        // If fallback fails too, return null
+                        Console.WriteLine($"{LogPrefix}Error using fallback value: {fallbackEx.Message}");
                         return null;
                     }
                 }
 
+                Console.WriteLine($"{LogPrefix}No fallback available, returning null");
                 return null;
             }
         }
 
         /// <summary>
-        /// Resolves the fallback value of a var() function.
+        /// Resolves a fallback value, which may itself be a variable reference.
         /// </summary>
-        /// <param name="fallback">The fallback value to resolve</param>
-        /// <param name="element">The context element</param>
-        /// <param name="context">The resolution context</param>
-        /// <returns>The resolved fallback value, or null if none or unresolvable</returns>
         private ICssValue? ResolveFallback(ICssValue fallback, IElement element, ResolverContext context)
         {
             if (fallback == null)
+            {
+                Console.WriteLine($"{LogPrefix}Fallback is null");
                 return null;
+            }
+
+            Console.WriteLine($"{LogPrefix}Resolving fallback value: {fallback.CssText}");
 
             try
             {
                 if (fallback is CssVarValue nestedVar)
                 {
-                    // Check if this would lead to another circular reference
+                    Console.WriteLine($"{LogPrefix}Fallback is itself a variable reference: {nestedVar.VariableName}");
+
+                    // Check for cycles in the fallback before attempting to resolve
                     if (context.DetectCycle(nestedVar.VariableName).HasCycle)
                     {
-                        // If there would be a cycle, use the nested fallback directly
+                        Console.WriteLine($"{LogPrefix}Cycle detected in fallback variable {nestedVar.VariableName}");
+                        Console.WriteLine($"{LogPrefix}Using nested fallback: {nestedVar.DefaultValue?.CssText ?? "null"}");
                         return nestedVar.DefaultValue;
                     }
 
-                    // Otherwise, try to resolve it normally
-                    return ResolveVariable(nestedVar, element, context);
+                    Console.WriteLine($"{LogPrefix}Resolving nested variable in fallback");
+                    var result = ResolveVariable(nestedVar, element, context);
+                    Console.WriteLine($"{LogPrefix}Nested variable in fallback resolved to: {result?.CssText ?? "null"}");
+                    return result;
                 }
 
-                return ResolveNestedReferences(fallback, element, context);
+                Console.WriteLine($"{LogPrefix}Checking for nested references in fallback");
+                var resolved = ResolveNestedReferences(fallback, element, context);
+                Console.WriteLine($"{LogPrefix}Fallback resolved to: {resolved?.CssText ?? "null"}");
+                return resolved;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error resolving fallback: {ex.Message}");
-                // Return the fallback directly if there's an error in resolving it
+                Console.WriteLine($"{LogPrefix}Error resolving fallback: {ex.Message}");
                 return fallback;
             }
         }
@@ -150,86 +202,141 @@
         /// <summary>
         /// Resolves any nested variable references within a CSS value.
         /// </summary>
-        /// <param name="value">The CSS value that may contain variable references</param>
-        /// <param name="element">The context element</param>
-        /// <param name="context">The resolution context</param>
-        /// <returns>The value with all nested references resolved</returns>
         private ICssValue? ResolveNestedReferences(ICssValue value, IElement element, ResolverContext context)
         {
-            // Handle different value types
-            if (value is CssVarValue nestedVar)
+            if (value == null)
             {
-                return ResolveVariable(nestedVar, element, context);
+                Console.WriteLine($"{LogPrefix}Value is null in ResolveNestedReferences");
+                return null;
             }
 
-            if (value is CssCalcValue calcValue)
+            if (context.CurrentDepth >= ResolverContext.MaxResolutionDepth)
             {
-                return ResolveCalcExpression(calcValue, element, context);
+                Console.WriteLine($"{LogPrefix}Max depth reached in ResolveNestedReferences: {context.CurrentDepth}");
+                return value;
             }
 
-            if (value is ICssMultipleValue multiValue)
-            {
-                var resolvedItems = new List<ICssValue>();
+            Console.WriteLine($"{LogPrefix}ResolveNestedReferences for value type: {value.GetType().Name}, text: {value.CssText}");
 
-                for (var i = 0; i < multiValue.Count; i++)
+            try
+            {
+                if (value is CssVarValue nestedVar)
                 {
-                    var item = multiValue[i];
-                    var resolvedItem = ResolveNestedReferences(item, element, context);
-
-                    if (resolvedItem != null)
-                    {
-                        resolvedItems.Add(resolvedItem);
-                    }
+                    Console.WriteLine($"{LogPrefix}Found nested var() reference: {nestedVar.VariableName}");
+                    var result = ResolveVariable(nestedVar, element, context);
+                    Console.WriteLine($"{LogPrefix}Nested var() resolved to: {result?.CssText ?? "null"}");
+                    return result;
                 }
 
-                // Return new list with resolved values
-                return new CssListValue(resolvedItems.ToArray());
-            }
+                if (value is CssCalcValue calcValue)
+                {
+                    Console.WriteLine($"{LogPrefix}Found calc() expression");
+                    var result = ResolveCalcExpression(calcValue, element, context);
+                    Console.WriteLine($"{LogPrefix}calc() expression resolved to: {result.CssText}");
+                    return result;
+                }
 
-            // For other value types, return as is
-            return value;
+                if (value is ICssMultipleValue multiValue)
+                {
+                    Console.WriteLine($"{LogPrefix}Found multiple value with {multiValue.Count} items");
+                    var resolvedItems = new List<ICssValue>();
+
+                    for (var i = 0; i < multiValue.Count; i++)
+                    {
+                        var item = multiValue[i];
+                        Console.WriteLine($"{LogPrefix}Resolving item {i}: {item.CssText}");
+                        var resolvedItem = ResolveNestedReferences(item, element, context);
+
+                        if (resolvedItem != null)
+                        {
+                            Console.WriteLine($"{LogPrefix}Item {i} resolved to: {resolvedItem.CssText}");
+                            resolvedItems.Add(resolvedItem);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"{LogPrefix}Item {i} resolved to null, keeping original");
+                            resolvedItems.Add(item);
+                        }
+                    }
+
+                    var result = new CssListValue(resolvedItems.ToArray());
+                    Console.WriteLine($"{LogPrefix}Multiple value resolved to: {result.CssText}");
+                    return result;
+                }
+
+                Console.WriteLine($"{LogPrefix}No nested references found, returning original value");
+                return value;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{LogPrefix}Error resolving nested references: {ex.Message}");
+                return value;
+            }
         }
 
         /// <summary>
-        /// Resolves variables within a calc() expression.
+        /// Resolves variable references within a calc() expression.
         /// </summary>
-        /// <param name="calcValue">The calc() expression to resolve</param>
-        /// <param name="element">The context element</param>
-        /// <param name="context">The resolution context</param>
-        /// <returns>A calc expression with resolved variables</returns>
         public ICssValue ResolveCalcExpression(CssCalcValue calcValue, IElement element, ResolverContext context)
         {
-            // Resolve any variables in the expression
-            var resolvedExpression = ResolveNestedReferences(calcValue.Expression, element, context);
-
-            // Return a new calc with the resolved expression
-            if (resolvedExpression != calcValue.Expression)
+            if (context.CurrentDepth >= ResolverContext.MaxResolutionDepth)
             {
-                return new CssCalcValue(resolvedExpression);
+                Console.WriteLine($"{LogPrefix}Max depth reached in ResolveCalcExpression: {context.CurrentDepth}");
+                return calcValue;
             }
 
-            return calcValue;
+            Console.WriteLine($"{LogPrefix}Resolving calc expression: {calcValue.CssText}");
+            Console.WriteLine($"{LogPrefix}Expression type: {calcValue.Expression.GetType().Name}, value: {calcValue.Expression.CssText}");
+
+            try
+            {
+                var resolvedExpression = ResolveNestedReferences(calcValue.Expression, element, context);
+
+                if (resolvedExpression != null && !ReferenceEquals(resolvedExpression, calcValue.Expression))
+                {
+                    Console.WriteLine($"{LogPrefix}Expression changed, creating new calc() with: {resolvedExpression.CssText}");
+                    return new CssCalcValue(resolvedExpression);
+                }
+
+                Console.WriteLine($"{LogPrefix}Expression unchanged, returning original calc()");
+                return calcValue;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{LogPrefix}Error resolving calc expression: {ex.Message}");
+                return calcValue;
+            }
         }
 
         /// <summary>
-        /// Gets variable value from the inheritance chain.
+        /// Attempts to get an inherited CSS variable value from parent elements.
         /// </summary>
-        /// <param name="name">The variable name</param>
-        /// <param name="element">The element to start looking from</param>
-        /// <returns>The inherited variable value, or null if not found</returns>
-        private ICssValue? TryGetInheritedValue(string name, IElement element)
+        private ICssValue? TryGetInheritedValue(string name, IElement element, int depth)
         {
-            var parent = element.ParentElement;
-            if (parent == null)
+            if (depth >= MaxInheritanceDepth)
+            {
+                Console.WriteLine($"{LogPrefix}Max inheritance depth reached ({depth}) for {name}");
                 return null;
+            }
 
-            // Try the parent's registry value
+            if (element == null || element.ParentElement == null)
+            {
+                Console.WriteLine($"{LogPrefix}No more parent elements to check for {name}");
+                return null;
+            }
+
+            var parent = element.ParentElement;
+            Console.WriteLine($"{LogPrefix}Checking parent {parent.NodeName} for {name} (depth: {depth})");
+
             var value = _registry.GetVariableValue(name);
             if (value != null)
+            {
+                Console.WriteLine($"{LogPrefix}Found {name} in registry at parent level {depth}: {value.CssText}");
                 return value;
+            }
 
-            // Recursively check further up the tree
-            return TryGetInheritedValue(name, parent);
+            Console.WriteLine($"{LogPrefix}Not found at current level, checking next parent");
+            return TryGetInheritedValue(name, parent, depth + 1);
         }
     }
 }

@@ -2,113 +2,177 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using AngleSharp.Css.Dom;
     using AngleSharp.Dom;
 
     /// <summary>
-    /// Maintains state during CSS variable resolution to handle circular references
-    /// and provide caching.
+    /// Context for CSS variable resolution, including cycle detection and caching.
     /// </summary>
     public class ResolverContext
     {
         private readonly HashSet<string> _resolutionChain = new HashSet<string>();
         private readonly Dictionary<string, ICssValue> _cache = new Dictionary<string, ICssValue>();
-        private const int MaxResolutionDepth = 32; // Prevent excessive recursion
+        private const string LogPrefix = "[ResolverContext] ";
 
         /// <summary>
-        /// Gets the current resolution depth (number of nested variables being resolved).
+        /// Maximum allowed depth for variable resolution to prevent stack overflow.
+        /// </summary>
+        public const int MaxResolutionDepth = 32;
+
+        /// <summary>
+        /// Gets the current resolution depth.
         /// </summary>
         public int CurrentDepth { get; private set; } = 0;
 
         /// <summary>
-        /// Attempts to enter variable resolution for the given variable name.
-        /// Returns false if entering would create a circular reference or exceed max depth.
+        /// Creates a new resolver context.
         /// </summary>
-        /// <param name="name">The variable name to resolve</param>
-        /// <returns>True if resolution can proceed, false if circular reference detected</returns>
+        public ResolverContext()
+        {
+            Console.WriteLine($"{LogPrefix}Created new resolver context");
+        }
+
+        /// <summary>
+        /// Attempts to enter variable resolution for the specified variable.
+        /// </summary>
+        /// <param name="name">The name of the variable to resolve.</param>
+        /// <returns>True if variable resolution can proceed, false if a cycle was detected or max depth reached.</returns>
         public bool TryEnterVariable(string name)
         {
-            // Check for circular reference
+            Console.WriteLine($"{LogPrefix}Attempting to enter variable: {name} (current depth: {CurrentDepth})");
+
             if (_resolutionChain.Contains(name))
+            {
+                Console.WriteLine($"{LogPrefix}Circular reference detected: {name} is already in the resolution chain!");
+                Console.WriteLine($"{LogPrefix}Current chain: {string.Join(" -> ", _resolutionChain)}");
                 return false;
+            }
 
-            // Check for excessive resolution depth
             if (CurrentDepth >= MaxResolutionDepth)
+            {
+                Console.WriteLine($"{LogPrefix}Maximum resolution depth ({MaxResolutionDepth}) reached. Cannot enter {name}");
                 return false;
+            }
 
-            // Enter variable resolution
             _resolutionChain.Add(name);
             CurrentDepth++;
+            Console.WriteLine($"{LogPrefix}Entered variable {name}, new depth: {CurrentDepth}");
+            Console.WriteLine($"{LogPrefix}Current chain: {string.Join(" -> ", _resolutionChain)}");
             return true;
         }
 
         /// <summary>
-        /// Exits variable resolution for the given variable name.
+        /// Exits variable resolution for the specified variable.
         /// </summary>
-        /// <param name="name">The variable name that was being resolved</param>
+        /// <param name="name">The name of the variable that was being resolved.</param>
         public void ExitVariable(string name)
         {
-            _resolutionChain.Remove(name);
-            CurrentDepth--;
+            Console.WriteLine($"{LogPrefix}Exiting variable: {name} (current depth: {CurrentDepth})");
+
+            if (_resolutionChain.Contains(name))
+            {
+                _resolutionChain.Remove(name);
+                CurrentDepth = Math.Max(0, CurrentDepth - 1);
+                Console.WriteLine($"{LogPrefix}Removed {name} from chain, new depth: {CurrentDepth}");
+
+                if (_resolutionChain.Count > 0)
+                {
+                    Console.WriteLine($"{LogPrefix}Current chain: {string.Join(" -> ", _resolutionChain)}");
+                }
+                else
+                {
+                    Console.WriteLine($"{LogPrefix}Resolution chain is now empty");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"{LogPrefix}Warning: Attempted to exit {name} but it's not in the resolution chain!");
+            }
         }
 
         /// <summary>
-        /// Tries to get a cached resolved value.
+        /// Tries to get a value from the cache.
         /// </summary>
-        /// <param name="key">The cache key</param>
-        /// <param name="value">The cached value, if found</param>
-        /// <returns>True if value was found in cache, otherwise false</returns>
+        /// <param name="key">The cache key.</param>
+        /// <param name="value">The cached value, if found.</param>
+        /// <returns>True if the value was found in the cache, false otherwise.</returns>
         public bool TryGetCachedValue(string key, out ICssValue value)
         {
-            return _cache.TryGetValue(key, out value);
+            var found = _cache.TryGetValue(key, out value);
+            Console.WriteLine($"{LogPrefix}Cache lookup for key '{key}': {(found ? "HIT" : "MISS")}");
+
+            if (found)
+            {
+                Console.WriteLine($"{LogPrefix}Cached value: {value.CssText}");
+            }
+
+            return found;
         }
 
         /// <summary>
-        /// Caches a resolved variable value.
+        /// Caches a value with the specified key.
         /// </summary>
-        /// <param name="key">The cache key</param>
-        /// <param name="value">The resolved value to cache</param>
+        /// <param name="key">The cache key.</param>
+        /// <param name="value">The value to cache.</param>
         public void CacheValue(string key, ICssValue value)
         {
+            Console.WriteLine($"{LogPrefix}Caching value for key '{key}': {value.CssText}");
             _cache[key] = value;
         }
 
         /// <summary>
-        /// Generates a cache key combining variable name and element.
+        /// Generates a cache key for a variable and element.
         /// </summary>
-        /// <param name="name">The variable name</param>
-        /// <param name="element">The element context</param>
-        /// <returns>A unique cache key</returns>
+        /// <param name="name">The variable name.</param>
+        /// <param name="element">The element context.</param>
+        /// <returns>A string key for cache lookups.</returns>
         public string GenerateCacheKey(string name, IElement element)
         {
-            // Create unique key combining variable name and element identity
-            return $"{name}_{element.GetHashCode()}";
+            var key = $"{name}_{element.GetHashCode()}";
+            Console.WriteLine($"{LogPrefix}Generated cache key: {key}");
+            return key;
         }
 
         /// <summary>
-        /// Detects if adding the specified variable name would create a cycle.
+        /// Detects if adding a variable would create a circular reference.
         /// </summary>
-        /// <param name="variableName">The variable name to check</param>
-        /// <returns>Tuple indicating if cycle exists and the resolution path</returns>
+        /// <param name="variableName">The variable name to check.</param>
+        /// <returns>A tuple indicating if a cycle was detected and the path of the cycle.</returns>
         public (bool HasCycle, IEnumerable<string> Path) DetectCycle(string variableName)
         {
+            Console.WriteLine($"{LogPrefix}Checking for cycles with variable: {variableName}");
+            Console.WriteLine($"{LogPrefix}Current chain: {string.Join(" -> ", _resolutionChain)}");
+
             if (_resolutionChain.Contains(variableName))
             {
-                // Create path for debugging
                 var cyclePath = new List<string>(_resolutionChain);
                 cyclePath.Add(variableName);
+
+                Console.WriteLine($"{LogPrefix}CYCLE DETECTED: {string.Join(" -> ", cyclePath)}");
                 return (true, cyclePath);
             }
 
+            Console.WriteLine($"{LogPrefix}No cycle detected for {variableName}");
             return (false, Array.Empty<string>());
         }
 
         /// <summary>
-        /// Clears the resolution cache.
+        /// Clears the variable resolution cache.
         /// </summary>
         public void ClearCache()
         {
+            Console.WriteLine($"{LogPrefix}Clearing cache with {_cache.Count} entries");
             _cache.Clear();
+        }
+
+        /// <summary>
+        /// Gets the current variable resolution chain.
+        /// </summary>
+        /// <returns>The list of variables currently in the resolution process.</returns>
+        public IEnumerable<string> GetCurrentResolutionChain()
+        {
+            return new List<string>(_resolutionChain);
         }
     }
 }
