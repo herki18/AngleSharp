@@ -39,47 +39,37 @@
         /// <returns>The resolved CSS value, or null if unresolvable</returns>
         public ICssValue? ResolveVariable(CssVarValue varValue, IElement element, ResolverContext resolverContext)
         {
-            // Extract variable name
             string name = varValue.VariableName;
 
-            // Check for circular reference
+            // Check if we're already trying to resolve this variable (circular reference)
             if (!resolverContext.TryEnterVariable(name))
             {
-                // Circular reference detected, use fallback if available
-                var fallbackValue = ResolveFallback(varValue.DefaultValue, element, resolverContext);
+                // Circular reference detected, use fallback without recursive resolution
+                Debug.WriteLine($"Circular CSS variable reference detected for: {name}");
 
-                // Log debugging information about the cycle
-                var (hasCycle, path) = resolverContext.DetectCycle(name);
-                if (hasCycle)
-                {
-                    Debug.WriteLine($"Circular CSS variable reference detected: {string.Join(" -> ", path)}");
-                }
-
-                return fallbackValue;
+                // Use fallback directly rather than recursively resolving it
+                // This prevents nested circular references in fallbacks
+                return varValue.DefaultValue;
             }
 
             try
             {
-                // Try to get value from registry
                 var value = _registry.GetVariableValue(name);
-
-                // If not found in registry, look in inheritance chain
                 if (value == null && element.ParentElement != null)
                 {
                     value = TryGetInheritedValue(name, element);
                 }
 
-                // If still not found, use fallback if available
                 if (value == null)
                 {
                     return ResolveFallback(varValue.DefaultValue, element, resolverContext);
                 }
 
-                // Resolve any nested variables in the value
                 return ResolveNestedReferences(value, element, resolverContext);
             }
             finally
             {
+                // Always exit the variable when done
                 resolverContext.ExitVariable(name);
             }
         }
@@ -132,14 +122,29 @@
             if (fallback == null)
                 return null;
 
-            // If fallback is another var(), resolve it
-            if (fallback is CssVarValue nestedVar)
+            try
             {
-                return ResolveVariable(nestedVar, element, context);
-            }
+                if (fallback is CssVarValue nestedVar)
+                {
+                    // Check if this would lead to another circular reference
+                    if (context.DetectCycle(nestedVar.VariableName).HasCycle)
+                    {
+                        // If there would be a cycle, use the nested fallback directly
+                        return nestedVar.DefaultValue;
+                    }
 
-            // Otherwise use as is (after resolving any nested references)
-            return ResolveNestedReferences(fallback, element, context);
+                    // Otherwise, try to resolve it normally
+                    return ResolveVariable(nestedVar, element, context);
+                }
+
+                return ResolveNestedReferences(fallback, element, context);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error resolving fallback: {ex.Message}");
+                // Return the fallback directly if there's an error in resolving it
+                return fallback;
+            }
         }
 
         /// <summary>

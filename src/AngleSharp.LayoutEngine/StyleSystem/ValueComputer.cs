@@ -14,7 +14,9 @@ public class ValueComputer
 {
     private readonly IRenderDevice _device;
     private readonly IBrowsingContext _context;
-    private IDeclarationFactory _factory;
+    private readonly IDeclarationFactory _factory;
+    private readonly VariableRegistry _variableRegistry;
+    private readonly VariableResolver _variableResolver;
 
     /// <summary>
     /// Creates a new ValueComputer.
@@ -26,6 +28,8 @@ public class ValueComputer
         _device = device ?? throw new ArgumentNullException(nameof(device));
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _factory = context.GetService<IDeclarationFactory>() ?? throw new ArgumentNullException(nameof(context));
+        _variableRegistry = new VariableRegistry();
+        _variableResolver = new VariableResolver(_variableRegistry, context, device);
     }
 
     /// <summary>
@@ -57,10 +61,14 @@ public class ValueComputer
         // Step 3: Compute element's font-size first as other properties may depend on it
         var elementFontSize = ComputeFontSize(declaration, parentFontSize, rootFontSize);
 
-        // Step 4: Create a compute context with all needed information
-        var computeContext = CreateComputeContext(declaration, element, elementFontSize, rootFontSize, parentStyle, rootStyle);
+        // Step 4: Extract and register CSS custom properties (variables)
+        ExtractAndRegisterVariables(declaration, element);
 
-        // Step 5: Process all properties
+        // Step 5: Create a computation context with all needed information
+        var computeContext = CreateComputationContext(declaration, element, elementFontSize,
+            rootFontSize, parentStyle, rootStyle);
+
+        // Step 6: Process all properties
         var computedProperties = ComputeAllProperties(
             declaration,
             element,
@@ -69,7 +77,7 @@ public class ValueComputer
             parentStyle,
             computeContext);
 
-        // Step 6: Apply the computed properties to our result
+        // Step 7: Apply the computed properties to our result
         computedStyle.SetDeclarations(computedProperties);
 
         return computedStyle;
@@ -192,9 +200,49 @@ public class ValueComputer
     }
 
     /// <summary>
+    /// Extracts and registers CSS custom properties (variables) from the style declaration.
+    /// </summary>
+    /// <param name="declaration">The style declaration containing custom properties</param>
+    /// <param name="element">The element context</param>
+    private void ExtractAndRegisterVariables(ICssStyleDeclaration declaration, IElement element)
+    {
+        foreach (var property in declaration)
+        {
+            // Custom properties start with --
+            if (property.Name.StartsWith("--") && property.RawValue != null)
+            {
+                // Get the selector specificity from the element's rule
+                var specificity = GetSpecificityForElement(element, property.Name);
+
+                // Register the variable with its value
+                _variableRegistry.RegisterVariable(
+                    property.Name,
+                    property.RawValue,
+                    StylesheetOrigin.Author,  // Using Author origin as default
+                    specificity,
+                    property.IsImportant);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the specificity for an element's matching rule for a property.
+    /// </summary>
+    /// <param name="element">The element</param>
+    /// <param name="propertyName">The property name</param>
+    /// <returns>The highest matching specificity</returns>
+    private Priority GetSpecificityForElement(IElement element, string propertyName)
+    {
+        // For simplicity, using a default specificity
+        // In a full implementation, we would determine this from the
+        // selector that matched the element for this property
+        return new Priority(0, 0, 0, 1);
+    }
+
+    /// <summary>
     /// Creates a computation context for resolving CSS values.
     /// </summary>
-    private ComputationContext CreateComputeContext(
+    private CssComputationContext CreateComputationContext(
         ICssStyleDeclaration style,
         IElement element,
         double fontSize,
@@ -202,14 +250,16 @@ public class ValueComputer
         ICssStyleDeclaration parentStyle,
         ICssStyleDeclaration rootStyle)
     {
-        return new ComputationContext(
+        return new CssComputationContext(
             _device,
             _context,
             fontSize,
             rootFontSize,
             style,
             parentStyle,
-            rootStyle);
+            rootStyle,
+            element,
+            _variableRegistry);
     }
 
     /// <summary>
@@ -221,7 +271,7 @@ public class ValueComputer
         double fontSize,
         double rootFontSize,
         ICssStyleDeclaration parentStyle,
-        ComputationContext context)
+        CssComputationContext context)
     {
         List<ICssProperty> computedProperties = new List<ICssProperty>();
 
@@ -241,6 +291,11 @@ public class ValueComputer
         // Process all other properties
         foreach (var property in style)
         {
+            // Skip custom properties (variables) as they're not directly computed
+            // They are resolved as needed during value computation
+            if (property.Name.StartsWith("--"))
+                continue;
+
             // Skip font-size as we've already handled it
             if (property.Name == PropertyNames.FontSize)
                 continue;
@@ -275,8 +330,9 @@ public class ValueComputer
                     computedProperties.Add(property);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"Error computing property {property.Name}: {ex.Message}");
                 // If computation fails, add the original property
                 computedProperties.Add(property);
             }
@@ -293,17 +349,42 @@ public class ValueComputer
         ICssValue value,
         double fontSize,
         double rootFontSize,
-        ComputationContext context)
+        CssComputationContext context)
     {
+        // Create a resolver context for tracking variable resolution
+        var resolverContext = new ResolverContext();
+
         // Handle CSS variables
         if (value is CssVarValue varValue)
         {
-            var resolvedValue = context.ResolveVariable(varValue.Name);
+            var resolvedValue = _variableResolver.ResolveVariable(varValue, context.Element, resolverContext);
             if (resolvedValue != null)
             {
+                // Process the resolved value further if needed
                 return ComputePropertyValue(propertyName, resolvedValue, fontSize, rootFontSize, context);
             }
             return value; // Keep as is if can't resolve
+        }
+
+        // Handle calc() expressions that might contain variables
+        if (value is CssCalcValue calcValue)
+        {
+            var resolvedCalc = _variableResolver.ResolveCalcExpression(calcValue, context.Element, resolverContext);
+
+            // If we got a fully resolved value (not a calc expression anymore),
+            // compute it further as needed
+            if (resolvedCalc is not CssCalcValue)
+            {
+                return ComputePropertyValue(propertyName, resolvedCalc, fontSize, rootFontSize, context);
+            }
+
+            // Otherwise, evaluate the calc expression
+            var calculator = new CalcExpressionEvaluator(context.Element, fontSize, rootFontSize, _device, context);
+            if (resolvedCalc is CssCalcValue cssCalcValue)
+            {
+                return calculator.EvaluateCalc(cssCalcValue);
+            }
+            return resolvedCalc; // Fall back to the resolved value if it's not a CssCalcValue
         }
 
         // Process specific properties that need special handling
@@ -334,14 +415,6 @@ public class ValueComputer
                 break;
         }
 
-        // Handle calc() expressions
-        if (value is CssCalcValue calcValue)
-        {
-            // We would evaluate the calc expression here
-            // This is a complex topic - for now we'll keep it as is
-            return value;
-        }
-
         // Handle special values
         if (value is ICssSpecialValue specialValue)
         {
@@ -369,6 +442,29 @@ public class ValueComputer
             return ConvertLengthToPixels(lengthValue, propertyName, fontSize, rootFontSize);
         }
 
+        // Handle list values that might contain variables or calc expressions
+        if (value is ICssMultipleValue multiValue)
+        {
+            var resolvedItems = new List<ICssValue>();
+
+            for (var i = 0; i < multiValue.Count; i++)
+            {
+                var item = multiValue[i];
+                var resolvedItem = ComputePropertyValue(propertyName, item, fontSize, rootFontSize, context);
+
+                if (resolvedItem != null)
+                {
+                    resolvedItems.Add(resolvedItem);
+                }
+                else
+                {
+                    resolvedItems.Add(item); // Keep original if resolution failed
+                }
+            }
+
+            return new CssListValue(resolvedItems.ToArray());
+        }
+
         // For other value types (colors, etc.), let AngleSharp handle it
         // through its own computation mechanism if possible
         if (value is ICssValue cssValue && cssValue.Compute != null)
@@ -377,8 +473,9 @@ public class ValueComputer
             {
                 return cssValue.Compute(context);
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"Error computing value: {ex.Message}");
                 // If computation fails, return the original value
                 return value;
             }

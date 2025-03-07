@@ -1,11 +1,14 @@
 namespace AngleSharp.LayoutEngine.Tests.LayoutEngine;
 
 using System;
+using System.Threading.Tasks;
 using AngleSharp;
+using AngleSharp.Css;
 using AngleSharp.Css.Dom;
-using Css.Parser;
-using Dom;
-using Html.Parser;
+using AngleSharp.Css.Parser;
+using AngleSharp.Css.Values;
+using AngleSharp.Dom;
+using AngleSharp.Html.Parser;
 using NUnit.Framework;
 using StyleSystem;
 
@@ -13,8 +16,8 @@ using StyleSystem;
 public class ValueComputerTests
 {
     private IBrowsingContext _context;
-    private ICssParser? _cssParser;
-    private IHtmlParser? _htmlParser;
+    private ICssParser _cssParser;
+    private IHtmlParser _htmlParser;
     private MockRenderDevice _device;
     private ValueComputer _valueComputer;
 
@@ -22,8 +25,8 @@ public class ValueComputerTests
     public void Setup()
     {
         _context = BrowsingContext.New(Configuration.Default.WithCss());
-        _cssParser = _context.GetService<ICssParser>();
-        _htmlParser = _context.GetService<IHtmlParser>();
+        _cssParser = _context.GetService<ICssParser>()!;
+        _htmlParser = _context.GetService<IHtmlParser>()!;
         _device = new MockRenderDevice
         {
             ViewPortWidth = 1024,
@@ -399,6 +402,183 @@ public class ValueComputerTests
         Assert.That(computedFontSize, Is.EqualTo("24px")); // 1.2em * 20px
         Assert.That(computedPadding, Is.EqualTo("12px")); // 0.5em * 24px
         // margin would ideally be 16px, but calc() handling might vary
+    }
+
+    [Test]
+    public async Task ComputeValues_SimpleVariable_ResolvesCorrectly()
+    {
+        // Arrange
+        var document = await _context.OpenAsync(req => req.Content("<html><body><div></div></body></html>"));
+        var element = document.QuerySelector("div");
+        Assert.NotNull(element);
+
+        // Create style with CSS variable
+        var styleDeclaration = new CssStyleDeclaration(_context);
+
+        // Define a variable
+        var redVariable = _context.CreateProperty("--color");
+        redVariable.RawValue = new CssColorValue(255, 0, 0, 1); // red
+        styleDeclaration.AddProperty(redVariable);
+
+        // Use the variable
+        var colorValue = new CssVarValue("--color", null);
+        var colorProperty = _context.CreateProperty("color");
+        colorProperty.RawValue = colorValue;
+        styleDeclaration.AddProperty(colorProperty);
+
+        // Empty parent and root styles for this test
+        var emptyStyle = new CssStyleDeclaration(_context);
+
+        // Act
+        var computedStyle = _valueComputer.ComputeValues(styleDeclaration, element, emptyStyle, emptyStyle);
+
+        // Assert
+        var computedColor = computedStyle.GetPropertyValue("color");
+        Assert.That(computedColor, Is.Not.Null);
+        Assert.That(computedColor, Is.EqualTo("rgba(255, 0, 0, 1)"));
+    }
+
+    [Test]
+    public async Task ComputeValues_NestedVariables_ResolvesCorrectly()
+    {
+        // Arrange
+        var document = await _context.OpenAsync(req => req.Content("<html><body><div></div></body></html>"));
+        var element = document.QuerySelector("div");
+        Assert.NotNull(element);
+
+        // Create style with nested CSS variables
+        var styleDeclaration = new CssStyleDeclaration(_context);
+
+        // Define base variable
+        var baseVariable = _context.CreateProperty("--base-color");
+        baseVariable.RawValue = new CssColorValue(255, 0, 0, 1); // red
+        styleDeclaration.AddProperty(baseVariable);
+
+        // Define a variable referencing the base variable
+        var themeVariable = _context.CreateProperty("--theme-color");
+        themeVariable.RawValue = new CssVarValue("--base-color", null);
+        styleDeclaration.AddProperty(themeVariable);
+
+        // Use the theme variable
+        var colorValue = new CssVarValue("--theme-color", null);
+        var colorProperty = _context.CreateProperty("color");
+        colorProperty.RawValue = colorValue;
+        styleDeclaration.AddProperty(colorProperty);
+
+        // Empty parent and root styles for this test
+        var emptyStyle = new CssStyleDeclaration(_context);
+
+        // Act
+        var computedStyle = _valueComputer.ComputeValues(styleDeclaration, element, emptyStyle, emptyStyle);
+
+        // Assert
+        var computedColor = computedStyle.GetPropertyValue("color");
+        Assert.That(computedColor, Is.Not.Null);
+        Assert.That(computedColor, Is.EqualTo("rgba(255, 0, 0, 1)"));
+    }
+
+    [Test]
+    public async Task ComputeValues_VariableWithFallback_UsesFallbackWhenNeeded()
+    {
+        // Arrange
+        var document = await _context.OpenAsync(req => req.Content("<html><body><div></div></body></html>"));
+        var element = document.QuerySelector("div");
+        Assert.NotNull(element);
+
+        // Create style with CSS variable + fallback
+        var styleDeclaration = new CssStyleDeclaration(_context);
+
+        // Use an undefined variable with fallback
+        var fallbackColor = new CssColorValue(0, 0, 255, 1); // blue
+        var colorValue = new CssVarValue("--undefined-color", fallbackColor);
+        var colorProperty = _context.CreateProperty("color");
+        colorProperty.RawValue = colorValue;
+        styleDeclaration.AddProperty(colorProperty);
+
+        // Empty parent and root styles for this test
+        var emptyStyle = new CssStyleDeclaration(_context);
+
+        // Act
+        var computedStyle = _valueComputer.ComputeValues(styleDeclaration, element, emptyStyle, emptyStyle);
+
+        // Assert
+        var computedColor = computedStyle.GetPropertyValue("color");
+        Assert.That(computedColor, Is.Not.Null);
+        Assert.That(computedColor, Is.EqualTo("rgba(0, 0, 255, 1)")); // Should use fallback blue
+    }
+
+    [Test]
+    public async Task ComputeValues_VariableInCalc_ResolvesCorrectly()
+    {
+        // Arrange
+        var document = await _context.OpenAsync(req => req.Content("<html><body><div></div></body></html>"));
+        var element = document.QuerySelector("div");
+        Assert.NotNull(element);
+
+        // Create style with CSS variable in calc()
+        var styleDeclaration = new CssStyleDeclaration(_context);
+
+        // Define base variable
+        var spacingVariable = _context.CreateProperty("--spacing");
+        spacingVariable.RawValue = new CssLengthValue(10, CssLengthValue.Unit.Px);
+        styleDeclaration.AddProperty(spacingVariable);
+
+        // Use in calc
+        var varRef = new CssVarValue("--spacing", null);
+        var calcExpression = new CssCalcValue(varRef);
+        var marginProperty = _context.CreateProperty("margin");
+        marginProperty.RawValue = calcExpression;
+        styleDeclaration.AddProperty(marginProperty);
+
+        // Empty parent and root styles for this test
+        var emptyStyle = new CssStyleDeclaration(_context);
+
+        // Act
+        var computedStyle = _valueComputer.ComputeValues(styleDeclaration, element, emptyStyle, emptyStyle);
+
+        // Assert
+        var computedMargin = computedStyle.GetPropertyValue("margin");
+        Assert.That(computedMargin, Is.Not.Null);
+        Assert.That(computedMargin, Contains.Substring("10px"));
+    }
+
+    [Test]
+    public async Task ComputeValues_CircularVariableReference_DoesNotCrash()
+    {
+        // Arrange
+        var document = await _context.OpenAsync(req => req.Content("<html><body><div></div></body></html>"));
+        var element = document.QuerySelector("div");
+        Assert.NotNull(element);
+
+        // Create style with circular variable references
+        var styleDeclaration = new CssStyleDeclaration(_context);
+
+        // Create circular reference a -> b -> a
+        var varA = _context.CreateProperty("--var-a");
+        varA.RawValue = new CssVarValue("--var-b", null);
+        styleDeclaration.AddProperty(varA);
+
+        var varB = _context.CreateProperty("--var-b");
+        varB.RawValue = new CssVarValue("--var-a", null);
+        styleDeclaration.AddProperty(varB);
+
+        // Use in a property with fallback
+        var fallbackColor = new CssColorValue(0, 0, 255, 1); // blue
+        var colorValue = new CssVarValue("--var-a", fallbackColor);
+        var colorProperty = _context.CreateProperty("color");
+        colorProperty.RawValue = colorValue;
+        styleDeclaration.AddProperty(colorProperty);
+
+        // Empty parent and root styles for this test
+        var emptyStyle = new CssStyleDeclaration(_context);
+
+        // Act
+        var computedStyle = _valueComputer.ComputeValues(styleDeclaration, element, emptyStyle, emptyStyle);
+
+        // Assert - should not crash and use fallback
+        var computedColor = computedStyle.GetPropertyValue("color");
+        Assert.That(computedColor, Is.Not.Null);
+        Assert.That(computedColor, Is.EqualTo("rgba(0, 0, 255, 1)")); // Should use fallback blue
     }
 
     // Helper methods

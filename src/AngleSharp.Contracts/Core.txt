@@ -1,0 +1,2529 @@
+﻿This file is a merged representation of the entire codebase, combined into a single document by Repomix. The content has been processed where comments have been removed, empty lines have been removed, security check has been disabled.
+
+================================================================
+Directory Structure
+================================================================
+Core/
+  Attributes/
+    Accessors.cs
+    DomAccessorAttribute.cs
+    DomConstructorAttribute.cs
+    DomExposedAttribute.cs
+    DomHistoricalAttribute.cs
+    DomInitDictAttribute.cs
+    DomLenientThisAttribute.cs
+    DomLiterals.cs
+    DomNameAttribute.cs
+    DomNoInterfaceObjectAttribute.cs
+    DomPutForwardsAttribute.cs
+  Browser/
+    Dom/
+      IHistory.cs
+      INavigator.cs
+      INavigatorContentUtilities.cs
+      INavigatorId.cs
+      INavigatorOnline.cs
+      INavigatorStorageUtilities.cs
+    Sandboxes.cs
+  Common/
+    ICancellable.cs
+    IStringOrMemory.cs
+  Css/
+    Dom/
+      ICssMedium.cs
+      ICssProperty.cs
+      ICssStyleDeclarationBase.cs
+      ICssValue.cs
+      IMediaFeature.cs
+      IMediaList.cs
+    Values/
+      ICssComputeContext.cs
+    DeviceCategory.cs
+    IRenderDevice.cs
+    IRenderDimensions.cs
+    IStringSource.cs
+    IValueConverter.cs
+  Dom/
+    Events/
+      EventPhase.cs
+      IEvent.cs
+      IGlobalEventHandlers.cs
+      IWindowEventHandlers.cs
+    AdjacentPosition.cs
+    DocumentPositions.cs
+    DocumentReadyState.cs
+    DomEventHandler.cs
+    ElementCreationOptions.cs
+    FilterResult.cs
+    FilterSettings.cs
+    IAttr.cs
+    ICharacterData.cs
+    IChildNode.cs
+    IComment.cs
+    IDocument.cs
+    IDocumentFragment.cs
+    IDocumentStyle.cs
+    IDocumentType.cs
+    IElement.cs
+    IEntityProvider.cs
+    IEventTarget.cs
+    IHtmlAllCollection.cs
+    IHtmlCollection.cs
+    IImplementation.cs
+    ILocation.cs
+    INamedNodeMap.cs
+    INode.cs
+    INodeIterator.cs
+    INodeList.cs
+    INonDocumentTypeChildNode.cs
+    INonElementParentNode.cs
+    IParentNode.cs
+    IProcessingInstruction.cs
+    IRange.cs
+    ISettableTokenList.cs
+    IShadowRoot.cs
+    ISourceReference.cs
+    IStringList.cs
+    IStringMap.cs
+    IStyleSheet.cs
+    IStyleSheetList.cs
+    IText.cs
+    ITokenList.cs
+    ITreeWalker.cs
+    IUrl.cs
+    IUrlSearchParams.cs
+    IUrlUtilities.cs
+    IWindow.cs
+    IWindowTimers.cs
+    NodeFilter.cs
+    NodeFlags.cs
+    RangePosition.cs
+    RangeType.cs
+    ShadowRootMode.cs
+  Html/
+    Dom/
+      IHtmlAnchorElement.cs
+      IHtmlElement.cs
+      IHtmlEmbedElement.cs
+      IHtmlFormControlsCollection.cs
+      IHtmlFormElement.cs
+      IHtmlHeadElement.cs
+      IHtmlImageElement.cs
+      IHtmlMenuElement.cs
+      IHtmlScriptElement.cs
+    EventFlags.cs
+  Io/
+    HttpMethod.cs
+    IDocumentRequest.cs
+    IDownload.cs
+    ILoadableElement.cs
+    IResponse.cs
+  Text/
+    ITextPosition.cs
+    ITextSource.cs
+  IBrowsingContext.cs
+  IMarkupFormattable.cs
+  IMarkupFormatter.cs
+  IStyleFormattable.cs
+  IStyleFormatter.cs
+
+================================================================
+Files
+================================================================
+
+================
+File: Core/Attributes/Accessors.cs
+================
+namespace AngleSharp.Attributes;
+using System;
+[Flags]
+public enum Accessors : Byte
+{
+    None = 0x0,
+    Getter = 0x1,
+    Setter = 0x2,
+    Deleter = 0x4,
+    Adder = 0x8,
+    Remover = 0x10
+}
+
+================
+File: Core/Attributes/DomAccessorAttribute.cs
+================
+namespace AngleSharp.Attributes;
+using System;
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Method)]
+public sealed class DomAccessorAttribute : Attribute
+{
+    public DomAccessorAttribute(Accessors type)
+    {
+        Type = type;
+    }
+    public Accessors Type { get; }
+}
+
+================
+File: Core/Attributes/DomConstructorAttribute.cs
+================
+namespace AngleSharp.Attributes;
+using System;
+[AttributeUsage(AttributeTargets.Constructor)]
+public sealed class DomConstructorAttribute : Attribute
+{
+}
+
+================
+File: Core/Attributes/DomExposedAttribute.cs
+================
+namespace AngleSharp.Attributes;
+using System;
+[AttributeUsage(
+    AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct,
+    AllowMultiple = true, Inherited = false)]
+public sealed class DomExposedAttribute : Attribute
+{
+    public DomExposedAttribute(String target)
+    {
+        Target = target;
+    }
+    public String Target { get; }
+}
+
+================
+File: Core/Attributes/DomHistoricalAttribute.cs
+================
+namespace AngleSharp.Attributes;
+using System;
+[AttributeUsage(
+    AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface |
+    AttributeTargets.Property | AttributeTargets.Event | AttributeTargets.Method |
+    AttributeTargets.Field | AttributeTargets.Delegate)]
+public sealed class DomHistoricalAttribute : Attribute
+{
+}
+
+================
+File: Core/Attributes/DomInitDictAttribute.cs
+================
+namespace AngleSharp.Attributes;
+using System;
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
+public sealed class DomInitDictAttribute : Attribute
+{
+    public DomInitDictAttribute(Int32 offset = 0, Boolean optional = false)
+    {
+        Offset = offset;
+        IsOptional = optional;
+    }
+    public Int32 Offset { get; }
+    public Boolean IsOptional { get; }
+}
+
+================
+File: Core/Attributes/DomLenientThisAttribute.cs
+================
+namespace AngleSharp.Attributes;
+using System;
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Event)]
+public sealed class DomLenientThisAttribute : Attribute
+{
+}
+
+================
+File: Core/Attributes/DomLiterals.cs
+================
+namespace AngleSharp.Attributes;
+using System;
+[AttributeUsage(AttributeTargets.Enum)]
+public sealed class DomLiteralsAttribute : Attribute
+{
+}
+
+================
+File: Core/Attributes/DomNameAttribute.cs
+================
+namespace AngleSharp.Attributes;
+using System;
+[AttributeUsage(
+    AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface |
+    AttributeTargets.Property | AttributeTargets.Event | AttributeTargets.Method |
+    AttributeTargets.Field | AttributeTargets.Delegate | AttributeTargets.Enum,
+    AllowMultiple = true, Inherited = false)]
+public sealed class DomNameAttribute : Attribute
+{
+    public DomNameAttribute(String officialName)
+    {
+        OfficialName = officialName;
+    }
+    public String OfficialName { get; }
+}
+
+================
+File: Core/Attributes/DomNoInterfaceObjectAttribute.cs
+================
+namespace AngleSharp.Attributes;
+using System;
+[AttributeUsage(
+    AttributeTargets.Interface | AttributeTargets.Class | AttributeTargets.Struct,
+    Inherited = false)]
+public sealed class DomNoInterfaceObjectAttribute : Attribute;
+
+================
+File: Core/Attributes/DomPutForwardsAttribute.cs
+================
+namespace AngleSharp.Attributes;
+using System;
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class DomPutForwardsAttribute : Attribute
+{
+    public DomPutForwardsAttribute(String propertyName)
+    {
+        PropertyName = propertyName;
+    }
+    public String PropertyName { get; }
+}
+
+================
+File: Core/Browser/Dom/IHistory.cs
+================
+namespace AngleSharp.Browser.Dom;
+using System;
+using AngleSharp.Dom;
+using Attributes;
+[DomName("History")]
+public interface IHistory
+{
+    [DomName("length")]
+    Int32 Length { get; }
+    Int32 Index { get; }
+    IDocument this[Int32 index] { get; }
+    [DomName("state")]
+    Object State { get; }
+    [DomName("go")]
+    void Go(Int32 delta = 0);
+    [DomName("back")]
+    void Back();
+    [DomName("forward")]
+    void Forward();
+    [DomName("pushState")]
+    void PushState(Object data, String? title, String? url = null);
+    [DomName("replaceState")]
+    void ReplaceState(Object data, String? title, String? url = null);
+}
+
+================
+File: Core/Browser/Dom/INavigator.cs
+================
+namespace AngleSharp.Browser.Dom;
+using Attributes;
+[DomName("Navigator")]
+public interface INavigator : INavigatorId, INavigatorContentUtilities, INavigatorStorageUtilities, INavigatorOnline
+{
+}
+
+================
+File: Core/Browser/Dom/INavigatorContentUtilities.cs
+================
+namespace AngleSharp.Browser.Dom;
+using System;
+using Attributes;
+[DomName("NavigatorContentUtils")]
+[DomNoInterfaceObject]
+public interface INavigatorContentUtilities
+{
+    [DomName("registerProtocolHandler")]
+    void RegisterProtocolHandler(String scheme, String url, String title);
+    [DomName("registerContentHandler")]
+    void RegisterContentHandler(String mimeType, String url, String title);
+    [DomName("isProtocolHandlerRegistered")]
+    Boolean IsProtocolHandlerRegistered(String scheme, String url);
+    [DomName("isContentHandlerRegistered")]
+    Boolean IsContentHandlerRegistered(String mimeType, String url);
+    [DomName("unregisterProtocolHandler")]
+    void UnregisterProtocolHandler(String scheme, String url);
+    [DomName("unregisterContentHandler")]
+    void UnregisterContentHandler(String mimeType, String url);
+}
+
+================
+File: Core/Browser/Dom/INavigatorId.cs
+================
+namespace AngleSharp.Browser.Dom;
+using System;
+using Attributes;
+[DomName("NavigatorID")]
+[DomNoInterfaceObject]
+public interface INavigatorId
+{
+    [DomName("appName")]
+    String Name { get; }
+    [DomName("appVersion")]
+    String Version { get; }
+    [DomName("platform")]
+    String Platform { get; }
+    [DomName("userAgent")]
+    String UserAgent { get; }
+}
+
+================
+File: Core/Browser/Dom/INavigatorOnline.cs
+================
+namespace AngleSharp.Browser.Dom;
+using System;
+using Attributes;
+[DomName("NavigatorOnLine")]
+[DomNoInterfaceObject]
+public interface INavigatorOnline
+{
+    [DomName("onLine")]
+    Boolean IsOnline { get; }
+}
+
+================
+File: Core/Browser/Dom/INavigatorStorageUtilities.cs
+================
+namespace AngleSharp.Browser.Dom;
+using Attributes;
+[DomName("NavigatorStorageUtils")]
+[DomNoInterfaceObject]
+public interface INavigatorStorageUtilities
+{
+    [DomName("yieldForStorageUpdates")]
+    void WaitForStorageUpdates();
+}
+
+================
+File: Core/Browser/Sandboxes.cs
+================
+namespace AngleSharp.Browser;
+using System;
+[Flags]
+public enum Sandboxes : UInt16
+{
+    None = 0,
+    Navigation = 0x1,
+    AuxiliaryNavigation = 0x2,
+    TopLevelNavigation = 0x4,
+    Plugins = 0x8,
+    Origin = 0x10,
+    Forms = 0x20,
+    PointerLock = 0x40,
+    Scripts = 0x80,
+    AutomaticFeatures = 0x100,
+    Fullscreen = 0x200,
+    DocumentDomain = 0x400,
+    Presentation = 0x800
+}
+
+================
+File: Core/Common/ICancellable.cs
+================
+namespace AngleSharp.Common;
+using System;
+using System.Threading.Tasks;
+public interface ICancellable<T> : ICancellable
+{
+    Task<T> Task { get; }
+}
+public interface ICancellable
+{
+    Boolean IsCompleted { get; }
+    Boolean IsRunning { get; }
+    void Cancel();
+}
+
+================
+File: Core/Common/IStringOrMemory.cs
+================
+namespace AngleSharp.Common;
+using System;
+public interface IStringOrMemory
+{
+    ReadOnlyMemory<Char> Memory { get; }
+    Int32 Length { get; }
+    Char this[Int32 i] { get; }
+    Boolean IsNullOrEmpty { get; }
+    IStringOrMemory Replace(Char target, Char replacement);
+    String ToString();
+}
+
+================
+File: Core/Css/Dom/ICssMedium.cs
+================
+namespace AngleSharp.Css.Dom;
+using System;
+using System.Collections.Generic;
+public interface ICssMedium : IStyleFormattable
+{
+    String Type { get; }
+    Boolean IsExclusive { get; }
+    Boolean IsInverse { get; }
+    String Constraints { get; }
+    IEnumerable<IMediaFeature> Features { get; }
+}
+
+================
+File: Core/Css/Dom/ICssProperty.cs
+================
+namespace AngleSharp.Css.Dom;
+using System;
+using Attributes;
+using Values;
+[DomName("CSSProperty")]
+[DomNoInterfaceObject]
+public interface ICssProperty : IStyleFormattable
+{
+    Boolean IsDefault { get; }
+    [DomName("name")]
+    String Name { get; }
+    ICssValue RawValue { get; }
+    [DomName("value")]
+    String Value { get; set; }
+    [DomName("important")]
+    Boolean IsImportant { get; set; }
+    Boolean IsInherited { get; }
+    Boolean IsInitial { get; }
+    Boolean IsAnimatable { get; }
+    Boolean CanBeInherited { get; }
+    Boolean IsShorthand { get; }
+    ICssProperty Compute(ICssComputeContext context);
+}
+
+================
+File: Core/Css/Dom/ICssStyleDeclarationBase.cs
+================
+namespace AngleSharp.Css.Dom;
+using Attributes;
+[DomName("CSSStyleDeclaration")]
+public interface ICssStyleDeclarationBase
+{
+}
+
+================
+File: Core/Css/Dom/ICssValue.cs
+================
+namespace AngleSharp.Css.Dom;
+using System;
+using Values;
+public interface ICssValue : IEquatable<ICssValue>
+{
+    String CssText { get; }
+    ICssValue Compute(ICssComputeContext context);
+}
+
+================
+File: Core/Css/Dom/IMediaFeature.cs
+================
+namespace AngleSharp.Css.Dom;
+using System;
+public interface IMediaFeature : IStyleFormattable
+{
+    String Name { get; }
+    Boolean IsMinimum { get; }
+    Boolean IsMaximum { get; }
+    String Value { get; }
+    Boolean HasValue { get; }
+}
+
+================
+File: Core/Css/Dom/IMediaList.cs
+================
+namespace AngleSharp.Css.Dom;
+using System;
+using System.Collections.Generic;
+using Attributes;
+[DomName("MediaList")]
+public interface IMediaList : IEnumerable<ICssMedium>, IStyleFormattable
+{
+    [DomName("mediaText")]
+    String MediaText { get; set; }
+    [DomName("length")]
+    Int32 Length { get; }
+    [DomAccessor(Accessors.Getter)]
+    [DomName("item")]
+    String this[Int32 index] { get; }
+    [DomName("appendMedium")]
+    void Add(String medium);
+    [DomName("removeMedium")]
+    void Remove(String medium);
+}
+
+================
+File: Core/Css/Values/ICssComputeContext.cs
+================
+namespace AngleSharp.Css.Values;
+using System;
+using Dom;
+public interface ICssComputeContext
+{
+    IRenderDevice Device { get; }
+    IBrowsingContext Context { get; }
+    IValueConverter Converter { get; }
+    ICssValue Resolve(String name);
+}
+
+================
+File: Core/Css/DeviceCategory.cs
+================
+namespace AngleSharp.Css;
+public enum DeviceCategory : byte
+{
+    Screen,
+    Printer,
+    Speech,
+    Other
+}
+
+================
+File: Core/Css/IRenderDevice.cs
+================
+namespace AngleSharp.Css;
+using System;
+public interface IRenderDevice : IRenderDimensions
+{
+    Int32 ViewPortWidth { get; }
+    Int32 ViewPortHeight { get; }
+    Boolean IsInterlaced { get; }
+    Boolean IsScripting { get; }
+    Boolean IsGrid { get; }
+    Int32 DeviceWidth { get; }
+    Int32 DeviceHeight { get; }
+    Int32 Resolution { get; }
+    Int32 Frequency { get; }
+    Int32 ColorBits { get; }
+    Int32 MonochromeBits { get; }
+    DeviceCategory Category { get; }
+    void SetViewport(Int32 width, Int32 height);
+}
+
+================
+File: Core/Css/IRenderDimensions.cs
+================
+namespace AngleSharp.Css;
+using System;
+public interface IRenderDimensions
+{
+    Double RenderWidth { get; }
+    Double RenderHeight { get; }
+    Double FontSize { get; }
+}
+
+================
+File: Core/Css/IStringSource.cs
+================
+namespace AngleSharp.Text;
+using System;
+public interface IStringSource
+{
+    Char Current { get; }
+    Boolean IsDone { get; }
+    Int32 Index { get; }
+    String Content { get; }
+    Char Next();
+    Char Back();
+}
+
+================
+File: Core/Css/IValueConverter.cs
+================
+namespace AngleSharp.Css;
+using Dom;
+using Text;
+public interface IValueConverter
+{
+    ICssValue Convert(IStringSource source);
+}
+
+================
+File: Core/Dom/Events/EventPhase.cs
+================
+namespace AngleSharp.Dom.Events;
+using System;
+using Attributes;
+[DomName("Event")]
+public enum EventPhase : Byte
+{
+    [DomName("NONE")] None = 0,
+    [DomName("CAPTURING_PHASE")] Capturing = 1,
+    [DomName("AT_TARGET")] AtTarget = 2,
+    [DomName("BUBBLING_PHASE")] Bubbling = 3
+}
+
+================
+File: Core/Dom/Events/IEvent.cs
+================
+namespace AngleSharp.Dom.Events;
+using System;
+using System.Collections.Generic;
+using Attributes;
+[DomName("Event")]
+public interface IEvent
+{
+    [DomName("type")] String Type { get; }
+    [DomName("target")] IEventTarget? OriginalTarget { get; }
+    [DomName("currentTarget")] IEventTarget? CurrentTarget { get; }
+    [DomName("eventPhase")] EventPhase Phase { get; }
+    [DomName("composed")]
+    Boolean IsComposed { get; }
+    [DomName("bubbles")] Boolean IsBubbling { get; }
+    [DomName("cancelable")] Boolean IsCancelable { get; }
+    [DomName("defaultPrevented")] Boolean IsDefaultPrevented { get; }
+    [DomName("isTrusted")] Boolean IsTrusted { get; }
+    [DomName("timeStamp")] DateTime Time { get; }
+    [DomName("composedPath")]
+    IEnumerable<IEventTarget> GetComposedPath();
+    [DomName("stopPropagation")]
+    void Stop();
+    [DomName("stopImmediatePropagation")]
+    void StopImmediately();
+    [DomName("preventDefault")]
+    void Cancel();
+    [DomName("initEvent")]
+    void Init(String type, Boolean bubbles, Boolean cancelable);
+}
+
+================
+File: Core/Dom/Events/IGlobalEventHandlers.cs
+================
+namespace AngleSharp.Dom.Events;
+using Attributes;
+[DomName("GlobalEventHandlers")]
+[DomNoInterfaceObject]
+public interface IGlobalEventHandlers
+{
+    [DomName("onabort")] event DomEventHandler Aborted;
+    [DomName("onblur")] event DomEventHandler Blurred;
+    [DomName("oncancel")] event DomEventHandler Cancelled;
+    [DomName("oncanplay")] event DomEventHandler CanPlay;
+    [DomName("oncanplaythrough")] event DomEventHandler CanPlayThrough;
+    [DomName("onchange")] event DomEventHandler Changed;
+    [DomName("onclick")] event DomEventHandler Clicked;
+    [DomName("oncuechange")] event DomEventHandler CueChanged;
+    [DomName("ondblclick")] event DomEventHandler DoubleClick;
+    [DomName("ondrag")] event DomEventHandler Drag;
+    [DomName("ondragend")] event DomEventHandler DragEnd;
+    [DomName("ondragenter")] event DomEventHandler DragEnter;
+    [DomName("ondragexit")] event DomEventHandler DragExit;
+    [DomName("ondragleave")] event DomEventHandler DragLeave;
+    [DomName("ondragover")] event DomEventHandler DragOver;
+    [DomName("ondragstart")] event DomEventHandler DragStart;
+    [DomName("ondrop")] event DomEventHandler Dropped;
+    [DomName("ondurationchange")] event DomEventHandler DurationChanged;
+    [DomName("onemptied")] event DomEventHandler Emptied;
+    [DomName("onended")] event DomEventHandler Ended;
+    [DomName("onerror")] event DomEventHandler Error;
+    [DomName("onfocus")] event DomEventHandler Focused;
+    [DomName("oninput")] event DomEventHandler Input;
+    [DomName("oninvalid")] event DomEventHandler Invalid;
+    [DomName("onkeydown")] event DomEventHandler KeyDown;
+    [DomName("onkeypress")] event DomEventHandler KeyPress;
+    [DomName("onkeyup")] event DomEventHandler KeyUp;
+    [DomName("onload")] event DomEventHandler Loaded;
+    [DomName("onloadeddata")] event DomEventHandler LoadedData;
+    [DomName("onloadedmetadata")] event DomEventHandler LoadedMetadata;
+    [DomName("onloadstart")] event DomEventHandler Loading;
+    [DomName("onmousedown")] event DomEventHandler MouseDown;
+    [DomLenientThis]
+    [DomName("onmouseenter")]
+    event DomEventHandler MouseEnter;
+    [DomLenientThis]
+    [DomName("onmouseleave")]
+    event DomEventHandler MouseLeave;
+    [DomName("onmousemove")] event DomEventHandler MouseMove;
+    [DomName("onmouseout")] event DomEventHandler MouseOut;
+    [DomName("onmouseover")] event DomEventHandler MouseOver;
+    [DomName("onmouseup")] event DomEventHandler MouseUp;
+    [DomName("onmousewheel")] event DomEventHandler MouseWheel;
+    [DomName("onpause")] event DomEventHandler Paused;
+    [DomName("onplay")] event DomEventHandler Played;
+    [DomName("onplaying")] event DomEventHandler Playing;
+    [DomName("onprogress")] event DomEventHandler Progress;
+    [DomName("onratechange")] event DomEventHandler RateChanged;
+    [DomName("onreset")] event DomEventHandler Resetted;
+    [DomName("onresize")] event DomEventHandler Resized;
+    [DomName("onscroll")] event DomEventHandler Scrolled;
+    [DomName("onseeked")] event DomEventHandler Seeked;
+    [DomName("onseeking")] event DomEventHandler Seeking;
+    [DomName("onselect")] event DomEventHandler Selected;
+    [DomName("onshow")] event DomEventHandler Shown;
+    [DomName("onstalled")] event DomEventHandler Stalled;
+    [DomName("onsubmit")] event DomEventHandler Submitted;
+    [DomName("onsuspend")] event DomEventHandler Suspended;
+    [DomName("ontimeupdate")] event DomEventHandler TimeUpdated;
+    [DomName("ontoggle")] event DomEventHandler Toggled;
+    [DomName("onvolumechange")] event DomEventHandler VolumeChanged;
+    [DomName("onwaiting")] event DomEventHandler Waiting;
+}
+
+================
+File: Core/Dom/Events/IWindowEventHandlers.cs
+================
+namespace AngleSharp.Dom.Events;
+using Attributes;
+[DomName("WindowEventHandlers")]
+[DomNoInterfaceObject]
+public interface IWindowEventHandlers
+{
+    [DomName("onafterprint")] event DomEventHandler Printed;
+    [DomName("onbeforeprint")] event DomEventHandler Printing;
+    [DomName("onbeforeunload")] event DomEventHandler Unloading;
+    [DomName("onhashchange")] event DomEventHandler HashChanged;
+    [DomName("onmessage")] event DomEventHandler MessageReceived;
+    [DomName("onoffline")] event DomEventHandler WentOffline;
+    [DomName("ononline")] event DomEventHandler WentOnline;
+    [DomName("onpagehide")] event DomEventHandler PageHidden;
+    [DomName("onpageshow")] event DomEventHandler PageShown;
+    [DomName("onpopstate")] event DomEventHandler PopState;
+    [DomName("onstorage")] event DomEventHandler Storage;
+    [DomName("onunload")] event DomEventHandler Unloaded;
+}
+
+================
+File: Core/Dom/AdjacentPosition.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+public enum AdjacentPosition : Byte
+{
+    [DomName("beforebegin")] BeforeBegin,
+    [DomName("afterbegin")] AfterBegin,
+    [DomName("beforeend")] BeforeEnd,
+    [DomName("afterend")] AfterEnd
+}
+
+================
+File: Core/Dom/DocumentPositions.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[Flags]
+[DomName("Document")]
+public enum DocumentPositions : Byte
+{
+    Same = 0,
+    [DomName("DOCUMENT_POSITION_DISCONNECTED")]
+    Disconnected = 0x01,
+    [DomName("DOCUMENT_POSITION_PRECEDING")]
+    Preceding = 0x02,
+    [DomName("DOCUMENT_POSITION_FOLLOWING")]
+    Following = 0x04,
+    [DomName("DOCUMENT_POSITION_CONTAINS")]
+    Contains = 0x08,
+    [DomName("DOCUMENT_POSITION_CONTAINED_BY")]
+    ContainedBy = 0x10,
+    [DomName("DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC")]
+    ImplementationSpecific = 0x20
+}
+
+================
+File: Core/Dom/DocumentReadyState.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+public enum DocumentReadyState : Byte
+{
+    [DomName("loading")] Loading,
+    [DomName("interactive")] Interactive,
+    [DomName("complete")] Complete
+}
+
+================
+File: Core/Dom/DomEventHandler.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Events;
+public delegate void DomEventHandler(Object sender, IEvent ev);
+
+================
+File: Core/Dom/ElementCreationOptions.cs
+================
+namespace AngleSharp.Dom;
+using System;
+public class ElementCreationOptions
+{
+    public String? Is { get; set; }
+}
+
+================
+File: Core/Dom/FilterResult.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("NodeFilter")]
+public enum FilterResult : Byte
+{
+    [DomName("FILTER_ACCEPT")] Accept = 1,
+    [DomName("FILTER_REJECT")] Reject = 2,
+    [DomName("FILTER_SKIP")] Skip = 3
+}
+
+================
+File: Core/Dom/FilterSettings.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[Flags]
+[DomName("NodeFilter")]
+public enum FilterSettings : UInt64
+{
+    [DomName("SHOW_ALL")] All = 0xffffffff,
+    [DomName("SHOW_ELEMENT")] Element = 0x1,
+    [DomName("SHOW_ATTRIBUTE")] [DomHistorical]
+    Attribute = 0x2,
+    [DomName("SHOW_TEXT")] Text = 0x4,
+    [DomName("SHOW_CDATA_SECTION")] [DomHistorical]
+    CharacterData = 0x8,
+    [DomName("SHOW_ENTITY_REFERENCE")] [DomHistorical]
+    EntityReference = 0x10,
+    [DomName("SHOW_ENTITY")] [DomHistorical]
+    Entity = 0x20,
+    [DomName("SHOW_PROCESSING_INSTRUCTION")]
+    ProcessingInstruction = 0x40,
+    [DomName("SHOW_COMMENT")] Comment = 0x80,
+    [DomName("SHOW_DOCUMENT")] Document = 0x100,
+    [DomName("SHOW_DOCUMENT_TYPE")] DocumentType = 0x200,
+    [DomName("SHOW_DOCUMENT_FRAGMENT")] DocumentFragment = 0x400,
+    [DomName("SHOW_NOTATION")] [DomHistorical]
+    Notation = 0x800
+}
+
+================
+File: Core/Dom/IAttr.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("Attr")]
+public interface IAttr : INode, IEquatable<IAttr>
+{
+    [DomName("localName")] String LocalName { get; }
+    [DomName("name")] String Name { get; }
+    [DomName("value")] String Value { get; set; }
+    [DomName("namespaceURI")] String? NamespaceUri { get; }
+    [DomName("prefix")] String? Prefix { get; }
+    [DomName("ownerElement")] IElement? OwnerElement { get; }
+    [DomName("specified")]
+    Boolean IsSpecified { get; }
+}
+
+================
+File: Core/Dom/ICharacterData.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("CharacterData")]
+public interface ICharacterData : INode, IChildNode, INonDocumentTypeChildNode
+{
+    [DomName("data")] String Data { get; set; }
+    [DomName("length")] Int32 Length { get; }
+    [DomName("substringData")]
+    String Substring(Int32 offset, Int32 count);
+    [DomName("appendData")]
+    void Append(String value);
+    [DomName("insertData")]
+    void Insert(Int32 offset, String value);
+    [DomName("deleteData")]
+    void Delete(Int32 offset, Int32 count);
+    [DomName("replaceData")]
+    void Replace(Int32 offset, Int32 count, String value);
+}
+
+================
+File: Core/Dom/IChildNode.cs
+================
+namespace AngleSharp.Dom;
+    using Attributes;
+    [DomName("ChildNode")]
+    [DomNoInterfaceObject]
+    public interface IChildNode
+    {
+        [DomName("before")]
+        void Before(params INode[] nodes);
+        [DomName("after")]
+        void After(params INode[] nodes);
+        [DomName("replace")]
+        void Replace(params INode[] nodes);
+        [DomName("remove")]
+        void Remove();
+    }
+
+================
+File: Core/Dom/IComment.cs
+================
+namespace AngleSharp.Dom;
+using Attributes;
+[DomName("Comment")]
+public interface IComment : ICharacterData
+{
+}
+
+================
+File: Core/Dom/IDocument.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using System.Net;
+using Attributes;
+using Events;
+using Html.Dom;
+using Text;
+[DomName("Document")]
+public interface IDocument : INode, IParentNode, IGlobalEventHandlers, IDocumentStyle, INonElementParentNode, IDisposable
+{
+    [DomName("all")] IHtmlAllCollection All { get; }
+    [DomName("anchors")] IHtmlCollection<IHtmlAnchorElement> Anchors { get; }
+    [DomName("implementation")] IImplementation Implementation { get; }
+    [DomName("designMode")] String DesignMode { get; set; }
+    [DomName("dir")] String? Direction { get; set; }
+    [DomName("documentURI")] String DocumentUri { get; }
+    [DomName("characterSet")] String CharacterSet { get; }
+    [DomName("compatMode")]
+    String CompatMode { get; }
+    [DomName("URL")] String Url { get; }
+    [DomName("contentType")] String ContentType { get; }
+    [DomName("doctype")] IDocumentType Doctype { get; }
+    [DomName("documentElement")] IElement DocumentElement { get; }
+    [DomName("lastModified")] String? LastModified { get; }
+    [DomLenientThis]
+    [DomName("readyState")]
+    DocumentReadyState ReadyState { get; }
+    [DomName("location")]
+    [DomPutForwards("href")]
+    ILocation Location { get; }
+    [DomName("forms")] IHtmlCollection<IHtmlFormElement> Forms { get; }
+    [DomName("images")] IHtmlCollection<IHtmlImageElement> Images { get; }
+    [DomName("scripts")] IHtmlCollection<IHtmlScriptElement> Scripts { get; }
+    [DomName("embeds")]
+    [DomName("plugins")]
+    IHtmlCollection<IHtmlEmbedElement> Plugins { get; }
+    [DomName("commands")] IHtmlCollection<IElement> Commands { get; }
+    [DomName("links")]
+    IHtmlCollection<IElement> Links { get; }
+    [DomName("title")] String? Title { get; set; }
+    [DomName("head")] IHtmlHeadElement? Head { get; }
+    [DomName("body")] IHtmlElement? Body { get; set; }
+    [DomName("cookie")] String Cookie { get; set; }
+    [DomName("origin")] String? Origin { get; }
+    [DomName("domain")] String Domain { get; set; }
+    [DomName("referrer")] String? Referrer { get; }
+    [DomName("activeElement")]
+    IElement? ActiveElement { get; }
+    [DomName("currentScript")] IHtmlScriptElement? CurrentScript { get; }
+    [DomName("defaultView")] IWindow? DefaultView { get; }
+    IBrowsingContext Context { get; }
+    IDocument? ImportAncestor { get; }
+    ITextSource Source { get; }
+    HttpStatusCode StatusCode { get; }
+    IEntityProvider Entities { get; }
+    [DomName("open")]
+    IDocument Open(String type = "text/html", String? replace = null);
+    [DomName("close")]
+    void Close();
+    [DomName("write")]
+    void Write(String content);
+    [DomName("writeln")]
+    void WriteLine(String content);
+    [DomName("load")]
+    void Load(String url);
+    [DomName("getElementsByName")]
+    IHtmlCollection<IElement> GetElementsByName(String name);
+    [DomName("getElementsByClassName")]
+    IHtmlCollection<IElement> GetElementsByClassName(String classNames);
+    [DomName("getElementsByTagName")]
+    IHtmlCollection<IElement> GetElementsByTagName(String tagName);
+    [DomName("getElementsByTagNameNS")]
+    IHtmlCollection<IElement> GetElementsByTagName(String? namespaceUri, String tagName);
+    [DomName("createEvent")]
+    IEvent CreateEvent(String type);
+    [DomName("createRange")]
+    IRange CreateRange();
+    [DomName("createComment")]
+    IComment CreateComment(String data);
+    [DomName("createDocumentFragment")]
+    IDocumentFragment CreateDocumentFragment();
+    [DomName("createElement")]
+    IElement CreateElement(String name);
+    [DomName("createElementNS")]
+    IElement CreateElement(String? namespaceUri, String name);
+    [DomName("createElementNS")]
+    IElement CreateElement(String? namespaceUri, String name, ElementCreationOptions? options);
+    [DomName("createElement")]
+    IElement CreateElement(String name, ElementCreationOptions? options);
+    [DomName("createAttribute")]
+    IAttr CreateAttribute(String name);
+    [DomName("createAttributeNS")]
+    IAttr CreateAttribute(String? namespaceUri, String name);
+    [DomName("createProcessingInstruction")]
+    IProcessingInstruction CreateProcessingInstruction(String target, String data);
+    [DomName("createTextNode")]
+    IText CreateTextNode(String data);
+    [DomName("createNodeIterator")]
+    INodeIterator CreateNodeIterator(INode root, FilterSettings settings = FilterSettings.All, NodeFilter? filter = null);
+    [DomName("createTreeWalker")]
+    ITreeWalker CreateTreeWalker(INode root, FilterSettings settings = FilterSettings.All, NodeFilter? filter = null);
+    [DomName("importNode")]
+    INode Import(INode externalNode, Boolean deep = true);
+    [DomName("adoptNode")]
+    INode Adopt(INode externalNode);
+    [DomName("onreadystatechange")] event DomEventHandler ReadyStateChanged;
+    [DomName("hasFocus")]
+    Boolean HasFocus();
+    [DomName("execCommand")]
+    Boolean ExecuteCommand(String commandId, Boolean showUserInterface = false, String value = "");
+    [DomName("queryCommandEnabled")]
+    Boolean IsCommandEnabled(String commandId);
+    [DomName("queryCommandIndeterm")]
+    Boolean IsCommandIndeterminate(String commandId);
+    [DomName("queryCommandState")]
+    Boolean IsCommandExecuted(String commandId);
+    [DomName("queryCommandSupported")]
+    Boolean IsCommandSupported(String commandId);
+    [DomName("queryCommandValue")]
+    String? GetCommandValue(String commandId);
+    Boolean AddImportUrl(Uri uri);
+    Boolean HasImported(Uri uri);
+}
+
+================
+File: Core/Dom/IDocumentFragment.cs
+================
+namespace AngleSharp.Dom;
+using Attributes;
+[DomName("DocumentFragment")]
+public interface IDocumentFragment : INode, IParentNode, INonElementParentNode
+{
+}
+
+================
+File: Core/Dom/IDocumentStyle.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("DocumentStyle")]
+[DomNoInterfaceObject]
+public interface IDocumentStyle
+{
+    [DomName("styleSheets")] IStyleSheetList StyleSheets { get; }
+    [DomName("selectedStyleSheetSet")]
+    String? SelectedStyleSheetSet { get; set; }
+    [DomName("lastStyleSheetSet")] String? LastStyleSheetSet { get; }
+    [DomName("preferredStyleSheetSet")] String? PreferredStyleSheetSet { get; }
+    [DomName("styleSheetSets")]
+    IStringList StyleSheetSets { get; }
+    [DomName("enableStyleSheetsForSet")]
+    void EnableStyleSheetsForSet(String name);
+}
+
+================
+File: Core/Dom/IDocumentType.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("DocumentType")]
+public interface IDocumentType : INode, IChildNode
+{
+    [DomName("name")]
+    String Name { get; }
+    [DomName("publicId")]
+    String PublicIdentifier { get; }
+    [DomName("systemId")]
+    String SystemIdentifier { get; }
+}
+
+================
+File: Core/Dom/IElement.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("Element")]
+public interface IElement : INode, IParentNode, IChildNode, INonDocumentTypeChildNode
+{
+    String? GivenNamespaceUri { get; }
+    [DomName("prefix")] String? Prefix { get; }
+    [DomName("localName")] String LocalName { get; }
+    [DomName("namespaceURI")] String? NamespaceUri { get; }
+    [DomName("attributes")] INamedNodeMap Attributes { get; }
+    [DomName("classList")] ITokenList ClassList { get; }
+    [DomName("className")] String? ClassName { get; set; }
+    [DomName("id")] String? Id { get; set; }
+    [DomName("innerHTML")]
+    String InnerHtml { get; set; }
+    [DomName("outerHTML")]
+    String OuterHtml { get; set; }
+    [DomName("tagName")] String TagName { get; }
+    [DomName("assignedSlot")] IElement? AssignedSlot { get; }
+    [DomName("slot")] String? Slot { get; set; }
+    [DomName("shadowRoot")] IShadowRoot? ShadowRoot { get; }
+    Boolean IsFocused { get; }
+    ISourceReference? SourceReference { get; }
+    [DomName("insertAdjacentHTML")]
+    void Insert(AdjacentPosition position, String html);
+    [DomName("hasAttribute")]
+    Boolean HasAttribute(String name);
+    [DomName("hasAttributeNS")]
+    Boolean HasAttribute(String? namespaceUri, String localName);
+    [DomName("getAttribute")]
+    String? GetAttribute(String name);
+    [DomName("getAttributeNS")]
+    String? GetAttribute(String? namespaceUri, String localName);
+    [DomName("setAttribute")]
+    void SetAttribute(String name, String? value);
+    [DomName("setAttributeNS")]
+    void SetAttribute(String? namespaceUri, String name, String? value);
+    [DomName("removeAttribute")]
+    Boolean RemoveAttribute(String name);
+    [DomName("removeAttributeNS")]
+    Boolean RemoveAttribute(String? namespaceUri, String localName);
+    [DomName("getElementsByClassName")]
+    IHtmlCollection<IElement> GetElementsByClassName(String classNames);
+    [DomName("getElementsByTagName")]
+    IHtmlCollection<IElement> GetElementsByTagName(String tagName);
+    [DomName("getElementsByTagNameNS")]
+    IHtmlCollection<IElement> GetElementsByTagNameNS(String? namespaceUri, String tagName);
+    [DomName("matches")]
+    Boolean Matches(String selectors);
+    [DomName("closest")]
+    IElement? Closest(String selectors);
+    [DomName("attachShadow")]
+    [DomInitDict]
+    IShadowRoot AttachShadow(ShadowRootMode mode = ShadowRootMode.Open);
+}
+
+================
+File: Core/Dom/IEntityProvider.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Common;
+public interface IEntityProvider
+{
+    String? GetSymbol(String name);
+}
+public interface IEntityProviderExtended
+{
+    String? GetSymbol(IStringOrMemory name);
+}
+
+================
+File: Core/Dom/IEventTarget.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+using Events;
+[DomName("EventTarget")]
+public interface IEventTarget
+{
+    [DomName("addEventListener")]
+    void AddEventListener(String type, DomEventHandler? callback = null, Boolean capture = false);
+    [DomName("removeEventListener")]
+    void RemoveEventListener(String type, DomEventHandler? callback = null, Boolean capture = false);
+    void InvokeEventListener(IEvent ev);
+    [DomName("dispatchEvent")]
+    Boolean Dispatch(IEvent ev);
+    event EventHandler<EventSyncedArgs>? EventSynced;
+    event EventHandler<EventUnregisteredArgs>? EventUnregistered;
+}
+public class EventSyncedArgs : EventArgs
+{
+    public EventSyncedArgs(String eventType, DomEventHandler callback)
+    {
+        EventType = eventType;
+        Callback = callback;
+    }
+    public String EventType { get; }
+    public DomEventHandler Callback { get; }
+}
+public class EventUnregisteredArgs : EventArgs
+{
+    public EventUnregisteredArgs(String eventType)
+    {
+        EventType = eventType;
+    }
+    public String EventType { get; }
+}
+
+================
+File: Core/Dom/IHtmlAllCollection.cs
+================
+namespace AngleSharp.Dom;
+using Attributes;
+[DomName("HTMLAllCollection")]
+public interface IHtmlAllCollection : IHtmlCollection<IElement>
+{
+}
+
+================
+File: Core/Dom/IHtmlCollection.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using System.Collections.Generic;
+using Attributes;
+[DomName("HTMLCollection")]
+public interface IHtmlCollection<T> : IEnumerable<T>
+    where T : IElement
+{
+    [DomName("length")]
+    Int32 Length { get; }
+    [DomName("item")]
+    [DomAccessor(Accessors.Getter)]
+    T this[Int32 index] { get; }
+    [DomName("namedItem")]
+    [DomAccessor(Accessors.Getter)]
+    T? this[String id] { get; }
+}
+
+================
+File: Core/Dom/IImplementation.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("DOMImplementation")]
+public interface IImplementation
+{
+    [DomName("createHTMLDocument")]
+    IDocument CreateHtmlDocument(String title);
+    [DomName("createDocumentType")]
+    IDocumentType CreateDocumentType(String qualifiedName, String publicId, String systemId);
+    [DomName("hasFeature")]
+    Boolean HasFeature(String feature, String? version = null);
+}
+
+================
+File: Core/Dom/ILocation.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("Location")]
+public interface ILocation : IUrlUtilities
+{
+    [DomName("assign")]
+    void Assign(String url);
+    [DomName("replace")]
+    void Replace(String url);
+    [DomName("reload")]
+    void Reload();
+}
+
+================
+File: Core/Dom/INamedNodeMap.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using System.Collections.Generic;
+using Attributes;
+[DomName("NamedNodeMap")]
+public interface INamedNodeMap : IEnumerable<IAttr>
+{
+    [DomName("item")]
+    [DomAccessor(Accessors.Getter)]
+    IAttr? this[Int32 index] { get; }
+    [DomAccessor(Accessors.Getter)]
+    IAttr? this[String name] { get; }
+    [DomName("length")]
+    Int32 Length { get; }
+    [DomName("getNamedItem")]
+    IAttr? GetNamedItem(String name);
+    [DomName("setNamedItem")]
+    IAttr? SetNamedItem(IAttr item);
+    [DomName("removeNamedItem")]
+    IAttr RemoveNamedItem(String name);
+    [DomName("getNamedItemNS")]
+    IAttr? GetNamedItem(String? namespaceUri, String localName);
+    [DomName("setNamedItemNS")]
+    IAttr? SetNamedItemWithNamespaceUri(IAttr item);
+    [DomName("removeNamedItemNS")]
+    IAttr RemoveNamedItem(String? namespaceUri, String localName);
+}
+
+================
+File: Core/Dom/INode.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using System.Diagnostics.CodeAnalysis;
+using Attributes;
+[DomName("Node")]
+public interface INode : IEventTarget, IMarkupFormattable
+{
+    [DomName("baseURI")]
+    String BaseUri { get; }
+    IUrl? BaseUrl { get; }
+    [DomName("nodeName")]
+    String NodeName { get; }
+    [DomName("childNodes")]
+    INodeList ChildNodes { get; }
+    [DomName("ownerDocument")]
+    IDocument? OwnerDocument { get; }
+    [DomName("parentElement")]
+    IElement? ParentElement { get; }
+    [DomName("parentNode")]
+    INode? Parent { get; }
+    [DomName("firstChild")]
+    INode? FirstChild { get; }
+    [DomName("lastChild")]
+    INode? LastChild { get; }
+    [DomName("nextSibling")]
+    INode? NextSibling { get; }
+    [DomName("previousSibling")]
+    INode? PreviousSibling { get; }
+    [DomName("nodeType")]
+    Int32 NodeType { get; }
+    [DomName("nodeValue")]
+    String NodeValue { get; set; }
+    [DomName("textContent")]
+    String TextContent { get; set; }
+    [DomName("hasChildNodes")]
+    [MemberNotNullWhen(true, nameof(ChildNodes), nameof(FirstChild), nameof(LastChild))]
+    Boolean HasChildNodes { get; }
+    NodeFlags Flags { get; }
+    [DomName("cloneNode")]
+    INode Clone(Boolean deep = true);
+    [DomName("isEqualNode")]
+    Boolean Equals(INode otherNode);
+    [DomName("compareDocumentPosition")]
+    DocumentPositions CompareDocumentPosition(INode otherNode);
+    [DomName("normalize")]
+    void Normalize();
+    [DomName("contains")]
+    Boolean Contains(INode otherNode);
+    [DomName("isDefaultNamespace")]
+    Boolean IsDefaultNamespace(String namespaceUri);
+    [DomName("lookupNamespaceURI")]
+    String? LookupNamespaceUri(String prefix);
+    [DomName("lookupPrefix")]
+    String? LookupPrefix(String? namespaceUri);
+    [DomName("appendChild")]
+    INode AppendChild(INode child);
+    [DomName("insertBefore")]
+    INode InsertBefore(INode newElement, INode? referenceElement);
+    [DomName("removeChild")]
+    INode RemoveChild(INode child);
+    [DomName("replaceChild")]
+    INode ReplaceChild(INode newChild, INode oldChild);
+}
+
+================
+File: Core/Dom/INodeIterator.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("NodeIterator")]
+public interface INodeIterator
+{
+    [DomName("root")]
+    INode Root { get; }
+    [DomName("referenceNode")]
+    INode Reference { get; }
+    [DomName("pointerBeforeReferenceNode")]
+    Boolean IsBeforeReference { get; }
+    [DomName("whatToShow")]
+    FilterSettings Settings { get; }
+    [DomName("filter")]
+    NodeFilter Filter { get; }
+    [DomName("nextNode")]
+    INode? Next();
+    [DomName("previousNode")]
+    INode? Previous();
+}
+
+================
+File: Core/Dom/INodeList.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using System.Collections.Generic;
+using Attributes;
+[DomName("NodeList")]
+public interface INodeList : IEnumerable<INode>, IMarkupFormattable
+{
+    [DomName("item")]
+    [DomAccessor(Accessors.Getter)]
+    INode this[Int32 index] { get; }
+    [DomName("length")]
+    Int32 Length { get; }
+}
+
+================
+File: Core/Dom/INonDocumentTypeChildNode.cs
+================
+namespace AngleSharp.Dom;
+using Attributes;
+[DomName("NonDocumentTypeChildNode")]
+[DomNoInterfaceObject]
+public interface INonDocumentTypeChildNode
+{
+    [DomName("nextElementSibling")]
+    IElement? NextElementSibling { get; }
+    [DomName("previousElementSibling")]
+    IElement? PreviousElementSibling { get; }
+}
+
+================
+File: Core/Dom/INonElementParentNode.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("NonElementParentNode")]
+[DomNoInterfaceObject]
+public interface INonElementParentNode
+{
+    [DomName("getElementById")]
+    IElement? GetElementById(String elementId);
+}
+
+================
+File: Core/Dom/IParentNode.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("ParentNode")]
+[DomNoInterfaceObject]
+public interface IParentNode
+{
+    [DomName("children")]
+    IHtmlCollection<IElement> Children { get; }
+    [DomName("firstElementChild")]
+    IElement? FirstElementChild { get; }
+    [DomName("lastElementChild")]
+    IElement? LastElementChild { get; }
+    [DomName("childElementCount")]
+    Int32 ChildElementCount { get; }
+    [DomName("append")]
+    void Append(params INode[] nodes);
+    [DomName("prepend")]
+    void Prepend(params INode[] nodes);
+    [DomName("querySelector")]
+    IElement? QuerySelector(String selectors);
+    [DomName("querySelectorAll")]
+    IHtmlCollection<IElement> QuerySelectorAll(String selectors);
+}
+
+================
+File: Core/Dom/IProcessingInstruction.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("ProcessingInstruction")]
+public interface IProcessingInstruction : ICharacterData
+{
+    [DomName("target")]
+    String Target { get; }
+}
+
+================
+File: Core/Dom/IRange.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("Range")]
+public interface IRange
+{
+    [DomName("startContainer")]
+    INode Head { get; }
+    [DomName("startOffset")]
+    Int32 Start { get; }
+    [DomName("endContainer")]
+    INode Tail { get; }
+    [DomName("endOffset")]
+    Int32 End { get; }
+    [DomName("collapsed")]
+    Boolean IsCollapsed { get; }
+    [DomName("commonAncestorContainer")]
+    INode CommonAncestor { get; }
+    [DomName("setStart")]
+    void StartWith(INode refNode, Int32 offset);
+    [DomName("setEnd")]
+    void EndWith(INode refNode, Int32 offset);
+    [DomName("setStartBefore")]
+    void StartBefore(INode refNode);
+    [DomName("setEndBefore")]
+    void EndBefore(INode refNode);
+    [DomName("setStartAfter")]
+    void StartAfter(INode refNode);
+    [DomName("setEndAfter")]
+    void EndAfter(INode refNode);
+    [DomName("collapse")]
+    void Collapse(Boolean toStart);
+    [DomName("selectNode")]
+    void Select(INode refNode);
+    [DomName("selectNodeContents")]
+    void SelectContent(INode refNode);
+    [DomName("deleteContents")]
+    void ClearContent();
+    [DomName("extractContents")]
+    IDocumentFragment ExtractContent();
+    [DomName("cloneContents")]
+    IDocumentFragment CopyContent();
+    [DomName("insertNode")]
+    void Insert(INode node);
+    [DomName("surroundContents")]
+    void Surround(INode newParent);
+    [DomName("cloneRange")]
+    IRange Clone();
+    [DomName("detach")]
+    void Detach();
+    [DomName("isPointInRange")]
+    Boolean Contains(INode node, Int32 offset);
+    [DomName("compareBoundaryPoints")]
+    RangePosition CompareBoundaryTo(RangeType how, IRange sourceRange);
+    [DomName("comparePoint")]
+    RangePosition CompareTo(INode node, Int32 offset);
+    [DomName("intersectsNode")]
+    Boolean Intersects(INode node);
+}
+
+================
+File: Core/Dom/ISettableTokenList.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("DOMSettableTokenList")]
+public interface ISettableTokenList : ITokenList
+{
+    [DomName("value")]
+    String Value { get; set; }
+}
+
+================
+File: Core/Dom/IShadowRoot.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("ShadowRoot")]
+public interface IShadowRoot : IDocumentFragment
+{
+    [DomName("activeElement")]
+    IElement? ActiveElement { get; }
+    [DomName("host")]
+    IElement Host { get; }
+    [DomName("innerHTML")]
+    String InnerHtml { get; set; }
+    ShadowRootMode Mode { get; }
+    [DomName("styleSheets")]
+    IStyleSheetList StyleSheets { get; }
+}
+
+================
+File: Core/Dom/ISourceReference.cs
+================
+namespace AngleSharp.Dom;
+using Text;
+public interface ISourceReference
+{
+    ITextPosition Position { get; }
+}
+
+================
+File: Core/Dom/IStringList.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using System.Collections.Generic;
+using Attributes;
+[DomName("DOMStringList")]
+public interface IStringList : IEnumerable<String>
+{
+    [DomName("item")]
+    [DomAccessor(Accessors.Getter)]
+    String this[Int32 index] { get; }
+    [DomName("length")]
+    Int32 Length { get; }
+    [DomName("contains")]
+    Boolean Contains(String entry);
+}
+
+================
+File: Core/Dom/IStringMap.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using System.Collections.Generic;
+using Attributes;
+[DomName("DOMStringMap")]
+public interface IStringMap : IEnumerable<KeyValuePair<String, String>>
+{
+    [DomAccessor(Accessors.Getter | Accessors.Setter)]
+    String? this[String name] { get; set; }
+    [DomAccessor(Accessors.Deleter)]
+    void Remove(String name);
+}
+
+================
+File: Core/Dom/IStyleSheet.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+using Css.Dom;
+using Text;
+[DomName("StyleSheet")]
+public interface IStyleSheet : IStyleFormattable
+{
+    [DomName("type")]
+    String Type { get; }
+    [DomName("href")]
+    String Href { get; }
+    [DomName("ownerNode")]
+    IElement OwnerNode { get; }
+    [DomName("title")]
+    String Title { get; }
+    [DomName("media")]
+    [DomPutForwards("mediaText")]
+    IMediaList Media { get; }
+    [DomName("disabled")]
+    Boolean IsDisabled { get; set; }
+    IBrowsingContext Context { get; }
+    ITextSource Source { get; }
+    void SetOwner(IElement element);
+    String LocateNamespace(String prefix);
+}
+
+================
+File: Core/Dom/IStyleSheetList.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using System.Collections.Generic;
+using Attributes;
+[DomName("StyleSheetList")]
+public interface IStyleSheetList : IEnumerable<IStyleSheet>
+{
+    [DomName("item")]
+    [DomAccessor(Accessors.Getter)]
+    IStyleSheet? this[Int32 index] { get; }
+    [DomName("length")]
+    Int32 Length { get; }
+}
+
+================
+File: Core/Dom/IText.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("Text")]
+public interface IText : ICharacterData
+{
+    [DomName("wholeText")]
+    String Text { get; }
+    [DomName("assignedSlot")]
+    IElement? AssignedSlot { get; }
+    [DomName("splitText")]
+    IText Split(Int32 offset);
+}
+
+================
+File: Core/Dom/ITokenList.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using System.Collections.Generic;
+using Attributes;
+[DomName("DOMTokenList")]
+public interface ITokenList : IEnumerable<String>
+{
+    [DomName("length")]
+    Int32 Length { get; }
+    [DomName("item")]
+    [DomAccessor(Accessors.Getter)]
+    String this[Int32 index] { get; }
+    [DomName("contains")]
+    Boolean Contains(String token);
+    [DomName("add")]
+    void Add(params String[] tokens);
+    [DomName("remove")]
+    void Remove(params String[] tokens);
+    [DomName("toggle")]
+    Boolean Toggle(String token, Boolean force = false);
+}
+
+================
+File: Core/Dom/ITreeWalker.cs
+================
+namespace AngleSharp.Dom;
+using Attributes;
+[DomName("TreeWalker")]
+public interface ITreeWalker
+{
+    [DomName("root")]
+    INode Root { get; }
+    [DomName("currentNode")]
+    INode Current { get; set; }
+    [DomName("whatToShow")]
+    FilterSettings Settings { get; }
+    [DomName("filter")]
+    NodeFilter Filter { get; }
+    [DomName("nextNode")]
+    INode? ToNext();
+    [DomName("previousNode")]
+    INode? ToPrevious();
+    [DomName("parentNode")]
+    INode? ToParent();
+    [DomName("firstChild")]
+    INode? ToFirst();
+    [DomName("lastChild")]
+    INode? ToLast();
+    [DomName("previousSibling")]
+    INode? ToPreviousSibling();
+    [DomName("nextSibling")]
+    INode? ToNextSibling();
+}
+
+================
+File: Core/Dom/IUrl.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("URL")]
+[DomExposed("Window")]
+[DomExposed("Worker")]
+public interface IUrl : IEquatable<IUrl>
+{
+    [DomName("origin")]
+    String? Origin { get; }
+    Boolean IsInvalid { get; }
+    Boolean IsRelative { get; }
+    Boolean IsAbsolute { get; }
+    [DomName("username")]
+    String? UserName { get; set; }
+    [DomName("password")]
+    String? Password { get; set; }
+    String Data { get; }
+    String? Fragment { get; set; }
+    [DomName("hash")]
+    String Hash { get; set; }
+    [DomName("host")]
+    String Host { get; set; }
+    [DomName("hostname")]
+    String HostName { get; set; }
+    [DomName("href")]
+    String Href { get; set; }
+    String Path { get; set; }
+    [DomName("pathname")]
+    String PathName { get; set; }
+    [DomName("port")]
+    String Port { get; set; }
+    String Scheme { get; set; }
+    [DomName("protocol")]
+    String Protocol { get; set; }
+    String? Query { get; set; }
+    [DomName("search")]
+    String Search { get; set; }
+    [DomName("searchParams")]
+    IUrlSearchParams SearchParams { get; }
+    [DomName("toJSON")]
+    String ToJson();
+}
+
+================
+File: Core/Dom/IUrlSearchParams.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("URLSearchParams")]
+[DomExposed("Window")]
+[DomExposed("Worker")]
+public interface IUrlSearchParams
+{
+    [DomName("append")]
+    void Append(String name, String value);
+    [DomName("delete")]
+    void Delete(String name);
+    [DomName("get")]
+    String? Get(String name);
+    [DomName("getAll")]
+    String[] GetAll(String name);
+    [DomName("has")]
+    Boolean Has(String name);
+    [DomName("set")]
+    void Set(String name, String value);
+    [DomName("sort")]
+    void Sort();
+}
+
+================
+File: Core/Dom/IUrlUtilities.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("URLUtils")]
+[DomNoInterfaceObject]
+public interface IUrlUtilities
+{
+    [DomName("href")]
+    String Href { get; set; }
+    [DomName("protocol")]
+    String Protocol { get; set; }
+    [DomName("host")]
+    String Host { get; set; }
+    [DomName("hostname")]
+    String HostName { get; set; }
+    [DomName("port")]
+    String Port { get; set; }
+    [DomName("pathname")]
+    String PathName { get; set; }
+    [DomName("search")]
+    String Search { get; set; }
+    [DomName("hash")]
+    String Hash { get; set; }
+    [DomName("username")]
+    String? UserName { get; set; }
+    [DomName("password")]
+    String? Password { get; set; }
+    [DomName("origin")]
+    String? Origin { get; }
+}
+
+================
+File: Core/Dom/IWindow.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+using Browser.Dom;
+using Events;
+[DomName("Window")]
+public interface IWindow : IEventTarget, IGlobalEventHandlers, IWindowEventHandlers, IWindowTimers, IDisposable
+{
+    [DomName("document")]
+    IDocument Document { get; }
+    [DomName("location")]
+    [DomPutForwards("href")]
+    ILocation Location { get; }
+    [DomName("closed")]
+    Boolean IsClosed { get; }
+    [DomName("status")]
+    String? Status { get; set; }
+    [DomName("name")]
+    String? Name { get; set; }
+    [DomName("outerHeight")]
+    Int32 OuterHeight { get; }
+    [DomName("outerWidth")]
+    Int32 OuterWidth { get; }
+    [DomName("screenX")]
+    Int32 ScreenX { get; }
+    [DomName("screenY")]
+    Int32 ScreenY { get; }
+    [DomName("window")]
+    [DomName("frames")]
+    [DomName("self")]
+    IWindow? Proxy { get; }
+    [DomName("navigator")]
+    INavigator? Navigator { get; }
+    [DomName("history")]
+    IHistory? History { get; }
+    [DomName("close")]
+    void Close();
+    IWindow Open(String url = "about:blank", String? name = null, String? features = null, String? replace = null);
+    [DomName("stop")]
+    void Stop();
+    [DomName("focus")]
+    void Focus();
+    [DomName("blur")]
+    void Blur();
+    [DomName("alert")]
+    void Alert(String message);
+    [DomName("confirm")]
+    Boolean Confirm(String message);
+    [DomName("print")]
+    void Print();
+}
+
+================
+File: Core/Dom/IWindowTimers.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("WindowTimers")]
+[DomNoInterfaceObject]
+public interface IWindowTimers
+{
+    [DomName("setTimeout")]
+    Int32 SetTimeout(Action<IWindow> handler, Int32 timeout = 0);
+    [DomName("clearTimeout")]
+    void ClearTimeout(Int32 handle = 0);
+    [DomName("setInterval")]
+    Int32 SetInterval(Action<IWindow> handler, Int32 timeout = 0);
+    [DomName("clearInterval")]
+    void ClearInterval(Int32 handle = 0);
+}
+
+================
+File: Core/Dom/NodeFilter.cs
+================
+namespace AngleSharp.Dom;
+public delegate FilterResult NodeFilter(INode node);
+
+================
+File: Core/Dom/NodeFlags.cs
+================
+namespace AngleSharp.Dom;
+using System;
+[Flags]
+public enum NodeFlags : UInt32
+{
+    None = 0x0,
+    SelfClosing = 0x1,
+    Special = 0x2,
+    LiteralText = 0x4,
+    LineTolerance = 0x8,
+    ImplicitlyClosed = 0x10,
+    ImpliedEnd = 0x20,
+    Scoped = 0x40,
+    HtmlMember = 0x100,
+    HtmlTip = 0x200,
+    HtmlFormatting = 0x800,
+    HtmlListScoped = 0x1000,
+    HtmlSelectScoped = 0x2000,
+    HtmlTableSectionScoped = 0x4000,
+    HtmlTableScoped = 0x8000,
+    MathMember = 0x10000,
+    MathTip = 0x20000,
+    SvgMember = 0x1000000,
+    SvgTip = 0x2000000
+}
+
+================
+File: Core/Dom/RangePosition.cs
+================
+namespace AngleSharp.Dom;
+using System;
+public enum RangePosition : Int16
+{
+    Before = -1,
+    Equal = 0,
+    After = 1
+}
+
+================
+File: Core/Dom/RangeType.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("Range")]
+public enum RangeType : Byte
+{
+    [DomName("START_TO_START")] StartToStart = 0,
+    [DomName("START_TO_END")] StartToEnd = 1,
+    [DomName("END_TO_END")] EndToEnd = 2,
+    [DomName("END_TO_START")] EndToStart = 3
+}
+
+================
+File: Core/Dom/ShadowRootMode.cs
+================
+namespace AngleSharp.Dom;
+using System;
+using Attributes;
+[DomName("ShadowRootMode")]
+[DomLiterals]
+public enum ShadowRootMode : Byte
+{
+    [DomName("open")] Open = 0,
+    [DomName("closed")] Closed = 1
+}
+
+================
+File: Core/Html/Dom/IHtmlAnchorElement.cs
+================
+namespace AngleSharp.Html.Dom;
+using System;
+using AngleSharp.Dom;
+using Attributes;
+[DomName("HTMLAnchorElement")]
+public interface IHtmlAnchorElement : IHtmlElement, IUrlUtilities
+{
+    [DomName("target")]
+    String? Target { get; set; }
+    [DomName("download")]
+    String? Download { get; set; }
+    [DomName("ping")]
+    ISettableTokenList Ping { get; }
+    [DomName("rel")]
+    String? Relation { get; set; }
+    [DomName("relList")]
+    ITokenList RelationList { get; }
+    [DomName("hreflang")]
+    String? TargetLanguage { get; set; }
+    [DomName("type")]
+    String? Type { get; }
+    [DomName("text")]
+    String Text { get; }
+}
+
+================
+File: Core/Html/Dom/IHtmlElement.cs
+================
+namespace AngleSharp.Html.Dom;
+using System;
+using AngleSharp.Dom;
+using AngleSharp.Dom.Events;
+using Attributes;
+using Css.Dom;
+[DomName("HTMLElement")]
+public interface IHtmlElement : IElement, IGlobalEventHandlers
+{
+    [DomName("style")]
+    ICssStyleDeclarationBase Style { get; }
+    [DomName("lang")]
+    String? Language { get; set; }
+    [DomName("title")]
+    String? Title { get; set; }
+    [DomName("dir")]
+    String? Direction { get; set; }
+    [DomName("dataset")]
+    IStringMap Dataset { get; }
+    [DomName("translate")]
+    Boolean IsTranslated { get; set; }
+    [DomName("tabIndex")]
+    Int32 TabIndex { get; set; }
+    [DomName("spellcheck")]
+    Boolean IsSpellChecked { get; set; }
+    [DomName("contentEditable")]
+    String? ContentEditable { get; set; }
+    [DomName("isContentEditable")]
+    Boolean IsContentEditable { get; }
+    [DomName("hidden")]
+    Boolean IsHidden { get; set; }
+    [DomName("draggable")]
+    Boolean IsDraggable { get; set; }
+    [DomName("accessKey")]
+    String? AccessKey { get; set; }
+    [DomName("accessKeyLabel")]
+    String? AccessKeyLabel { get; }
+    [DomName("contextMenu")]
+    IHtmlMenuElement? ContextMenu { get; set; }
+    [DomName("dropzone")]
+    [DomPutForwards("value")]
+    ISettableTokenList DropZone { get; }
+    [DomName("click")]
+    void DoClick();
+    [DomName("focus")]
+    void DoFocus();
+    [DomName("blur")]
+    void DoBlur();
+    [DomName("forceSpellCheck")]
+    void DoSpellCheck();
+}
+
+================
+File: Core/Html/Dom/IHtmlEmbedElement.cs
+================
+namespace AngleSharp.Html.Dom;
+using System;
+using Attributes;
+using Io;
+[DomName("HTMLEmbedElement")]
+public interface IHtmlEmbedElement : IHtmlElement, ILoadableElement
+{
+    [DomName("src")]
+    String? Source { get; set; }
+    [DomName("type")]
+    String? Type { get; set; }
+    [DomName("width")]
+    String? DisplayWidth { get; set; }
+    [DomName("height")]
+    String? DisplayHeight { get; set; }
+}
+
+================
+File: Core/Html/Dom/IHtmlFormControlsCollection.cs
+================
+namespace AngleSharp.Html.Dom;
+using AngleSharp.Dom;
+using Attributes;
+[DomName("HTMLFormControlsCollection")]
+public interface IHtmlFormControlsCollection : IHtmlCollection<IHtmlElement>
+{
+}
+
+================
+File: Core/Html/Dom/IHtmlFormElement.cs
+================
+namespace AngleSharp.Html.Dom;
+using System;
+using System.Threading.Tasks;
+using AngleSharp.Dom;
+using Attributes;
+using Io;
+[DomName("HTMLFormElement")]
+public interface IHtmlFormElement : IHtmlElement
+{
+    [DomName("acceptCharset")]
+    String? AcceptCharset { get; set; }
+    [DomName("action")]
+    String Action { get; set; }
+    [DomName("autocomplete")]
+    String? Autocomplete { get; set; }
+    [DomName("enctype")]
+    String? Enctype { get; set; }
+    [DomName("encoding")]
+    String Encoding { get; set; }
+    [DomName("method")]
+    String Method { get; set; }
+    [DomName("name")]
+    String? Name { get; set; }
+    [DomName("noValidate")]
+    Boolean NoValidate { get; set; }
+    [DomName("target")]
+    String Target { get; set; }
+    [DomName("length")]
+    Int32 Length { get; }
+    [DomName("elements")]
+    IHtmlFormControlsCollection Elements { get; }
+    [DomAccessor(Accessors.Getter)]
+    IElement? this[Int32 index] { get; }
+    [DomAccessor(Accessors.Getter)]
+    IElement? this[String name] { get; }
+    [DomName("submit")]
+    Task<IDocument> SubmitAsync();
+    Task<IDocument> SubmitAsync(IHtmlElement sourceElement);
+    IDocumentRequest? GetSubmission();
+    IDocumentRequest? GetSubmission(IHtmlElement sourceElement);
+    [DomName("reset")]
+    void Reset();
+    [DomName("checkValidity")]
+    Boolean CheckValidity();
+    [DomName("reportValidity")]
+    Boolean ReportValidity();
+    [DomName("requestAutocomplete")]
+    void RequestAutocomplete();
+}
+
+================
+File: Core/Html/Dom/IHtmlHeadElement.cs
+================
+namespace AngleSharp.Html.Dom;
+using Attributes;
+[DomName("HTMLHeadElement")]
+public interface IHtmlHeadElement : IHtmlElement
+{
+}
+
+================
+File: Core/Html/Dom/IHtmlImageElement.cs
+================
+namespace AngleSharp.Html.Dom;
+using System;
+using Attributes;
+using Io;
+[DomName("HTMLImageElement")]
+public interface IHtmlImageElement : IHtmlElement, ILoadableElement
+{
+    [DomName("alt")]
+    String? AlternativeText { get; set; }
+    [DomName("currentSrc")]
+    String? ActualSource { get; }
+    [DomName("src")]
+    String? Source { get; set; }
+    [DomName("srcset")]
+    String? SourceSet { get; set; }
+    [DomName("sizes")]
+    String? Sizes { get; set; }
+    [DomName("crossOrigin")]
+    String? CrossOrigin { get; set; }
+    [DomName("useMap")]
+    String? UseMap { get; set; }
+    [DomName("isMap")]
+    Boolean IsMap { get; set; }
+    [DomName("width")]
+    Int32 DisplayWidth { get; set; }
+    [DomName("height")]
+    Int32 DisplayHeight { get; set; }
+    [DomName("naturalWidth")]
+    Int32 OriginalWidth { get; }
+    [DomName("naturalHeight")]
+    Int32 OriginalHeight { get; }
+    [DomName("complete")]
+    Boolean IsCompleted { get; }
+}
+
+================
+File: Core/Html/Dom/IHtmlMenuElement.cs
+================
+namespace AngleSharp.Html.Dom;
+using System;
+using Attributes;
+[DomName("HTMLMenuElement")]
+public interface IHtmlMenuElement : IHtmlElement
+{
+    [DomName("label")]
+    String? Label { get; set; }
+    [DomName("type")]
+    String? Type { get; set; }
+}
+
+================
+File: Core/Html/Dom/IHtmlScriptElement.cs
+================
+namespace AngleSharp.Html.Dom;
+using System;
+using Attributes;
+using Io;
+[DomName("HTMLScriptElement")]
+public interface IHtmlScriptElement : IHtmlElement, ILoadableElement
+{
+    [DomName("src")]
+    String? Source { get; set; }
+    [DomName("async")]
+    Boolean IsAsync { get; set; }
+    [DomName("defer")]
+    Boolean IsDeferred { get; set; }
+    [DomName("type")]
+    String? Type { get; set; }
+    [DomName("charset")]
+    String? CharacterSet { get; set; }
+    [DomName("crossOrigin")]
+    String? CrossOrigin { get; set; }
+    [DomName("text")]
+    String Text { get; set; }
+    [DomName("integrity")]
+    String? Integrity { get; set; }
+}
+
+================
+File: Core/Html/EventFlags.cs
+================
+namespace AngleSharp.Html;
+using System;
+[Flags]
+internal enum EventFlags : Byte
+{
+    None = 0,
+    StopPropagation = 0x1,
+    StopImmediatePropagation = 0x2,
+    Canceled = 0x4,
+    Initialized = 0x8,
+    Dispatch = 0x10
+}
+
+================
+File: Core/Io/HttpMethod.cs
+================
+namespace AngleSharp.Io;
+using System;
+public enum HttpMethod : Byte
+{
+    Get,
+    Post,
+    Put,
+    Delete,
+    Options,
+    Head,
+    Trace,
+    Connect
+}
+
+================
+File: Core/Io/IDocumentRequest.cs
+================
+namespace AngleSharp.Io;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using Dom;
+public interface IDocumentRequest
+{
+    INode? Source { get; set; }
+    String? Referer { get; set; }
+    HttpMethod Method { get; set; }
+    Stream Body { get; set; }
+    String? MimeType { get; set; }
+    Dictionary<String, String> Headers { get; }
+}
+
+================
+File: Core/Io/IDownload.cs
+================
+namespace AngleSharp.Io;
+using System;
+using Common;
+using Dom;
+public interface IDownload : ICancellable<IResponse>
+{
+    IUrl Target { get; }
+    Object? Source { get; }
+}
+
+================
+File: Core/Io/ILoadableElement.cs
+================
+namespace AngleSharp.Io;
+using Attributes;
+[DomNoInterfaceObject]
+public interface ILoadableElement
+{
+    IDownload? CurrentDownload { get; }
+}
+
+================
+File: Core/Io/IResponse.cs
+================
+namespace AngleSharp.Io;
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Net;
+    using Dom;
+    public interface IResponse : IDisposable
+    {
+        HttpStatusCode StatusCode { get; }
+        IUrl Address { get; }
+        IDictionary<String, String> Headers { get; }
+        Stream Content { get; }
+    }
+
+================
+File: Core/Text/ITextPosition.cs
+================
+namespace AngleSharp.Text;
+using System;
+public interface ITextPosition : IEquatable<ITextPosition>, IComparable<ITextPosition>
+{
+    Int32 Line { get; }
+    Int32 Column { get; }
+    Int32 Position { get; }
+    Int32 Index { get; }
+    ITextPosition Shift(Int32 columns);
+    ITextPosition After(Char chr);
+    ITextPosition After(String str);
+}
+
+================
+File: Core/Text/ITextSource.cs
+================
+#nullable disable
+namespace AngleSharp.Text;
+using System;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Common;
+public interface ITextSource : IReadOnlyTextSource
+{
+    void InsertText(String content);
+}
+public interface IReadOnlyTextSource : IDisposable
+{
+    String Text { get; }
+    Int32 Length { get; }
+    Encoding CurrentEncoding { get; set; }
+    Int32 Index { get; set; }
+    Char this[Int32 index] { get; }
+    Char ReadCharacter();
+    String ReadCharacters(Int32 characters);
+    IStringOrMemory ReadMemory(Int32 characters);
+    Task PrefetchAsync(Int32 length, CancellationToken cancellationToken);
+    Task PrefetchAllAsync(CancellationToken cancellationToken);
+    Boolean TryGetContentLength(out Int32 length);
+}
+
+================
+File: Core/IBrowsingContext.cs
+================
+namespace AngleSharp;
+using System;
+using System.Collections.Generic;
+using Browser;
+using Browser.Dom;
+using Dom;
+public interface IBrowsingContext : IEventTarget, IDisposable
+{
+    IWindow? Current { get; }
+    IDocument? Active { get; set; }
+    IHistory? SessionHistory { get; }
+    Sandboxes Security { get; }
+    IBrowsingContext? Parent { get; }
+    IDocument? Creator { get; }
+    IEnumerable<Object> OriginalServices { get; }
+    T? GetService<T>() where T : class;
+    IEnumerable<T> GetServices<T>() where T : class;
+    IBrowsingContext CreateChild(String? name, Sandboxes security);
+    IBrowsingContext? FindChild(String name);
+}
+
+================
+File: Core/IMarkupFormattable.cs
+================
+namespace AngleSharp;
+using System.IO;
+public interface IMarkupFormattable
+{
+    void ToHtml(TextWriter writer, IMarkupFormatter formatter);
+}
+
+================
+File: Core/IMarkupFormatter.cs
+================
+namespace AngleSharp;
+using System;
+using Dom;
+public interface IMarkupFormatter
+{
+    String Text(ICharacterData text);
+    String LiteralText(ICharacterData text);
+    String Comment(IComment comment);
+    String Processing(IProcessingInstruction processing);
+    String Doctype(IDocumentType doctype);
+    String OpenTag(IElement element, Boolean selfClosing);
+    String CloseTag(IElement element, Boolean selfClosing);
+}
+
+================
+File: Core/IStyleFormattable.cs
+================
+namespace AngleSharp;
+using System.IO;
+public interface IStyleFormattable
+{
+    void ToCss(TextWriter writer, IStyleFormatter formatter);
+}
+
+================
+File: Core/IStyleFormatter.cs
+================
+namespace AngleSharp;
+using System;
+using System.Collections.Generic;
+public interface IStyleFormatter
+{
+    String Sheet(IEnumerable<IStyleFormattable> rules);
+    String Declaration(String name, String value, Boolean important);
+    String BlockDeclarations(IEnumerable<IStyleFormattable> declarations);
+    String Rule(String name, String value);
+    String Rule(String name, String prelude, String rules);
+    String BlockRules(IEnumerable<IStyleFormattable> rules);
+    String Comment(String data);
+}
+
+
+
+================================================================
+End of Codebase
+================================================================
