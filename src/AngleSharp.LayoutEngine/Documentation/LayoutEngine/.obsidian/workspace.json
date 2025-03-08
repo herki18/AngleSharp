@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
-                "mode": "preview",
+                "file": "New Arhitecture/Rev 1/AngleSharp CSS Declaration Handling - Quick Reference.md",
+                "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "StyleSystem Architecture Overview"
+              "title": "AngleSharp CSS Declaration Handling - Quick Reference"
             }
           }
         ],
@@ -109,7 +109,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
+                "file": "New Arhitecture/Rev 1/AngleSharp CSS Declaration Handling - Quick Reference.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -119,7 +119,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for StyleSystem Architecture Overview"
+              "title": "Backlinks for AngleSharp CSS Declaration Handling - Quick Reference"
             }
           },
           {
@@ -128,12 +128,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
+                "file": "New Arhitecture/Rev 1/AngleSharp CSS Declaration Handling - Quick Reference.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from StyleSystem Architecture Overview"
+              "title": "Outgoing links from AngleSharp CSS Declaration Handling - Quick Reference"
             }
           },
           {
@@ -157,13 +157,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
+                "file": "New Arhitecture/Rev 1/AngleSharp CSS Declaration Handling - Quick Reference.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of StyleSystem Architecture Overview"
+              "title": "Outline of AngleSharp CSS Declaration Handling - Quick Reference"
             }
           }
         ],
@@ -186,9 +186,11 @@
   },
   "active": "93b419e72e94a610",
   "lastOpenFiles": [
+    "Modules/Style System/Reference/AngleSharp CSS Declaration Handling - Quick Reference.md",
+    "New Arhitecture/Rev 1/AngleSharp CSS Declaration Handling - Quick Reference.md",
     "New Arhitecture/Rev 1/Core Component Interfaces.md",
-    "New Arhitecture/Rev 1/StyleSystem Testing Strategy.md",
     "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
+    "New Arhitecture/Rev 1/StyleSystem Testing Strategy.md",
     "New Arhitecture/Rev 1/StyleSystem Data Flow Diagrams.md",
     "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
     "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
@@ -215,8 +217,6 @@
     "Diagrams/Layout System Process Phases.md",
     "Diagrams/CSS Variable Resolution Integration with LayoutSystem.md",
     "Diagrams/Caching Integration with Style Computation Pipeline.md",
-    "Diagrams/Cache Dependency and Invalidation Flow.md",
-    "Diagrams/AngleSharp.LayoutEngine Caching Architecture.md",
     "Diagrams",
     "Modules/Style System/Diagrams",
     "Modules/Lifecycle System/Diagrams",
