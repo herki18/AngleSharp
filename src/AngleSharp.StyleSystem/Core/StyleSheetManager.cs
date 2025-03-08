@@ -6,6 +6,7 @@ using System.Linq;
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
+using Css.Parser;
 
 /// <summary>
 /// Manages stylesheets from different origins and provides centralized access to them.
@@ -27,7 +28,8 @@ public class StyleSheetManager : IDisposable
     /// Creates a new StyleSheetManager instance.
     /// </summary>
     /// <param name="context">The browsing context.</param>
-    public StyleSheetManager(IBrowsingContext context)
+    /// <param name="loadUserAgentStylesheets"></param>
+    public StyleSheetManager(IBrowsingContext context, bool loadUserAgentStylesheets = true)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
 
@@ -40,8 +42,11 @@ public class StyleSheetManager : IDisposable
             AttachToDocument(_context.Active);
         }
 
-        // Load user agent stylesheets
-        LoadUserAgentStylesheets();
+        if(loadUserAgentStylesheets)
+        {
+            // Load user agent stylesheets
+            LoadUserAgentStylesheets();
+        }
     }
 
     /// <summary>
@@ -163,8 +168,14 @@ public class StyleSheetManager : IDisposable
     /// </summary>
     public IEnumerable<ICssRule> GetAllRules()
     {
-        return GetStylesheets()
-            .SelectMany(e => e.Stylesheet.Rules);
+        var rules = new List<ICssRule>();
+
+        foreach (var entry in GetStylesheets())
+        {
+            CollectRulesRecursively(entry.Stylesheet.Rules, rules);
+        }
+
+        return rules;
     }
 
     /// <summary>
@@ -172,8 +183,25 @@ public class StyleSheetManager : IDisposable
     /// </summary>
     public IEnumerable<ICssStyleRule> GetAllStyleRules()
     {
-        return GetAllRules()
-            .OfType<ICssStyleRule>();
+        return GetAllRules().OfType<ICssStyleRule>();
+    }
+
+    /// <summary>
+    /// Recursively collects all rules, including those nested in container rules.
+    /// </summary>
+    private void CollectRulesRecursively(IEnumerable<ICssRule> rules, List<ICssRule> collectedRules)
+    {
+        foreach (var rule in rules)
+        {
+            // Add the current rule
+            collectedRules.Add(rule);
+
+            // If this is a container rule (like @media or @supports), collect its nested rules
+            if (rule is ICssGroupingRule groupingRule)
+            {
+                CollectRulesRecursively(groupingRule.Rules, collectedRules);
+            }
+        }
     }
 
     /// <summary>
@@ -183,33 +211,11 @@ public class StyleSheetManager : IDisposable
     {
         if (_currentDocument == null)
             return;
+        // Clear existing author stylesheets
+        ClearStylesheetsByOrigin(StylesheetOrigin.Author);
 
-        // Get current set of document stylesheets
-        var documentSheets = _currentDocument.StyleSheets.OfType<ICssStyleSheet>().ToList();
-
-        // Get our tracked document stylesheets
-        var trackedSheets = _stylesheets
-            .Where(e => e.Origin == StylesheetOrigin.Author)
-            .Select(e => e.Stylesheet)
-            .ToList();
-
-        // Check for new stylesheets
-        foreach (var sheet in documentSheets)
-        {
-            if (!trackedSheets.Contains(sheet))
-            {
-                RegisterStylesheet(sheet, StylesheetOrigin.Author);
-            }
-        }
-
-        // Check for removed stylesheets
-        foreach (var sheet in trackedSheets)
-        {
-            if (!documentSheets.Contains(sheet))
-            {
-                UnregisterStylesheet(sheet);
-            }
-        }
+        // Re-load all stylesheets from the document
+        LoadDocumentStylesheets(_currentDocument);
     }
 
     /// <summary>
@@ -239,6 +245,22 @@ public class StyleSheetManager : IDisposable
         foreach (var stylesheet in document.StyleSheets.OfType<ICssStyleSheet>())
         {
             RegisterStylesheet(stylesheet, StylesheetOrigin.Author);
+        }
+
+        foreach (var styleElement in document.QuerySelectorAll("style"))
+        {
+            // Only process style elements that don't already have associated stylesheets
+            if (document.StyleSheets.All(sheet => sheet.OwnerNode != styleElement))
+            {
+                // Force AngleSharp to process this style element
+                var cssParser = _context.GetService<ICssParser>();
+                if (cssParser != null && !string.IsNullOrWhiteSpace(styleElement.TextContent))
+                {
+                    var sheet = cssParser.ParseStyleSheet(styleElement.TextContent);
+                    sheet.SetOwner(styleElement);
+                    RegisterStylesheet(sheet, StylesheetOrigin.Author);
+                }
+            }
         }
     }
 

@@ -23,6 +23,7 @@ public class ComputedStyle : IComputedStyle
     private readonly WritingMode _writingMode;
     private readonly IRenderDevice _renderDevice;
     private readonly IStyleInvalidationTracker _invalidationTracker;
+    private readonly IBrowsingContext _context;
 
     #endregion
 
@@ -35,13 +36,16 @@ public class ComputedStyle : IComputedStyle
     /// <param name="parentStyle">The parent element's computed style.</param>
     /// <param name="declaration">The CSS declaration containing the style properties.</param>
     /// <param name="propertyTree">The property tree node for shared style storage.</param>
-    public ComputedStyle(IElement element, IComputedStyle? parentStyle, ICssStyleDeclaration declaration, PropertyTreeNode propertyTree, IRenderDevice renderDevice, IStyleInvalidationTracker invalidationTracker)
+    public ComputedStyle(IElement element, IComputedStyle? parentStyle, ICssStyleDeclaration declaration,
+        PropertyTreeNode propertyTree, IRenderDevice renderDevice,
+        IStyleInvalidationTracker invalidationTracker, IBrowsingContext context)
     {
         _element = element;
         _parentStyle = parentStyle;
         _propertyTree = propertyTree;
         _renderDevice = renderDevice;
         _invalidationTracker = invalidationTracker;
+        _context = context;
 
         // Initialize property groups
         _boxProperties = new BoxProperties(this, _renderDevice);
@@ -53,8 +57,6 @@ public class ComputedStyle : IComputedStyle
 
         // Compute writing mode early as it affects property mapping
         _writingMode = ComputeWritingMode(declaration);
-
-
 
         // Process style properties
         ProcessStyleProperties(declaration);
@@ -71,7 +73,19 @@ public class ComputedStyle : IComputedStyle
     /// </summary>
     public string GetPropertyValue(string propertyName)
     {
-        return _propertyTree.GetPropertyValue(propertyName);
+        string value = _propertyTree.GetPropertyValue(propertyName);
+
+        var factory = _context.GetFactory<IDeclarationFactory>();
+        if (factory != null)
+        {
+            var declarationInfo = factory.Create(propertyName);
+            if (declarationInfo?.InitialValue != null)
+            {
+                return declarationInfo.InitialValue.CssText;
+            }
+        }
+
+        return value;
     }
 
     /// <summary>

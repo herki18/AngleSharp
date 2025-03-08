@@ -20,7 +20,7 @@ public class StyleSheetManagerTests
     {
         var config = Configuration.Default.WithCss();
         _context = BrowsingContext.New(config);
-        _stylesheetManager = new StyleSheetManager(_context);
+        _stylesheetManager = new StyleSheetManager(_context, false);
         _parser = new HtmlParser();
         _cssParser = new CssParser();
 

@@ -17,6 +17,42 @@
     ```
     
 
+## Initial Values and CSS Defaults
+
+AngleSharp provides built-in support for CSS initial values through the `IDeclarationFactory`:
+
+```csharp
+// Get the factory from the browsing context
+var factory = context.GetFactory<IDeclarationFactory>();
+
+// Get declaration info for a specific property
+var declarationInfo = factory.Create("color");
+
+// Access the initial value as defined in CSS specifications
+var initialValue = declarationInfo.InitialValue;
+string initialColorText = initialValue.CssText; // "rgba(0, 0, 0, 1)"
+```
+
+### Best Practices for Initial Values
+
+1. **Use IDeclarationFactory for initial values**:
+    
+    ```csharp
+    // In ComputedStyle.GetPropertyValue:
+    if (string.IsNullOrEmpty(value)) {
+        var factory = _context.GetFactory<IDeclarationFactory>();
+        var declarationInfo = factory.Create(propertyName);
+        return declarationInfo?.InitialValue?.CssText ?? string.Empty;
+    }
+    ```
+    
+2. **Avoid hardcoding defaults** - let AngleSharp handle the defaults according to CSS spec
+    
+3. **Fall back gracefully** - always check for null values when using the factory
+    
+4. **Cache declaration information** for frequently accessed properties
+    
+
 ## Capabilities to Leverage
 
 1. **Shorthand/Longhand Handling**
@@ -51,6 +87,60 @@
 - Focus implementation on inheritance algorithm
 - Avoid reimplementing CSS specification details
 - Be aware of shorthand-to-longhand expansion when counting properties
+- Get initial values from `IDeclarationFactory` rather than hardcoding defaults
+
+## Style Computation and Retrieval
+
+When implementing the style system, follow these patterns for handling values:
+
+```csharp
+// In ComputedStyle.GetPropertyValue
+public string GetPropertyValue(string propertyName)
+{
+    // First try property tree (computed values)
+    string value = _propertyTree.GetPropertyValue(propertyName);
+    
+    // If no value found, get the initial value from the declaration factory
+    if (string.IsNullOrEmpty(value))
+    {
+        var factory = _context.GetFactory<IDeclarationFactory>();
+        if (factory != null)
+        {
+            var declarationInfo = factory.Create(propertyName);
+            if (declarationInfo?.InitialValue != null)
+            {
+                return declarationInfo.InitialValue.CssText;
+            }
+        }
+    }
+    
+    return value;
+}
+```
+
+This approach ensures proper handling of all CSS properties, including those not explicitly handled by your style system.
+
+## Media Queries and Container Rules
+
+When collecting style rules from stylesheets, be sure to recursively traverse container rules like `@media` and `@supports`:
+
+```csharp
+// Recursively collect rules from all stylesheets
+private void CollectRulesRecursively(IEnumerable<ICssRule> rules, List<ICssRule> collectedRules)
+{
+    foreach (var rule in rules)
+    {
+        // Add the current rule
+        collectedRules.Add(rule);
+        
+        // If this is a container rule (like @media or @supports), collect its nested rules
+        if (rule is ICssGroupingRule groupingRule)
+        {
+            CollectRulesRecursively(groupingRule.Rules, collectedRules);
+        }
+    }
+}
+```
 
 ## Shorthand Property Behavior
 
@@ -161,6 +251,7 @@ When extending AngleSharp, follow these patterns:
 public class ComputedStyle : IComputedStyle
 {
     private readonly Dictionary<string, ICssValue> _computedValues;
+    private readonly IBrowsingContext _context;
     
     // Use AngleSharp's value system internally
     public CssLengthValue FontSize => 
@@ -171,6 +262,29 @@ public class ComputedStyle : IComputedStyle
         
     // Convert to layout-optimized representation for performance-critical paths
     public float FontSizeInPixels => FontSize.ToPixel(null);
+    
+    // Rely on AngleSharp's IDeclarationFactory for initial values
+    public string GetPropertyValue(string propertyName)
+    {
+        // First try property tree (computed values)
+        string value = _propertyTree.GetPropertyValue(propertyName);
+        
+        // If no value found, get the initial value from the declaration factory
+        if (string.IsNullOrEmpty(value))
+        {
+            var factory = _context.GetFactory<IDeclarationFactory>();
+            if (factory != null)
+            {
+                var declarationInfo = factory.Create(propertyName);
+                if (declarationInfo?.InitialValue != null)
+                {
+                    return declarationInfo.InitialValue.CssText;
+                }
+            }
+        }
+        
+        return value;
+    }
 }
 ```
 
@@ -182,6 +296,31 @@ When writing tests for StyleSystem components that interact with AngleSharp's CS
 2. **Color normalization**: Color values are normalized to RGBA format
 3. **Value comparison**: Use `GetPropertyValue()` rather than direct property access for consistent results
 4. **Mock with care**: When mocking CSS interfaces, ensure they mimic AngleSharp's shorthand/longhand behavior
+5. **Recursive rule collection**: Remember to recursively collect rules from container rules like `@media` when testing
+6. **Default/initial values**: Use AngleSharp's `IDeclarationFactory` instead of hardcoding expected values when possible
+
+## StyleSheetManager Configuration
+
+When working with the `StyleSheetManager`, consider providing initialization options:
+
+```csharp
+// Create a StyleSheetManager with options
+public StyleSheetManager(
+    IBrowsingContext context, 
+    bool loadUserAgentStylesheets = true)
+{
+    _context = context;
+    _loadUserAgentStylesheets = loadUserAgentStylesheets;
+    
+    // Only load user agent stylesheets if enabled
+    if (_loadUserAgentStylesheets)
+    {
+        LoadUserAgentStylesheets();
+    }
+}
+```
+
+This allows for testing scenarios and specialized applications where you want complete control over styling without browser defaults.
 
 ## Avoid Duplication
 
@@ -191,6 +330,7 @@ Do not reimplement:
 - Selector matching (use AngleSharp's selector engine)
 - CSS property definitions
 - Media query evaluation
+- Initial values (use `IDeclarationFactory`)
 
 Instead, focus on extending AngleSharp with layout and rendering capabilities.
 

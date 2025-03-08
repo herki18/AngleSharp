@@ -44,6 +44,6 @@ public class ComputedStyleFactory : IComputedStyleFactory
         var propertyNode = _engine.PropertyTreeManager.GetOrCreateNode(element, parentNode);
 
         // Pass the render device to the ComputedStyle constructor
-        return new ComputedStyle(element, parentStyle, declaration, propertyNode, _engine.RenderDevice, _engine.InvalidationTracker);
+        return new ComputedStyle(element, parentStyle, declaration, propertyNode, _engine.RenderDevice, _engine.InvalidationTracker, _engine.Context);
     }
 }
