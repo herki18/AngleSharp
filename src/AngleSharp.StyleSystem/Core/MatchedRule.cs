@@ -1,5 +1,6 @@
 ﻿namespace AngleSharp.StyleSystem.Core;
 
+using System;
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 
@@ -16,4 +17,17 @@ public class MatchedRule
 
     // The original index for stable sorting
     public int OriginalIndex { get; set; }
+
+    public MatchedRule()
+    {
+
+    }
+
+    public MatchedRule(ICssStyleRule? rule, Priority priority, StylesheetOrigin author, Int32 originalIndex)
+    {
+        Rule = rule;
+        Specificity = priority;
+        Origin = author;
+        OriginalIndex = originalIndex;
+    }
 }

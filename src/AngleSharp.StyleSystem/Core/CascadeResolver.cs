@@ -6,11 +6,12 @@ using System.Linq;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
 using AngleSharp.Dom;
+using Interfaces;
 
 /// <summary>
 /// Resolves property conflicts based on CSS cascade rules.
 /// </summary>
-public class CascadeResolver
+public class CascadeResolver : ICascadeResolver
 {
     private readonly IBrowsingContext _context;
 

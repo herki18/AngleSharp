@@ -1,25 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using NUnit.Framework;
-using AngleSharp;
-using AngleSharp.Dom;
+﻿using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
-using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
 using AngleSharp.StyleSystem.Core;
-using Moq;
 
 namespace AngleSharp.StyleSystem.Tests;
+
+using Core.Interfaces;
+using Css;
 
 [TestFixture]
 public class CascadeResolverTests
 {
     private IBrowsingContext _context;
-    private CascadeResolver _cascadeResolver;
+    private ICascadeResolver _cascadeResolver;
     private IHtmlParser _parser;
     private IDocument _document;
     private ICssParser _cssParser;
+    private ICssStyleSheet _stylesheet;
 
     [SetUp]
     public void Setup()
@@ -30,6 +28,7 @@ public class CascadeResolverTests
         _parser = new HtmlParser();
         _document = _parser.ParseDocument("");
         _cssParser = new CssParser();
+        _stylesheet = _cssParser.ParseStyleSheet("");
     }
 
     [TearDown]
@@ -59,17 +58,11 @@ public class CascadeResolverTests
     {
         // Arrange
         var element = _document.CreateElement("div");
-        var styleRule = _cssParser.ParseRule("div { color: red; }") as ICssStyleRule;
+        var styleRule = _cssParser.ParseRule(_stylesheet, "div { color: red; }") as ICssStyleRule;
 
         var matchedRules = new List<MatchedRule>
         {
-            new MatchedRule
-            {
-                Rule = styleRule,
-                Specificity = new Priority(1),
-                Origin = StylesheetOrigin.Author,
-                OriginalIndex = 0
-            }
+            new MatchedRule(styleRule, new Priority(1), StylesheetOrigin.Author, 0)
         };
 
         // Act
@@ -78,7 +71,7 @@ public class CascadeResolverTests
         // Assert
         Assert.That(result, Is.Not.Null);
         Assert.That(result.Length, Is.EqualTo(1));
-        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("red"));
+        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
     }
 
     [Test]
@@ -86,25 +79,13 @@ public class CascadeResolverTests
     {
         // Arrange
         var element = _document.CreateElement("div");
-        var rule1 = _cssParser.ParseRule("div { color: red; font-size: 12px; }") as ICssStyleRule;
-        var rule2 = _cssParser.ParseRule("div { color: blue; margin: 10px; }") as ICssStyleRule;
+        var rule1 = _cssParser.ParseRule(_stylesheet, "div { color: red; font-size: 12px; }") as ICssStyleRule;
+        var rule2 = _cssParser.ParseRule(_stylesheet, "div { color: blue; margin: 10px; }") as ICssStyleRule;
 
         var matchedRules = new List<MatchedRule>
         {
-            new MatchedRule
-            {
-                Rule = rule1,
-                Specificity = new Priority(1),
-                Origin = StylesheetOrigin.Author,
-                OriginalIndex = 0
-            },
-            new MatchedRule
-            {
-                Rule = rule2,
-                Specificity = new Priority(1),
-                Origin = StylesheetOrigin.Author,
-                OriginalIndex = 1
-            }
+            new MatchedRule(rule1, new Priority(1), StylesheetOrigin.Author, 0),
+            new MatchedRule(rule2, new Priority(1), StylesheetOrigin.Author, 1)
         };
 
         // Act
@@ -112,8 +93,8 @@ public class CascadeResolverTests
 
         // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.Length, Is.EqualTo(3));
-        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("blue")); // Later rule wins
+        Assert.That(result.Length, Is.EqualTo(6));
+        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 255, 1)")); // Later rule wins
         Assert.That(result.GetPropertyValue("font-size"), Is.EqualTo("12px"));
         Assert.That(result.GetPropertyValue("margin"), Is.EqualTo("10px"));
     }
@@ -123,25 +104,13 @@ public class CascadeResolverTests
     {
         // Arrange
         var element = _document.CreateElement("div");
-        var rule1 = _cssParser.ParseRule("div { color: red; }") as ICssStyleRule;
-        var rule2 = _cssParser.ParseRule("div.special { color: blue; }") as ICssStyleRule;
+        var rule1 = _cssParser.ParseRule(_stylesheet, "div { color: red; }") as ICssStyleRule;
+        var rule2 = _cssParser.ParseRule(_stylesheet, "div.special { color: blue; }") as ICssStyleRule;
 
         var matchedRules = new List<MatchedRule>
         {
-            new MatchedRule
-            {
-                Rule = rule1,
-                Specificity = new Priority(1),
-                Origin = StylesheetOrigin.Author,
-                OriginalIndex = 0
-            },
-            new MatchedRule
-            {
-                Rule = rule2,
-                Specificity = new Priority(11), // Higher specificity
-                Origin = StylesheetOrigin.Author,
-                OriginalIndex = 1
-            }
+            new MatchedRule(rule1, new Priority(1), StylesheetOrigin.Author, 0),
+            new MatchedRule(rule2, new Priority(11), StylesheetOrigin.Author, 1) // Higher specificity
         };
 
         // Act
@@ -149,7 +118,7 @@ public class CascadeResolverTests
 
         // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("blue")); // Higher specificity wins
+        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 255, 1)")); // Higher specificity wins
     }
 
     [Test]
@@ -157,25 +126,13 @@ public class CascadeResolverTests
     {
         // Arrange
         var element = _document.CreateElement("div");
-        var rule1 = _cssParser.ParseRule("div { color: red; }") as ICssStyleRule;
-        var rule2 = _cssParser.ParseRule("div { color: blue; }") as ICssStyleRule;
+        var rule1 = _cssParser.ParseRule(_stylesheet, "div { color: red; }") as ICssStyleRule;
+        var rule2 = _cssParser.ParseRule(_stylesheet, "div { color: blue; }") as ICssStyleRule;
 
         var matchedRules = new List<MatchedRule>
         {
-            new MatchedRule
-            {
-                Rule = rule1,
-                Specificity = new Priority(1),
-                Origin = StylesheetOrigin.UserAgent, // Lower origin
-                OriginalIndex = 0
-            },
-            new MatchedRule
-            {
-                Rule = rule2,
-                Specificity = new Priority(1),
-                Origin = StylesheetOrigin.Author, // Higher origin
-                OriginalIndex = 1
-            }
+            new MatchedRule(rule1, new Priority(1), StylesheetOrigin.UserAgent, 0), // Lower origin
+            new MatchedRule(rule2, new Priority(1), StylesheetOrigin.Author, 1) // Higher origin
         };
 
         // Act
@@ -183,7 +140,7 @@ public class CascadeResolverTests
 
         // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("blue")); // Author origin wins
+        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 255, 1)")); // Author origin wins
     }
 
     [Test]
@@ -191,25 +148,13 @@ public class CascadeResolverTests
     {
         // Arrange
         var element = _document.CreateElement("div");
-        var rule1 = _cssParser.ParseRule("div { color: red !important; }") as ICssStyleRule;
-        var rule2 = _cssParser.ParseRule("div { color: blue; }") as ICssStyleRule;
+        var rule1 = _cssParser.ParseRule(_stylesheet, "div { color: red !important; }") as ICssStyleRule;
+        var rule2 = _cssParser.ParseRule(_stylesheet, "div { color: blue; }") as ICssStyleRule;
 
         var matchedRules = new List<MatchedRule>
         {
-            new MatchedRule
-            {
-                Rule = rule1,
-                Specificity = new Priority(1),
-                Origin = StylesheetOrigin.Author,
-                OriginalIndex = 0
-            },
-            new MatchedRule
-            {
-                Rule = rule2,
-                Specificity = new Priority(10), // Higher specificity
-                Origin = StylesheetOrigin.Author,
-                OriginalIndex = 1
-            }
+            new MatchedRule(rule1, new Priority(1), StylesheetOrigin.Author, 0),
+            new MatchedRule(rule2, new Priority(10), StylesheetOrigin.Author, 1) // Higher specificity
         };
 
         // Act
@@ -217,7 +162,7 @@ public class CascadeResolverTests
 
         // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("red")); // !important wins
+        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)")); // !important wins
         Assert.That(result.GetPropertyPriority("color"), Is.EqualTo("important"));
     }
 
@@ -228,17 +173,11 @@ public class CascadeResolverTests
         var element = _document.CreateElement("div");
         element.SetAttribute("style", "color: green; padding: 5px;");
 
-        var rule = _cssParser.ParseRule("div { color: red; margin: 10px; }") as ICssStyleRule;
+        var rule = _cssParser.ParseRule(_stylesheet, "div { color: red; margin: 10px; }") as ICssStyleRule;
 
         var matchedRules = new List<MatchedRule>
         {
-            new MatchedRule
-            {
-                Rule = rule,
-                Specificity = new Priority(1),
-                Origin = StylesheetOrigin.Author,
-                OriginalIndex = 0
-            }
+            new MatchedRule(rule, new Priority(1), StylesheetOrigin.Author, 0)
         };
 
         // Act
@@ -246,7 +185,7 @@ public class CascadeResolverTests
 
         // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("green")); // Inline style wins
+        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("rgba(0, 128, 0, 1)")); // Inline style wins
         Assert.That(result.GetPropertyValue("margin"), Is.EqualTo("10px")); // Rule property remains
         Assert.That(result.GetPropertyValue("padding"), Is.EqualTo("5px")); // Inline style added
     }
@@ -258,17 +197,11 @@ public class CascadeResolverTests
         var element = _document.CreateElement("div");
         element.SetAttribute("style", "color: green;");
 
-        var rule = _cssParser.ParseRule("div { color: red !important; }") as ICssStyleRule;
+        var rule = _cssParser.ParseRule(_stylesheet, "div { color: red !important; }") as ICssStyleRule;
 
         var matchedRules = new List<MatchedRule>
         {
-            new MatchedRule
-            {
-                Rule = rule,
-                Specificity = new Priority(1),
-                Origin = StylesheetOrigin.Author,
-                OriginalIndex = 0
-            }
+            new MatchedRule(rule, new Priority(1), StylesheetOrigin.Author, 0)
         };
 
         // Act
@@ -276,6 +209,6 @@ public class CascadeResolverTests
 
         // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("red")); // !important rule wins over inline
+        Assert.That(result.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)")); // !important rule wins over inline
     }
 }

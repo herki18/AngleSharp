@@ -24,6 +24,8 @@
     - Automatically expands shorthands (`margin`) to longhands (`margin-top`, etc.)
     - Can reconstruct shorthands from longhands
     - Implementation: `SetShorthand()`, `TryCreateShorthand()`
+    - **Important Note**: When testing `Length` property, be aware that shorthand properties like `margin: 10px` are internally expanded to 4 longhand properties (`margin-top`, `margin-right`, `margin-bottom`, `margin-left`) but can still be accessed via the shorthand name
+    - The `CssStyleDeclaration.Length` reflects the total number of longhand properties, not shorthand ones
 2. **Importance Preservation**
     
     - Preserves `!important` flags during operations
@@ -34,6 +36,7 @@
     - Validates values before setting
     - Normalizes values (e.g., `red` → `rgba(255, 0, 0, 1)`)
     - Verification with `if (property.RawValue is not null)`
+    - Color keywords are automatically converted to their RGBA representation
 4. **Property Dependencies**
     
     - Understands relationships between properties
@@ -47,6 +50,33 @@
 - Delegate complex CSS behaviors to AngleSharp
 - Focus implementation on inheritance algorithm
 - Avoid reimplementing CSS specification details
+- Be aware of shorthand-to-longhand expansion when counting properties
+
+## Shorthand Property Behavior
+
+AngleSharp implements the CSS specification's behavior for shorthand properties:
+
+1. **Expansion during parsing**: Shorthand properties (`margin`, `padding`, `border`, etc.) are automatically expanded into their component longhand properties
+2. **Internal representation**: Properties are stored as longhands in the internal collection
+3. **Property access**: Both shorthand and longhand names can be used with `GetPropertyValue()`
+4. **Length calculation**: `CssStyleDeclaration.Length` returns the count of longhand properties
+5. **Setting values**: Setting a shorthand property clears and sets all related longhands
+6. **Testing considerations**: When asserting counts, account for shorthand expansion
+
+### Example of Shorthand Expansion
+
+```csharp
+var style = new CssStyleDeclaration();
+style.SetProperty("margin", "10px");
+
+// The following is true:
+style.Length == 4; // Not 1, because margin expands to 4 properties
+style.GetPropertyValue("margin") == "10px";
+style.GetPropertyValue("margin-top") == "10px";
+style.GetPropertyValue("margin-right") == "10px";
+style.GetPropertyValue("margin-bottom") == "10px";
+style.GetPropertyValue("margin-left") == "10px";
+```
 
 ## Existing AngleSharp Enum Types to Use
 
@@ -143,6 +173,15 @@ public class ComputedStyle : IComputedStyle
     public float FontSizeInPixels => FontSize.ToPixel(null);
 }
 ```
+
+## Testing StyleSystem Components
+
+When writing tests for StyleSystem components that interact with AngleSharp's CSS handling, keep in mind:
+
+1. **Property count expectations**: When asserting the length of a style declaration that involves shorthand properties, account for their expansion to longhand properties
+2. **Color normalization**: Color values are normalized to RGBA format
+3. **Value comparison**: Use `GetPropertyValue()` rather than direct property access for consistent results
+4. **Mock with care**: When mocking CSS interfaces, ensure they mimic AngleSharp's shorthand/longhand behavior
 
 ## Avoid Duplication
 
