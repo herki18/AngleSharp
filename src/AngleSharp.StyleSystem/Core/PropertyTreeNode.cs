@@ -43,7 +43,7 @@ public class PropertyTreeNode
     /// <summary>
     /// Sets a property value in this node.
     /// </summary>
-    public void SetProperty(string name, string value)
+    public void SetProperty(string name, string? value)
     {
         if (value != null)
         {
