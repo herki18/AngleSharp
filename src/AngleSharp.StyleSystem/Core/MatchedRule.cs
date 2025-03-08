@@ -1,6 +1,7 @@
-﻿namespace AngleSharp.StyleSystem;
+﻿namespace AngleSharp.StyleSystem.Core;
 
-using Css.Dom;
+using AngleSharp.Css;
+using AngleSharp.Css.Dom;
 
 public class MatchedRule
 {

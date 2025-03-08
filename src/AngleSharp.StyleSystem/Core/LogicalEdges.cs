@@ -1,7 +1,6 @@
-﻿namespace AngleSharp.StyleSystem;
+﻿namespace AngleSharp.StyleSystem.Core;
 
-using Core;
-using Css.Values;
+using AngleSharp.Css.Values;
 
 /// <summary>
 /// Represents logical edges independent of writing mode.
@@ -28,6 +27,9 @@ public readonly struct LogicalEdges
     /// </summary>
     public CssLengthValue InlineStart { get; }
 
+    /// <summary>
+    /// Creates a new LogicalEdges instance.
+    /// </summary>
     public LogicalEdges(CssLengthValue blockStart, CssLengthValue inlineEnd,
         CssLengthValue blockEnd, CssLengthValue inlineStart)
     {
@@ -55,4 +57,10 @@ public readonly struct LogicalEdges
                 : new Edges(InlineStart, BlockEnd, InlineEnd, BlockStart);
         }
     }
+
+    /// <summary>
+    /// Creates uniform logical edges with the same value for all sides.
+    /// </summary>
+    public static LogicalEdges Uniform(CssLengthValue value) =>
+        new LogicalEdges(value, value, value, value);
 }

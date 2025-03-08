@@ -1,7 +1,9 @@
 ﻿namespace AngleSharp.StyleSystem.Core;
 
+using System;
 using AngleSharp.Css.Values;
 using AngleSharp.StyleSystem.Core.Interfaces;
+using Css;
 
 /// <summary>
 /// Represents box-related computed properties.
@@ -9,6 +11,7 @@ using AngleSharp.StyleSystem.Core.Interfaces;
 public class BoxProperties : IBoxProperties
 {
     private readonly ComputedStyle _owner;
+    private readonly IRenderDevice _renderDevice;
 
     // Box dimensions - using AngleSharp's CssLengthValue
     private CssLengthValue _width = CssLengthValue.Auto;
@@ -33,12 +36,13 @@ public class BoxProperties : IBoxProperties
     private CssLengthValue _paddingLeft = CssLengthValue.Zero;
 
     // Cached pixel values for performance optimization
-    private float? _cachedWidthPx;
-    private float? _cachedHeightPx;
+    private double? _cachedWidthPx;
+    private double? _cachedHeightPx;
 
-    public BoxProperties(ComputedStyle owner)
+    public BoxProperties(ComputedStyle owner, IRenderDevice renderDevice)
     {
         _owner = owner;
+        _renderDevice = renderDevice;
     }
 
     /// <summary>
@@ -61,33 +65,27 @@ public class BoxProperties : IBoxProperties
     /// </summary>
     public CssLengthValue BlockSize => _owner.WritingMode.IsHorizontal ? _height : _width;
 
-    /// <summary>
-    /// Gets width in pixels with caching for performance (layout optimization).
-    /// </summary>
-    public float WidthInPixels
+    public Double WidthInPixels
     {
         get
         {
-            if (!_cachedWidthPx.HasValue && !_width.IsAuto)
+            if (!_cachedWidthPx.HasValue && !_width.Equals(CssLengthValue.Auto))
             {
                 // Call AngleSharp's conversion with appropriate context
-                _cachedWidthPx = _width.ToPixel(null);
+                _cachedWidthPx = _width.ToPixel(_renderDevice);
             }
             return _cachedWidthPx ?? 0;
         }
     }
 
-    /// <summary>
-    /// Gets height in pixels with caching for performance (layout optimization).
-    /// </summary>
-    public float HeightInPixels
+    public Double HeightInPixels
     {
         get
         {
-            if (!_cachedHeightPx.HasValue && !_height.IsAuto)
+            if (!_cachedHeightPx.HasValue && !_height.Equals(CssLengthValue.Auto))
             {
                 // Call AngleSharp's conversion with appropriate context
-                _cachedHeightPx = _height.ToPixel(null);
+                _cachedHeightPx = _height.ToPixel(_renderDevice);
             }
             return _cachedHeightPx ?? 0;
         }

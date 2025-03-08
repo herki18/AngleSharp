@@ -3,6 +3,7 @@
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Values;
 using AngleSharp.Dom;
+using Css;
 using Interfaces;
 
 /// <summary>
@@ -18,8 +19,10 @@ public class ComputedStyle : IComputedStyle
     private readonly SurrogateBitfields _bitfields;
     private readonly PropertyTreeNode _propertyTree;
     private readonly IElement _element;
-    private readonly IComputedStyle _parentStyle;
+    private readonly IComputedStyle? _parentStyle;
     private readonly WritingMode _writingMode;
+    private readonly IRenderDevice _renderDevice;
+    private readonly IStyleInvalidationTracker _invalidationTracker;
 
     #endregion
 
@@ -32,20 +35,24 @@ public class ComputedStyle : IComputedStyle
     /// <param name="parentStyle">The parent element's computed style.</param>
     /// <param name="declaration">The CSS declaration containing the style properties.</param>
     /// <param name="propertyTree">The property tree node for shared style storage.</param>
-    public ComputedStyle(IElement element, IComputedStyle parentStyle, ICssStyleDeclaration declaration, PropertyTreeNode propertyTree)
+    public ComputedStyle(IElement element, IComputedStyle? parentStyle, ICssStyleDeclaration declaration, PropertyTreeNode propertyTree, IRenderDevice renderDevice, IStyleInvalidationTracker invalidationTracker)
     {
         _element = element;
         _parentStyle = parentStyle;
         _propertyTree = propertyTree;
+        _renderDevice = renderDevice;
+        _invalidationTracker = invalidationTracker;
 
         // Initialize property groups
-        _boxProperties = new BoxProperties(this);
-        _textProperties = new TextProperties(this);
+        _boxProperties = new BoxProperties(this, _renderDevice);
+        _textProperties = new TextProperties(this, _renderDevice);
         _rareProperties = new RareProperties();
         _bitfields = new SurrogateBitfields();
 
         // Compute writing mode early as it affects property mapping
         _writingMode = ComputeWritingMode(declaration);
+
+
 
         // Process style properties
         ProcessStyleProperties(declaration);
@@ -149,7 +156,7 @@ public class ComputedStyle : IComputedStyle
     private void ProcessStyleProperties(ICssStyleDeclaration declaration)
     {
         // Parse and compute values for all properties
-        foreach (var property in declaration.Declarations)
+        foreach (var property in declaration)
         {
             ProcessProperty(property);
         }
@@ -172,6 +179,15 @@ public class ComputedStyle : IComputedStyle
     {
         // Store property in the property tree
         _propertyTree.SetProperty(property.Name, property.RawValue);
+
+        // Track device-dependent properties
+        if (property.RawValue is CssLengthValue length && IsDeviceDependent(length))
+        {
+            if (_invalidationTracker is StyleInvalidationTracker tracker)
+            {
+                tracker.MarkAsDeviceDependent(_element);
+            }
+        }
 
         // Update specialized property groups
         switch (property.Name)
@@ -260,13 +276,23 @@ public class ComputedStyle : IComputedStyle
         }
     }
 
+    private bool IsDeviceDependent(CssLengthValue length)
+    {
+        // Check if the unit depends on the render device
+        var unit = length.Type;
+        return unit == CssLengthValue.Unit.Em || unit == CssLengthValue.Unit.Rem ||
+               unit == CssLengthValue.Unit.Vh || unit == CssLengthValue.Unit.Vw ||
+               unit == CssLengthValue.Unit.Vmin || unit == CssLengthValue.Unit.Vmax ||
+               unit == CssLengthValue.Unit.Percent;
+    }
+
     /// <summary>
     /// Processes box-related properties.
     /// </summary>
     private void ProcessBoxProperty(ICssProperty property)
     {
         // Extract CSS length value
-        CssLengthValue length = null;
+        CssLengthValue? length = null;
 
         if (property.RawValue is CssLengthValue lengthValue)
         {

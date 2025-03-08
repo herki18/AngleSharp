@@ -1,7 +1,9 @@
 ﻿namespace AngleSharp.StyleSystem.Core
 {
+    using System;
     using AngleSharp.Css.Dom;
     using AngleSharp.Css.Values;
+    using Css;
     using Interfaces;
 
     /// <summary>
@@ -9,6 +11,9 @@
     /// </summary>
     public class TextProperties : ITextProperties
     {
+        private readonly ComputedStyle _owner;
+        private readonly IRenderDevice _renderDevice;
+
         // Using AngleSharp's value types where appropriate
         private string _fontFamily = "sans-serif";
         private CssLengthValue _fontSize = CssLengthValue.Medium;
@@ -19,12 +24,13 @@
         private CssColorValue _color = CssColorValue.Black;
 
         // Cached values for performance optimization
-        private float? _cachedFontSizePx;
-        private float? _cachedLineHeightPx;
+        private Double? _cachedFontSizePx;
+        private Double? _cachedLineHeightPx;
 
-        public TextProperties(ComputedStyle owner)
+        public TextProperties(ComputedStyle owner, IRenderDevice renderDevice)
         {
-            // Owner reference might be needed for context-dependent calculations
+            _owner = owner;
+            _renderDevice = renderDevice;
         }
 
         // Property getters
@@ -39,14 +45,14 @@
         /// <summary>
         /// Gets font size in pixels with caching for performance (layout optimization).
         /// </summary>
-        public float FontSizeInPixels
+        public Double FontSizeInPixels
         {
             get
             {
                 if (!_cachedFontSizePx.HasValue)
                 {
                     // Use AngleSharp's conversion with appropriate context
-                    _cachedFontSizePx = _fontSize.ToPixel(null);
+                    _cachedFontSizePx = _fontSize.ToPixel(_renderDevice);
                 }
                 return _cachedFontSizePx ?? 16f; // Default to 16px if not calculable
             }
@@ -55,7 +61,7 @@
         /// <summary>
         /// Gets line height in pixels with caching for performance (layout optimization).
         /// </summary>
-        public float LineHeightInPixels
+        public Double LineHeightInPixels
         {
             get
             {
@@ -69,7 +75,7 @@
                     else
                     {
                         // Use AngleSharp's conversion with appropriate context
-                        _cachedLineHeightPx = _lineHeight.ToPixel(null);
+                        _cachedLineHeightPx = _lineHeight.ToPixel(_renderDevice);
                     }
                 }
                 return _cachedLineHeightPx ?? (FontSizeInPixels * 1.2f);
@@ -85,7 +91,7 @@
         // Setter methods
         public void SetFontFamily(string fontFamily) => _fontFamily = fontFamily ?? "sans-serif";
 
-        public void SetFontSize(CssLengthValue fontSize)
+        public void SetFontSize(CssLengthValue? fontSize)
         {
             _fontSize = fontSize ?? CssLengthValue.Medium;
             _cachedFontSizePx = null; // Invalidate cache
@@ -96,7 +102,7 @@
 
         public void SetIsItalic(bool isItalic) => _isItalic = isItalic;
 
-        public void SetLineHeight(CssLengthValue lineHeight)
+        public void SetLineHeight(CssLengthValue? lineHeight)
         {
             _lineHeight = lineHeight ?? CssLengthValue.Normal;
             _cachedLineHeightPx = null; // Invalidate cache
@@ -104,18 +110,28 @@
 
         public void SetTextAlign(TextAlign textAlign) => _textAlign = textAlign;
 
-        public void SetColor(CssColorValue color) => _color = color ?? CssColorValue.Black;
+        public void SetColor(CssColorValue? color) => _color = color ?? CssColorValue.Black;
 
         public void SetColor(string colorStr)
         {
-            // Try to use AngleSharp's color parsing
+            // Try to use AngleSharp's color parsing methods
+
+            // First try to parse as hex
             if (CssColorValue.TryFromHex(colorStr, out var parsedColor))
             {
                 _color = parsedColor;
                 return;
             }
 
-            // Handle named colors
+            // Then try to get by known color name
+            var namedColor = CssColorValue.FromName(colorStr);
+            if (namedColor.HasValue)
+            {
+                _color = namedColor.Value;
+                return;
+            }
+
+            // Handle common named colors directly
             _color = colorStr.ToLowerInvariant() switch
             {
                 "black" => CssColorValue.Black,
@@ -124,7 +140,7 @@
                 "green" => CssColorValue.Green,
                 "blue" => CssColorValue.Blue,
                 "transparent" => CssColorValue.Transparent,
-                _ => CssColorValue.Parse(colorStr) ?? CssColorValue.Black // Use AngleSharp's parser with fallback
+                _ => CssColorValue.Black // Fallback to black
             };
         }
 

@@ -1,5 +1,6 @@
 ﻿namespace AngleSharp.StyleSystem.Core.Interfaces;
 
+using Css;
 using Dom;
 
 /// <summary>
@@ -30,4 +31,7 @@ public interface IStyleEngine
     /// Gets the style invalidation tracker.
     /// </summary>
     IStyleInvalidationTracker InvalidationTracker { get; }
+
+    IRenderDevice RenderDevice { get; }
+    StyleSheetManager StylesheetManager { get; }
 }

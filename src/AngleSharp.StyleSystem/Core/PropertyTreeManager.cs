@@ -1,11 +1,11 @@
-﻿namespace AngleSharp.StyleSystem;
+﻿namespace AngleSharp.StyleSystem.Core;
 
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using AngleSharp.Css.Dom;
-using Css.Values;
-using Dom;
+using AngleSharp.Css.Values;
+using AngleSharp.Dom;
 
 /// <summary>
 /// Manages property trees for efficient style storage and sharing.
@@ -93,7 +93,7 @@ public class PropertyTreeNode
     /// <summary>
     /// Sets a property value in this node.
     /// </summary>
-    public void SetProperty(string name, ICssValue value)
+    public void SetProperty(string name, ICssValue? value)
     {
         if (value != null)
         {
@@ -140,7 +140,7 @@ public class PropertyTreeNode
     /// <summary>
     /// Gets a property value as an ICssValue, looking up the tree if necessary.
     /// </summary>
-    public ICssValue GetPropertyRawValue(string name)
+    public ICssValue? GetPropertyRawValue(string name)
     {
         if (_properties.TryGetValue(name, out var value))
         {
@@ -153,7 +153,7 @@ public class PropertyTreeNode
     /// <summary>
     /// Gets a computed cached value for a property, or computes and caches it if needed.
     /// </summary>
-    public object GetPropertyCachedValue(string name)
+    public object? GetPropertyCachedValue(string name)
     {
         if (_computedValues.TryGetValue(name, out var cachedValue))
         {
