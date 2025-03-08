@@ -8,6 +8,8 @@ using Css.Values;
 /// </summary>
 public interface IComputedStyle
 {
+    public ICssStyleDeclaration Declaration { get; }
+
     /// <summary>
     /// Gets a computed value by property name.
     /// </summary>

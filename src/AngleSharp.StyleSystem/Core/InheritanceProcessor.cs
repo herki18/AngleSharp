@@ -39,9 +39,7 @@ public class InheritanceProcessor
             return CloneStyleDeclaration(elementStyle);
 
         // Convert IComputedStyle to ICssStyleDeclaration (if available)
-        var parentStyle = GetStyleDeclarationFromComputedStyle(parentComputedStyle);
-        if (parentStyle == null)
-            return CloneStyleDeclaration(elementStyle);
+        var parentStyle = parentComputedStyle.Declaration;
 
         // Check for direct 'all' property usage first
         var allValue = elementStyle.GetPropertyValue("all");

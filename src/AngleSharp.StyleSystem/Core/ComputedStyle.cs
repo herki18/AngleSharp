@@ -49,6 +49,8 @@ public class ComputedStyle : IComputedStyle
         _rareProperties = new RareProperties();
         _bitfields = new SurrogateBitfields();
 
+        Declaration = declaration;
+
         // Compute writing mode early as it affects property mapping
         _writingMode = ComputeWritingMode(declaration);
 
@@ -61,6 +63,8 @@ public class ComputedStyle : IComputedStyle
     #endregion
 
     #region IComputedStyle Interface
+
+    public ICssStyleDeclaration Declaration { get; }
 
     /// <summary>
     /// Gets a computed value by property name.
