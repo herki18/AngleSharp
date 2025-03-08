@@ -5,7 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
-using LayoutEngine.StyleSystem;
+using Core;
+using Core.Interfaces;
 
 /// <summary>
 /// The main entry point for style computation in the LayoutEngine.
@@ -182,7 +183,7 @@ public class RuleCollector
     /// <summary>
     /// Collects all rules that match the element.
     /// </summary>
-    public IEnumerable<MatchedRule> CollectMatchingRules(IElement element, string pseudoElement = null)
+    public IEnumerable<MatchedRule> CollectMatchingRules(IElement element, string? pseudoElement = null)
     {
         var matchedRules = new List<MatchedRule>();
         var index = 0;
@@ -657,106 +658,6 @@ public readonly struct Priority : IComparable<Priority>, IEquatable<Priority>
     {
         return _value.GetHashCode();
     }
-}
-
-/// <summary>
-/// Represents a writing mode for text direction and flow.
-/// </summary>
-public readonly struct WritingMode : IEquatable<WritingMode>
-{
-    /// <summary>
-    /// Gets the text direction (LTR or RTL).
-    /// </summary>
-    public Direction Direction { get; }
-
-    /// <summary>
-    /// Gets the writing mode type.
-    /// </summary>
-    public WritingModeType Mode { get; }
-
-    public WritingMode(Direction direction, WritingModeType mode)
-    {
-        Direction = direction;
-        Mode = mode;
-    }
-
-    /// <summary>
-    /// Gets whether the writing mode is horizontal.
-    /// </summary>
-    public bool IsHorizontal => Mode == WritingModeType.HorizontalTopToBottom;
-
-    /// <summary>
-    /// Gets whether the writing mode is vertical.
-    /// </summary>
-    public bool IsVertical => !IsHorizontal;
-
-    /// <summary>
-    /// Gets whether the text direction is right-to-left.
-    /// </summary>
-    public bool IsRightToLeft => Direction == Direction.Rtl;
-
-    public bool Equals(WritingMode other)
-    {
-        return Direction == other.Direction && Mode == other.Mode;
-    }
-
-    public override bool Equals(object obj)
-    {
-        return obj is WritingMode mode && Equals(mode);
-    }
-
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(Direction, Mode);
-    }
-}
-
-/// <summary>
-/// The display type of an element.
-/// </summary>
-public enum DisplayType
-{
-    None,
-    Block,
-    Inline,
-    InlineBlock,
-    Flex,
-    Grid,
-    Table
-}
-
-/// <summary>
-/// The position type of an element.
-/// </summary>
-public enum PositionType
-{
-    Static,
-    Relative,
-    Absolute,
-    Fixed,
-    Sticky
-}
-
-
-/// <summary>
-/// Text direction options.
-/// </summary>
-public enum Direction
-{
-    Ltr,
-    Rtl
-}
-
-/// <summary>
-/// Writing mode types.
-/// </summary>
-public enum WritingModeType
-{
-    HorizontalTopToBottom,
-    VerticalRightToLeft,
-    VerticalLeftToRight,
-    SidewaysRightToLeft,
-    SidewaysLeftToRight
 }
 
 /// <summary>

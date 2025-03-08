@@ -18,7 +18,7 @@ public class PropertyTreeManager
     /// <summary>
     /// Creates a new property tree node for the given element.
     /// </summary>
-    public PropertyTreeNode CreateNode(IElement element, PropertyTreeNode parent = null)
+    public PropertyTreeNode CreateNode(IElement element, PropertyTreeNode? parent = null)
     {
         var node = new PropertyTreeNode(parent);
         _elementToPropertyTree.Add(element, node);
@@ -28,7 +28,7 @@ public class PropertyTreeManager
     /// <summary>
     /// Gets the property tree node for an element, creating one if it doesn't exist.
     /// </summary>
-    public PropertyTreeNode GetOrCreateNode(IElement element, PropertyTreeNode parent = null)
+    public PropertyTreeNode GetOrCreateNode(IElement element, PropertyTreeNode? parent = null)
     {
         if (_elementToPropertyTree.TryGetValue(element, out var node))
         {
@@ -76,7 +76,7 @@ public class PropertyTreeManager
 /// </summary>
 public class PropertyTreeNode
 {
-    private readonly PropertyTreeNode _parent;
+    private readonly PropertyTreeNode? _parent;
     private readonly Dictionary<string, ICssValue> _properties = new Dictionary<string, ICssValue>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, object> _computedValues = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, PropertyTreeNode> _children = new Dictionary<string, PropertyTreeNode>(StringComparer.OrdinalIgnoreCase);
@@ -85,7 +85,7 @@ public class PropertyTreeNode
     /// Creates a new property tree node.
     /// </summary>
     /// <param name="parent">The parent node, or null for a root node.</param>
-    public PropertyTreeNode(PropertyTreeNode parent)
+    public PropertyTreeNode(PropertyTreeNode? parent)
     {
         _parent = parent;
     }
