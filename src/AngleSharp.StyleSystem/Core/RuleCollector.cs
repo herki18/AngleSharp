@@ -14,6 +14,14 @@ public class RuleCollector
     private readonly Dictionary<string, List<MatchedRule>> _selectorMatchCache = new();
     private readonly ICssSelectorParser _selectorParser;
 
+    // List of known pseudo-elements (for legacy syntax detection)
+    private static readonly HashSet<string> _pseudoElements = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "before", "after", "first-line", "first-letter",
+        "selection", "backdrop", "placeholder", "marker",
+        "spelling-error", "grammar-error"
+    };
+
     public RuleCollector(IBrowsingContext context, StyleSheetManager stylesheetManager)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -86,28 +94,95 @@ public class RuleCollector
     {
         try
         {
-            var matches = element.Matches(rule.SelectorText);
+            var selectorText = rule.SelectorText;
 
-            // Handle pseudo-elements if specified
+            // Case 1: Looking for a pseudo-element
             if (pseudoElement != null)
             {
-                // Only match if the selector contains the specified pseudo-element
-                return matches && rule.SelectorText.Contains($"::{pseudoElement}");
+                // Check if this selector contains the requested pseudo-element
+                // Check both modern (::) and legacy (:) syntax
+                if (!ContainsPseudoElement(selectorText, pseudoElement))
+                {
+                    return false;
+                }
+
+                // Extract the base selector (the part before the pseudo-element)
+                string baseSelector = ExtractBaseSelector(selectorText, pseudoElement);
+
+                // Check if the base selector matches the element
+                return string.IsNullOrEmpty(baseSelector) || element.Matches(baseSelector);
             }
 
-            // For normal elements, exclude rules targeting pseudo-elements
-            return matches && !HasPseudoElement(rule.SelectorText);
+            // Case 2: Looking for a regular element (no pseudo-element)
+            // First check if the selector matches the element
+            bool matches = element.Matches(selectorText);
+
+            // Then make sure it doesn't contain pseudo-elements
+            return matches && !HasAnyPseudoElement(selectorText);
         }
-        catch
+        catch (Exception)
         {
             return false;
         }
     }
 
-    private bool HasPseudoElement(string selectorText)
+    private bool ContainsPseudoElement(string selectorText, string pseudoElement)
     {
-        // Check for double-colon pseudo-elements like ::before, ::after, etc.
-        return selectorText.Contains("::");
+        // Check for both modern (::) and legacy (:) syntax
+        return selectorText.Contains($"::{pseudoElement}", StringComparison.OrdinalIgnoreCase) ||
+               selectorText.Contains($":{pseudoElement}", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string ExtractBaseSelector(string selectorText, string pseudoElement)
+    {
+        // Find the position of the pseudo-element in the selector (both syntaxes)
+        int doubleColonPos = selectorText.IndexOf($"::{pseudoElement}", StringComparison.OrdinalIgnoreCase);
+        int singleColonPos = selectorText.IndexOf($":{pseudoElement}", StringComparison.OrdinalIgnoreCase);
+
+        int pseudoPos;
+        if (doubleColonPos >= 0)
+        {
+            pseudoPos = doubleColonPos;
+        }
+        else if (singleColonPos >= 0)
+        {
+            pseudoPos = singleColonPos;
+        }
+        else
+        {
+            return selectorText; // Shouldn't happen as we already checked for the pseudo-element
+        }
+
+        // Return everything before the pseudo-element part
+        return selectorText.Substring(0, pseudoPos).Trim();
+    }
+
+    private bool HasAnyPseudoElement(string selectorText)
+    {
+        // Check for double-colon pseudo-elements (modern syntax)
+        if (selectorText.Contains("::"))
+            return true;
+
+        // Check for single-colon pseudo-elements (legacy syntax)
+        int colonPos = -1;
+        while ((colonPos = selectorText.IndexOf(':', colonPos + 1)) >= 0)
+        {
+            // Skip double-colons as we've already checked them
+            if (colonPos + 1 < selectorText.Length && selectorText[colonPos + 1] == ':')
+            {
+                colonPos++;
+                continue;
+            }
+
+            // Extract the pseudo name
+            string pseudoName = ExtractPseudoName(selectorText, colonPos + 1);
+
+            // Check if it's a known pseudo-element
+            if (_pseudoElements.Contains(pseudoName))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -210,7 +285,7 @@ public class RuleCollector
             {
                 // Exclude pseudo-elements with single colon (legacy syntax)
                 string pseudoName = ExtractPseudoName(selectorText, index + 1);
-                if (!IsPseudoElement(pseudoName))
+                if (!_pseudoElements.Contains(pseudoName))
                 {
                     count++;
                 }
@@ -241,7 +316,7 @@ public class RuleCollector
             if (index + 1 < selectorText.Length && selectorText[index + 1] != ':')
             {
                 string pseudoName = ExtractPseudoName(selectorText, index + 1);
-                if (IsPseudoElement(pseudoName))
+                if (_pseudoElements.Contains(pseudoName))
                 {
                     count++;
                 }
@@ -266,16 +341,10 @@ public class RuleCollector
             endIndex++;
         }
 
-        return selectorText.Substring(startIndex, endIndex - startIndex);
-    }
+        if (endIndex > startIndex)
+            return selectorText.Substring(startIndex, endIndex - startIndex);
 
-    private bool IsPseudoElement(string name)
-    {
-        // Common pseudo-elements
-        return name == "before" || name == "after" || name == "first-line" ||
-               name == "first-letter" || name == "selection" || name == "backdrop" ||
-               name == "placeholder" || name == "marker" || name == "spelling-error" ||
-               name == "grammar-error";
+        return string.Empty;
     }
 
     private byte CountElementSelectors(string selectorText)
