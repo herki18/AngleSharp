@@ -183,6 +183,55 @@ public class VariableResolver : IVariableResolver
         }
     }
 
+
+    public void RemoveVariable(IElement element, string variableName)
+    {
+        if (element == null || string.IsNullOrEmpty(variableName))
+            return;
+
+        if (_elementVariables.TryGetValue(element, out var variables))
+        {
+            if (variables.Remove(variableName))
+            {
+                // Invalidate cache for this variable
+                var elementHash = element.GetHashCode();
+                var cacheKey = $"{elementHash}:{variableName}";
+
+                var keysToRemove = _resolvedVariableCache.Keys
+                    .Where(k => k.Equals(cacheKey) || k.Contains(variableName))
+                    .ToList();
+
+                foreach (var key in keysToRemove)
+                {
+                    _resolvedVariableCache.Remove(key);
+                }
+            }
+        }
+    }
+
+
+    public void ClearElementVariables(IElement element)
+    {
+        if (element == null)
+            return;
+
+        if (_elementVariables.Remove(element))
+        {
+            // Invalidate cache for all variables associated with this element
+            var elementHash = element.GetHashCode();
+            var prefix = $"{elementHash}:";
+
+            var keysToRemove = _resolvedVariableCache.Keys
+                .Where(k => k.StartsWith(prefix))
+                .ToList();
+
+            foreach (var key in keysToRemove)
+            {
+                _resolvedVariableCache.Remove(key);
+            }
+        }
+    }
+
     private bool TryGetElementVariable(IElement element, string variableName, out ICssValue value)
     {
         if (_elementVariables.TryGetValue(element, out var variables) &&

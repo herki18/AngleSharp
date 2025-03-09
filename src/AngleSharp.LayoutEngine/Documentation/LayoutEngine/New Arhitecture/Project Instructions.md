@@ -10,7 +10,7 @@ Your work should strictly adhere to the following documents:
 
 1. **Development Guidelines**: General coding practices, nullable reference types usage, documentation standards, and testing requirements.
     
-2. **AngleSharp.StyleSystem Development Guidelines****: The specific architecture, component boundaries, and integration patterns for the StyleSystem.
+2. **AngleSharp.StyleSystem Devealopment Guidelines****: The specific architecture, component boundaries, and integration patterns for the StyleSystem.
     
 3. **AngleSharp CSS Reference**: Implementation details and patterns from the AngleSharp framework, including existing functionality, types, and integration methods.
     

@@ -49,5 +49,18 @@
         /// <param name="element">The element owning the style.</param>
         /// <param name="style">The style declaration containing variables.</param>
         void ExtractVariablesFromStyle(IElement element, ICssStyleDeclaration style);
+
+        /// <summary>
+        /// Removes a specific variable from an element.
+        /// </summary>
+        /// <param name="element">The element containing the variable.</param>
+        /// <param name="variableName">The name of the variable to remove.</param>
+        void RemoveVariable(IElement element, string variableName);
+
+        /// <summary>
+        /// Removes all variables associated with an element.
+        /// </summary>
+        /// <param name="element">The element to clear variables for.</param>
+        void ClearElementVariables(IElement element);
     }
 }
