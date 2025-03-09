@@ -104,7 +104,7 @@ namespace AngleSharp.StyleSystem.Core
         public double ToPixels(CssLengthValue length, IElement element, string propertyName)
         {
             // Check for special length values
-            if (length.Equals(CssLengthValue.Auto) || length.Equals(CssLengthValue.None))
+            if (length.Equals(CssLengthValue.Auto) || length.CssText == CssKeywords.None)
                 return 0;
 
             // Handle absolute units directly
@@ -129,8 +129,6 @@ namespace AngleSharp.StyleSystem.Core
                     return length.Value * dpi / 72; // 1pt = 96px/72 ≈ 1.33px at 96dpi
                 case CssLengthValue.Unit.Pc:
                     return length.Value * dpi / 6; // 1pc = 96px/6 = 16px at 96dpi
-                case CssLengthValue.Unit.Q:
-                    return length.Value * dpi / 101.6; // 1Q = 1/40cm = 96px/101.6 ≈ 0.94px at 96dpi
 
                 // Font-relative length units
                 case CssLengthValue.Unit.Em:
@@ -155,17 +153,6 @@ namespace AngleSharp.StyleSystem.Core
                     return length.Value * Math.Max(_renderDevice.ViewPortWidth, _renderDevice.ViewPortHeight) / 100;
                 case CssLengthValue.Unit.Percent:
                     return ResolvePercentage(length.Value / 100, element, propertyName);
-
-                // Handle newer viewport units
-                case (CssLengthValue.Unit)100: // Assuming 100 for Small Viewport Width (svw)
-                    var smallViewport = Math.Min(_renderDevice.ViewPortWidth, 1200); // Example of small viewport calculation
-                    return length.Value * smallViewport / 100;
-                case (CssLengthValue.Unit)101: // Assuming 101 for Large Viewport Width (lvw)
-                    var largeViewport = Math.Max(_renderDevice.ViewPortWidth, 1200); // Example of large viewport calculation
-                    return length.Value * largeViewport / 100;
-                case (CssLengthValue.Unit)102: // Assuming 102 for Dynamic Viewport Width (dvw)
-                    // Dynamic viewport units would require more complex logic in a real implementation
-                    return length.Value * _renderDevice.ViewPortWidth / 100;
 
                 // For unknown units, return the value directly (not ideal but safer than 0)
                 default:
