@@ -6,7 +6,7 @@ namespace AngleSharp.Css.Values
     /// <summary>
     /// Represents a calc subtraction expression, i.e., a - b.
     /// </summary>
-    sealed class CssCalcSubExpression : ICssCompositeValue
+    public sealed class CssCalcSubExpression : ICssCompositeValue
     {
         #region Fields
 

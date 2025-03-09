@@ -6,7 +6,7 @@ namespace AngleSharp.Css.Values
     /// <summary>
     /// Represents a calc bracket expression, i.e., (2+3).
     /// </summary>
-    sealed class CssCalcBracketExpression : ICssCompositeValue
+    public sealed class CssCalcBracketExpression : ICssCompositeValue
     {
         #region Fields
 

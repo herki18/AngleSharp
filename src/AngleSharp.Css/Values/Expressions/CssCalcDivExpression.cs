@@ -6,7 +6,7 @@ namespace AngleSharp.Css.Values
     /// <summary>
     /// Represents a calc division expression, i.e., a / b.
     /// </summary>
-    sealed class CssCalcDivExpression : ICssCompositeValue
+    public sealed class CssCalcDivExpression : ICssCompositeValue
     {
         #region Fields
 

@@ -6,7 +6,7 @@ namespace AngleSharp.Css.Values
     /// <summary>
     /// Represents a calc multiplication expression, i.e., a * b.
     /// </summary>
-    sealed class CssCalcMulExpression : ICssCompositeValue
+    public sealed class CssCalcMulExpression : ICssCompositeValue
     {
         #region Fields
 
