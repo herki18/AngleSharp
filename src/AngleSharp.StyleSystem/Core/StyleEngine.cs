@@ -1,4 +1,5 @@
 ﻿namespace AngleSharp.StyleSystem.Core;
+
 using System;
 using AngleSharp.Dom;
 using AngleSharp.StyleSystem.Core.Interfaces;
@@ -19,32 +20,24 @@ public class StyleEngine : IStyleEngine, IDisposable
     private readonly ValueCalculator _valueCalculator;
     private readonly StylePropertyMapper _stylePropertyMapper;
     private readonly PropertyTreeManager _propertyTreeManager;
+    private readonly IStyleApplicationStrategy _styleApplicationStrategy;
+    private readonly IStyleTreeResolver _styleTreeResolver;
 
     public StyleEngine(IBrowsingContext context)
     {
         _context = context;
         _renderDevice = context.GetService<IRenderDevice>() ?? new DefaultRenderDevice();
-
-        // Initialize managers and trackers
         _propertyTreeManager = new PropertyTreeManager();
         _styleCache = new StyleCache();
         _stylesheetManager = new StyleSheetManager(context);
         _invalidationTracker = new StyleInvalidationTracker();
-
-        // Initialize processors
         _ruleCollector = new RuleCollector(context, _stylesheetManager);
         _cascadeResolver = new CascadeResolver(context);
         _inheritanceProcessor = new InheritanceProcessor(_context);
         _variableResolver = new VariableResolver(context);
         _stylePropertyMapper = new StylePropertyMapper();
-
-        // Initialize calculator
         _valueCalculator = new ValueCalculator(context, _renderDevice);
-
-        // Initialize style factory
         StyleFactory = new ComputedStyleFactory(this);
-
-        // Initialize style builder (with all required dependencies)
         _computedStyleBuilder = new ComputedStyleBuilder(
             context,
             this,
@@ -54,11 +47,28 @@ public class StyleEngine : IStyleEngine, IDisposable
             _propertyTreeManager,
             _renderDevice);
 
-        // Setup event handlers
+        // Initialize strategy and resolver
+        _styleApplicationStrategy = new BasicStyleApplicationStrategy(this);
+        _styleTreeResolver = new StyleTreeResolver(
+            this,
+            _styleApplicationStrategy,
+            _styleCache,
+            _invalidationTracker);
+
         _stylesheetManager.StylesheetChanged += StylesheetManager_StylesheetChanged;
     }
 
     public StyleSheetManager StylesheetManager => _stylesheetManager;
+
+    public RuleCollector RuleCollector => _ruleCollector;
+
+    public CascadeResolver CascadeResolver => _cascadeResolver;
+
+    public InheritanceProcessor InheritanceProcessor => _inheritanceProcessor;
+
+    public ComputedStyleBuilder ComputedStyleBuilder => _computedStyleBuilder;
+
+    public VariableResolver VariableResolver => _variableResolver;
 
     private void StylesheetManager_StylesheetChanged(object? sender, StylesheetChangedEventArgs e)
     {
@@ -109,46 +119,25 @@ public class StyleEngine : IStyleEngine, IDisposable
     }
 
     IRenderDevice IStyleEngine.RenderDevice => RenderDevice;
+
     public IStyleInvalidationTracker InvalidationTracker => _invalidationTracker;
+
     public IComputedStyleFactory StyleFactory { get; }
+
     public IBrowsingContext Context => _context;
+
     internal PropertyTreeManager PropertyTreeManager => _propertyTreeManager;
 
     public IComputedStyle ComputeElementStyle(IElement element, string? pseudoElement = null)
     {
-        var cacheKey = new StyleCacheKey(element, pseudoElement);
-        if (_styleCache.TryGetValue(cacheKey, out var cachedStyle))
-        {
-            return cachedStyle;
-        }
-
-        IComputedStyle? parentStyle = null;
-        if (element.ParentElement != null)
-        {
-            parentStyle = ComputeElementStyle(element.ParentElement);
-        }
-
-        var matchedRules = _ruleCollector.CollectMatchingRules(element, pseudoElement);
-        var cascadedStyle = _cascadeResolver.ResolveCascade(matchedRules, element);
-        var inheritedStyle = _inheritanceProcessor.ApplyInheritance(cascadedStyle, parentStyle);
-        var computedStyle = _computedStyleBuilder.BuildComputedStyle(inheritedStyle, element, parentStyle);
-
-        if(computedStyle is null)
-            throw new Exception("Computed style is null");
-
-        _styleCache.Store(cacheKey, computedStyle);
-        _invalidationTracker.MarkAsUpToDate(element);
-        return computedStyle;
+        // Delegate to the style tree resolver
+        return _styleTreeResolver.ResolveElementStyle(element, null, pseudoElement);
     }
 
     public void UpdateStyles(IElement root)
     {
-        var elementsToUpdate = _invalidationTracker.GetElementsToUpdate(root);
-        foreach (var element in elementsToUpdate)
-        {
-            _styleCache.Remove(new StyleCacheKey(element, null));
-            ComputeElementStyle(element);
-        }
+        // Delegate to the style tree resolver
+        _styleTreeResolver.ResolveStylesForSubtree(root);
     }
 
     public void Dispose()
