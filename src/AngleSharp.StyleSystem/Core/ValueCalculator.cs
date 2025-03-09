@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Values;
@@ -708,7 +709,7 @@ namespace AngleSharp.StyleSystem.Core
             else if (calc.Expression is CssCalcBracketExpression bracket)
             {
                 // Handle bracketed expressions by recursively resolving the inner expression
-                var innerCalc = new CssCalcValue(bracket.Content);
+                var innerCalc = new CssCalcValue(bracket.Value);
                 resolvedExpression = ResolveNestedCalcExpressions(innerCalc, element, propertyName);
             }
             else if (calc.Expression is CssLengthValue length)
@@ -893,7 +894,7 @@ namespace AngleSharp.StyleSystem.Core
             }
             else if (operand is CssCalcBracketExpression bracket)
             {
-                var innerCalc = new CssCalcValue(bracket.Content);
+                var innerCalc = new CssCalcValue(bracket.Value);
                 return ResolveNestedCalcExpressions(innerCalc, element, propertyName);
             }
 
