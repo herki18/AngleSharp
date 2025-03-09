@@ -13,15 +13,30 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "New Arhitecture/StyleSystem Component Data Flow.md",
+                "file": "New Arhitecture/StyleSystem Component Interaction Flow Documentation.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "StyleSystem Component Data Flow"
+              "title": "StyleSystem Component Interaction Flow Documentation"
+            }
+          },
+          {
+            "id": "5477d1f2e8ae73cd",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "StyleSystem Architecture Overview"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -78,7 +93,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 443.5
   },
   "right": {
     "id": "8989d77b04c133bb",
@@ -94,7 +109,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "New Arhitecture/StyleSystem Component Data Flow.md",
+                "file": "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +119,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for StyleSystem Component Data Flow"
+              "title": "Backlinks for StyleSystem Architecture Overview"
             }
           },
           {
@@ -113,12 +128,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "New Arhitecture/StyleSystem Component Data Flow.md",
+                "file": "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from StyleSystem Component Data Flow"
+              "title": "Outgoing links from StyleSystem Architecture Overview"
             }
           },
           {
@@ -142,13 +157,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "New Arhitecture/StyleSystem Component Data Flow.md",
+                "file": "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of StyleSystem Component Data Flow"
+              "title": "Outline of StyleSystem Architecture Overview"
             }
           }
         ]
@@ -168,15 +183,15 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "a1c586c1346b1360",
+  "active": "5477d1f2e8ae73cd",
   "lastOpenFiles": [
+    "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
+    "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
     "New Arhitecture/StyleSystem Component Interaction Flow Documentation.md",
     "New Arhitecture/StyleSystem Component Data Flow.md",
     "New Arhitecture/Rev 1/AngleSharp CSS Reference.md",
     "New Arhitecture/Rev 1/Core Component Interfaces.md",
-    "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
     "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
-    "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
     "New Arhitecture/Rev 1/StyleSystem Data Flow Diagrams.md",
     "New Arhitecture/Rev 1/StyleSystem Testing Strategy.md",
     "New Arhitecture/Untitled 3.md",

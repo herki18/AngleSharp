@@ -39,10 +39,43 @@ This document outlines the redesigned StyleSystem architecture for AngleSharp.La
 
 ### 4. Value Processing Components
 
-- **VariableResolver**: Efficiently resolves CSS custom properties
-- **ValueCalculator**: Performs value computation and unit conversion
-- **PropertyTreeManager**: Manages shared property storage
-- **StylePropertyMapper**: Handles logical-to-physical property mapping
+- **VariableResolver**: Efficiently resolves CSS custom properties (variables) with handling for circular references and fallbacks
+- **ValueCalculator**: Performs unit conversion and computes values (independent of variable resolution)
+- **PropertyTreeManager**: Manages shared property storage through tree structures for memory efficiency
+- **StylePropertyMapper**: Handles logical-to-physical property mapping based on writing mode context
+
+These components operate independently and do not directly depend on each other. Instead, they are orchestrated by the ComputedStyleBuilder, which coordinates the processing sequence:
+
+1. First, CSS variables are resolved by the VariableResolver
+2. Then computed values are calculated by the ValueCalculator
+3. Logical properties are mapped to physical properties by the StylePropertyMapper
+4. Finally, values are stored efficiently by the PropertyTreeManager
+
+This orchestration-based approach follows modern browser engines like Blink and provides clear separation of concerns, better testability, and focused optimization opportunities.
+
+### Component Processing Flow
+
+The StyleSystem follows a specific processing sequence when computing styles:
+
+```
+CSS Declaration → Variable Resolution → Value Calculation → Logical-to-Physical Mapping → Property Storage
+```
+
+The ComputedStyleBuilder acts as the coordinator for this process:
+
+1. For each property in a declaration:
+   - First resolves any CSS variables in the property value
+   - Then computes absolute values through unit conversion and calculation
+   - For logical properties, maps them to their physical equivalents based on writing mode
+   - Finally stores the computed values in the property tree for efficient storage
+
+This clearly defined flow ensures that:
+- Variables are always resolved before calculations are performed
+- Unit conversion happens after variable resolution
+- Logical properties are correctly mapped based on writing mode
+- The property tree efficiently stores and shares values between similar elements
+
+The flow ensures proper isolation between components while maintaining the correct processing order required for CSS.
 
 ### 5. Output Layer
 

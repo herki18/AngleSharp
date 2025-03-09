@@ -2,38 +2,64 @@
 
 This implementation plan divides the development of the new StyleSystem into distinct phases, each with testable deliverables and clear objectives. The plan follows an incremental approach, allowing for continuous integration and verification.
 
-## Phase 1: Core Infrastructure (6-8 weeks)
+## Phase 1: Core Infrastructure - Progress Update
 
-### Objectives
+### Completed Deliverables
+
+- ✅ `ValueCalculator` implementation
+  - Handles unit conversion (px, em, rem, vh, vw, etc.)
+  - Processes calc() expressions with nested operations
+  - Supports relative to absolute value conversion
+  - Includes device-dependent calculation
+
+- ✅ `VariableResolver` implementation
+  - Resolves CSS custom properties (variables)
+  - Handles fallback values
+  - Prevents circular references
+  - Supports variable inheritance from parent elements
+
+- ✅ Core component interaction architecture
+  - Defined clear processing sequence for style computation
+  - Established orchestration pattern via ComputedStyleBuilder
+  - Ensured proper component independence
+  - Created data flow documentation
+
+### In Progress / Next Steps
+
+- 🔄 `PropertyTreeNode` base implementation
+  - Basic structure implemented
+  - Optimization for memory usage in progress
+  - Property value sharing to be enhanced
+
+- 🔄 `CascadeResolver` implementation
+  - Basic implementation complete
+  - Specificity calculation to be enhanced
+  - Handling of !important flags implemented
+  - Shorthand/longhand property handling to be refined
+
+- 🔄 `InheritanceProcessor` implementation
+  - Basic inheritance handling implemented
+  - Support for global keywords (inherit, initial, unset)
+  - CSS cascade handling to be improved
+
+### Testing Progress
+
+- ✅ Unit tests for ValueCalculator
+  - Length value conversion tests
+  - Viewport unit calculation tests
+  - Calc() expression evaluation tests
+  - Absolute/relative unit conversion tests
+
+- 🔄 Integration tests for style computation
+  - Basic test framework established
+  - Additional test cases needed for complete coverage
+
+### Remaining Objectives
 
 - Establish foundation classes and interfaces
-- Implement basic style computation pipeline
-- Create property storage system
-- Set up testing framework
-
-### Deliverables
-
-#### 1.1 Core Classes and Interfaces
-
-- `StyleEngine` main entry point
-- `ICssComputedStyle` interface
-- `ComputedStyle` implementation
-- Base property structures
-- `PropertyTreeNode` base class
-
-#### 1.2 Basic Style Computation Pipeline
-
-- `RuleCollector` implementation
-- `CascadeResolver` implementation
-- `InheritanceProcessor` implementation
-- Basic `ValueCalculator` implementation
-
-#### 1.3 Testing Infrastructure
-
-- Unit test suite setup
-- Integration test framework
-- Performance benchmarking tools
-- Reference style computation tests
+- Complete the basic style computation pipeline
+- Finalize property storage system
+- Expand testing framework coverage
 
 ### Testing Criteria
 
@@ -42,7 +68,29 @@ This implementation plan divides the development of the new StyleSystem into dis
 - Comparison tests against current AngleSharp implementation
 - Style computation correctness verification
 
-## Phase 2: Advanced Value Computation (4-6 weeks)
+## Current Focus & Next Steps
+
+1. **Complete PropertyTreeManager implementation**
+   - Finish optimization for shared property values
+   - Implement efficient property lookups
+   - Add tree optimization algorithms
+
+2. **Enhance ComputedStyleBuilder**
+   - Implement the orchestration flow as documented
+   - Ensure proper phase sequence during style computation
+   - Add caching and optimization strategies
+
+3. **Finalize StylePropertyMapper**
+   - Complete logical to physical property mapping
+   - Add writing mode awareness
+   - Support all CSS logical properties
+
+4. **Extend testing coverage**
+   - Add tests for variable resolution
+   - Add tests for property tree optimization
+   - Create integration tests for complete style computation flow
+
+## Phase 2: Advanced Value Computation (Next Phase)
 
 ### Objectives
 
@@ -88,7 +136,7 @@ This implementation plan divides the development of the new StyleSystem into dis
 - Style caching hit rate tests
 - Performance comparison with Phase 1
 
-## Phase 3: Logical Properties & Layout Integration (4-6 weeks)
+## Phase 3: Logical Properties & Layout Integration
 
 ### Objectives
 
@@ -128,7 +176,7 @@ This implementation plan divides the development of the new StyleSystem into dis
 - Memory layout optimization tests
 - Property access benchmarks
 
-## Phase 4: Invalidation & Lifecycle Integration (4-6 weeks)
+## Phase 4: Invalidation & Lifecycle Integration
 
 ### Objectives
 
@@ -168,7 +216,7 @@ This implementation plan divides the development of the new StyleSystem into dis
 - Dependency tracking correctness tests
 - Recalculation scope tests
 
-## Phase 5: Threading & Performance Optimization (6-8 weeks)
+## Phase 5: Threading & Performance Optimization
 
 ### Objectives
 
@@ -216,7 +264,7 @@ This implementation plan divides the development of the new StyleSystem into dis
 - Overall performance benchmarks
 - Comparison with browser engines
 
-## Phase 6: Integration & Migration (4-6 weeks)
+## Phase 6: Integration & Migration
 
 ### Objectives
 
@@ -305,3 +353,7 @@ This implementation plan divides the development of the new StyleSystem into dis
 4. Clean integration with LayoutEngine
 5. Comprehensive test coverage
 6. Clear, well-documented API surface
+
+## Timeline Adjustment
+
+Based on current progress, we are on track with Phase 1 completion, with approximately 60% of the core infrastructure completed. We expect to complete Phase 1 within the next 2-3 weeks, allowing us to move to Phase 2: Advanced Value Computation on schedule.
