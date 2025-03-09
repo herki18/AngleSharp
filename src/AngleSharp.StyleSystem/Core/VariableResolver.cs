@@ -1,177 +1,184 @@
-namespace AngleSharp.StyleSystem.Core
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using AngleSharp.Css.Dom;
+using AngleSharp.Css.Values;
+using AngleSharp.Dom;
+using AngleSharp.StyleSystem.Core.Interfaces;
+
+namespace AngleSharp.StyleSystem.Core;
+
+public class VariableResolver : IVariableResolver
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using Css.Dom;
-    using Css.Values;
-    using Dom;
-    using Interfaces;
+    private readonly IBrowsingContext _context;
+    private readonly Dictionary<IElement, Dictionary<string, ICssValue>> _elementVariables;
+    private readonly Dictionary<string, ICssValue> _resolvedVariableCache;
+    private readonly HashSet<string> _processingVariables;
+    private const int MaxResolutionDepth = 50;
 
-    public class VariableResolver : IVariableResolver
+    public VariableResolver(IBrowsingContext context)
     {
-        private readonly IBrowsingContext _context;
-        private readonly Dictionary<IElement, Dictionary<string, ICssValue>> _variables = new();
-        private readonly Dictionary<string, ICssValue> _resolutionCache = new();
-        private const int MaxResolutionDepth = 50;
+        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _elementVariables = new Dictionary<IElement, Dictionary<string, ICssValue>>();
+        _resolvedVariableCache = new Dictionary<string, ICssValue>();
+        _processingVariables = new HashSet<string>();
+    }
 
-        public VariableResolver(IBrowsingContext context)
+    public ICssValue? ResolveVariable(string variableName, IElement element, ICssValue? defaultValue = null)
+    {
+        if (!variableName.StartsWith("--"))
+            return defaultValue;
+
+        // Check for circular references
+        string cacheKey = $"{element.GetHashCode()}:{variableName}";
+        if (_processingVariables.Contains(cacheKey))
+            return defaultValue; // Circular reference detected
+
+        try
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-        }
+            _processingVariables.Add(cacheKey);
 
-        public ICssValue? ResolveVariable(string variableName, IElement element, ICssValue? defaultValue = null)
-        {
-            if (element == null)
-                return defaultValue;
-
-            if (!variableName.StartsWith("--"))
-                return defaultValue;
-
-            return ResolveVariableInternal(variableName, element, defaultValue, new HashSet<string>(), 0);
-        }
-
-        private ICssValue? ResolveVariableInternal(string variableName, IElement element, ICssValue? defaultValue, HashSet<string> resolutionChain, int depth)
-        {
-            // Check for circular references and max depth
-            if (resolutionChain.Contains(variableName) || depth >= MaxResolutionDepth)
-                return defaultValue;
-
-            resolutionChain.Add(variableName);
-
-            // Cache key for the resolved variable
-            string cacheKey = $"{element.GetHashCode()}:{variableName}";
-
-            // Try to find in cache
-            if (_resolutionCache.TryGetValue(cacheKey, out var cachedValue))
+            // Check cache first
+            if (_resolvedVariableCache.TryGetValue(cacheKey, out var cachedValue))
                 return cachedValue;
 
-            // Try to get the variable from the current element
-            if (_variables.TryGetValue(element, out var elementVariables) &&
-                elementVariables.TryGetValue(variableName, out var value))
+            // Try to find the variable in the current element
+            if (TryGetElementVariable(element, variableName, out var value))
             {
-                // If the value is itself a var() function, resolve it recursively
+                // If the value is a var() function, we need to resolve it
                 if (value is CssVarValue varValue)
                 {
-                    value = ResolveVarFunctionInternal(varValue, element, new HashSet<string>(resolutionChain), depth + 1);
+                    value = ResolveVarFunction(varValue, element);
                 }
 
                 if (value != null)
                 {
-                    _resolutionCache[cacheKey] = value;
+                    _resolvedVariableCache[cacheKey] = value;
                     return value;
                 }
             }
 
-            // Try parent element if available
+            // If not found, try parent element
             if (element.ParentElement != null)
             {
-                var parentResult = ResolveVariableInternal(variableName, element.ParentElement, null, new HashSet<string>(resolutionChain), depth + 1);
-                if (parentResult != null)
+                var parentValue = ResolveVariable(variableName, element.ParentElement, null);
+                if (parentValue != null)
                 {
-                    _resolutionCache[cacheKey] = parentResult;
-                    return parentResult;
+                    _resolvedVariableCache[cacheKey] = parentValue;
+                    return parentValue;
                 }
             }
 
-            // Try document root element as a last resort for global variables
-            if (element.OwnerDocument?.DocumentElement != null && element != element.OwnerDocument.DocumentElement)
+            // If still not found, try the root element (if we're not already there)
+            var root = element.OwnerDocument?.DocumentElement;
+            if (root != null && root != element && element.ParentElement != root)
             {
-                var rootResult = ResolveVariableInternal(variableName, element.OwnerDocument.DocumentElement, null, new HashSet<string>(resolutionChain), depth + 1);
-                if (rootResult != null)
+                var rootValue = ResolveVariable(variableName, root, null);
+                if (rootValue != null)
                 {
-                    _resolutionCache[cacheKey] = rootResult;
-                    return rootResult;
+                    _resolvedVariableCache[cacheKey] = rootValue;
+                    return rootValue;
                 }
             }
 
-            // If not found anywhere, use the default value
+            // If all else fails, use the fallback value
             return defaultValue;
         }
-
-        public ICssValue? ResolveVarFunction(CssVarValue varValue, IElement element)
+        finally
         {
-            if (element == null || varValue == null)
-                return null;
+            _processingVariables.Remove(cacheKey);
+        }
+    }
 
-            return ResolveVarFunctionInternal(varValue, element, new HashSet<string>(), 0);
+    public ICssValue? ResolveVarFunction(CssVarValue varValue, IElement element)
+    {
+        if (element == null || varValue == null)
+            return null;
+
+        // Try to resolve the variable
+        var resolved = ResolveVariable(varValue.VariableName, element, null);
+
+        // If successful, return the resolved value
+        if (resolved != null)
+            return resolved;
+
+        // If not, try the fallback if provided
+        if (varValue.DefaultValue != null)
+        {
+            // If the fallback is itself a var() function, resolve it recursively
+            if (varValue.DefaultValue is CssVarValue nestedVarValue)
+            {
+                return ResolveVarFunction(nestedVarValue, element);
+            }
+
+            return varValue.DefaultValue;
         }
 
-        private ICssValue? ResolveVarFunctionInternal(CssVarValue varValue, IElement element, HashSet<string> resolutionChain, int depth)
+        // No resolution and no fallback
+        return null;
+    }
+
+    public ICssValue ResolveVariablesInValue(ICssValue value, IElement element, string propertyName)
+    {
+        // If it's a var() function, resolve it
+        if (value is CssVarValue varValue)
         {
-            if (depth >= MaxResolutionDepth)
-                return null;
-
-            var variableName = varValue.VariableName;
-            var fallbackValue = varValue.DefaultValue;
-
-            // Handle nested var() in fallback
-            if (fallbackValue is CssVarValue nestedFallback)
-            {
-                fallbackValue = ResolveVarFunctionInternal(nestedFallback, element, new HashSet<string>(resolutionChain), depth + 1);
-            }
-
-            // Resolve the variable
-            var result = ResolveVariableInternal(variableName, element, fallbackValue, new HashSet<string>(resolutionChain), depth);
-
-            // If we got a var() value back, resolve it recursively
-            if (result is CssVarValue nestedVarValue)
-            {
-                return ResolveVarFunctionInternal(nestedVarValue, element, new HashSet<string>(resolutionChain), depth + 1);
-            }
-
-            return result;
+            var resolved = ResolveVarFunction(varValue, element);
+            return resolved ?? value;
         }
 
-        public ICssValue ResolveVariablesInValue(ICssValue value, IElement element, string propertyName)
+        // For complex values that might contain var() references
+        // This is a simplified implementation - in a real scenario, we'd need to
+        // parse complex values and replace var() references within them
+
+        // Just return the value as is for now
+        return value;
+    }
+
+    public void RegisterVariable(IElement element, string variableName, ICssValue value)
+    {
+        if (string.IsNullOrEmpty(variableName))
+            return;
+
+        if (!_elementVariables.TryGetValue(element, out var variables))
         {
-            // If it's a var() function, resolve it
-            if (value is CssVarValue varValue)
-            {
-                var resolved = ResolveVarFunction(varValue, element);
-                return resolved ?? value;
-            }
-
-            // Handle complex values that might contain var() references
-            if (value is ICssFunctionValue functionValue &&
-                functionValue.Arguments != null &&
-                functionValue.Arguments.Any(arg => arg is CssVarValue))
-            {
-                // This is a placeholder for complex value resolution
-                // A real implementation would need to parse and process the function
-                // with all its arguments, resolving any var() references inside
-                return value;
-            }
-
-            return value;
+            variables = new Dictionary<string, ICssValue>();
+            _elementVariables[element] = variables;
         }
 
-        public void RegisterVariable(IElement element, string variableName, ICssValue value)
+        variables[variableName] = value;
+
+        // Clear cache entries related to this variable
+        var keysToRemove = _resolvedVariableCache.Keys
+            .Where(k => k.EndsWith(variableName))
+            .ToList();
+
+        foreach (var key in keysToRemove)
         {
-            if (!variableName.StartsWith("--"))
-                return;
-
-            if (!_variables.TryGetValue(element, out var elementVariables))
-            {
-                elementVariables = new Dictionary<string, ICssValue>(StringComparer.OrdinalIgnoreCase);
-                _variables[element] = elementVariables;
-            }
-
-            elementVariables[variableName] = value;
-
-            // Invalidate cache when variables change
-            _resolutionCache.Clear();
+            _resolvedVariableCache.Remove(key);
         }
+    }
 
-        public void ExtractVariablesFromStyle(IElement element, ICssStyleDeclaration style)
+    public void ExtractVariablesFromStyle(IElement element, ICssStyleDeclaration style)
+    {
+        foreach (var property in style)
         {
-            foreach (var property in style)
+            if (property.Name.StartsWith("--") && property.RawValue != null)
             {
-                if (property.Name.StartsWith("--") && property.RawValue != null)
-                {
-                    RegisterVariable(element, property.Name, property.RawValue);
-                }
+                RegisterVariable(element, property.Name, property.RawValue);
             }
         }
+    }
+
+    private bool TryGetElementVariable(IElement element, string variableName, out ICssValue? value)
+    {
+        if (_elementVariables.TryGetValue(element, out var variables) &&
+            variables.TryGetValue(variableName, out value))
+        {
+            return true;
+        }
+
+        value = null;
+        return false;
     }
 }
