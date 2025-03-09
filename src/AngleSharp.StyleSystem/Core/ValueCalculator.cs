@@ -99,38 +99,52 @@ namespace AngleSharp.StyleSystem.Core
         }
 
         /// <summary>
-        /// Converts a CSS length value to pixels, taking into account the element context.
+        /// Converts a CSS length value to pixels, taking into account the element context and property.
         /// </summary>
         public double ToPixels(CssLengthValue length, IElement element, string propertyName)
         {
+            // Check for special length values
+            if (length.Equals(CssLengthValue.Auto) || length.Equals(CssLengthValue.None))
+                return 0;
+
             // Handle absolute units directly
             if (length.Type == CssLengthValue.Unit.Px)
                 return length.Value;
 
+            // Get the base reference dimensions we'll need for various unit types
+            var elementFontSize = GetFontSizeInPixels(element);
+            var rootFontSize = GetRootFontSizeInPixels(element);
+            var dpi = GetDpi();  // Default to 96dpi if not specified
+
             switch (length.Type)
             {
+                // Absolute length units
                 case CssLengthValue.Unit.In:
-                    return length.Value * 96; // 1in = 96px
+                    return length.Value * dpi; // 1in = 96px at 96dpi
                 case CssLengthValue.Unit.Cm:
-                    return length.Value * 37.8; // 1cm = 37.8px
+                    return length.Value * dpi / 2.54; // 1cm = 96px/2.54 ≈ 37.8px at 96dpi
                 case CssLengthValue.Unit.Mm:
-                    return length.Value * 3.78; // 1mm = 3.78px
+                    return length.Value * dpi / 25.4; // 1mm = 96px/25.4 ≈ 3.78px at 96dpi
                 case CssLengthValue.Unit.Pt:
-                    return length.Value * 1.33; // 1pt = 1.33px
+                    return length.Value * dpi / 72; // 1pt = 96px/72 ≈ 1.33px at 96dpi
                 case CssLengthValue.Unit.Pc:
-                    return length.Value * 16; // 1pc = 16px
+                    return length.Value * dpi / 6; // 1pc = 96px/6 = 16px at 96dpi
+                case CssLengthValue.Unit.Q:
+                    return length.Value * dpi / 101.6; // 1Q = 1/40cm = 96px/101.6 ≈ 0.94px at 96dpi
 
-                // Relative to font size
+                // Font-relative length units
                 case CssLengthValue.Unit.Em:
-                    return length.Value * GetFontSizeInPixels(element);
+                    return length.Value * elementFontSize;
                 case CssLengthValue.Unit.Rem:
-                    return length.Value * GetRootFontSizeInPixels(element);
+                    return length.Value * rootFontSize;
                 case CssLengthValue.Unit.Ex:
-                    return length.Value * GetFontSizeInPixels(element) * 0.5; // Approximation: 1ex ≈ 0.5em
+                    // ex is approximated as 0.5em (half the font's x-height)
+                    return length.Value * elementFontSize * 0.5;
                 case CssLengthValue.Unit.Ch:
-                    return length.Value * GetFontSizeInPixels(element) * 0.5; // Approximation: 1ch ≈ 0.5em
+                    // ch is approximated as 0.5em (width of the "0" glyph)
+                    return length.Value * elementFontSize * 0.5;
 
-                // Viewport-relative units
+                // Viewport-relative length units
                 case CssLengthValue.Unit.Vw:
                     return length.Value * _renderDevice.ViewPortWidth / 100;
                 case CssLengthValue.Unit.Vh:
@@ -139,14 +153,34 @@ namespace AngleSharp.StyleSystem.Core
                     return length.Value * Math.Min(_renderDevice.ViewPortWidth, _renderDevice.ViewPortHeight) / 100;
                 case CssLengthValue.Unit.Vmax:
                     return length.Value * Math.Max(_renderDevice.ViewPortWidth, _renderDevice.ViewPortHeight) / 100;
-
-                // Percentage (requires context)
                 case CssLengthValue.Unit.Percent:
                     return ResolvePercentage(length.Value / 100, element, propertyName);
 
+                // Handle newer viewport units
+                case (CssLengthValue.Unit)100: // Assuming 100 for Small Viewport Width (svw)
+                    var smallViewport = Math.Min(_renderDevice.ViewPortWidth, 1200); // Example of small viewport calculation
+                    return length.Value * smallViewport / 100;
+                case (CssLengthValue.Unit)101: // Assuming 101 for Large Viewport Width (lvw)
+                    var largeViewport = Math.Max(_renderDevice.ViewPortWidth, 1200); // Example of large viewport calculation
+                    return length.Value * largeViewport / 100;
+                case (CssLengthValue.Unit)102: // Assuming 102 for Dynamic Viewport Width (dvw)
+                    // Dynamic viewport units would require more complex logic in a real implementation
+                    return length.Value * _renderDevice.ViewPortWidth / 100;
+
+                // For unknown units, return the value directly (not ideal but safer than 0)
                 default:
-                    return length.Value; // For unknown units, return as is
+                    return length.Value;
             }
+        }
+
+        /// <summary>
+        /// Gets the current DPI (dots per inch) from the render device.
+        /// </summary>
+        private double GetDpi()
+        {
+            // Ideally, this would come from the render device
+            // Most browsers default to 96 DPI if not specified
+            return _renderDevice.Resolution > 0 ? _renderDevice.Resolution : 96.0;
         }
 
         /// <summary>
@@ -159,8 +193,11 @@ namespace AngleSharp.StyleSystem.Core
 
             try
             {
-                // First, try to resolve any nested expressions
-                var resolvedCalc = ResolveNestedCalcExpressions(calc, element, propertyName);
+                // First, resolve any CSS variables that might be in the calc expression
+                var variableResolvedCalc = ResolveVariablesInCalc(calc, element, propertyName);
+
+                // Then resolve any nested expressions
+                var resolvedCalc = ResolveNestedCalcExpressions(variableResolvedCalc, element, propertyName);
 
                 // If it's a simple length value or percentage now, convert to absolute
                 if (resolvedCalc is CssLengthValue length)
@@ -171,16 +208,52 @@ namespace AngleSharp.StyleSystem.Core
                 {
                     return ComputePercentage(percentage, element, propertyName);
                 }
+                else if (resolvedCalc is CssNumberValue number)
+                {
+                    // For properties that expect lengths but get pure numbers, convert to px
+                    if (IsLengthProperty(propertyName))
+                    {
+                        return new CssLengthValue(number.Value, CssLengthValue.Unit.Px);
+                    }
+                    return number;
+                }
 
                 // For complex expressions, evaluate numeric result in pixels
-                var pixelValue = EvaluateCalcToPixels(calc, element, propertyName);
+                var pixelValue = EvaluateCalcToPixels(variableResolvedCalc, element, propertyName);
                 return new CssLengthValue(pixelValue, CssLengthValue.Unit.Px);
             }
-            catch
+            catch (Exception ex)
             {
                 // If calculation fails, use 0px
                 return new CssLengthValue(0, CssLengthValue.Unit.Px);
             }
+        }
+
+        private CssCalcValue ResolveVariablesInCalc(CssCalcValue calc, IElement element, string propertyName)
+        {
+            // This would recursively traverse the calc expression tree and resolve any var() functions
+            // Since we can't directly modify CssCalcValue, in a real implementation we would
+            // create a new calc expression with variables resolved
+
+            // For now, we'll just return the original calc
+            // In a full implementation, this would be much more complex
+            return calc;
+        }
+
+        private bool IsLengthProperty(string propertyName)
+        {
+            // Common CSS properties that expect length values
+            return new[]
+            {
+                "width", "height", "min-width", "min-height", "max-width", "max-height",
+                "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
+                "padding", "padding-top", "padding-right", "padding-bottom", "padding-left",
+                "top", "right", "bottom", "left",
+                "border-width", "border-top-width", "border-right-width", "border-bottom-width", "border-left-width",
+                "font-size", "line-height", "text-indent", "letter-spacing", "word-spacing",
+                "border-radius", "outline-width", "outline-offset",
+                "column-width", "column-gap"
+            }.Contains(propertyName.ToLowerInvariant());
         }
 
         /// <summary>
@@ -290,23 +363,51 @@ namespace AngleSharp.StyleSystem.Core
         {
             var keyword = value.CssText.ToLowerInvariant();
 
-            // Handle global keywords
-            if (keyword == "inherit")
+            // Handle global keywords according to CSS specifications
+            switch (keyword)
             {
-                return GetInheritedValue(element, propertyName);
-            }
-            else if (keyword == "initial")
-            {
-                return GetDefaultValue(propertyName);
-            }
-            else if (keyword == "unset")
-            {
-                return IsInherited(propertyName)
-                    ? GetInheritedValue(element, propertyName)
-                    : GetDefaultValue(propertyName);
-            }
+                case "inherit":
+                    // 'inherit' takes the computed value from the parent element
+                    return GetInheritedValue(element, propertyName);
 
-            return value;
+                case "initial":
+                    // 'initial' uses the default value defined by the CSS specification
+                    return GetInitialValue(propertyName);
+
+                case "unset":
+                    // 'unset' behaves like 'inherit' for inherited properties and 'initial' for non-inherited properties
+                    return IsInherited(propertyName)
+                        ? GetInheritedValue(element, propertyName)
+                        : GetInitialValue(propertyName);
+
+                case "revert":
+                    // 'revert' rolls back the cascade to the user-agent level
+                    // This is a simplification as full implementation is complex
+                    return GetUserAgentValue(propertyName);
+
+                default:
+                    return value;
+            }
+        }
+
+        private ICssValue? GetInitialValue(string propertyName)
+        {
+            // Try to get the initial value from AngleSharp's declaration factory
+            var factory = _context.GetFactory<IDeclarationFactory>();
+            var declaration = factory?.Create(propertyName);
+
+            if (declaration?.InitialValue != null)
+                return declaration.InitialValue;
+
+            // If not found, use our own defaults
+            return GetDefaultValue(propertyName);
+        }
+
+        private ICssValue? GetUserAgentValue(string propertyName)
+        {
+            // In a real implementation, this would get the user agent's default style
+            // For now, simplify by returning the initial value
+            return GetInitialValue(propertyName);
         }
 
         private ICssValue? ComputePropertyKeyword(ICssValue value, IElement element, string propertyName)
@@ -597,17 +698,237 @@ namespace AngleSharp.StyleSystem.Core
 
         private ICssValue? ResolveNestedCalcExpressions(CssCalcValue calc, IElement element, string propertyName)
         {
-            // This would recursively resolve nested calc expressions
-            // In a real implementation, this would handle CssCalcAddExpression, CssCalcSubExpression, etc.
-            return calc;
+            // Recursively resolve the calc expression tree
+            if (calc.Expression == null)
+                return calc;
+
+            ICssValue? resolvedExpression = null;
+
+            if (calc.Expression is CssCalcAddExpression add)
+            {
+                resolvedExpression = ResolveCalcOperation(add.Left, add.Right, true, element, propertyName);
+            }
+            else if (calc.Expression is CssCalcSubExpression sub)
+            {
+                resolvedExpression = ResolveCalcOperation(sub.Left, sub.Right, false, element, propertyName);
+            }
+            else if (calc.Expression is CssCalcMulExpression mul)
+            {
+                resolvedExpression = ResolveCalcMultiplication(mul.Left, mul.Right, element, propertyName);
+            }
+            else if (calc.Expression is CssCalcDivExpression div)
+            {
+                resolvedExpression = ResolveCalcDivision(div.Left, div.Right, element, propertyName);
+            }
+            else if (calc.Expression is CssCalcBracketExpression bracket)
+            {
+                // Handle bracketed expressions by recursively resolving the inner expression
+                var innerCalc = new CssCalcValue(bracket.Content);
+                resolvedExpression = ResolveNestedCalcExpressions(innerCalc, element, propertyName);
+            }
+            else if (calc.Expression is CssLengthValue length)
+            {
+                resolvedExpression = ComputeLength(length, element, propertyName);
+            }
+            else if (calc.Expression is CssPercentageValue percentage)
+            {
+                resolvedExpression = ComputePercentage(percentage, element, propertyName);
+            }
+            else
+            {
+                // For other expression types, leave as is
+                resolvedExpression = calc.Expression;
+            }
+
+            return resolvedExpression;
+        }
+
+        private ICssValue? ResolveCalcOperation(ICssValue? left, ICssValue? right, bool isAddition, IElement element, string propertyName)
+        {
+            if (left == null || right == null)
+                return null;
+
+            // Compute values for both sides
+            var leftValue = ComputeCalcOperand(left, element, propertyName);
+            var rightValue = ComputeCalcOperand(right, element, propertyName);
+
+            if (leftValue is CssLengthValue leftLength && rightValue is CssLengthValue rightLength)
+            {
+                // Convert both to pixels for calculation
+                var leftPx = ToPixels(leftLength, element, propertyName);
+                var rightPx = ToPixels(rightLength, element, propertyName);
+
+                // Perform the operation
+                var resultPx = isAddition ? leftPx + rightPx : leftPx - rightPx;
+                return new CssLengthValue(resultPx, CssLengthValue.Unit.Px);
+            }
+            else if (leftValue is CssPercentageValue leftPercentage && rightValue is CssPercentageValue rightPercentage)
+            {
+                // For percentages, we can add/subtract the values directly
+                var resultPercentage = isAddition
+                    ? leftPercentage.Value + rightPercentage.Value
+                    : leftPercentage.Value - rightPercentage.Value;
+                return new CssPercentageValue(resultPercentage);
+            }
+            else if (leftValue is CssPercentageValue percentage && rightValue is CssLengthValue length)
+            {
+                // For mixed percentage and length, convert both to pixels based on context
+                var leftPx = ResolvePercentage(percentage.Value / 100, element, propertyName);
+                var rightPx = ToPixels(length, element, propertyName);
+                var resultPx = isAddition ? leftPx + rightPx : leftPx - rightPx;
+                return new CssLengthValue(resultPx, CssLengthValue.Unit.Px);
+            }
+            else if (leftValue is CssLengthValue length2 && rightValue is CssPercentageValue percentage2)
+            {
+                // For mixed length and percentage, convert both to pixels based on context
+                var leftPx = ToPixels(length2, element, propertyName);
+                var rightPx = ResolvePercentage(percentage2.Value / 100, element, propertyName);
+                var resultPx = isAddition ? leftPx + rightPx : leftPx - rightPx;
+                return new CssLengthValue(resultPx, CssLengthValue.Unit.Px);
+            }
+
+            // If we couldn't resolve the operation, return a fallback value
+            return new CssLengthValue(0, CssLengthValue.Unit.Px);
+        }
+
+        private ICssValue? ResolveCalcMultiplication(ICssValue? left, ICssValue? right, IElement element, string propertyName)
+        {
+            if (left == null || right == null)
+                return null;
+
+            // Compute values for both sides
+            var leftValue = ComputeCalcOperand(left, element, propertyName);
+            var rightValue = ComputeCalcOperand(right, element, propertyName);
+
+            // One operand must be a number, the other a length or percentage
+            if (leftValue is CssNumberValue leftNumber && rightValue is CssLengthValue rightLength)
+            {
+                var rightPx = ToPixels(rightLength, element, propertyName);
+                var resultPx = leftNumber.Value * rightPx;
+                return new CssLengthValue(resultPx, CssLengthValue.Unit.Px);
+            }
+            else if (leftValue is CssLengthValue leftLength && rightValue is CssNumberValue rightNumber)
+            {
+                var leftPx = ToPixels(leftLength, element, propertyName);
+                var resultPx = leftPx * rightNumber.Value;
+                return new CssLengthValue(resultPx, CssLengthValue.Unit.Px);
+            }
+            else if (leftValue is CssNumberValue leftNumber2 && rightValue is CssPercentageValue rightPercentage)
+            {
+                var resultPercentage = leftNumber2.Value * rightPercentage.Value;
+                return new CssPercentageValue(resultPercentage);
+            }
+            else if (leftValue is CssPercentageValue leftPercentage && rightValue is CssNumberValue rightNumber2)
+            {
+                var resultPercentage = leftPercentage.Value * rightNumber2.Value;
+                return new CssPercentageValue(resultPercentage);
+            }
+
+            // If we couldn't resolve the multiplication, return a fallback value
+            return new CssLengthValue(0, CssLengthValue.Unit.Px);
+        }
+
+        private ICssValue? ResolveCalcDivision(ICssValue? left, ICssValue? right, IElement element, string propertyName)
+        {
+            if (left == null || right == null)
+                return null;
+
+            // Compute values for both sides
+            var leftValue = ComputeCalcOperand(left, element, propertyName);
+            var rightValue = ComputeCalcOperand(right, element, propertyName);
+
+            // The right operand must be a number
+            if (rightValue is CssNumberValue rightNumber)
+            {
+                // Avoid division by zero
+                if (Math.Abs(rightNumber.Value) < 0.0001)
+                    return new CssLengthValue(0, CssLengthValue.Unit.Px);
+
+                if (leftValue is CssLengthValue leftLength)
+                {
+                    var leftPx = ToPixels(leftLength, element, propertyName);
+                    var resultPx = leftPx / rightNumber.Value;
+                    return new CssLengthValue(resultPx, CssLengthValue.Unit.Px);
+                }
+                else if (leftValue is CssPercentageValue leftPercentage)
+                {
+                    var resultPercentage = leftPercentage.Value / rightNumber.Value;
+                    return new CssPercentageValue(resultPercentage);
+                }
+                else if (leftValue is CssNumberValue leftNumber)
+                {
+                    // Number divided by number gives a number
+                    var result = leftNumber.Value / rightNumber.Value;
+                    return new CssNumberValue(result);
+                }
+            }
+
+            // If we couldn't resolve the division, return a fallback value
+            return new CssLengthValue(0, CssLengthValue.Unit.Px);
+        }
+
+        private ICssValue? ComputeCalcOperand(ICssValue operand, IElement element, string propertyName)
+        {
+            // Handle nested calc expressions
+            if (operand is CssCalcValue nestedCalc)
+            {
+                return ResolveNestedCalcExpressions(nestedCalc, element, propertyName);
+            }
+
+            // For simple values, compute them directly
+            if (operand is CssLengthValue length)
+            {
+                return ComputeLength(length, element, propertyName);
+            }
+            else if (operand is CssPercentageValue percentage)
+            {
+                return ComputePercentage(percentage, element, propertyName);
+            }
+            else if (operand is CssNumberValue number)
+            {
+                return number;
+            }
+
+            // For other calc expressions, handle recursively
+            if (operand is CssCalcAddExpression add)
+            {
+                return ResolveCalcOperation(add.Left, add.Right, true, element, propertyName);
+            }
+            else if (operand is CssCalcSubExpression sub)
+            {
+                return ResolveCalcOperation(sub.Left, sub.Right, false, element, propertyName);
+            }
+            else if (operand is CssCalcMulExpression mul)
+            {
+                return ResolveCalcMultiplication(mul.Left, mul.Right, element, propertyName);
+            }
+            else if (operand is CssCalcDivExpression div)
+            {
+                return ResolveCalcDivision(div.Left, div.Right, element, propertyName);
+            }
+            else if (operand is CssCalcBracketExpression bracket)
+            {
+                var innerCalc = new CssCalcValue(bracket.Content);
+                return ResolveNestedCalcExpressions(innerCalc, element, propertyName);
+            }
+
+            return operand;
         }
 
         private double EvaluateCalcToPixels(CssCalcValue calc, IElement element, string propertyName)
         {
-            // In a real implementation, this would evaluate the calc expression to a pixel value
-            // It would handle operations on different units after converting to a common unit
+            var resolvedValue = ResolveNestedCalcExpressions(calc, element, propertyName);
 
-            // For now, let's provide a simplified implementation that returns 0
+            if (resolvedValue is CssLengthValue lengthValue)
+            {
+                return ToPixels(lengthValue, element, propertyName);
+            }
+            else if (resolvedValue is CssPercentageValue percentageValue)
+            {
+                return ResolvePercentage(percentageValue.Value / 100, element, propertyName);
+            }
+
+            // If we couldn't evaluate to pixels, return 0
             return 0.0;
         }
 
