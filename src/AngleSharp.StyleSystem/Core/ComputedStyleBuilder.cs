@@ -42,53 +42,53 @@ public class ComputedStyleBuilder
     /// </summary>
     public IComputedStyle? BuildComputedStyle(ICssStyleDeclaration declaration, IElement element, IComputedStyle? parentStyle)
     {
-        // First register any CSS custom properties from this declaration
-        _variableResolver.ExtractVariablesFromStyle(element, declaration);
-
-        // Get or create property tree node
-        var parentNode = parentStyle is ComputedStyle parentComputed ?
-            parentComputed.PropertyTreeNode : null;
-        var node = _propertyTreeManager.GetOrCreateNode(element, parentNode);
-
-        // Get the writing mode early because we might need it for logical property mapping
-        var writingMode = GetWritingMode(declaration, element, parentStyle);
-
-        // Process each property
-        foreach (var property in declaration)
-        {
-            // Skip properties with no value
-            if (property.RawValue == null)
-                continue;
-
-            var propertyName = property.Name;
-            var propertyValue = property.RawValue;
-
-            // 1. Resolve any variables first
-            var resolvedValue = _variableResolver.ResolveVariablesInValue(propertyValue, element, propertyName);
-
-            // 2. Then compute the value
-            var computedValue = _valueCalculator.Compute(resolvedValue, element, propertyName) ?? throw new ArgumentNullException("_valueCalculator.Compute(resolvedValue, element, propertyName)");
-
-            // 3. Handle logical property mapping if needed
-            if (_stylePropertyMapper.IsLogicalProperty(propertyName))
-            {
-                var physicalProps = _stylePropertyMapper.MapLogicalToPhysical(
-                    propertyName, computedValue, writingMode);
-
-                foreach (var physicalProp in physicalProps)
-                {
-                    node.SetProperty(physicalProp.Key, physicalProp.Value);
-                }
-            }
-            else
-            {
-                // Set the computed value in the property tree
-                node.SetProperty(propertyName, computedValue);
-            }
-        }
-
-        // Optimize the property tree
-        _propertyTreeManager.OptimizeTree(node);
+        // // First register any CSS custom properties from this declaration
+        // _variableResolver.ExtractVariablesFromStyle(element, declaration);
+        //
+        // // Get or create property tree node
+        // var parentNode = parentStyle is ComputedStyle parentComputed ?
+        //     parentComputed.PropertyTreeNode : null;
+        // var node = _propertyTreeManager.GetOrCreateNode(element, parentNode);
+        //
+        // // Get the writing mode early because we might need it for logical property mapping
+        // var writingMode = GetWritingMode(declaration, element, parentStyle);
+        //
+        // // Process each property
+        // foreach (var property in declaration)
+        // {
+        //     // Skip properties with no value
+        //     if (property.RawValue == null)
+        //         continue;
+        //
+        //     var propertyName = property.Name;
+        //     var propertyValue = property.RawValue;
+        //
+        //     // 1. Resolve any variables first
+        //     var resolvedValue = _variableResolver.ResolveVariablesInValue(propertyValue, element, propertyName);
+        //
+        //     // 2. Then compute the value
+        //     var computedValue = _valueCalculator.Compute(resolvedValue, element, propertyName) ?? throw new ArgumentNullException("_valueCalculator.Compute(resolvedValue, element, propertyName)");
+        //
+        //     // 3. Handle logical property mapping if needed
+        //     if (_stylePropertyMapper.IsLogicalProperty(propertyName))
+        //     {
+        //         var physicalProps = _stylePropertyMapper.MapLogicalToPhysical(
+        //             propertyName, computedValue, writingMode);
+        //
+        //         foreach (var physicalProp in physicalProps)
+        //         {
+        //             node.SetProperty(physicalProp.Key, physicalProp.Value);
+        //         }
+        //     }
+        //     else
+        //     {
+        //         // Set the computed value in the property tree
+        //         node.SetProperty(propertyName, computedValue);
+        //     }
+        // }
+        //
+        // // Optimize the property tree
+        // _propertyTreeManager.OptimizeTree(node);
 
 
 

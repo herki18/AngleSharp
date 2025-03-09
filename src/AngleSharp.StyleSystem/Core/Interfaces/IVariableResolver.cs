@@ -33,7 +33,7 @@ public interface IVariableResolver
     /// <param name="element">The element context.</param>
     /// <param name="propertyName">The property name for context.</param>
     /// <returns>The value with all variables resolved.</returns>
-    ICssValue ResolveVariablesInValue(ICssValue value, IElement element, string propertyName);
+    ICssValue? ResolveVariablesInValue(ICssValue value, IElement element, string propertyName);
 
     /// <summary>
     /// Registers a variable value for an element.
