@@ -1,16 +1,13 @@
 ﻿namespace AngleSharp.StyleSystem.Core;
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
 using AngleSharp.Dom;
+using Css;
 using Interfaces;
 
-/// <summary>
-/// Resolves property conflicts based on CSS cascade rules.
-/// </summary>
 public class CascadeResolver : ICascadeResolver
 {
     private readonly IBrowsingContext _context;
@@ -21,11 +18,12 @@ public class CascadeResolver : ICascadeResolver
     }
 
     /// <summary>
-    /// Resolves the cascade by creating a style declaration with winning property values.
+    /// Resolves the CSS cascade for an element with the given matched rules,
+    /// respecting the rules of the CSS cascade algorithm:
+    /// 1. Origin and importance (user agent, user, author, !important)
+    /// 2. Specificity
+    /// 3. Source order
     /// </summary>
-    /// <param name="matchedRules">Rules that matched the element, with specificity.</param>
-    /// <param name="element">The element being styled.</param>
-    /// <returns>A style declaration with resolved property values.</returns>
     public ICssStyleDeclaration ResolveCascade(
         IEnumerable<MatchedRule> matchedRules,
         IElement element)
@@ -33,103 +31,147 @@ public class CascadeResolver : ICascadeResolver
         if (element == null)
             throw new ArgumentNullException(nameof(element));
 
-        // Create a new style declaration to hold resolved properties
         var resolvedStyle = new CssStyleDeclaration(_context);
 
-        // Group the matched rules by StylesheetOrigin for easier processing
-        var rulesByOrigin = matchedRules
-            .GroupBy(r => r.Origin)
-            .OrderBy(g => g.Key)  // Order by origin: UserAgent < User < Author
-            .ToList();
+        // Group rules by origin and importance
+        var importantAuthorRules = new List<MatchedRule>();
+        var importantUserRules = new List<MatchedRule>();
+        var importantUserAgentRules = new List<MatchedRule>();
+        var normalAuthorRules = new List<MatchedRule>();
+        var normalUserRules = new List<MatchedRule>();
+        var normalUserAgentRules = new List<MatchedRule>();
 
-        // Dictionary to track if a property has been set with !important
-        var importantProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        // Process rules in order of increasing precedence (UserAgent, User, Author)
-        foreach (var originGroup in rulesByOrigin)
+        // First, classify rules by origin and importance
+        foreach (var rule in matchedRules)
         {
-            // Sort rules within each origin by specificity and then original index
-            var sortedRules = originGroup
-                .OrderBy(r => r.Specificity)
-                .ThenBy(r => r.OriginalIndex)
-                .ToList();
+            if (rule.Rule?.Style == null)
+                continue;
 
-            foreach (var rule in sortedRules)
+            bool hasImportantProps = rule.Rule.Style.Any(p => p.IsImportant);
+
+            if (hasImportantProps)
             {
-                if (rule.Rule?.Style == null)
-                    continue;
-
-                // Apply each property in the rule
-                foreach (var property in rule.Rule.Style)
+                switch (rule.Origin)
                 {
-                    bool isImportant = property.IsImportant;
+                    case StylesheetOrigin.Author:
+                        importantAuthorRules.Add(rule);
+                        break;
+                    case StylesheetOrigin.User:
+                        importantUserRules.Add(rule);
+                        break;
+                    case StylesheetOrigin.UserAgent:
+                        importantUserAgentRules.Add(rule);
+                        break;
+                }
+            }
 
-                    // If this property has already been set with !important from a
-                    // higher-precedence origin, skip it unless this is also !important
-                    if (importantProperties.Contains(property.Name) && !isImportant)
-                        continue;
-
-                    // Update the property in the resolved style
-                    resolvedStyle.SetProperty(property.Name, property.Value, isImportant ? "important" : null);
-
-                    // If this is !important, mark it in our tracking set
-                    if (isImportant)
-                    {
-                        importantProperties.Add(property.Name);
-                    }
+            // Rules with normal properties need to be processed separately
+            if (rule.Rule.Style.Any(p => !p.IsImportant))
+            {
+                switch (rule.Origin)
+                {
+                    case StylesheetOrigin.Author:
+                        normalAuthorRules.Add(rule);
+                        break;
+                    case StylesheetOrigin.User:
+                        normalUserRules.Add(rule);
+                        break;
+                    case StylesheetOrigin.UserAgent:
+                        normalUserAgentRules.Add(rule);
+                        break;
                 }
             }
         }
 
-        // Apply inline styles from the element's style attribute (highest precedence for non-important)
-        ApplyInlineStyles(element, resolvedStyle, importantProperties);
+        // Create lists in application order (least to most important)
+        var orderedRuleSets = new List<(IEnumerable<MatchedRule> Rules, bool Important)>
+        {
+            (SortRules(normalUserAgentRules), false),
+            (SortRules(normalUserRules), false),
+            (SortRules(normalAuthorRules), false),
+            (SortRules(importantUserAgentRules), true),
+            (SortRules(importantUserRules), true),
+            (SortRules(importantAuthorRules), true)
+        };
+
+        // Apply rules in cascade order
+        foreach (var (rules, isImportant) in orderedRuleSets)
+        {
+            foreach (var rule in rules)
+            {
+                ApplyRuleProperties(resolvedStyle, rule, isImportant);
+            }
+        }
+
+        // Apply inline styles with highest priority (if they exist)
+        ApplyInlineStyles(element, resolvedStyle);
 
         return resolvedStyle;
     }
 
-    private void ApplyInlineStyles(IElement element, CssStyleDeclaration resolvedStyle, HashSet<string> importantProperties)
+    private IEnumerable<MatchedRule> SortRules(IEnumerable<MatchedRule> rules)
     {
-        // Get the style attribute
+        // Sort by specificity and then by source order
+        return rules.OrderBy(r => r.Specificity).ThenBy(r => r.OriginalIndex);
+    }
+
+    private void ApplyRuleProperties(CssStyleDeclaration resolvedStyle, MatchedRule rule, bool isImportant)
+    {
+        if (rule.Rule?.Style == null)
+            return;
+
+        foreach (var property in rule.Rule.Style)
+        {
+            // Skip properties with different importance than what we're currently processing
+            if (property.IsImportant != isImportant)
+                continue;
+
+            // Don't override existing important properties with non-important ones
+            if (!isImportant && resolvedStyle.GetProperty(property.Name)?.IsImportant == true)
+                continue;
+
+            resolvedStyle.SetProperty(property.Name, property.Value, isImportant ? "important" : null);
+        }
+    }
+
+    private void ApplyInlineStyles(IElement element, CssStyleDeclaration resolvedStyle)
+    {
         var styleAttr = element.GetAttribute("style");
         if (string.IsNullOrWhiteSpace(styleAttr))
             return;
 
-        // Parse the style attribute into a declaration
+        var inlineSpecificity = Priority.Inline;  // Inline styles have the highest specificity
         var styleDeclaration = CssStyleDeclarationParser.Parse(_context, styleAttr);
 
-        // Apply each property, respecting !important rules
         foreach (var property in styleDeclaration)
         {
-            // Skip if this property has already been set with !important
-            // from a stylesheet and this inline property is not !important
-            if (importantProperties.Contains(property.Name) && !property.IsImportant)
-                continue;
+            // Inline properties always override non-important properties,
+            // but important properties from style sheets override inline properties
+            // unless the inline property is also important
+            bool canSetProperty = property.IsImportant ||
+                                 !resolvedStyle.GetProperty(property.Name)?.IsImportant == true;
 
-            resolvedStyle.SetProperty(property.Name, property.Value, property.IsImportant ? "important" : null);
-
-            if (property.IsImportant)
+            if (canSetProperty)
             {
-                importantProperties.Add(property.Name);
+                resolvedStyle.SetProperty(
+                    property.Name,
+                    property.Value,
+                    property.IsImportant ? "important" : null);
             }
         }
     }
 }
 
-/// <summary>
-/// Helper class to parse inline style declarations from style attributes.
-/// </summary>
 public static class CssStyleDeclarationParser
 {
     public static IEnumerable<ICssProperty> Parse(IBrowsingContext context, string cssText)
     {
         var parser = context.GetService<ICssParser>();
         var decl = parser?.ParseDeclaration(cssText);
-
         if (decl != null)
         {
             return decl;
         }
-
         return Enumerable.Empty<ICssProperty>();
     }
 }

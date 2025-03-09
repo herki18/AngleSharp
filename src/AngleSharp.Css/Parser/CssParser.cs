@@ -79,7 +79,7 @@ namespace AngleSharp.Css.Parser
         /// Creates a new parser with the context.
         /// </summary>
         /// <param name="context">The context to use.</param>
-        internal CssParser(IBrowsingContext context)
+        public CssParser(IBrowsingContext context)
             : this(default, context)
         {
         }
@@ -220,7 +220,7 @@ namespace AngleSharp.Css.Parser
             var context = sheet.Context;
             var loader = context.GetService<IResourceLoader>();
             var baseUrl = sheet.OwnerNode?.BaseUrl ?? context.Active?.BaseUrl;
-            
+
             if (!String.IsNullOrEmpty(sheet.Href))
             {
                 baseUrl = baseUrl != null ? new Url(baseUrl, sheet.Href) : Url.Create(sheet.Href);
