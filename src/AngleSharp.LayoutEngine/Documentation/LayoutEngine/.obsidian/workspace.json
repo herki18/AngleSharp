@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "New Arhitecture/Project Instructions.md",
+                "file": "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Project Instructions"
+              "title": "StyleSystem Implementation Plan"
             }
           }
         ],
@@ -109,7 +109,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "New Arhitecture/Project Instructions.md",
+                "file": "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -119,7 +119,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Project Instructions"
+              "title": "Backlinks for StyleSystem Implementation Plan"
             }
           },
           {
@@ -128,12 +128,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "New Arhitecture/Project Instructions.md",
+                "file": "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Project Instructions"
+              "title": "Outgoing links from StyleSystem Implementation Plan"
             }
           },
           {
@@ -157,13 +157,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "New Arhitecture/Project Instructions.md",
+                "file": "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Project Instructions"
+              "title": "Outline of StyleSystem Implementation Plan"
             }
           }
         ]
@@ -185,18 +185,18 @@
   },
   "active": "5477d1f2e8ae73cd",
   "lastOpenFiles": [
-    "New Arhitecture/Rev 1/Development Guidelines.md",
+    "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
+    "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
     "New Arhitecture/Rev 1/AngleSharp.StyleSystem Development Guide.md",
-    "New Arhitecture/Rev 1/AngleSharp CSS Reference.md",
+    "New Arhitecture/Rev 1/Development Guidelines.md",
+    "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
+    "New Arhitecture/Rev 1/StyleSystem Data Flow Diagrams.md",
+    "New Arhitecture/Rev 1/Core Component Interfaces.md",
     "New Arhitecture/Project Instructions.md",
+    "New Arhitecture/Rev 1/AngleSharp CSS Reference.md",
     "New Arhitecture/StyleSystem Component Data Flow.md",
     "New Arhitecture/StyleSystem Component Interaction Flow Documentation.md",
     "New Arhitecture/Untitled 7.md",
-    "New Arhitecture/Rev 1/Core Component Interfaces.md",
-    "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
-    "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
-    "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
-    "New Arhitecture/Rev 1/StyleSystem Data Flow Diagrams.md",
     "New Arhitecture/Rev 1/StyleSystem Testing Strategy.md",
     "New Arhitecture/Untitled 3.md",
     "New Arhitecture/Untitled 4.md",
