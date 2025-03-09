@@ -7,6 +7,13 @@
 - Use the `?` modifier only for truly nullable references
 - Follow the compiler warnings regarding potential null references
 
+## File Organization
+
+- Use file-scoped namespaces (introduced in C# 10)
+- Keep one primary class per file
+- Group related small classes and interfaces in the same file when appropriate
+- Follow the project's folder structure for organization
+
 ## Documentation Standards
 
 - Place XML documentation comments on interfaces rather than implementations

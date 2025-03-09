@@ -24,8 +24,12 @@ public class VariableResolver : IVariableResolver
         _processingVariables = new HashSet<string>();
     }
 
-    public ICssValue? ResolveVariable(string variableName, IElement element, ICssValue? defaultValue = null)
+    public ICssValue? ResolveVariable(string variableName, IElement? element, ICssValue? defaultValue = null)
     {
+        // Handle null element
+        if (element is null)
+            return defaultValue;
+
         if (!variableName.StartsWith("--"))
             return defaultValue;
 
@@ -48,10 +52,14 @@ public class VariableResolver : IVariableResolver
                 // If the value is a var() function, we need to resolve it
                 if (value is CssVarValue varValue)
                 {
-                    value = ResolveVarFunction(varValue, element);
+                    var resolvedValue = ResolveVarFunction(varValue, element);
+                    if (resolvedValue != null)
+                    {
+                        _resolvedVariableCache[cacheKey] = resolvedValue;
+                        return resolvedValue;
+                    }
                 }
-
-                if (value != null)
+                else
                 {
                     _resolvedVariableCache[cacheKey] = value;
                     return value;
@@ -90,9 +98,10 @@ public class VariableResolver : IVariableResolver
         }
     }
 
-    public ICssValue? ResolveVarFunction(CssVarValue varValue, IElement element)
+    public ICssValue? ResolveVarFunction(CssVarValue varValue, IElement? element)
     {
-        if (element == null || varValue == null)
+        // Handle null element
+        if (element is null)
             return null;
 
         // Try to resolve the variable
@@ -118,8 +127,12 @@ public class VariableResolver : IVariableResolver
         return null;
     }
 
-    public ICssValue ResolveVariablesInValue(ICssValue value, IElement element, string propertyName)
+    public ICssValue ResolveVariablesInValue(ICssValue value, IElement? element, string propertyName)
     {
+        // Handle null element
+        if (element is null)
+            return value;
+
         // If it's a var() function, resolve it
         if (value is CssVarValue varValue)
         {
@@ -170,7 +183,7 @@ public class VariableResolver : IVariableResolver
         }
     }
 
-    private bool TryGetElementVariable(IElement element, string variableName, out ICssValue? value)
+    private bool TryGetElementVariable(IElement element, string variableName, out ICssValue value)
     {
         if (_elementVariables.TryGetValue(element, out var variables) &&
             variables.TryGetValue(variableName, out value))
@@ -178,7 +191,7 @@ public class VariableResolver : IVariableResolver
             return true;
         }
 
-        value = null;
+        value = null!;
         return false;
     }
 }
