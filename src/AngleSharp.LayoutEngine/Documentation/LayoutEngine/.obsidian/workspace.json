@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "New Arhitecture/Rev 1/AngleSharp.StyleSystem Development Guidelines.md",
+                "file": "New Arhitecture/Instruction set.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "AngleSharp.StyleSystem Development Guidelines"
+              "title": "Instruction set"
             }
           }
         ],
@@ -109,7 +109,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "New Arhitecture/Rev 1/AngleSharp.StyleSystem Development Guidelines.md",
+                "file": "New Arhitecture/Instruction set.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -119,7 +119,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for AngleSharp.StyleSystem Development Guidelines"
+              "title": "Backlinks for Instruction set"
             }
           },
           {
@@ -128,12 +128,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "New Arhitecture/Rev 1/AngleSharp.StyleSystem Development Guidelines.md",
+                "file": "New Arhitecture/Instruction set.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from AngleSharp.StyleSystem Development Guidelines"
+              "title": "Outgoing links from Instruction set"
             }
           },
           {
@@ -157,13 +157,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "New Arhitecture/Rev 1/AngleSharp.StyleSystem Development Guidelines.md",
+                "file": "New Arhitecture/Instruction set.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of AngleSharp.StyleSystem Development Guidelines"
+              "title": "Outline of Instruction set"
             }
           }
         ]
@@ -185,14 +185,16 @@
   },
   "active": "5477d1f2e8ae73cd",
   "lastOpenFiles": [
-    "New Arhitecture/Rev 1/AngleSharp CSS Reference.md",
-    "New Arhitecture/Rev 1/Core Component Interfaces.md",
-    "New Arhitecture/Untitled 8.md",
-    "New Arhitecture/Rev 1/AngleSharp.StyleSystem Development Guidelines.md",
-    "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
-    "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
     "New Arhitecture/StyleSystem Component Interaction Flow Documentation.md",
     "New Arhitecture/StyleSystem Component Data Flow.md",
+    "New Arhitecture/Untitled 7.md",
+    "New Arhitecture/Rev 1/AngleSharp.StyleSystem Development Guide.md",
+    "New Arhitecture/Rev 1/Development Guidelines.md",
+    "New Arhitecture/Instruction set.md",
+    "New Arhitecture/Rev 1/AngleSharp CSS Reference.md",
+    "New Arhitecture/Rev 1/Core Component Interfaces.md",
+    "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
+    "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
     "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
     "New Arhitecture/Rev 1/StyleSystem Data Flow Diagrams.md",
     "New Arhitecture/Rev 1/StyleSystem Testing Strategy.md",
@@ -200,7 +202,6 @@
     "New Arhitecture/Untitled 4.md",
     "New Arhitecture/Untitled 5.md",
     "New Arhitecture/Untitled 6.md",
-    "New Arhitecture/Untitled 7.md",
     "New Arhitecture/Untitled 1.md",
     "Overall/AngleSharp Layout Engine - System Data Flow.md",
     "Overall/AngleSharp Layout Engine - Implementation Roadmap.md",
@@ -214,7 +215,6 @@
     "Modules/Style System/Diagrams",
     "Modules/Style System/Arhitecture/StyleSystem - Updated for LayoutNG Integration.md",
     "Modules/Cache System/Integration/CacheSystem Integration with StyleSystem Pipeline.md",
-    "Instructions for LLM Guiding Architecture Documentation Creation.md",
     "Diagrams",
     "Overall/Arhitecture",
     "Overall/Diagrams",
