@@ -18,6 +18,13 @@ This implementation plan divides the development of the new StyleSystem into dis
     - Handles fallback values
     - Prevents circular references
     - Supports variable inheritance from parent elements
+- ✅ `StyleSheetManager` implementation
+    
+    - Manages registration of stylesheets by origin
+    - Handles document attachment/detachment
+    - Tracks stylesheet changes
+    - Loads user agent stylesheets
+    - **Note**: Enhanced beyond initial plan with MutationObserver integration and automatic handling of style element addition/removal
 - ✅ Core component interaction architecture
     
     - Defined clear processing sequence for style computation
@@ -32,17 +39,34 @@ This implementation plan divides the development of the new StyleSystem into dis
     - Basic structure implemented
     - Optimization for memory usage in progress
     - Property value sharing to be enhanced
+    - **Next**: Enhance tree optimization algorithms for better deduplication and memory sharing
+    - **Next**: Add hierarchical optimization between parent-child relationships
+    - **Next**: Implement metrics collection for optimization effectiveness
 - 🔄 `CascadeResolver` implementation
     
     - Basic implementation complete
-    - Specificity calculation to be enhanced (currently returns 1)
     - Handling of !important flags implemented
-    - Shorthand/longhand property handling to be refined
+    - Shorthand/longhand property handling started
+    - **Next**: Improve specificity calculation to better implement CSS spec
+    - **Next**: Integrate more closely with AngleSharp's selector parser
+    - **Next**: Add handling for complex selectors like :where(), :is(), etc.
 - 🔄 `InheritanceProcessor` implementation
     
     - Basic inheritance handling implemented
     - Support for global keywords (inherit, initial, unset)
-    - CSS cascade handling to be improved
+    - **Next**: Enhance with more complex inheritance patterns
+    - **Next**: Improve handling of CSS variables with inheritance
+    - **Next**: Support multiple layers of property dependencies
+    - **Next**: Optimize inheritance resolution path
+- 🔄 `StylePropertyMapper` implementation
+    
+    - Basic logical property mapping implemented
+    - Initial writing mode support added
+    - **Next**: Complete mapping for all CSS logical properties
+    - **Next**: Add support for block-size/inline-size for all dimensions
+    - **Next**: Implement overflow-block/overflow-inline properties
+    - **Next**: Add border-radius logical properties (border-start-start-radius, etc.)
+    - **Next**: Support text-align-last, text-align-all with logical awareness
 
 ### Testing Progress
 
@@ -56,6 +80,9 @@ This implementation plan divides the development of the new StyleSystem into dis
     
     - Basic test framework established
     - Additional test cases needed for complete coverage
+    - **Next**: Add specific tests for CSS variable resolution
+    - **Next**: Create tests for property tree optimizations
+    - **Next**: Implement integration tests for full style computation flow
 
 ### Remaining Objectives
 
@@ -78,21 +105,26 @@ This implementation plan divides the development of the new StyleSystem into dis
     - Finish optimization for shared property values
     - Implement efficient property lookups
     - Add tree optimization algorithms
-2. **Enhance ComputedStyleBuilder**
+    - Add memory usage metrics and optimization analysis tools
+    - Implement parent-child relationship optimization strategies
+2. **Enhance CascadeResolver for standard compliance**
     
-    - Implement the orchestration flow as documented
-    - Ensure proper phase sequence during style computation
-    - Add caching and optimization strategies
-3. **Finalize StylePropertyMapper**
+    - Improve specificity calculation to full CSS spec standards
+    - Integrate with AngleSharp's selector parser for accuracy
+    - Implement handling for complex selector combinations
+    - Add proper origin/layer cascade handling per CSS specification
+3. **Enhance InheritanceProcessor for complex scenarios**
     
-    - Complete logical to physical property mapping
-    - Add writing mode awareness
-    - Support all CSS logical properties
-4. **Extend testing coverage**
+    - Implement nested inheritance contexts
+    - Improve CSS variable inheritance handling
+    - Add support for property dependencies during inheritance
+    - Optimize the inheritance resolution path for performance
+4. **Complete StylePropertyMapper for logical properties**
     
-    - Add tests for variable resolution
-    - Add tests for property tree optimization
-    - Create integration tests for complete style computation flow
+    - Add remaining logical properties from CSS specification
+    - Implement full border-radius logical property support
+    - Support advanced writing mode scenarios
+    - Add detailed writing mode context sensitivity
 
 ## Phase 2: Advanced Value Computation (Next Phase)
 
@@ -360,11 +392,33 @@ This implementation plan divides the development of the new StyleSystem into dis
 
 ## Timeline Adjustment
 
-Based on code review and current progress, we are on track with Phase 1 completion, with approximately 60% of the core infrastructure completed. The main remaining work is:
+Based on code review and current progress, we are on track with Phase 1 completion, with approximately 60% of the core infrastructure completed. The primary focus areas are now:
 
-1. Enhancing PropertyTreeManager's optimization capabilities
-2. Implementing proper specificity calculation in CascadeResolver
-3. Improving the InheritanceProcessor for complex inheritance scenarios
-4. Completing the StylePropertyMapper implementation
+1. Enhancing PropertyTreeManager's optimization capabilities for better memory usage
+2. Improving the CascadeResolver's specificity calculation for CSS spec compliance
+3. Extending the InheritanceProcessor to handle complex inheritance scenarios
+4. Completing the StylePropertyMapper implementation for all CSS logical properties
 
 We expect to complete Phase 1 within the next 2-3 weeks, allowing us to move to Phase 2: Advanced Value Computation on schedule.
+
+## Implementation Deviations & Enhancements
+
+Some components have been implemented differently than initially planned, often with additional features:
+
+1. **StyleSheetManager**:
+    
+    - Added MutationObserver integration for automatic stylesheet tracking
+    - Implemented dynamic loading/unloading of stylesheets
+    - Enhanced origin tracking for better cascade management
+    - Added recursive rule collection for container queries
+2. **StyleInvalidationTracker**:
+    
+    - Added device-dependent element tracking
+    - Implemented optimized invalidation propagation
+3. **ComputedStyle**:
+    
+    - Implemented with more optimized property grouping
+    - Added direct physical property access methods for layout system
+    - Enhanced caching strategy for computed values
+
+These enhancements provide better performance and broader CSS support than initially scoped in the plan while maintaining compatibility with AngleSharp's infrastructure.
