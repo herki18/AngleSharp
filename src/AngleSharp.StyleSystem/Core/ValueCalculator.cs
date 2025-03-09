@@ -332,13 +332,11 @@ namespace AngleSharp.StyleSystem.Core
             // Use the variable resolver to get the actual value
             var resolvedValue = _variableResolver.ResolveVarFunction(varValue, element);
 
-            // If resolved to null, use the fallback or initial value
+            // If resolved to null, use the initial value
             if (resolvedValue == null)
             {
-                if (varValue.Fallback != null)
-                {
-                    return Compute(varValue.Fallback, element, propertyName);
-                }
+                // Note: In AngleSharp, the variable fallback is likely handled in IVariableResolver.ResolveVarFunction
+                // rather than exposed as a property on CssVarValue
                 return GetDefaultValue(propertyName);
             }
 
