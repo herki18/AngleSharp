@@ -42,4 +42,11 @@ public interface IVariableResolver
     /// <param name="variableName">The variable name (including -- prefix).</param>
     /// <param name="value">The variable value.</param>
     void RegisterVariable(IElement element, string variableName, ICssValue value);
+
+    /// <summary>
+    /// Extracts variables from a style declaration and registers them for an element.
+    /// </summary>
+    /// <param name="element">The element that owns the style declaration.</param>
+    /// <param name="style">The style declaration containing potential CSS variables.</param>
+    void ExtractVariablesFromStyle(IElement element, ICssStyleDeclaration style);
 }
