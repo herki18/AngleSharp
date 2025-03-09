@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
+                "file": "New Arhitecture/StyleSystem Component Data Flow.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "StyleSystem Component Architecture"
+              "title": "StyleSystem Component Data Flow"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
+                "file": "New Arhitecture/StyleSystem Component Data Flow.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for StyleSystem Component Architecture"
+              "title": "Backlinks for StyleSystem Component Data Flow"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
+                "file": "New Arhitecture/StyleSystem Component Data Flow.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from StyleSystem Component Architecture"
+              "title": "Outgoing links from StyleSystem Component Data Flow"
             }
           },
           {
@@ -142,13 +142,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
+                "file": "New Arhitecture/StyleSystem Component Data Flow.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of StyleSystem Component Architecture"
+              "title": "Outline of StyleSystem Component Data Flow"
             }
           }
         ]
@@ -170,8 +170,15 @@
   },
   "active": "a1c586c1346b1360",
   "lastOpenFiles": [
-    "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
+    "New Arhitecture/StyleSystem Component Interaction Flow Documentation.md",
+    "New Arhitecture/StyleSystem Component Data Flow.md",
+    "New Arhitecture/Rev 1/AngleSharp CSS Reference.md",
     "New Arhitecture/Rev 1/Core Component Interfaces.md",
+    "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
+    "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
+    "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
+    "New Arhitecture/Rev 1/StyleSystem Data Flow Diagrams.md",
+    "New Arhitecture/Rev 1/StyleSystem Testing Strategy.md",
     "New Arhitecture/Untitled 3.md",
     "New Arhitecture/Untitled 4.md",
     "New Arhitecture/Untitled 5.md",
@@ -182,11 +189,6 @@
     "Overall/AngleSharp Layout Engine - Implementation Roadmap.md",
     "Notes/CssColorValue Alpha Issue.md",
     "Notes",
-    "New Arhitecture/Rev 1/StyleSystem Testing Strategy.md",
-    "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
-    "New Arhitecture/Rev 1/StyleSystem Data Flow Diagrams.md",
-    "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
-    "New Arhitecture/Rev 1/AngleSharp CSS Reference.md",
     "New Arhitecture/Untitled.md",
     "New Arhitecture/Untitled 2.md",
     "New Arhitecture/Rev 1",
@@ -198,8 +200,6 @@
     "Instructions for LLM Guiding Architecture Documentation Creation.md",
     "Diagrams/LifecycleSystem and LayoutSystem Integration.md",
     "Diagrams/LifecycleSystem and LayoutSystem Integration 1.md",
-    "Diagrams/LayoutSystem Integration with Other Systems.md",
-    "Diagrams/LayoutNG-Inspired Architecture Overview.md",
     "Diagrams",
     "Overall/Arhitecture",
     "Overall/Diagrams",
