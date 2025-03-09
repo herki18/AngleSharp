@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using Css.Dom;
+using Css.Values;
 
 /// <summary>
 /// Represents a node in the property tree that efficiently stores computed style values.

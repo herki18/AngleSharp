@@ -98,12 +98,12 @@ public class ComputedStyleTests
 
         // Assert - use string comparison for property values
         var colorValue = style.GetPropertyValue("color");
-        Assert.That(colorValue, Is.EqualTo("rgba(255, 0, 0, 1)")
-            .Or.EqualTo("rgb(255, 0, 0)")
-            .Or.EqualTo("#ff0000"));
+        Assert.That(colorValue, Is.EqualTo("rgba(255, 0, 0, 1)"));
 
-        Assert.That(style.GetPropertyValue("margin"), Is.EqualTo("10px")
-            .Or.Contains("10px"));
+        Assert.That(style.GetPropertyValue("margin-top"), Is.EqualTo("10px"));
+        Assert.That(style.GetPropertyValue("margin-bottom"), Is.EqualTo("10px"));
+        Assert.That(style.GetPropertyValue("margin-right"), Is.EqualTo("10px"));
+        Assert.That(style.GetPropertyValue("margin-left"), Is.EqualTo("10px"));
 
         Assert.That(style.GetPropertyValue("font-size"), Is.EqualTo("20px"));
     }

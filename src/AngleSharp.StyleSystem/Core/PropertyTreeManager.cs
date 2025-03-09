@@ -5,11 +5,12 @@ using System.Runtime.CompilerServices;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Values;
 using AngleSharp.Dom;
+using Interfaces;
 
 /// <summary>
 /// Manages property trees for efficient style storage and sharing.
 /// </summary>
-public class PropertyTreeManager
+public class PropertyTreeManager : IPropertyTreeManager
 {
     private readonly Dictionary<string, PropertyTreeNode> _rootNodes = new Dictionary<string, PropertyTreeNode>();
     private readonly ConditionalWeakTable<IElement, PropertyTreeNode> _elementToPropertyTree = new ConditionalWeakTable<IElement, PropertyTreeNode>();
@@ -67,30 +68,5 @@ public class PropertyTreeManager
             var sharedNode = GetSharedNode(property.Key, property.Value);
             node.ReplaceSubtree(property.Key, sharedNode);
         }
-    }
-}
-
-/// <summary>
-/// A simple ICssValue implementation for string values.
-/// </summary>
-internal class CssStringValue : ICssValue
-{
-    private readonly string _value;
-
-    public CssStringValue(string value)
-    {
-        _value = value;
-    }
-
-    public string CssText => _value;
-
-    public ICssValue Compute(ICssComputeContext context)
-    {
-        return this;
-    }
-
-    public bool Equals(ICssValue other)
-    {
-        return other is CssStringValue otherValue && _value == otherValue._value;
     }
 }

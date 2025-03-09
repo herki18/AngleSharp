@@ -21,6 +21,10 @@ public class ComputedStyleBuilder
     /// </summary>
     public IComputedStyle? BuildComputedStyle(ICssStyleDeclaration style, IElement element, IComputedStyle? parentStyle)
     {
+        var declaration = style;
+
+
+
         // Create a computed style via the factory
         return (_engine.StyleFactory as ComputedStyleFactory)?.CreateComputedStyle(element, parentStyle, style);
     }

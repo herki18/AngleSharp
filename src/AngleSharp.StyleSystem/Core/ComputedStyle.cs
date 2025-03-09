@@ -75,9 +75,9 @@ public class ComputedStyle : IComputedStyle
     {
         string value = _propertyTree.GetPropertyValue(propertyName);
 
-        var factory = _context.GetFactory<IDeclarationFactory>();
-        if (factory != null)
+        if (string.IsNullOrEmpty(value))
         {
+            var factory = _context.GetFactory<IDeclarationFactory>();
             var declarationInfo = factory.Create(propertyName);
             if (declarationInfo?.InitialValue != null)
             {
