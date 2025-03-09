@@ -5,8 +5,6 @@
 - Fully embrace C# nullable reference types
 - Do not add runtime null checks for non-nullable parameters
 - Use the `?` modifier only for truly nullable references
-- Follow the compiler warnings regarding potential null references
-
 ## File Organization
 
 - Use file-scoped namespaces (introduced in C# 10)
