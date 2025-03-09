@@ -47,7 +47,7 @@ public class StyleEngine : IStyleEngine, IDisposable
             _propertyTreeManager,
             _renderDevice);
 
-        // Initialize strategy and resolver
+        // Initialize strategy with IStyleEngine interface (this) instead of concrete type
         _styleApplicationStrategy = new BasicStyleApplicationStrategy(this);
         _styleTreeResolver = new StyleTreeResolver(
             this,

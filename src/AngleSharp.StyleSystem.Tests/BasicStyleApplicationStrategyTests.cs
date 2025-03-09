@@ -6,19 +6,18 @@ using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
 using AngleSharp.StyleSystem.Core;
+using AngleSharp.StyleSystem.Core.Interfaces;
 using AngleSharp.Css.Dom;
 using Moq;
 
 namespace AngleSharp.StyleSystem.Tests
 {
-    using Core.Interfaces;
-
     [TestFixture]
     public class BasicStyleApplicationStrategyTests
     {
         private IBrowsingContext _context;
         private BasicStyleApplicationStrategy _strategy;
-        private Mock<StyleEngine> _mockStyleEngine;
+        private Mock<IStyleEngine> _mockStyleEngine;
         private IHtmlParser _parser;
         private IDocument _document;
 
@@ -30,8 +29,8 @@ namespace AngleSharp.StyleSystem.Tests
             _parser = new HtmlParser();
             _document = _parser.ParseDocument("<html><head></head><body></body></html>");
 
-            // Mock StyleEngine to avoid needing all dependencies
-            _mockStyleEngine = new Mock<StyleEngine>(_context) { CallBase = true };
+            // Mock IStyleEngine interface directly
+            _mockStyleEngine = new Mock<IStyleEngine>();
             _strategy = new BasicStyleApplicationStrategy(_mockStyleEngine.Object);
         }
 
@@ -183,7 +182,9 @@ namespace AngleSharp.StyleSystem.Tests
             // Mock style to avoid skipping any subtrees
             var mockStyle = new Mock<IComputedStyle>();
             mockStyle.Setup(s => s.Display).Returns(DisplayMode.Block);
-            _mockStyleEngine.Setup(e => e.ComputeElementStyle(It.IsAny<IElement>(), null))
+
+            // Setup for any element
+            _mockStyleEngine.Setup(e => e.ComputeElementStyle(It.IsAny<IElement>(), It.IsAny<string>()))
                 .Returns(mockStyle.Object);
 
             // Act
@@ -221,11 +222,13 @@ namespace AngleSharp.StyleSystem.Tests
             var noneStyle = new Mock<IComputedStyle>();
             noneStyle.Setup(s => s.Display).Returns(DisplayMode.None);
 
+            // Default to normal style
+            _mockStyleEngine.Setup(e => e.ComputeElementStyle(It.IsAny<IElement>(), It.IsAny<string>()))
+                .Returns(normalStyle.Object);
+
             // Only child1 has display:none
-            _mockStyleEngine.Setup(e => e.ComputeElementStyle(parent, null)).Returns(normalStyle.Object);
-            _mockStyleEngine.Setup(e => e.ComputeElementStyle(child1, null)).Returns(noneStyle.Object);
-            _mockStyleEngine.Setup(e => e.ComputeElementStyle(child2, null)).Returns(normalStyle.Object);
-            _mockStyleEngine.Setup(e => e.ComputeElementStyle(grandchild, null)).Returns(normalStyle.Object);
+            _mockStyleEngine.Setup(e => e.ComputeElementStyle(child1, It.IsAny<string>()))
+                .Returns(noneStyle.Object);
 
             // Act
             var traversalOrder = _strategy.GetElementTraversalOrder(parent).ToList();
@@ -248,7 +251,7 @@ namespace AngleSharp.StyleSystem.Tests
             _document.Body!.AppendChild(parent);
 
             var parentStyle = new Mock<IComputedStyle>();
-            _mockStyleEngine.Setup(e => e.ComputeElementStyle(parent, null))
+            _mockStyleEngine.Setup(e => e.ComputeElementStyle(parent, It.IsAny<string>()))
                 .Returns(parentStyle.Object);
 
             // Act
@@ -273,14 +276,14 @@ namespace AngleSharp.StyleSystem.Tests
             parent.AppendChild(child2);
             _document.Body!.AppendChild(parent);
 
-            // Need to visit child1 first so it's in the elements-by-tag-name cache
-            _strategy.GetElementTraversalOrder(parent).ToList();
-
-            // Mock styles to ensure traversal works
+            // Mock styles for traversal
             var mockStyle = new Mock<IComputedStyle>();
             mockStyle.Setup(s => s.Display).Returns(DisplayMode.Block);
-            _mockStyleEngine.Setup(e => e.ComputeElementStyle(It.IsAny<IElement>(), null))
+            _mockStyleEngine.Setup(e => e.ComputeElementStyle(It.IsAny<IElement>(), It.IsAny<string>()))
                 .Returns(mockStyle.Object);
+
+            // Need to visit child1 first so it's in the elements-by-tag-name cache
+            _strategy.GetElementTraversalOrder(parent).ToList();
 
             // Act
             var context = _strategy.CreateStyleContext(child2);
@@ -302,7 +305,7 @@ namespace AngleSharp.StyleSystem.Tests
             var invisibleParentStyle = new Mock<IComputedStyle>();
             invisibleParentStyle.Setup(s => s.Display).Returns(DisplayMode.None);
 
-            _mockStyleEngine.Setup(e => e.ComputeElementStyle(parent, null))
+            _mockStyleEngine.Setup(e => e.ComputeElementStyle(parent, It.IsAny<string>()))
                 .Returns(invisibleParentStyle.Object);
 
             // Act

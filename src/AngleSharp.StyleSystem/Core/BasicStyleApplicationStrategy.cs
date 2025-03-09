@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using AngleSharp.StyleSystem.Core.Interfaces;
@@ -13,13 +14,13 @@ using AngleSharp.StyleSystem.Core.Interfaces;
 public class BasicStyleApplicationStrategy : IStyleApplicationStrategy
 {
     private readonly Dictionary<string, List<IElement>> _elementsByTagName = new();
-    private readonly StyleEngine _styleEngine;
+    private readonly IStyleEngine _styleEngine;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BasicStyleApplicationStrategy"/> class.
     /// </summary>
     /// <param name="styleEngine">The style engine instance.</param>
-    public BasicStyleApplicationStrategy(StyleEngine styleEngine)
+    public BasicStyleApplicationStrategy(IStyleEngine styleEngine)
     {
         _styleEngine = styleEngine ?? throw new ArgumentNullException(nameof(styleEngine));
     }
