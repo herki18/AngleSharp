@@ -1,14 +1,13 @@
-﻿using AngleSharp.Dom;
-using AngleSharp.Html.Parser;
+﻿namespace AngleSharp.StyleSystem.Tests.Unit;
+
+using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
-
-namespace AngleSharp.StyleSystem.Tests;
-
-using Computation;
-using Css;
-using Interfaces;
-using Models;
+using AngleSharp.Dom;
+using AngleSharp.Html.Parser;
+using AngleSharp.StyleSystem.Computation;
+using AngleSharp.StyleSystem.Interfaces;
+using AngleSharp.StyleSystem.Models;
 
 [TestFixture]
 public class CascadeResolverTests

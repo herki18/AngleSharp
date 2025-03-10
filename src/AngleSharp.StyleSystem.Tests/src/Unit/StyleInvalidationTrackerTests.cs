@@ -1,9 +1,8 @@
-﻿using AngleSharp.Dom;
+﻿namespace AngleSharp.StyleSystem.Tests.Unit;
+
+using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
-
-namespace AngleSharp.StyleSystem.Tests;
-
-using Integration;
+using AngleSharp.StyleSystem.Integration;
 
 [TestFixture]
 public class StyleInvalidationTrackerTests

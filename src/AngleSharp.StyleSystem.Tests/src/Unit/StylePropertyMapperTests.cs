@@ -1,10 +1,9 @@
+namespace AngleSharp.StyleSystem.Tests.Unit;
+
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Values;
-
-namespace AngleSharp.StyleSystem.Tests;
-
-using Computation;
-using Models;
+using AngleSharp.StyleSystem.Computation;
+using AngleSharp.StyleSystem.Models;
 
 [TestFixture]
 public class StylePropertyMapperTests

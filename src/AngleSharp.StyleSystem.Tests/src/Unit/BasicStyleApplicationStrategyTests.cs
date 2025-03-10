@@ -1,12 +1,11 @@
-﻿using AngleSharp.Dom;
-using AngleSharp.Html.Parser;
+﻿namespace AngleSharp.StyleSystem.Tests.Unit;
+
 using AngleSharp.Css.Dom;
+using AngleSharp.Dom;
+using AngleSharp.Html.Parser;
+using AngleSharp.StyleSystem.Interfaces;
+using AngleSharp.StyleSystem.Properties;
 using Moq;
-
-namespace AngleSharp.StyleSystem.Tests;
-
-using Interfaces;
-using Properties;
 
 [TestFixture]
 public class BasicStyleApplicationStrategyTests

@@ -1,12 +1,11 @@
-﻿using AngleSharp.Dom;
+﻿namespace AngleSharp.StyleSystem.Tests.Unit;
+
+using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
+using AngleSharp.StyleSystem.Interfaces;
+using AngleSharp.StyleSystem.Models;
+using AngleSharp.StyleSystem.Storage;
 using Moq;
-
-namespace AngleSharp.StyleSystem.Tests;
-
-using Interfaces;
-using Models;
-using Storage;
 
 [TestFixture]
 public class StyleCacheTests

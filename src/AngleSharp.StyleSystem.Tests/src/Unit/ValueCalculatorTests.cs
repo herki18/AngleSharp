@@ -1,13 +1,12 @@
-using Moq;
-using AngleSharp.Dom;
+namespace AngleSharp.StyleSystem.Tests.Unit;
+
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
-using AngleSharp.Css.Values;
 using AngleSharp.Css.Parser;
-
-namespace AngleSharp.StyleSystem.Tests;
-
-using Computation;
+using AngleSharp.Css.Values;
+using AngleSharp.Dom;
+using AngleSharp.StyleSystem.Computation;
+using Moq;
 
 [TestFixture]
 public class ValueCalculatorTests

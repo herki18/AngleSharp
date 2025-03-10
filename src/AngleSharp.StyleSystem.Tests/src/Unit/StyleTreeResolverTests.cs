@@ -1,13 +1,12 @@
-﻿using AngleSharp.Dom;
+﻿namespace AngleSharp.StyleSystem.Tests.Unit;
+
+using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
+using AngleSharp.StyleSystem.Computation;
+using AngleSharp.StyleSystem.Integration;
+using AngleSharp.StyleSystem.Interfaces;
+using AngleSharp.StyleSystem.Storage;
 using Moq;
-
-namespace AngleSharp.StyleSystem.Tests;
-
-using Computation;
-using Integration;
-using Interfaces;
-using Storage;
 
 [TestFixture]
 public class StyleTreeResolverTests

@@ -1,14 +1,13 @@
-using AngleSharp.Html.Dom;
-using AngleSharp.Html.Parser;
+namespace AngleSharp.StyleSystem.Tests.Unit;
+
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
+using AngleSharp.Html.Dom;
+using AngleSharp.Html.Parser;
+using AngleSharp.StyleSystem.Integration;
+using AngleSharp.StyleSystem.Models;
 using Moq;
-
-namespace AngleSharp.StyleSystem.Tests;
-
-using Integration;
-using Models;
 
 [TestFixture]
 public class StyleEngineTests

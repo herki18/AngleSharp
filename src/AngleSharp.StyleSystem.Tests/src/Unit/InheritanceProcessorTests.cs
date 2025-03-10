@@ -1,14 +1,13 @@
-﻿using AngleSharp.Dom;
-using AngleSharp.Html.Parser;
+﻿namespace AngleSharp.StyleSystem.Tests.Unit;
+
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
+using AngleSharp.Dom;
+using AngleSharp.Html.Parser;
+using AngleSharp.StyleSystem.Computation;
+using AngleSharp.StyleSystem.Integration;
 using Moq;
-
-namespace AngleSharp.StyleSystem.Tests;
-
-using Computation;
-using Integration;
 
 [TestFixture]
 public class InheritanceProcessorTests

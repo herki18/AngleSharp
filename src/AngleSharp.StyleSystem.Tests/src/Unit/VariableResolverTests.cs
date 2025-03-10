@@ -1,11 +1,10 @@
-using Moq;
-using AngleSharp.Dom;
-using AngleSharp.Css.Values;
+namespace AngleSharp.StyleSystem.Tests.Unit;
+
 using AngleSharp.Css.Dom;
-
-namespace AngleSharp.StyleSystem.Tests;
-
-using Computation;
+using AngleSharp.Css.Values;
+using AngleSharp.Dom;
+using AngleSharp.StyleSystem.Computation;
+using Moq;
 
 [TestFixture]
 public class VariableResolverTests

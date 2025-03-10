@@ -1,14 +1,13 @@
-﻿using AngleSharp.Dom;
-using AngleSharp.Html.Parser;
+﻿namespace AngleSharp.StyleSystem.Tests.Unit;
+
+using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
-using AngleSharp.Css;
-
-namespace AngleSharp.StyleSystem.Tests;
-
-using Computation;
-using Integration;
-using Models;
+using AngleSharp.Dom;
+using AngleSharp.Html.Parser;
+using AngleSharp.StyleSystem.Computation;
+using AngleSharp.StyleSystem.Integration;
+using AngleSharp.StyleSystem.Models;
 
 [TestFixture]
 public class RuleCollectorTests
