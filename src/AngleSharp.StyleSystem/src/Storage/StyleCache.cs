@@ -1,22 +1,22 @@
 ﻿namespace AngleSharp.StyleSystem.Storage;
 
 using System.Collections.Generic;
+using AngleSharp.StyleSystem.Interfaces;
 using AngleSharp.StyleSystem.Models;
-using Interfaces;
 
 /// <summary>
-/// Provides caching for computed styles.
+/// Implements a cache for computed styles to improve performance by reusing style objects.
 /// </summary>
-public class StyleCache
+public class StyleCache : IStyleCache
 {
     private readonly Dictionary<StyleCacheKey, IComputedStyle> _cache = new Dictionary<StyleCacheKey, IComputedStyle>();
     private readonly int _maxSize = 10000;
 
     /// <summary>
-    /// Tries to get a cached style.
+    /// Tries to retrieve a cached style for the specified key.
     /// </summary>
     /// <param name="key">The cache key.</param>
-    /// <param name="style">The output style if found.</param>
+    /// <param name="style">The retrieved style if found.</param>
     /// <returns>True if the style was found; otherwise, false.</returns>
     public bool TryGetValue(StyleCacheKey key, out IComputedStyle style)
     {
@@ -24,10 +24,10 @@ public class StyleCache
     }
 
     /// <summary>
-    /// Stores a style in the cache.
+    /// Stores a computed style in the cache.
     /// </summary>
     /// <param name="key">The cache key.</param>
-    /// <param name="style">The style to store.</param>
+    /// <param name="style">The computed style to cache.</param>
     public void Store(StyleCacheKey key, IComputedStyle style)
     {
         if (_cache.Count >= _maxSize)
@@ -38,16 +38,16 @@ public class StyleCache
     }
 
     /// <summary>
-    /// Removes a style from the cache.
+    /// Removes a specific entry from the cache.
     /// </summary>
-    /// <param name="key">The cache key.</param>
+    /// <param name="key">The cache key to remove.</param>
     public void Remove(StyleCacheKey key)
     {
         _cache.Remove(key);
     }
 
     /// <summary>
-    /// Clears the cache.
+    /// Clears all entries from the cache.
     /// </summary>
     public void Clear()
     {
@@ -55,23 +55,23 @@ public class StyleCache
     }
 
     /// <summary>
-    /// Gets all cached styles.
+    /// Gets all computed styles currently in the cache.
     /// </summary>
-    /// <returns>All cached styles.</returns>
+    /// <returns>An enumerable of all cached styles.</returns>
     public IEnumerable<IComputedStyle> GetAllStyles()
     {
         return _cache.Values;
     }
 
     /// <summary>
-    /// Gets the number of cached styles.
+    /// Gets the number of items in the cache.
     /// </summary>
     public int Count => _cache.Count;
 
     /// <summary>
-    /// Gets all cache keys.
+    /// Gets all keys currently in the cache.
     /// </summary>
-    /// <returns>All cache keys.</returns>
+    /// <returns>An enumerable of all cache keys.</returns>
     public IEnumerable<StyleCacheKey> GetAllKeys()
     {
         return _cache.Keys;
