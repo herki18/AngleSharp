@@ -7,11 +7,15 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
 using AngleSharp.Css.Dom;
 using AngleSharp.StyleSystem.Core;
-using AngleSharp.StyleSystem.Core.Interfaces;
 using Moq;
 
 namespace AngleSharp.StyleSystem.Tests
 {
+    using Computation;
+    using Integration;
+    using Interfaces;
+    using Storage;
+
     [TestFixture]
     public class StyleTreeResolverTests
     {

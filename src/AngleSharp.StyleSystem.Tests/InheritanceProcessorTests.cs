@@ -8,6 +8,9 @@ using Moq;
 
 namespace AngleSharp.StyleSystem.Tests;
 
+using Computation;
+using Integration;
+
 [TestFixture]
 public class InheritanceProcessorTests
 {

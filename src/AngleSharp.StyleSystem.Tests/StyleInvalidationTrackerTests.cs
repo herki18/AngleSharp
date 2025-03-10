@@ -8,6 +8,8 @@ using AngleSharp.StyleSystem.Core;
 
 namespace AngleSharp.StyleSystem.Tests
 {
+    using Integration;
+
     [TestFixture]
     public class StyleInvalidationTrackerTests
     {

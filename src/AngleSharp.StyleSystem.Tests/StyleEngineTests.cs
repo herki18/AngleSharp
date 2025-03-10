@@ -8,6 +8,9 @@ using Moq;
 
 namespace AngleSharp.StyleSystem.Tests;
 
+using Integration;
+using Models;
+
 [TestFixture]
 public class StyleEngineTests
 {

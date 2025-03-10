@@ -8,6 +8,7 @@ using System;
 namespace AngleSharp.StyleSystem.Tests
 {
     using Css.Dom;
+    using Storage;
 
     [TestFixture]
     public class PropertyTreeNodeTests

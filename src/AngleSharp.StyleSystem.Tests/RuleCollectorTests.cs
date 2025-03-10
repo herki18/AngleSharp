@@ -8,6 +8,10 @@ using NUnit.Framework;
 
 namespace AngleSharp.StyleSystem.Tests;
 
+using Computation;
+using Integration;
+using Models;
+
 [TestFixture]
 public class RuleCollectorTests
 {

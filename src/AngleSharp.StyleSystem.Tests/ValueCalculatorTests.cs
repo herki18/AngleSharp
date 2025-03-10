@@ -11,6 +11,8 @@ using AngleSharp.StyleSystem.Core;
 
 namespace AngleSharp.StyleSystem.Tests
 {
+    using Computation;
+
     [TestFixture]
     public class ValueCalculatorTests
     {

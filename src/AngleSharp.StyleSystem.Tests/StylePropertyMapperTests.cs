@@ -9,6 +9,9 @@ using AngleSharp.StyleSystem.Core;
 
 namespace AngleSharp.StyleSystem.Tests
 {
+    using Computation;
+    using Models;
+
     [TestFixture]
     public class StylePropertyMapperTests
     {

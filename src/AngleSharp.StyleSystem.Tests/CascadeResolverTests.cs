@@ -6,8 +6,10 @@ using AngleSharp.StyleSystem.Core;
 
 namespace AngleSharp.StyleSystem.Tests;
 
-using Core.Interfaces;
+using Computation;
 using Css;
+using Interfaces;
+using Models;
 
 [TestFixture]
 public class CascadeResolverTests

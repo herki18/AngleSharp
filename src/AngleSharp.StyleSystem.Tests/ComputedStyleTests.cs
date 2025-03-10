@@ -11,6 +11,9 @@ using System;
 
 namespace AngleSharp.StyleSystem.Tests;
 
+using Integration;
+using Models;
+
 [TestFixture]
 public class ComputedStyleTests
 {

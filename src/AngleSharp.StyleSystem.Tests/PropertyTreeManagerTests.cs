@@ -7,6 +7,8 @@ using System.Linq;
 
 namespace AngleSharp.StyleSystem.Tests
 {
+    using Storage;
+
     [TestFixture]
     public class PropertyTreeManagerTests
     {
