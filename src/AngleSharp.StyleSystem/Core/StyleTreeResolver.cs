@@ -2,13 +2,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using AngleSharp.Dom;
 using AngleSharp.StyleSystem.Core.Interfaces;
 using Css.Dom;
 
-/// <summary>
-/// Handles the traversal of element trees for style resolution and coordinates style computation scheduling.
-/// </summary>
 public class StyleTreeResolver : IStyleTreeResolver
 {
     private readonly StyleEngine _styleEngine;
@@ -18,13 +16,10 @@ public class StyleTreeResolver : IStyleTreeResolver
     private readonly Stack<IElement> _processingStack;
     private readonly Dictionary<IElement, IElement> _styleSharingMap;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="StyleTreeResolver"/> class.
-    /// </summary>
-    /// <param name="styleEngine">The style engine.</param>
-    /// <param name="strategy">The style application strategy.</param>
-    /// <param name="styleCache">The style cache.</param>
-    /// <param name="invalidationTracker">The style invalidation tracker.</param>
+    // Settings for optimization batching
+    private const int OptimizationBatchSize = 50;
+    private readonly List<PropertyTreeNode> _pendingOptimizations = new List<PropertyTreeNode>();
+
     public StyleTreeResolver(
         StyleEngine styleEngine,
         IStyleApplicationStrategy strategy,
@@ -39,60 +34,174 @@ public class StyleTreeResolver : IStyleTreeResolver
         _styleSharingMap = new Dictionary<IElement, IElement>();
     }
 
-    /// <inheritdoc/>
     public IElement? CurrentElement => _processingStack.Count > 0 ? _processingStack.Peek() : null;
 
-    /// <inheritdoc/>
     public bool IsResolving => _processingStack.Count > 0;
 
-    /// <inheritdoc/>
     public void ResolveStylesForSubtree(IElement element, bool forceRecalculate = false)
     {
         if (element == null)
             throw new ArgumentNullException(nameof(element));
 
-        // Clear style sharing map for this resolution pass
         _styleSharingMap.Clear();
+        _pendingOptimizations.Clear();
 
-        foreach (var current in _strategy.GetElementTraversalOrder(element))
+        // Use a breadth-first traversal for better style sharing opportunities
+        var elementsByLevel = CollectElementsByLevel(element);
+        int totalElements = elementsByLevel.Sum(level => level.Count);
+
+        // Process elements level by level (top-down)
+        foreach (var levelElements in elementsByLevel)
         {
-            // Skip if already up-to-date and not forced
-            if (!forceRecalculate && !_invalidationTracker.NeedsStyleRecalculation(current))
-                continue;
-
-            // Skip subtrees that don't need styling
-            if (_strategy.ShouldSkipSubtree(current))
+            // First pass: identify style donors and create style contexts
+            var contexts = new Dictionary<IElement, StyleContext>();
+            foreach (var current in levelElements)
             {
-                _invalidationTracker.MarkAsUpToDate(current);
-                continue;
+                if (!forceRecalculate && !_invalidationTracker.NeedsStyleRecalculation(current))
+                    continue;
+
+                if (_strategy.ShouldSkipSubtree(current))
+                {
+                    _invalidationTracker.MarkAsUpToDate(current);
+                    continue;
+                }
+
+                var context = _strategy.CreateStyleContext(current);
+                contexts[current] = context;
             }
 
-            var context = _strategy.CreateStyleContext(current);
-            ResolveElementStyle(current, context.ParentStyle);
+            // Second pass: process elements with similar contexts together
+            // Group elements by potential style similarity to maximize sharing
+            var similarityGroups = GroupElementsBySimilarity(contexts);
+
+            foreach (var group in similarityGroups)
+            {
+                foreach (var current in group)
+                {
+                    ResolveElementStyle(current, contexts[current].ParentStyle);
+
+                    // Add the property tree node to pending optimizations
+                    if (GetPropertyTreeNode(current) is PropertyTreeNode node)
+                    {
+                        _pendingOptimizations.Add(node);
+
+                        // Perform batch optimization when we reach the threshold
+                        if (_pendingOptimizations.Count >= OptimizationBatchSize)
+                        {
+                            OptimizeBatch();
+                        }
+                    }
+                }
+            }
+        }
+
+        // Optimize any remaining nodes
+        if (_pendingOptimizations.Count > 0)
+        {
+            OptimizeBatch();
         }
     }
 
-    /// <inheritdoc/>
+    private void OptimizeBatch()
+    {
+        // First sort by element depth to optimize parent nodes before children
+        // This improves hierarchical optimization
+        var sortedNodes = _pendingOptimizations
+            .OrderBy(node => GetNodeDepth(node))
+            .ToList();
+
+        foreach (var node in sortedNodes)
+        {
+            _styleEngine.PropertyTreeManager.OptimizeTree(node);
+        }
+
+        _pendingOptimizations.Clear();
+    }
+
+    private int GetNodeDepth(PropertyTreeNode node)
+    {
+        int depth = 0;
+        var current = node;
+
+        while (current.GetParent() != null)
+        {
+            depth++;
+            current = current.GetParent()!;
+        }
+
+        return depth;
+    }
+
+    private List<List<IElement>> CollectElementsByLevel(IElement root)
+    {
+        var result = new List<List<IElement>>();
+        var currentLevel = new List<IElement> { root };
+
+        while (currentLevel.Count > 0)
+        {
+            result.Add(currentLevel);
+            var nextLevel = new List<IElement>();
+
+            foreach (var element in currentLevel)
+            {
+                foreach (var child in element.Children)
+                {
+                    nextLevel.Add(child);
+                }
+            }
+
+            currentLevel = nextLevel;
+        }
+
+        return result;
+    }
+
+    private List<List<IElement>> GroupElementsBySimilarity(Dictionary<IElement, StyleContext> contexts)
+    {
+        // Group elements that are likely to have similar styles
+        // This increases chances of style sharing
+        var groups = new Dictionary<string, List<IElement>>();
+
+        foreach (var entry in contexts)
+        {
+            var element = entry.Key;
+            var similarityKey = ComputeSimilarityKey(element);
+
+            if (!groups.TryGetValue(similarityKey, out var group))
+            {
+                group = new List<IElement>();
+                groups[similarityKey] = group;
+            }
+
+            group.Add(element);
+        }
+
+        return groups.Values.ToList();
+    }
+
+    private string ComputeSimilarityKey(IElement element)
+    {
+        // Compute a key based on factors that influence style similarity
+        // Elements with the same key are likely to have similar styles
+        return $"{element.NodeName}|{element.ClassName}|{element.Id}|{element.ParentElement?.NodeName ?? "none"}";
+    }
+
     public IComputedStyle ResolveElementStyle(IElement element, IComputedStyle? parentStyle = null, string? pseudoElement = null)
     {
         if (element == null)
             throw new ArgumentNullException(nameof(element));
 
-        // Check for circular references
         if (_processingStack.Contains(element))
         {
-            // Prevent infinite recursion by using parent style or empty style
             return parentStyle ?? CreateEmptyStyle(element);
         }
 
-        // Check cache first
         var cacheKey = new StyleCacheKey(element, pseudoElement);
         if (_styleCache.TryGetValue(cacheKey, out var cachedStyle))
         {
             return cachedStyle;
         }
 
-        // Check if we can share style
         if (pseudoElement == null && TryGetSharedStyle(element, out var sharedStyle))
         {
             _styleCache.Store(cacheKey, sharedStyle);
@@ -100,7 +209,6 @@ public class StyleTreeResolver : IStyleTreeResolver
             return sharedStyle;
         }
 
-        // Compute parent style if not provided
         if (parentStyle == null && element.ParentElement != null)
         {
             _processingStack.Push(element);
@@ -114,7 +222,6 @@ public class StyleTreeResolver : IStyleTreeResolver
             }
         }
 
-        // Compute the style
         _processingStack.Push(element);
         try
         {
@@ -129,30 +236,26 @@ public class StyleTreeResolver : IStyleTreeResolver
         }
     }
 
-    /// <inheritdoc/>
     public IEnumerable<IElement> GetElementsNeedingStyleResolution(IElement root)
     {
         return _invalidationTracker.GetElementsToUpdate(root);
     }
 
-    /// <inheritdoc/>
     public void ClearCache()
     {
         _styleCache.Clear();
         _styleSharingMap.Clear();
+        _pendingOptimizations.Clear();
     }
 
-    /// <inheritdoc/>
     public bool CanShareStyle(IElement element)
     {
         if (element == null)
             throw new ArgumentNullException(nameof(element));
 
-        // Check if element is already mapped for style sharing
         if (_styleSharingMap.ContainsKey(element))
             return true;
 
-        // Look for potential style donors with the same tag, class, and parent
         if (element.ParentElement != null)
         {
             foreach (var sibling in element.ParentElement.Children)
@@ -171,12 +274,6 @@ public class StyleTreeResolver : IStyleTreeResolver
         return false;
     }
 
-    /// <summary>
-    /// Attempts to get a shared style from another element.
-    /// </summary>
-    /// <param name="element">The element to find shared style for.</param>
-    /// <param name="sharedStyle">The shared computed style, if found.</param>
-    /// <returns>True if a shared style was found; otherwise, false.</returns>
     private bool TryGetSharedStyle(IElement element, out IComputedStyle sharedStyle)
     {
         sharedStyle = null!;
@@ -194,47 +291,37 @@ public class StyleTreeResolver : IStyleTreeResolver
         return true;
     }
 
-    /// <summary>
-    /// Computes the style for an element.
-    /// </summary>
-    /// <param name="element">The element to compute style for.</param>
-    /// <param name="parentStyle">The parent element's computed style.</param>
-    /// <param name="pseudoElement">Optional pseudo-element selector.</param>
-    /// <returns>The computed style.</returns>
     private IComputedStyle ComputeElementStyleInternal(IElement element, IComputedStyle? parentStyle, string? pseudoElement)
     {
-        // Get style rules that match this element
         var matchedRules = _styleEngine.RuleCollector.CollectMatchingRules(element, pseudoElement);
-
-        // Cascade the matched rules
         var cascadedStyle = _styleEngine.CascadeResolver.ResolveCascade(matchedRules, element);
-
-        // Apply inheritance
         var inheritedStyle = _styleEngine.InheritanceProcessor.ApplyInheritance(cascadedStyle, parentStyle);
-
-        // Extract variables
         _styleEngine.VariableResolver.ExtractVariablesFromStyle(element, inheritedStyle);
-
-        // Build the computed style
         var computedStyle = _styleEngine.ComputedStyleBuilder.BuildComputedStyle(inheritedStyle, element, parentStyle);
         return computedStyle!;
     }
 
-    /// <summary>
-    /// Creates an empty style for an element when a proper style cannot be computed.
-    /// </summary>
-    /// <param name="element">The element to create style for.</param>
-    /// <returns>A basic computed style.</returns>
     private IComputedStyle CreateEmptyStyle(IElement element)
     {
         var factory = _styleEngine.StyleFactory as ComputedStyleFactory;
         if (factory != null)
         {
-            // Create empty style declaration
             var emptyStyle = new CssStyleDeclaration(_styleEngine.Context);
             return factory.CreateComputedStyle(element, null, emptyStyle);
         }
 
         throw new InvalidOperationException("Unable to create an empty style: StyleFactory is not available or is not a ComputedStyleFactory");
+    }
+
+    private PropertyTreeNode? GetPropertyTreeNode(IElement element)
+    {
+        // Extract the PropertyTreeNode from the element's computed style
+        if (_styleCache.TryGetValue(new StyleCacheKey(element, null), out var style) &&
+            style is ComputedStyle computedStyle)
+        {
+            return computedStyle.PropertyTreeNode;
+        }
+
+        return null;
     }
 }

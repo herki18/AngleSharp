@@ -7,38 +7,35 @@ using Css;
 using Interfaces;
 
 /// <summary>
-/// A high-performance representation of computed style values optimized for layout.
+/// Represents a computed style with optimized property access.
 /// </summary>
 public class ComputedStyle : IComputedStyle
 {
-    #region Fields
+    // These fields are internal to allow access by ComputedStyleFactory
+    internal readonly IElement _element;
+    internal readonly IComputedStyle? _parentStyle;
 
     private readonly BoxProperties _boxProperties;
     private readonly TextProperties _textProperties;
     private readonly RareProperties _rareProperties;
     private readonly SurrogateBitfields _bitfields;
     private readonly PropertyTreeNode _propertyTree;
-    private readonly IElement _element;
-    private readonly IComputedStyle? _parentStyle;
     private readonly WritingMode _writingMode;
     private readonly IRenderDevice _renderDevice;
     private readonly IStyleInvalidationTracker _invalidationTracker;
     private readonly IBrowsingContext _context;
 
-    #endregion
-
-    #region Constructor
-
     /// <summary>
-    /// Creates a new computed style.
+    /// Initializes a new instance of the <see cref="ComputedStyle"/> class.
     /// </summary>
-    /// <param name="element">The element this style applies to.</param>
-    /// <param name="parentStyle">The parent element's computed style.</param>
-    /// <param name="declaration">The CSS declaration containing the style properties.</param>
-    /// <param name="propertyTree">The property tree node for shared style storage.</param>
-    public ComputedStyle(IElement element, IComputedStyle? parentStyle, ICssStyleDeclaration declaration,
-        PropertyTreeNode propertyTree, IRenderDevice renderDevice,
-        IStyleInvalidationTracker invalidationTracker, IBrowsingContext context)
+    public ComputedStyle(
+        IElement element,
+        IComputedStyle? parentStyle,
+        ICssStyleDeclaration declaration,
+        PropertyTreeNode propertyTree,
+        IRenderDevice renderDevice,
+        IStyleInvalidationTracker invalidationTracker,
+        IBrowsingContext context)
     {
         _element = element;
         _parentStyle = parentStyle;
@@ -47,38 +44,34 @@ public class ComputedStyle : IComputedStyle
         _invalidationTracker = invalidationTracker;
         _context = context;
 
-        // Initialize property groups
         _boxProperties = new BoxProperties(this, _renderDevice);
         _textProperties = new TextProperties(this, _renderDevice);
         _rareProperties = new RareProperties();
         _bitfields = new SurrogateBitfields();
 
         Declaration = declaration;
-
-        // Compute writing mode early as it affects property mapping
         _writingMode = ComputeWritingMode(declaration);
 
-        // Process style properties
         ProcessStyleProperties(declaration);
     }
 
-    #endregion
-
-    #region IComputedStyle Interface
-
+    /// <summary>
+    /// Gets the declaration that was used to create this computed style.
+    /// </summary>
     public ICssStyleDeclaration Declaration { get; }
 
     /// <summary>
-    /// Gets a computed value by property name.
+    /// Gets a property value by name.
     /// </summary>
+    /// <param name="propertyName">The property name.</param>
+    /// <returns>The property value.</returns>
     public string GetPropertyValue(string propertyName)
     {
         string value = _propertyTree.GetPropertyValue(propertyName);
-
         if (string.IsNullOrEmpty(value))
         {
             var factory = _context.GetFactory<IDeclarationFactory>();
-            var declarationInfo = factory.Create(propertyName);
+            var declarationInfo = factory?.Create(propertyName);
             if (declarationInfo?.InitialValue != null)
             {
                 return declarationInfo.InitialValue.CssText;
@@ -89,8 +82,11 @@ public class ComputedStyle : IComputedStyle
     }
 
     /// <summary>
-    /// Gets a typed value for a specific property.
+    /// Gets a typed property value.
     /// </summary>
+    /// <typeparam name="T">The value type.</typeparam>
+    /// <param name="propertyName">The property name.</param>
+    /// <returns>The typed value.</returns>
     public T? GetValue<T>(string propertyName)
     {
         var value = _propertyTree.GetPropertyCachedValue(propertyName);
@@ -100,7 +96,6 @@ public class ComputedStyle : IComputedStyle
             return typedValue;
         }
 
-        // Try to handle specific common conversions
         if (typeof(T) == typeof(CssLengthValue) && value is ICssValue cssValue)
         {
             if (cssValue is CssLengthValue length)
@@ -120,66 +115,57 @@ public class ComputedStyle : IComputedStyle
     }
 
     /// <summary>
-    /// Gets the display type of the element.
+    /// Gets the display type.
     /// </summary>
     public DisplayMode Display => _bitfields.DisplayType;
 
     /// <summary>
-    /// Gets the position type of the element.
+    /// Gets the position type.
     /// </summary>
     public PositionMode Position => _bitfields.PositionType;
 
     /// <summary>
-    /// Gets the computed value of the opacity property.
+    /// Gets the opacity value.
     /// </summary>
     public float Opacity => _rareProperties.Opacity;
 
     /// <summary>
-    /// Gets the computed value of the z-index property.
+    /// Gets the z-index value.
     /// </summary>
     public int ZIndex => _rareProperties.ZIndex;
 
     /// <summary>
-    /// Gets the computed value of the font-size property.
+    /// Gets the font size.
     /// </summary>
     public CssLengthValue FontSize => _textProperties.FontSize;
 
     /// <summary>
-    /// Gets the writing mode for the element.
+    /// Gets the writing mode.
     /// </summary>
     public WritingMode WritingMode => _writingMode;
 
     /// <summary>
-    /// Gets box-related properties.
+    /// Gets the box properties.
     /// </summary>
     public IBoxProperties Box => _boxProperties;
 
     /// <summary>
-    /// Gets text-related properties.
+    /// Gets the text properties.
     /// </summary>
     public ITextProperties Text => _textProperties;
 
     /// <summary>
-    /// Gets the underlying property tree node.
+    /// Gets the property tree node.
     /// </summary>
     internal PropertyTreeNode PropertyTreeNode => _propertyTree;
 
-    #endregion
-
-    #region Implementation Methods
-
-    /// <summary>
-    /// Processes all style properties from the declaration.
-    /// </summary>
     private void ProcessStyleProperties(ICssStyleDeclaration declaration)
     {
-        // Parse and compute values for all properties
         foreach (var property in declaration)
         {
             ProcessProperty(property);
         }
 
-        // Apply inheritance after all properties are processed
         if (_parentStyle != null)
         {
             ApplyInheritance();
@@ -190,15 +176,10 @@ public class ComputedStyle : IComputedStyle
         }
     }
 
-    /// <summary>
-    /// Processes a single CSS property.
-    /// </summary>
     private void ProcessProperty(ICssProperty property)
     {
-        // Store property in the property tree
         _propertyTree.SetProperty(property.Name, property.RawValue);
 
-        // Track device-dependent properties
         if (property.RawValue is CssLengthValue length && IsDeviceDependent(length))
         {
             if (_invalidationTracker is StyleInvalidationTracker tracker)
@@ -207,10 +188,8 @@ public class ComputedStyle : IComputedStyle
             }
         }
 
-        // Update specialized property groups
         switch (property.Name)
         {
-            // Display and positioning properties
             case "display":
                 _bitfields.UpdateDisplayType(ParseDisplayType(property.Value));
                 break;
@@ -227,8 +206,6 @@ public class ComputedStyle : IComputedStyle
             case "overflow-y":
                 _bitfields.OverflowY = ParseOverflowMode(property.Value);
                 break;
-
-            // Box properties
             case "width":
             case "height":
             case "margin-top":
@@ -245,8 +222,6 @@ public class ComputedStyle : IComputedStyle
             case "border-left-width":
                 ProcessBoxProperty(property);
                 break;
-
-            // Text properties
             case "font-family":
             case "font-size":
             case "font-weight":
@@ -256,8 +231,6 @@ public class ComputedStyle : IComputedStyle
             case "color":
                 ProcessTextProperty(property);
                 break;
-
-            // Other properties
             case "opacity":
                 if (float.TryParse(property.Value, out var opacity))
                 {
@@ -285,7 +258,6 @@ public class ComputedStyle : IComputedStyle
                 }
                 break;
             default:
-                // Store other properties in RareProperties
                 if (property.RawValue != null)
                 {
                     _rareProperties.SetValue(property.Name, property.RawValue);
@@ -296,7 +268,6 @@ public class ComputedStyle : IComputedStyle
 
     private bool IsDeviceDependent(CssLengthValue length)
     {
-        // Check if the unit depends on the render device
         var unit = length.Type;
         return unit == CssLengthValue.Unit.Em || unit == CssLengthValue.Unit.Rem ||
                unit == CssLengthValue.Unit.Vh || unit == CssLengthValue.Unit.Vw ||
@@ -304,12 +275,8 @@ public class ComputedStyle : IComputedStyle
                unit == CssLengthValue.Unit.Percent;
     }
 
-    /// <summary>
-    /// Processes box-related properties.
-    /// </summary>
     private void ProcessBoxProperty(ICssProperty property)
     {
-        // Extract CSS length value
         CssLengthValue? length = null;
 
         if (property.RawValue is CssLengthValue lengthValue)
@@ -318,7 +285,6 @@ public class ComputedStyle : IComputedStyle
         }
         else if (property.RawValue is ICssValue cssValue)
         {
-            // If it's a different CSS value type, try to handle common cases
             if (cssValue.CssText == "auto")
             {
                 length = CssLengthValue.Auto;
@@ -383,9 +349,6 @@ public class ComputedStyle : IComputedStyle
         }
     }
 
-    /// <summary>
-    /// Processes text-related properties.
-    /// </summary>
     private void ProcessTextProperty(ICssProperty property)
     {
         switch (property.Name)
@@ -438,9 +401,6 @@ public class ComputedStyle : IComputedStyle
         }
     }
 
-    /// <summary>
-    /// Computes the writing mode from the style declaration.
-    /// </summary>
     private WritingMode ComputeWritingMode(ICssStyleDeclaration declaration)
     {
         var direction = DirectionMode.Ltr;
@@ -475,15 +435,11 @@ public class ComputedStyle : IComputedStyle
         return new WritingMode(direction, mode);
     }
 
-    /// <summary>
-    /// Applies inherited properties from the parent style.
-    /// </summary>
     private void ApplyInheritance()
     {
         if (_parentStyle == null)
             return;
 
-        // Inherit text properties if not specified
         if (!_propertyTree.HasProperty("color"))
         {
             _textProperties.SetColor(_parentStyle.Text.Color);
@@ -494,7 +450,6 @@ public class ComputedStyle : IComputedStyle
             _textProperties.SetFontFamily(_parentStyle.Text.FontFamily);
         }
 
-        // Inherit other inherited properties as needed
         var inheritedProperties = new[]
         {
             "line-height",
@@ -529,12 +484,8 @@ public class ComputedStyle : IComputedStyle
         }
     }
 
-    /// <summary>
-    /// Applies initial values for properties when no parent style exists.
-    /// </summary>
     private void ApplyInitialValues()
     {
-        // Set initial values for properties that need them
         if (!_propertyTree.HasProperty("color"))
         {
             _textProperties.SetColor(CssColorValue.Black);
@@ -571,10 +522,6 @@ public class ComputedStyle : IComputedStyle
         }
     }
 
-    /// <summary>
-    /// Parses a display property value into a DisplayType enum.
-    /// Use AngleSharp's built-in DisplayMode enum.
-    /// </summary>
     private DisplayMode ParseDisplayType(string value)
     {
         return value.ToLowerInvariant() switch
@@ -592,13 +539,10 @@ public class ComputedStyle : IComputedStyle
             "table-cell" => DisplayMode.TableCell,
             "table-caption" => DisplayMode.TableCaption,
             "list-item" => DisplayMode.ListItem,
-            _ => DisplayMode.Block // Default
+            _ => DisplayMode.Block
         };
     }
 
-    /// <summary>
-    /// Parses a position property value into a PositionType enum.
-    /// </summary>
     private PositionMode ParsePositionType(string value)
     {
         return value.ToLowerInvariant() switch
@@ -608,14 +552,10 @@ public class ComputedStyle : IComputedStyle
             "absolute" => PositionMode.Absolute,
             "fixed" => PositionMode.Fixed,
             "sticky" => PositionMode.Sticky,
-            _ => PositionMode.Static // Default
+            _ => PositionMode.Static
         };
     }
 
-    /// <summary>
-    /// Parses an overflow property value into an OverflowMode enum.
-    /// Use AngleSharp's built-in OverflowMode enum.
-    /// </summary>
     private OverflowMode ParseOverflowMode(string value)
     {
         return value.ToLowerInvariant() switch
@@ -625,14 +565,10 @@ public class ComputedStyle : IComputedStyle
             "scroll" => OverflowMode.Scroll,
             "auto" => OverflowMode.Auto,
             "clip" => OverflowMode.Clip,
-            _ => OverflowMode.Visible // Default
+            _ => OverflowMode.Visible
         };
     }
 
-    /// <summary>
-    /// Parses a text-align property value into a TextAlign enum.
-    /// Use AngleSharp's built-in TextAlign enum.
-    /// </summary>
     private TextAlign ParseTextAlign(string value)
     {
         return value.ToLowerInvariant() switch
@@ -645,9 +581,7 @@ public class ComputedStyle : IComputedStyle
             "end" => TextAlign.End,
             "justify-all" => TextAlign.JustifyAll,
             "match-parent" => TextAlign.MatchParent,
-            _ => TextAlign.Start // Default
+            _ => TextAlign.Start
         };
     }
-
-    #endregion
 }

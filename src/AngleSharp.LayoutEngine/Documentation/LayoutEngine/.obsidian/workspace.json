@@ -41,12 +41,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
-                "mode": "source",
+                "file": "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "StyleSystem Implementation Plan"
+              "title": "StyleSystem Component Architecture"
             }
           }
         ],
@@ -200,8 +200,15 @@
   },
   "active": "fad918890771ffc5",
   "lastOpenFiles": [
-    "New Arhitecture/Rev 1/AngleSharp.StyleSystem Development Guide.md",
+    "New Arhitecture/Rev 1/StyleSystem Data Flow Diagrams.md",
+    "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
+    "New Arhitecture/Untitled 8.md",
+    "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
     "New Arhitecture/Rev 1/Development Guidelines.md",
+    "New Arhitecture/Rev 1/AngleSharp.StyleSystem Development Guide.md",
+    "New Arhitecture/Rev 1/Core Component Interfaces.md",
+    "New Arhitecture/Rev 1/AngleSharp CSS Reference.md",
+    "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
     "New Arhitecture/Untitled 7.md",
     "New Arhitecture/StyleSystem Component Interaction Flow Documentation.md",
     "New Arhitecture/StyleSystem Component Data Flow.md",
@@ -213,15 +220,9 @@
     "New Arhitecture/Untitled 2.md",
     "New Arhitecture/Untitled 1.md",
     "New Arhitecture/Untitled.md",
-    "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
-    "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
-    "New Arhitecture/Rev 1/Core Component Interfaces.md",
-    "New Arhitecture/Rev 1/AngleSharp CSS Reference.md",
     "Notes/CssColorValue Alpha Issue.md",
-    "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
     "New Arhitecture/Rev 1/StyleSystem Implementation Guide.md",
     "New Arhitecture/Rev 1/StyleSystem Testing Strategy.md",
-    "New Arhitecture/Rev 1/StyleSystem Data Flow Diagrams.md",
     "Modules/Style System/Reference/AngleSharp CSS Declaration Handling - Quick Reference.md",
     "New Arhitecture/Rev 3",
     "New Arhitecture/Rev 2",
@@ -230,7 +231,6 @@
     "Notes",
     "Modules/Layout System/Layout System Architecture Document.md",
     "Modules/Style System/Implementation/StyleComputationEngineImplementationStatus.md",
-    "Modules/Style System/Instructions/Instructions.md",
     "Diagrams",
     "Modules/Style System/Diagrams",
     "Modules/Lifecycle System/Diagrams",
