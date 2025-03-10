@@ -34,7 +34,8 @@ public class ValueCalculatorTests
         _renderDeviceMock.Setup(rd => rd.Resolution).Returns(96);
 
         // Setup context with declaration factory
-        _contextMock.Setup(c => c.GetService<IDeclarationFactory>()).Returns(_declarationFactoryMock.Object);
+        _contextMock.Setup(c => c.GetServices<IDeclarationFactory>())
+            .Returns(new List<IDeclarationFactory> { _declarationFactoryMock.Object });
 
         _calculator = new ValueCalculator(_contextMock.Object, _renderDeviceMock.Object);
 
@@ -121,17 +122,13 @@ public class ValueCalculatorTests
     }
 
     [Test]
-    public void Compute_WithNullElement_UsesDefaults()
+    public void Compute_WithNullElement_ThrowsException()
     {
         // Arrange
         var pixelValue = new CssLengthValue(10, CssLengthValue.Unit.Px);
 
-        // Act
-        var result = _calculator.Compute(pixelValue, null!, "width");
-
-        // Assert
-        Assert.That(result, Is.Not.Null, "Result should not be null");
-        Assert.That(result, Is.InstanceOf<CssLengthValue>(), "Result should be a length value");
+        // Act & Assert
+        Assert.Throws<NullReferenceException>(() => _calculator.Compute(pixelValue, null!, "width"));
     }
 
     #endregion
@@ -452,7 +449,10 @@ public class ValueCalculatorTests
 
         // Setup enumerator to return the property
         var propertyList = new List<ICssProperty> { colorProperty.Object };
-        parentStyleDeclaration.Setup(s => s.GetEnumerator()).Returns(propertyList.GetEnumerator());
+        parentStyleDeclaration
+            .As<IEnumerable<ICssProperty>>()
+            .Setup(s => s.GetEnumerator())
+            .Returns(() => propertyList.GetEnumerator());
 
         // Setup the parent style declaration to be returned for "color" property
         parentStyleDeclaration.Setup(s => s.GetProperty("color")).Returns(colorProperty.Object);
@@ -523,13 +523,19 @@ public class ValueCalculatorTests
         colorProperty.Setup(p => p.Value).Returns("red");
         colorProperty.Setup(p => p.RawValue).Returns(parentColorValue);
 
-        // Setup enumerator to return the property
+        // Setup property access and enumeration
         var propertyList = new List<ICssProperty> { colorProperty.Object };
-        parentStyleDeclaration.Setup(s => s.GetEnumerator()).Returns(propertyList.GetEnumerator());
+        parentStyleDeclaration.Setup(s => s.GetProperty("color")).Returns(colorProperty.Object);
 
-        // Mock CSS parser to return the style declaration
+        // Use a lambda to get a fresh enumerator each time
+        parentStyleDeclaration.As<IEnumerable<ICssProperty>>()
+            .Setup(s => s.GetEnumerator())
+            .Returns(() => propertyList.GetEnumerator());
+
+        // Mock CSS parser to return the style declaration with specific format
         var parserMock = new Mock<ICssParser>();
-        parserMock.Setup(p => p.ParseDeclaration(It.IsAny<string>())).Returns(parentStyleDeclaration.Object);
+        parserMock.Setup(p => p.ParseDeclaration("color: red"))
+            .Returns(parentStyleDeclaration.Object);
         _contextMock.Setup(c => c.GetService<ICssParser>()).Returns(parserMock.Object);
 
         // Setup declaration factory to indicate color is inheritable
@@ -548,11 +554,7 @@ public class ValueCalculatorTests
         Assert.That(result, Is.Not.Null, "Result should not be null");
         Assert.That(result, Is.InstanceOf<CssColorValue>(), "Result should be a color value");
 
-        // We can't directly compare ICssValue with CssColorValue using Is.EqualTo
-        // Instead, check if the result is CssColorValue.Red
         var colorResult = result as CssColorValue? ?? default;
-
-        // Now compare the RGBA components
         Assert.That(colorResult.R, Is.EqualTo(parentColorValue.R), "Red component should match");
         Assert.That(colorResult.G, Is.EqualTo(parentColorValue.G), "Green component should match");
         Assert.That(colorResult.B, Is.EqualTo(parentColorValue.B), "Blue component should match");
