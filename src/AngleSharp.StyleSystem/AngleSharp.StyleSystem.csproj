@@ -10,4 +10,26 @@
       <ProjectReference Include="..\AngleSharp\AngleSharp.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Core\Computation\Builder\" />
+      <Folder Include="Core\Computation\Cascade\" />
+      <Folder Include="Core\Computation\Inheritance\" />
+      <Folder Include="Core\Computation\Rules\" />
+      <Folder Include="Core\Document\Lifecycle\" />
+      <Folder Include="Core\Document\StyleSheets\" />
+      <Folder Include="Core\Engine\" />
+      <Folder Include="Core\Storage\Cache\" />
+      <Folder Include="Core\Storage\Models\" />
+      <Folder Include="Core\Storage\PropertyTree\" />
+      <Folder Include="Core\Styles\ComputedStyle\" />
+      <Folder Include="Core\Styles\Properties\" />
+      <Folder Include="Core\Styles\Tracking\" />
+      <Folder Include="Core\Threading\MainThread\" />
+      <Folder Include="Core\Threading\Scheduling\" />
+      <Folder Include="Core\Threading\Workers\" />
+      <Folder Include="Core\Values\Calculation\" />
+      <Folder Include="Core\Values\Mapping\" />
+      <Folder Include="Core\Values\Variables\" />
+    </ItemGroup>
+
 </Project>
