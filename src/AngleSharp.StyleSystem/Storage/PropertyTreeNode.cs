@@ -1,9 +1,9 @@
-﻿namespace AngleSharp.StyleSystem.Core;
+﻿namespace AngleSharp.StyleSystem.Storage;
 
 using System;
 using System.Collections.Generic;
-using Css.Dom;
-using Css.Values;
+using AngleSharp.Css.Dom;
+using AngleSharp.Css.Values;
 
 /// <summary>
 /// Represents a node in the property tree for efficient style storage.

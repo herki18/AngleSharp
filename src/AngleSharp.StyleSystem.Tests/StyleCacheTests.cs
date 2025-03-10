@@ -1,6 +1,5 @@
 ﻿using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
-using AngleSharp.StyleSystem.Core;
 using Moq;
 
 namespace AngleSharp.StyleSystem.Tests;

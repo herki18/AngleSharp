@@ -1,4 +1,5 @@
-namespace AngleSharp.StyleSystem.Core;
+namespace AngleSharp.StyleSystem.Threading;
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -6,7 +7,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp.Dom;
-using AngleSharp.StyleSystem.Core.Interfaces;
+using AngleSharp.StyleSystem.Integration;
+using AngleSharp.StyleSystem.Models;
+using Interfaces;
 
 /// <summary>
 /// Implements the scheduling and coordination of style recalculation work.

@@ -1,4 +1,4 @@
-namespace AngleSharp.StyleSystem.Core;
+namespace AngleSharp.StyleSystem.Models;
 
 /// <summary>
 /// The type of style recalculation work.

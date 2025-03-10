@@ -1,9 +1,10 @@
-﻿namespace AngleSharp.StyleSystem.Core;
+﻿namespace AngleSharp.StyleSystem.Computation;
 
 using System;
 using System.Collections.Generic;
-using Css.Dom;
-using Dom;
+using AngleSharp.Css.Dom;
+using AngleSharp.Dom;
+using Integration;
 using Interfaces;
 
 /// <summary>

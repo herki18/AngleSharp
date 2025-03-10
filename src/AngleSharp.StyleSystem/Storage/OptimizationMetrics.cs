@@ -1,4 +1,4 @@
-﻿namespace AngleSharp.StyleSystem.Core;
+﻿namespace AngleSharp.StyleSystem.Storage;
 
 using System.Collections.Generic;
 

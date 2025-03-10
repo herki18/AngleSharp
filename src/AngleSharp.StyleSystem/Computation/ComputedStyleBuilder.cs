@@ -1,10 +1,12 @@
-﻿namespace AngleSharp.StyleSystem.Core;
+﻿namespace AngleSharp.StyleSystem.Computation;
 
 using System;
+using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
-using AngleSharp.StyleSystem.Core.Interfaces;
-using Css;
+using Integration;
+using Interfaces;
+using Models;
 
 /// <summary>
 /// Builds computed style objects from CSS declarations.

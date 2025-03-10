@@ -1,7 +1,8 @@
-﻿namespace AngleSharp.StyleSystem.Core;
+﻿namespace AngleSharp.StyleSystem.Storage;
 
 using System.Collections.Generic;
-using AngleSharp.StyleSystem.Core.Interfaces;
+using AngleSharp.StyleSystem.Models;
+using Interfaces;
 
 /// <summary>
 /// Provides caching for computed styles.

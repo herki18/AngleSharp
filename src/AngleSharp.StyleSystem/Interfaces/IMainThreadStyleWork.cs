@@ -1,9 +1,9 @@
-namespace AngleSharp.StyleSystem.Core.Interfaces;
-using AngleSharp.Dom;
-using System;
-using System.Collections.Generic;
+namespace AngleSharp.StyleSystem.Interfaces;
+
 using System.Threading;
 using System.Threading.Tasks;
+using AngleSharp.Dom;
+using AngleSharp.StyleSystem.Models;
 
 /// <summary>
 /// Manages style computation work that must be executed on the main thread.

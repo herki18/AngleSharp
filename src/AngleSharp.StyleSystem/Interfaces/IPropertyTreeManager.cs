@@ -1,7 +1,8 @@
-﻿using AngleSharp.Css.Dom;
-using AngleSharp.Dom;
+﻿namespace AngleSharp.StyleSystem.Interfaces;
 
-namespace AngleSharp.StyleSystem.Core.Interfaces;
+using AngleSharp.Css.Dom;
+using AngleSharp.Dom;
+using AngleSharp.StyleSystem.Storage;
 
 /// <summary>
 /// Manages property tree nodes for optimal style sharing.

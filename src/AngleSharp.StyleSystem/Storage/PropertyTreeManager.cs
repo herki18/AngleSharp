@@ -1,13 +1,12 @@
-﻿using AngleSharp.Css.Dom;
-using AngleSharp.Dom;
-using AngleSharp.StyleSystem.Core.Interfaces;
+﻿namespace AngleSharp.StyleSystem.Storage;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
-namespace AngleSharp.StyleSystem.Core;
-
 using System.Runtime.CompilerServices;
+using AngleSharp.Css.Dom;
+using AngleSharp.Dom;
+using Interfaces;
 
 /// <summary>
 /// Manages property trees for efficient style storage and sharing.

@@ -1,10 +1,13 @@
-﻿namespace AngleSharp.StyleSystem.Core;
+﻿namespace AngleSharp.StyleSystem.Integration;
 
 using System;
 using System.Collections.Generic;
+using AngleSharp.Css;
 using AngleSharp.Dom;
-using AngleSharp.StyleSystem.Core.Interfaces;
-using Css;
+using AngleSharp.StyleSystem.Computation;
+using Interfaces;
+using Properties;
+using Storage;
 
 public class StyleEngine : IStyleEngine, IDisposable
 {

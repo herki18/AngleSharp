@@ -1,9 +1,9 @@
-namespace AngleSharp.StyleSystem.Core.Interfaces;
-using System;
-using System.Collections.Generic;
+namespace AngleSharp.StyleSystem.Interfaces;
+
 using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp.Dom;
+using AngleSharp.StyleSystem.Models;
 
 /// <summary>
 /// Schedules style recalculation work for elements, coordinating when and how styles are computed.

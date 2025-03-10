@@ -1,4 +1,4 @@
-﻿namespace AngleSharp.StyleSystem.Core.Interfaces;
+﻿namespace AngleSharp.StyleSystem.Interfaces;
 
 using System.Collections.Generic;
 using AngleSharp.Dom;

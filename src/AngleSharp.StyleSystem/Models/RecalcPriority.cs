@@ -1,4 +1,4 @@
-namespace AngleSharp.StyleSystem.Core.Interfaces;
+namespace AngleSharp.StyleSystem.Models;
 
 /// <summary>
 /// Defines the priority of style recalculation work.

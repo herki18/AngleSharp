@@ -1,10 +1,14 @@
-﻿namespace AngleSharp.StyleSystem.Core;
+﻿namespace AngleSharp.StyleSystem.Computation;
 
+using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Values;
 using AngleSharp.Dom;
-using Css;
+using Integration;
 using Interfaces;
+using Models;
+using Properties;
+using Storage;
 
 /// <summary>
 /// Represents a computed style with optimized property access.

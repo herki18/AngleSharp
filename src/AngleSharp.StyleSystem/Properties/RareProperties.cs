@@ -1,8 +1,8 @@
-﻿namespace AngleSharp.StyleSystem.Core;
+﻿namespace AngleSharp.StyleSystem.Properties;
 
 using System.Collections.Generic;
+using AngleSharp.Css.Dom;
 using AngleSharp.Css.Values;
-using Css.Dom;
 
 /// <summary>
 /// Represents less-commonly used computed properties.

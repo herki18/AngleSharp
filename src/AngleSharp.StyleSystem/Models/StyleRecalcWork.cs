@@ -1,6 +1,6 @@
-namespace AngleSharp.StyleSystem.Core;
+namespace AngleSharp.StyleSystem.Models;
+
 using AngleSharp.Dom;
-using AngleSharp.StyleSystem.Core.Interfaces;
 
 /// <summary>
 /// Represents a style recalculation work item.

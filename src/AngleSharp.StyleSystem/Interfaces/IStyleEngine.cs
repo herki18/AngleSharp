@@ -1,7 +1,8 @@
-﻿namespace AngleSharp.StyleSystem.Core.Interfaces;
+﻿namespace AngleSharp.StyleSystem.Interfaces;
 
-using Css;
-using Dom;
+using AngleSharp.Css;
+using AngleSharp.Dom;
+using AngleSharp.StyleSystem.Integration;
 
 /// <summary>
 /// Main entry point for style computation.

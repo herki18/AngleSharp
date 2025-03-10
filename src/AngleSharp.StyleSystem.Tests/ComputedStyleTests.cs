@@ -4,10 +4,7 @@ using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
 using AngleSharp.Css.Values;
-using AngleSharp.StyleSystem.Core;
 using Moq;
-using NUnit.Framework;
-using System;
 
 namespace AngleSharp.StyleSystem.Tests;
 

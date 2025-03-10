@@ -1,8 +1,8 @@
-﻿namespace AngleSharp.StyleSystem.Core;
+﻿namespace AngleSharp.StyleSystem.Integration;
 
 using System.Collections.Generic;
 using AngleSharp.Dom;
-using AngleSharp.StyleSystem.Core.Interfaces;
+using Interfaces;
 
 public class StyleInvalidationTracker : IStyleInvalidationTracker
 {

@@ -1,7 +1,8 @@
-﻿namespace AngleSharp.StyleSystem.Core.Interfaces;
+﻿namespace AngleSharp.StyleSystem.Interfaces;
 
-using Css.Dom;
-using Css.Values;
+using AngleSharp.Css.Dom;
+using AngleSharp.Css.Values;
+using AngleSharp.StyleSystem.Models;
 
 /// <summary>
 /// Represents a computed style with optimized property access.

@@ -1,4 +1,5 @@
-namespace AngleSharp.StyleSystem.Core;
+namespace AngleSharp.StyleSystem.Integration;
+
 using System;
 using AngleSharp.Css;
 using AngleSharp.Dom;

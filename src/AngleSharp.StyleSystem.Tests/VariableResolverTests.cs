@@ -6,7 +6,6 @@ using AngleSharp.Css.Dom;
 namespace AngleSharp.StyleSystem.Tests;
 
 using Computation;
-using Core;
 
 [TestFixture]
 public class VariableResolverTests

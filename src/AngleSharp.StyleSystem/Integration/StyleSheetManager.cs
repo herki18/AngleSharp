@@ -1,12 +1,13 @@
-﻿namespace AngleSharp.StyleSystem.Core;
+﻿namespace AngleSharp.StyleSystem.Integration;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
+using AngleSharp.Css.Parser;
 using AngleSharp.Dom;
-using Css.Parser;
+using Models;
 
 /// <summary>
 /// Manages stylesheets from different origins and provides centralized access to them.

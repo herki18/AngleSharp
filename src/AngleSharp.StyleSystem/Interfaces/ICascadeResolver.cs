@@ -1,8 +1,9 @@
-﻿namespace AngleSharp.StyleSystem.Core.Interfaces;
+﻿namespace AngleSharp.StyleSystem.Interfaces;
 
 using System.Collections.Generic;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
+using AngleSharp.StyleSystem.Models;
 
 /// <summary>
 /// Interface for resolving CSS cascade.

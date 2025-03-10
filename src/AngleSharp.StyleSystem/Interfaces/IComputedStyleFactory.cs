@@ -1,4 +1,4 @@
-﻿namespace AngleSharp.StyleSystem.Core.Interfaces;
+﻿namespace AngleSharp.StyleSystem.Interfaces;
 
 /// <summary>
 /// Factory for creating computed style objects.

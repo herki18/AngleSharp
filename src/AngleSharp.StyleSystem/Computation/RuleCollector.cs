@@ -1,4 +1,4 @@
-﻿namespace AngleSharp.StyleSystem.Core;
+﻿namespace AngleSharp.StyleSystem.Computation;
 
 using System;
 using System.Collections.Generic;
@@ -7,7 +7,9 @@ using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
 using AngleSharp.Dom;
-using AngleSharp.StyleSystem.Core.Interfaces;
+using Integration;
+using Interfaces;
+using Models;
 
 /// <summary>
 /// Collects and matches CSS rules to elements, handling specificity calculation and caching.

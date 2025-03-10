@@ -1,15 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using AngleSharp.Css;
-using AngleSharp.Css.Dom;
-using AngleSharp.Css.Values;
-using AngleSharp.Dom;
-using AngleSharp.StyleSystem.Core.Interfaces;
-
-namespace AngleSharp.StyleSystem.Core
+﻿namespace AngleSharp.StyleSystem.Computation
 {
-    using Css.Parser;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using AngleSharp.Css;
+    using AngleSharp.Css.Dom;
+    using AngleSharp.Css.Parser;
+    using AngleSharp.Css.Values;
+    using AngleSharp.Dom;
+    using Interfaces;
 
     /// <summary>
     /// Calculates computed values for CSS properties based on element context and rendering device.

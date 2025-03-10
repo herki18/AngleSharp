@@ -1,7 +1,7 @@
-﻿namespace AngleSharp.StyleSystem.Core;
+﻿namespace AngleSharp.StyleSystem.Storage;
 
 using System;
-using AngleSharp.Dom;
+using AngleSharp.StyleSystem.Integration;
 
 /// <summary>
 /// Extension methods for style optimization.

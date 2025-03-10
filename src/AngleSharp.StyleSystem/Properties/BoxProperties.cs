@@ -1,9 +1,11 @@
-﻿namespace AngleSharp.StyleSystem.Core;
+﻿namespace AngleSharp.StyleSystem.Properties;
 
 using System;
+using AngleSharp.Css;
 using AngleSharp.Css.Values;
-using AngleSharp.StyleSystem.Core.Interfaces;
-using Css;
+using AngleSharp.StyleSystem.Computation;
+using AngleSharp.StyleSystem.Models;
+using Interfaces;
 
 /// <summary>
 /// Represents box-related computed properties.

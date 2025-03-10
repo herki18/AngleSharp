@@ -1,12 +1,12 @@
+namespace AngleSharp.StyleSystem.Computation;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Values;
 using AngleSharp.Dom;
-using AngleSharp.StyleSystem.Core.Interfaces;
-
-namespace AngleSharp.StyleSystem.Core;
+using Interfaces;
 
 public class VariableResolver : IVariableResolver
 {

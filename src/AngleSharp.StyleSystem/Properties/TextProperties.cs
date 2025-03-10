@@ -1,9 +1,10 @@
-﻿namespace AngleSharp.StyleSystem.Core
+﻿namespace AngleSharp.StyleSystem.Properties
 {
     using System;
+    using AngleSharp.Css;
     using AngleSharp.Css.Dom;
     using AngleSharp.Css.Values;
-    using Css;
+    using AngleSharp.StyleSystem.Computation;
     using Interfaces;
 
     /// <summary>

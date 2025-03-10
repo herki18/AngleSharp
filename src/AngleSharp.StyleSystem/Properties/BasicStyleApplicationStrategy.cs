@@ -1,11 +1,10 @@
-﻿namespace AngleSharp.StyleSystem.Core;
+﻿namespace AngleSharp.StyleSystem.Properties;
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
-using AngleSharp.StyleSystem.Core.Interfaces;
+using Interfaces;
 
 /// <summary>
 /// A basic implementation of the style application strategy that follows a top-down traversal.

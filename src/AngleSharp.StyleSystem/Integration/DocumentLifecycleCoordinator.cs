@@ -1,6 +1,6 @@
-﻿namespace AngleSharp.StyleSystem.Core;
+﻿namespace AngleSharp.StyleSystem.Integration;
 
-using Dom;
+using AngleSharp.Dom;
 
 public class DocumentLifecycleCoordinator
 {

@@ -1,6 +1,8 @@
-namespace AngleSharp.StyleSystem.Core;
+namespace AngleSharp.StyleSystem.Threading;
+
 using System;
-using AngleSharp.StyleSystem.Core.Interfaces;
+using AngleSharp.StyleSystem.Integration;
+using Interfaces;
 
 /// <summary>
 /// Extension methods for IStyleRecalcScheduler integration with the DocumentLifecycleCoordinator.

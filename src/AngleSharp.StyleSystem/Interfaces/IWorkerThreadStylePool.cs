@@ -1,9 +1,11 @@
-namespace AngleSharp.StyleSystem.Core.Interfaces;
-using AngleSharp.Dom;
+namespace AngleSharp.StyleSystem.Interfaces;
+
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using AngleSharp.Dom;
+using AngleSharp.StyleSystem.Models;
 
 /// <summary>
 /// Manages a pool of worker threads for parallel style computation.

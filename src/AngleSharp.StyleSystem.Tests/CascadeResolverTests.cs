@@ -2,7 +2,6 @@
 using AngleSharp.Html.Parser;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
-using AngleSharp.StyleSystem.Core;
 
 namespace AngleSharp.StyleSystem.Tests;
 

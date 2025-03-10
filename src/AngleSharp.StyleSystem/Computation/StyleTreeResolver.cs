@@ -1,11 +1,14 @@
-﻿namespace AngleSharp.StyleSystem.Core;
+﻿namespace AngleSharp.StyleSystem.Computation;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
-using AngleSharp.StyleSystem.Core.Interfaces;
-using Css.Dom;
+using Integration;
+using Interfaces;
+using Models;
+using Storage;
 
 public class StyleTreeResolver : IStyleTreeResolver
 {
