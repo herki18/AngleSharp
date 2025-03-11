@@ -19,6 +19,7 @@ This document outlines the redesigned StyleSystem architecture for AngleSharp.La
 ### 1. Document Integration Layer
 
 - **DocumentLifecycleCoordinator**: Coordinates style computation with document lifecycle
+- **DomMutationTracker**: Monitors DOM changes and triggers style invalidation
 - **StyleRecalcScheduler**: Schedules style computation based on priority and visibility
 - **DisplayLockManager**: Defers processing for non-visible content
 - **AnimationStyleEngine**: Optimizes style computation for animated elements
@@ -44,32 +45,32 @@ This document outlines the redesigned StyleSystem architecture for AngleSharp.La
 - **PropertyTreeManager**: Manages shared property storage through tree structures for memory efficiency
 - **StylePropertyMapper**: Handles logical-to-physical property mapping based on writing mode context
 
-These components operate independently and do not directly depend on each other. Instead, they are orchestrated by the ComputedStyleBuilder, which coordinates the processing sequence:
+These components operate independently and do not directly depend on each other. Instead, they are orchestrated by the ComputedStyleBuilder, which coordinates the processing sequence following the Blink model:
 
-1. First, CSS variables are resolved by the VariableResolver
-2. Then computed values are calculated by the ValueCalculator
-3. Logical properties are mapped to physical properties by the StylePropertyMapper
-4. Finally, values are stored efficiently by the PropertyTreeManager
-
-This orchestration-based approach follows modern browser engines like Blink and provides clear separation of concerns, better testability, and focused optimization opportunities.
+1. First, DOM mutations are tracked by the DomMutationTracker
+2. Affected elements are marked by the StyleInvalidationTracker
+3. Style recalculation is scheduled by the StyleRecalcScheduler
+4. The StyleEngine processes invalidated elements through the style computation pipeline
+5. ComputedStyle objects are created and cached for future use
 
 ### Component Processing Flow
 
 The StyleSystem follows a specific processing sequence when computing styles:
 
 ```
-CSS Declaration → Variable Resolution → Value Calculation → Logical-to-Physical Mapping → Property Storage
+DOM Mutation → Style Invalidation → Style Recalc → Rule Matching → Cascade → Inheritance → Computed Style
 ```
 
 The ComputedStyleBuilder acts as the coordinator for this process:
 
 1. For each property in a declaration:
-   - First resolves any CSS variables in the property value
-   - Then computes absolute values through unit conversion and calculation
-   - For logical properties, maps them to their physical equivalents based on writing mode
-   - Finally stores the computed values in the property tree for efficient storage
+    - First resolves any CSS variables in the property value
+    - Then computes absolute values through unit conversion and calculation
+    - For logical properties, maps them to their physical equivalents based on writing mode
+    - Finally stores the computed values in the property tree for efficient storage
 
 This clearly defined flow ensures that:
+
 - Variables are always resolved before calculations are performed
 - Unit conversion happens after variable resolution
 - Logical properties are correctly mapped based on writing mode
@@ -119,6 +120,43 @@ Memory efficiency is achieved through property sharing:
 - Similar elements share style data when possible
 - Common property values stored once and referenced
 - Optimized immutable data structures
+
+### Style Containment
+
+CSS containment is respected for improved performance:
+
+- **Style Containment**: Limits style invalidation scope to contained subtrees, preventing style changes from propagating beyond containment boundaries
+- **Layout Containment**: Creates independent layout contexts that don't affect parent layout calculations, allowing for more efficient layout updates
+- **Paint Containment**: Creates new stacking contexts and containing blocks, enabling optimizations like subtree skipping for off-screen content
+- **Size Containment**: Elements' size doesn't depend on their descendants, enabling early layout optimization
+- **Content Containment**: Combines layout, style, and paint containment for maximum optimization
+
+**Implementation Strategy:**
+
+- Track containment boundaries during style tree construction
+- Respect containment during style recalculation
+- Use containment information for optimization
+
+### Style Memory Management
+
+Memory usage is optimized through several advanced techniques:
+
+- **Property Trees**: Instead of storing every style property for every element, property trees share common values in a tree structure
+    
+    - Properties are stored in a hierarchical structure with inheritance
+    - Identical property values are stored once and referenced by multiple elements
+    - Changes result in minimal tree modifications rather than full recomputation
+    - Highly efficient for similar elements (e.g., list items, table cells)
+- **Style Sharing**: Elements with identical styles share the same ComputedStyle object
+    
+    - Style sharing candidacy is determined by a set of quick-to-check criteria (tag name, class, id, etc.)
+    - Similar elements can reuse style calculations instead of computing styles from scratch
+    - A style sharing cache maintains recently computed styles for fast lookup
+- **Style Reuse**: Style calculations can be reused across similar elements
+    
+    - Intermediate calculation results are cached and reused
+    - Historical style information is maintained when beneficial
+    - Style dependencies are tracked for minimal recalculation
 
 ### Containment Awareness
 

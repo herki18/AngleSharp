@@ -67,6 +67,13 @@ This implementation plan divides the development of the new StyleSystem into dis
     - **Next**: Implement overflow-block/overflow-inline properties
     - **Next**: Add border-radius logical properties (border-start-start-radius, etc.)
     - **Next**: Support text-align-last, text-align-all with logical awareness
+- 🔄 `DomMutationTracker` implementation
+    
+    - Connect to AngleSharp's MutationObserver
+    - Track DOM mutations affecting styles
+    - Map mutations to style invalidation operations
+    - Filter style-relevant mutations
+    - Batch related mutations for efficiency
 
 ### Testing Progress
 
@@ -125,8 +132,14 @@ This implementation plan divides the development of the new StyleSystem into dis
     - Implement full border-radius logical property support
     - Support advanced writing mode scenarios
     - Add detailed writing mode context sensitivity
+5. **Implement DomMutationTracker for DOM integration**
+    
+    - Connect to AngleSharp's MutationObserver
+    - Implement efficient mutation handling
+    - Add style invalidation triggering
+    - Create optimized mutation batching
 
-## Phase 2: Advanced Value Computation (Next Phase)
+## Phase 2: Advanced Value Computation
 
 ### Objectives
 
@@ -134,6 +147,7 @@ This implementation plan divides the development of the new StyleSystem into dis
 - Add support for complex values (calc(), etc.)
 - Create the property tree optimization system
 - Implement basic caching
+- Implement style containment support
 
 ### Deliverables
 
@@ -164,12 +178,20 @@ This implementation plan divides the development of the new StyleSystem into dis
 - Cache invalidation strategies
 - Style sharing detection algorithm
 
+#### 2.5 Containment Support
+
+- Containment boundary detection
+- Scope-limited style processing
+- Containment-aware invalidation
+- Optimized subtree handling
+
 ### Testing Criteria
 
 - Variable resolution correctness tests
 - Property tree memory efficiency tests
 - Calc expression evaluation tests
 - Style caching hit rate tests
+- Containment boundary tests
 - Performance comparison with Phase 1
 
 ## Phase 3: Logical Properties & Layout Integration
@@ -398,6 +420,7 @@ Based on code review and current progress, we are on track with Phase 1 completi
 2. Improving the CascadeResolver's specificity calculation for CSS spec compliance
 3. Extending the InheritanceProcessor to handle complex inheritance scenarios
 4. Completing the StylePropertyMapper implementation for all CSS logical properties
+5. Implementing the DomMutationTracker for DOM integration with AngleSharp
 
 We expect to complete Phase 1 within the next 2-3 weeks, allowing us to move to Phase 2: Advanced Value Computation on schedule.
 
@@ -420,5 +443,11 @@ Some components have been implemented differently than initially planned, often 
     - Implemented with more optimized property grouping
     - Added direct physical property access methods for layout system
     - Enhanced caching strategy for computed values
+4. **DomMutationTracker**:
+    
+    - Being implemented with direct AngleSharp MutationObserver integration
+    - Adding efficient style-relevant change filtering
+    - Including batching for improved performance
+    - Incorporating dependency tracking for minimized invalidation scope
 
-These enhancements provide better performance and broader CSS support than initially scoped in the plan while maintaining compatibility with AngleSharp's infrastructure.
+These enhancements provide better performance and broader CSS support than initially scoped in the plan while maintaining compatibility with AngleSharp's infrastructure and aligning with Blink's architecture.
