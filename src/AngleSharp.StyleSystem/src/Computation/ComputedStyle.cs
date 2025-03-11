@@ -1,5 +1,4 @@
 ﻿namespace AngleSharp.StyleSystem.Computation;
-
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Values;
@@ -10,15 +9,10 @@ using Models;
 using Properties;
 using Storage;
 
-/// <summary>
-/// Represents a computed style with optimized property access.
-/// </summary>
 public class ComputedStyle : IComputedStyle
 {
-    // These fields are internal to allow access by ComputedStyleFactory
     internal readonly IElement _element;
     internal readonly IComputedStyle? _parentStyle;
-
     private readonly BoxProperties _boxProperties;
     private readonly TextProperties _textProperties;
     private readonly RareProperties _rareProperties;
@@ -28,10 +22,8 @@ public class ComputedStyle : IComputedStyle
     private readonly IRenderDevice _renderDevice;
     private readonly IStyleInvalidationTracker _invalidationTracker;
     private readonly IBrowsingContext _context;
+    private bool _isInitialized = false;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ComputedStyle"/> class.
-    /// </summary>
     public ComputedStyle(
         IElement element,
         IComputedStyle? parentStyle,
@@ -47,7 +39,6 @@ public class ComputedStyle : IComputedStyle
         _renderDevice = renderDevice;
         _invalidationTracker = invalidationTracker;
         _context = context;
-
         _boxProperties = new BoxProperties(this, _renderDevice);
         _textProperties = new TextProperties(this, _renderDevice);
         _rareProperties = new RareProperties();
@@ -56,22 +47,26 @@ public class ComputedStyle : IComputedStyle
         Declaration = declaration;
         _writingMode = ComputeWritingMode(declaration);
 
+        // Process style properties to set up bitfields and computed values
         ProcessStyleProperties(declaration);
+
+        _isInitialized = true;
     }
 
-    /// <summary>
-    /// Gets the declaration that was used to create this computed style.
-    /// </summary>
     public ICssStyleDeclaration Declaration { get; }
 
-    /// <summary>
-    /// Gets a property value by name.
-    /// </summary>
-    /// <param name="propertyName">The property name.</param>
-    /// <returns>The property value.</returns>
     public string GetPropertyValue(string propertyName)
     {
+        // First check the property tree
         string value = _propertyTree.GetPropertyValue(propertyName);
+
+        // If no value in the property tree, check the declaration
+        if (string.IsNullOrEmpty(value) && _isInitialized)
+        {
+            value = Declaration.GetPropertyValue(propertyName);
+        }
+
+        // If still no value, get the initial value
         if (string.IsNullOrEmpty(value))
         {
             var factory = _context.GetFactory<IDeclarationFactory>();
@@ -85,14 +80,9 @@ public class ComputedStyle : IComputedStyle
         return value;
     }
 
-    /// <summary>
-    /// Gets a typed property value.
-    /// </summary>
-    /// <typeparam name="T">The value type.</typeparam>
-    /// <param name="propertyName">The property name.</param>
-    /// <returns>The typed value.</returns>
     public T? GetValue<T>(string propertyName)
     {
+        // First try to get the cached value from the property tree
         var value = _propertyTree.GetPropertyCachedValue(propertyName);
 
         if (value is T typedValue)
@@ -100,6 +90,7 @@ public class ComputedStyle : IComputedStyle
             return typedValue;
         }
 
+        // Try to convert the value if it's a known type
         if (typeof(T) == typeof(CssLengthValue) && value is ICssValue cssValue)
         {
             if (cssValue is CssLengthValue length)
@@ -118,58 +109,38 @@ public class ComputedStyle : IComputedStyle
         return default;
     }
 
-    /// <summary>
-    /// Gets the display type.
-    /// </summary>
     public DisplayMode Display => _bitfields.DisplayType;
-
-    /// <summary>
-    /// Gets the position type.
-    /// </summary>
     public PositionMode Position => _bitfields.PositionType;
-
-    /// <summary>
-    /// Gets the opacity value.
-    /// </summary>
     public float Opacity => _rareProperties.Opacity;
-
-    /// <summary>
-    /// Gets the z-index value.
-    /// </summary>
     public int ZIndex => _rareProperties.ZIndex;
-
-    /// <summary>
-    /// Gets the font size.
-    /// </summary>
     public CssLengthValue FontSize => _textProperties.FontSize;
-
-    /// <summary>
-    /// Gets the writing mode.
-    /// </summary>
     public WritingMode WritingMode => _writingMode;
-
-    /// <summary>
-    /// Gets the box properties.
-    /// </summary>
     public IBoxProperties Box => _boxProperties;
-
-    /// <summary>
-    /// Gets the text properties.
-    /// </summary>
     public ITextProperties Text => _textProperties;
 
-    /// <summary>
-    /// Gets the property tree node.
-    /// </summary>
     internal PropertyTreeNode PropertyTreeNode => _propertyTree;
 
     private void ProcessStyleProperties(ICssStyleDeclaration declaration)
     {
-        foreach (var property in declaration)
+        // First process values already in the property tree
+        var propertiesFromTree = _propertyTree.GetAllProperties();
+        foreach (var property in propertiesFromTree)
         {
-            ProcessProperty(property);
+            ProcessCssValue(property.Key, property.Value);
         }
 
+        // Then process the declaration - but only for properties not already in the tree
+        foreach (var property in declaration)
+        {
+            if (property.RawValue != null && !propertiesFromTree.ContainsKey(property.Name))
+            {
+                // Set the property in the tree to maintain consistency
+                _propertyTree.SetProperty(property.Name, property.RawValue);
+                ProcessCssValue(property.Name, property.RawValue);
+            }
+        }
+
+        // Apply inheritance or initial values
         if (_parentStyle != null)
         {
             ApplyInheritance();
@@ -180,11 +151,13 @@ public class ComputedStyle : IComputedStyle
         }
     }
 
-    private void ProcessProperty(ICssProperty property)
+    private void ProcessCssValue(string propertyName, ICssValue? value)
     {
-        _propertyTree.SetProperty(property.Name, property.RawValue);
+        if (value == null)
+            return;
 
-        if (property.RawValue is CssLengthValue length && IsDeviceDependent(length))
+        // Check if device-dependent for invalidation tracking
+        if (value is CssLengthValue length && IsDeviceDependent(length))
         {
             if (_invalidationTracker is StyleInvalidationTracker tracker)
             {
@@ -192,23 +165,24 @@ public class ComputedStyle : IComputedStyle
             }
         }
 
-        switch (property.Name)
+        // Update the appropriate properties based on the property name
+        switch (propertyName)
         {
             case "display":
-                _bitfields.UpdateDisplayType(ParseDisplayType(property.Value));
+                _bitfields.UpdateDisplayType(ParseDisplayType(value.CssText));
                 break;
             case "position":
-                _bitfields.UpdatePositionType(ParsePositionType(property.Value));
+                _bitfields.UpdatePositionType(ParsePositionType(value.CssText));
                 break;
             case "overflow":
-                var overflow = ParseOverflowMode(property.Value);
+                var overflow = ParseOverflowMode(value.CssText);
                 _bitfields.UpdateOverflow(overflow, overflow);
                 break;
             case "overflow-x":
-                _bitfields.OverflowX = ParseOverflowMode(property.Value);
+                _bitfields.OverflowX = ParseOverflowMode(value.CssText);
                 break;
             case "overflow-y":
-                _bitfields.OverflowY = ParseOverflowMode(property.Value);
+                _bitfields.OverflowY = ParseOverflowMode(value.CssText);
                 break;
             case "width":
             case "height":
@@ -224,7 +198,7 @@ public class ComputedStyle : IComputedStyle
             case "border-right-width":
             case "border-bottom-width":
             case "border-left-width":
-                ProcessBoxProperty(property);
+                ProcessBoxProperty(propertyName, value);
                 break;
             case "font-family":
             case "font-size":
@@ -233,39 +207,36 @@ public class ComputedStyle : IComputedStyle
             case "line-height":
             case "text-align":
             case "color":
-                ProcessTextProperty(property);
+                ProcessTextProperty(propertyName, value);
                 break;
             case "opacity":
-                if (float.TryParse(property.Value, out var opacity))
+                if (value.CssText != null && float.TryParse(value.CssText, out var opacity))
                 {
                     _rareProperties.Opacity = opacity;
                     _bitfields.IsVisible = opacity > 0;
                 }
                 break;
             case "z-index":
-                if (int.TryParse(property.Value, out var zIndex))
+                if (value.CssText != null && int.TryParse(value.CssText, out var zIndex))
                 {
                     _rareProperties.ZIndex = zIndex;
                 }
                 break;
             case "background-color":
-                if (property.RawValue is CssColorValue bgcolor)
+                if (value is CssColorValue bgcolor)
                 {
                     _rareProperties.BackgroundColor = bgcolor;
                     _bitfields.HasBackground = !bgcolor.Equals(CssColorValue.Transparent);
                 }
                 break;
             case "border-color":
-                if (property.RawValue is CssColorValue borderColor)
+                if (value is CssColorValue borderColor)
                 {
                     _rareProperties.BorderColor = borderColor;
                 }
                 break;
             default:
-                if (property.RawValue != null)
-                {
-                    _rareProperties.SetValue(property.Name, property.RawValue);
-                }
+                _rareProperties.SetValue(propertyName, value);
                 break;
         }
     }
@@ -279,15 +250,14 @@ public class ComputedStyle : IComputedStyle
                unit == CssLengthValue.Unit.Percent;
     }
 
-    private void ProcessBoxProperty(ICssProperty property)
+    private void ProcessBoxProperty(string propertyName, ICssValue value)
     {
         CssLengthValue? length = null;
-
-        if (property.RawValue is CssLengthValue lengthValue)
+        if (value is CssLengthValue lengthValue)
         {
             length = lengthValue;
         }
-        else if (property.RawValue is ICssValue cssValue)
+        else if (value is ICssValue cssValue)
         {
             if (cssValue.CssText == "auto")
             {
@@ -301,7 +271,7 @@ public class ComputedStyle : IComputedStyle
 
         if (length != null)
         {
-            switch (property.Name)
+            switch (propertyName)
             {
                 case "width":
                     _boxProperties.SetWidth(length);
@@ -353,53 +323,53 @@ public class ComputedStyle : IComputedStyle
         }
     }
 
-    private void ProcessTextProperty(ICssProperty property)
+    private void ProcessTextProperty(string propertyName, ICssValue value)
     {
-        switch (property.Name)
+        switch (propertyName)
         {
             case "font-family":
-                _textProperties.SetFontFamily(property.Value);
+                _textProperties.SetFontFamily(value.CssText);
                 break;
             case "font-size":
-                if (property.RawValue is CssLengthValue fontSize)
+                if (value is CssLengthValue fontSize)
                 {
                     _textProperties.SetFontSize(fontSize);
                 }
                 break;
             case "font-weight":
-                if (int.TryParse(property.Value, out var fontWeight))
+                if (int.TryParse(value.CssText, out var fontWeight))
                 {
                     _textProperties.SetFontWeight(fontWeight);
                 }
-                else if (property.Value == "bold")
+                else if (value.CssText == "bold")
                 {
                     _textProperties.SetFontWeight(700);
                 }
-                else if (property.Value == "normal")
+                else if (value.CssText == "normal")
                 {
                     _textProperties.SetFontWeight(400);
                 }
                 break;
             case "font-style":
-                _textProperties.SetIsItalic(property.Value == "italic");
+                _textProperties.SetIsItalic(value.CssText == "italic");
                 break;
             case "line-height":
-                if (property.RawValue is CssLengthValue lineHeight)
+                if (value is CssLengthValue lineHeight)
                 {
                     _textProperties.SetLineHeight(lineHeight);
                 }
                 break;
             case "text-align":
-                _textProperties.SetTextAlign(ParseTextAlign(property.Value));
+                _textProperties.SetTextAlign(ParseTextAlign(value.CssText));
                 break;
             case "color":
-                if (property.RawValue is CssColorValue colorValue)
+                if (value is CssColorValue colorValue)
                 {
                     _textProperties.SetColor(colorValue);
                 }
                 else
                 {
-                    _textProperties.SetColor(property.Value);
+                    _textProperties.SetColor(value.CssText);
                 }
                 break;
         }
@@ -444,16 +414,23 @@ public class ComputedStyle : IComputedStyle
         if (_parentStyle == null)
             return;
 
+        // Inherit color if not specified
         if (!_propertyTree.HasProperty("color"))
         {
-            _textProperties.SetColor(_parentStyle.Text.Color);
+            var parentColor = _parentStyle.Text.Color;
+            _textProperties.SetColor(parentColor);
+            _propertyTree.SetProperty("color", parentColor);
         }
 
+        // Inherit font-family if not specified
         if (!_propertyTree.HasProperty("font-family"))
         {
-            _textProperties.SetFontFamily(_parentStyle.Text.FontFamily);
+            var parentFontFamily = _parentStyle.Text.FontFamily;
+            _textProperties.SetFontFamily(parentFontFamily);
+            _propertyTree.SetProperty("font-family", parentFontFamily);
         }
 
+        // Other inherited properties
         var inheritedProperties = new[]
         {
             "line-height",
@@ -483,6 +460,8 @@ public class ComputedStyle : IComputedStyle
                 if (!string.IsNullOrEmpty(value))
                 {
                     _propertyTree.SetProperty(property, value);
+                    // Also update the declaration for backward compatibility
+                    Declaration.SetProperty(property, value);
                 }
             }
         }
@@ -490,39 +469,47 @@ public class ComputedStyle : IComputedStyle
 
     private void ApplyInitialValues()
     {
+        // Apply default initial values for key properties if not specified
         if (!_propertyTree.HasProperty("color"))
         {
             _textProperties.SetColor(CssColorValue.Black);
+            _propertyTree.SetProperty("color", CssColorValue.Black);
         }
 
         if (!_propertyTree.HasProperty("font-family"))
         {
             _textProperties.SetFontFamily("sans-serif");
+            _propertyTree.SetProperty("font-family", "sans-serif");
         }
 
         if (!_propertyTree.HasProperty("font-size"))
         {
             _textProperties.SetFontSize(CssLengthValue.Medium);
+            _propertyTree.SetProperty("font-size", CssLengthValue.Medium);
         }
 
         if (!_propertyTree.HasProperty("line-height"))
         {
             _textProperties.SetLineHeight(CssLengthValue.Normal);
+            _propertyTree.SetProperty("line-height", CssLengthValue.Normal);
         }
 
         if (!_propertyTree.HasProperty("font-weight"))
         {
             _textProperties.SetFontWeight(400);
+            _propertyTree.SetProperty("font-weight", "400");
         }
 
         if (!_propertyTree.HasProperty("font-style"))
         {
             _textProperties.SetIsItalic(false);
+            _propertyTree.SetProperty("font-style", "normal");
         }
 
         if (!_propertyTree.HasProperty("text-align"))
         {
             _textProperties.SetTextAlign(TextAlign.Start);
+            _propertyTree.SetProperty("text-align", "start");
         }
     }
 
