@@ -3,19 +3,23 @@ using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Dom;
 using AngleSharp.StyleSystem.Models;
-using AngleSharp.StyleSystem.Interfaces;
 
 namespace AngleSharp.StyleSystem.Integration
 {
-    public partial class StyleInvalidationTracker : IStyleInvalidationTracker
+    using Interfaces;
+
+    /// <summary>
+    /// Tracks style invalidation and manages style recalculation needs for elements in the DOM.
+    /// </summary>
+    public class StyleInvalidationTracker : IStyleInvalidationTracker
     {
         private readonly Dictionary<IElement, InvalidationState> _invalidationStates = new Dictionary<IElement, InvalidationState>();
         private readonly Dictionary<IElement, HashSet<IElement>> _dependencies = new Dictionary<IElement, HashSet<IElement>>();
-        private HashSet<IElement> _deviceDependentElements = new HashSet<IElement>();
+        private readonly HashSet<IElement> _deviceDependentElements = new HashSet<IElement>();
         private IStyleRecalcScheduler? _recalcScheduler;
 
         /// <summary>
-        /// Gets or sets the style recalculation scheduler.
+        /// Gets or sets the style recalculation scheduler used to schedule recalculations.
         /// </summary>
         public IStyleRecalcScheduler? StyleRecalcScheduler
         {
@@ -24,9 +28,9 @@ namespace AngleSharp.StyleSystem.Integration
         }
 
         /// <summary>
-        /// Processes a collection of DOM changes and invalidates styles accordingly.
+        /// Processes a collection of DOM changes and invalidates affected elements.
         /// </summary>
-        /// <param name="changes">The DOM changes to process.</param>
+        /// <param name="changes">The collection of DOM changes to process.</param>
         public void ProcessDomChanges(IEnumerable<DomChange> changes)
         {
             if (changes == null) return;
@@ -39,12 +43,11 @@ namespace AngleSharp.StyleSystem.Integration
                 ProcessDomChange(change, elementsToInvalidate, subtreesToInvalidate);
             }
 
-            // Apply all invalidations
             ApplyInvalidations(elementsToInvalidate, subtreesToInvalidate);
         }
 
         /// <summary>
-        /// Processes a single DOM change and determines what needs to be invalidated.
+        /// Processes a single DOM change and collects elements and subtrees to invalidate.
         /// </summary>
         private void ProcessDomChange(
             DomChange change,
@@ -59,37 +62,28 @@ namespace AngleSharp.StyleSystem.Integration
                         AddElementInvalidation(element, null, elementsToInvalidate);
                     }
                     break;
-
                 case DomChangeType.ClassAttributeChanged:
                     ProcessClassChange(change, elementsToInvalidate, subtreesToInvalidate);
                     break;
-
                 case DomChangeType.IdAttributeChanged:
                     ProcessIdChange(change, elementsToInvalidate, subtreesToInvalidate);
                     break;
-
                 case DomChangeType.AttributeChanged:
                     ProcessAttributeChange(change, elementsToInvalidate);
                     break;
-
                 case DomChangeType.NodeAdded:
                     ProcessNodeAddition(change, elementsToInvalidate, subtreesToInvalidate);
                     break;
-
                 case DomChangeType.NodeRemoved:
                     ProcessNodeRemoval(change, elementsToInvalidate, subtreesToInvalidate);
                     break;
-
                 case DomChangeType.TextChanged:
                     ProcessTextChange(change, elementsToInvalidate);
                     break;
-
                 case DomChangeType.ElementStructureChanged:
                     ProcessStructureChange(change, elementsToInvalidate);
                     break;
-
                 case DomChangeType.StylesheetChanged:
-                    // A stylesheet change potentially affects the entire document
                     if (change.Target is IElement targetElement && targetElement.OwnerDocument?.DocumentElement != null)
                     {
                         subtreesToInvalidate.Add(targetElement.OwnerDocument.DocumentElement);
@@ -108,17 +102,24 @@ namespace AngleSharp.StyleSystem.Integration
         {
             if (change.Target is IElement element)
             {
-                // Always invalidate the element itself
                 AddElementInvalidation(element, null, elementsToInvalidate);
 
-                // Check if we have complex selectors that might be affected by this class change
+                // If document uses complex selectors (e.g., .class + .sibling),
+                // we need to invalidate the parent's children as well
                 if (DocumentUsesComplexSelectors(element.OwnerDocument))
                 {
-                    // A class change could affect parent elements with :has() selectors
-                    // or other elements with complex selectors that match this class
                     if (element.ParentElement != null)
                     {
                         AddElementInvalidation(element.ParentElement, null, elementsToInvalidate);
+
+                        // For sibling selectors, we might need to invalidate siblings
+                        foreach (var sibling in element.ParentElement.Children)
+                        {
+                            if (sibling != element)
+                            {
+                                AddElementInvalidation(sibling as IElement, null, elementsToInvalidate);
+                            }
+                        }
                     }
                 }
             }
@@ -134,22 +135,15 @@ namespace AngleSharp.StyleSystem.Integration
         {
             if (change.Target is IElement element)
             {
-                // Always invalidate the element itself
                 AddElementInvalidation(element, null, elementsToInvalidate);
 
-                // Since ID changes could affect any part of the document through ID selectors,
-                // we need broader invalidation
-                if (element.OwnerDocument?.DocumentElement != null)
+                // If the ID changed and it's used as a target for CSS rules,
+                // we might need to invalidate the entire document
+                if (!string.IsNullOrEmpty(change.OldValue) || !string.IsNullOrEmpty(change.NewValue))
                 {
-                    // Consider finding specific ID selectors in stylesheets for more targeted invalidation
-                    // For now, be conservative with a document-wide approach if the ID was actually in use
-                    if (!string.IsNullOrEmpty(change.OldValue) || !string.IsNullOrEmpty(change.NewValue))
+                    if (element.OwnerDocument?.DocumentElement != null)
                     {
-                        // We could limit scope here by analyzing stylesheets for ID usage
-                        if (element.OwnerDocument?.DocumentElement != null)
-                        {
-                            subtreesToInvalidate.Add(element.OwnerDocument.DocumentElement);
-                        }
+                        subtreesToInvalidate.Add(element.OwnerDocument.DocumentElement);
                     }
                 }
             }
@@ -178,16 +172,13 @@ namespace AngleSharp.StyleSystem.Integration
         {
             if (change.Node is IElement addedElement)
             {
-                // Invalidate the added element itself
                 AddElementInvalidation(addedElement, null, elementsToInvalidate);
 
-                // Adding an element can affect sibling selectors and parent states
                 if (change.Target is IElement parentElement)
                 {
-                    // Check for :empty, :only-child, etc.
                     AddElementInvalidation(parentElement, null, elementsToInvalidate);
 
-                    // Invalidate siblings for :nth-child, etc.
+                    // Sibling selectors might be affected
                     foreach (var sibling in parentElement.Children)
                     {
                         if (sibling != addedElement && sibling is IElement siblingElement)
@@ -197,12 +188,11 @@ namespace AngleSharp.StyleSystem.Integration
                     }
                 }
 
-                // Special handling for style/link elements
+                // If a style or link element was added, we might need to invalidate the entire document
                 if (addedElement.NodeName.Equals("STYLE", StringComparison.OrdinalIgnoreCase) ||
                     (addedElement.NodeName.Equals("LINK", StringComparison.OrdinalIgnoreCase) &&
                      addedElement.GetAttribute("rel")?.Contains("stylesheet") == true))
                 {
-                    // This potentially affects the entire document
                     if (addedElement.OwnerDocument?.DocumentElement != null)
                     {
                         subtreesToInvalidate.Add(addedElement.OwnerDocument.DocumentElement);
@@ -221,13 +211,11 @@ namespace AngleSharp.StyleSystem.Integration
         {
             if (change.Node is IElement removedElement)
             {
-                // For removed elements, we need to invalidate the parent and siblings
                 if (change.Target is IElement parentElement)
                 {
-                    // Check for :empty, :only-child, etc.
                     AddElementInvalidation(parentElement, null, elementsToInvalidate);
 
-                    // Invalidate siblings for :nth-child, etc.
+                    // Sibling selectors might be affected
                     foreach (var sibling in parentElement.Children)
                     {
                         if (sibling is IElement siblingElement)
@@ -237,12 +225,11 @@ namespace AngleSharp.StyleSystem.Integration
                     }
                 }
 
-                // Special handling for style/link elements
+                // If a style or link element was removed, we might need to invalidate the entire document
                 if (removedElement.NodeName.Equals("STYLE", StringComparison.OrdinalIgnoreCase) ||
                     (removedElement.NodeName.Equals("LINK", StringComparison.OrdinalIgnoreCase) &&
                      removedElement.GetAttribute("rel")?.Contains("stylesheet") == true))
                 {
-                    // This potentially affects the entire document
                     if (removedElement.OwnerDocument?.DocumentElement != null)
                     {
                         subtreesToInvalidate.Add(removedElement.OwnerDocument.DocumentElement);
@@ -252,32 +239,29 @@ namespace AngleSharp.StyleSystem.Integration
         }
 
         /// <summary>
-        /// Processes a text content change.
+        /// Processes a text change.
         /// </summary>
         private void ProcessTextChange(
             DomChange change,
             Dictionary<IElement, HashSet<string>> elementsToInvalidate)
         {
-            // Text changes generally only affect the parent element
             if (change.Target?.ParentElement is IElement parentElement)
             {
                 AddElementInvalidation(parentElement, null, elementsToInvalidate);
 
-                // For certain elements like <style>, we need special handling
+                // If the text in a style element changed, we might need to invalidate the document
                 if (parentElement.NodeName.Equals("STYLE", StringComparison.OrdinalIgnoreCase))
                 {
-                    // This potentially affects the entire document
                     if (parentElement.OwnerDocument?.DocumentElement != null)
                     {
-                        // Instead of invalidating here, we'd expect the StyleSheetManager
-                        // to handle this by properly tracking the stylesheet change
+                        // This will be handled by the StylesheetManager
                     }
                 }
             }
         }
 
         /// <summary>
-        /// Processes an element structure change.
+        /// Processes a structure change.
         /// </summary>
         private void ProcessStructureChange(
             DomChange change,
@@ -285,12 +269,11 @@ namespace AngleSharp.StyleSystem.Integration
         {
             if (change.Target is IElement element)
             {
-                // Structure changes can affect :empty, :has(), etc.
                 AddElementInvalidation(element, null, elementsToInvalidate);
 
-                // May also affect siblings
                 if (element.ParentElement != null)
                 {
+                    // Sibling selectors might be affected
                     foreach (var sibling in element.ParentElement.Children)
                     {
                         if (sibling != element && sibling is IElement siblingElement)
@@ -303,23 +286,23 @@ namespace AngleSharp.StyleSystem.Integration
         }
 
         /// <summary>
-        /// Applies all the collected invalidations.
+        /// Applies the collected invalidations to elements and subtrees.
         /// </summary>
         private void ApplyInvalidations(
             Dictionary<IElement, HashSet<string>> elementsToInvalidate,
             HashSet<IElement> subtreesToInvalidate)
         {
-            // First apply containment optimizations
+            // Apply containment optimizations
             ApplyContainmentOptimizations(elementsToInvalidate, subtreesToInvalidate);
 
-            // Process subtree invalidations (these are broader)
+            // Invalidate entire subtrees
             foreach (var root in subtreesToInvalidate)
             {
                 InvalidateElement(root);
                 InvalidateSubtree(root);
             }
 
-            // Process element-specific invalidations
+            // Invalidate individual elements
             foreach (var kvp in elementsToInvalidate)
             {
                 var element = kvp.Key;
@@ -335,7 +318,7 @@ namespace AngleSharp.StyleSystem.Integration
                 }
             }
 
-            // Schedule recalculation if we have a scheduler
+            // Schedule recalculations if a scheduler is available
             if (_recalcScheduler != null && (subtreesToInvalidate.Count > 0 || elementsToInvalidate.Count > 0))
             {
                 foreach (var root in subtreesToInvalidate)
@@ -351,17 +334,17 @@ namespace AngleSharp.StyleSystem.Integration
         }
 
         /// <summary>
-        /// Applies containment optimizations to limit the scope of invalidations.
+        /// Optimizes invalidations based on CSS containment rules.
         /// </summary>
         private void ApplyContainmentOptimizations(
             Dictionary<IElement, HashSet<string>> elementsToInvalidate,
             HashSet<IElement> subtreesToInvalidate)
         {
-            // Find elements with style containment that can limit invalidation scope
             var containmentBoundaries = new HashSet<IElement>();
             var elementsToRemove = new HashSet<IElement>();
             var subtreesToRemove = new HashSet<IElement>();
 
+            // Find containment boundaries
             foreach (var element in elementsToInvalidate.Keys.Concat(subtreesToInvalidate))
             {
                 var containmentBoundary = FindContainmentBoundary(element);
@@ -369,8 +352,8 @@ namespace AngleSharp.StyleSystem.Integration
                 {
                     containmentBoundaries.Add(containmentBoundary);
 
-                    // If we're invalidating something inside a containment boundary,
-                    // we can remove any document-wide invalidations
+                    // If we have a containment boundary and the entire document is already
+                    // scheduled for invalidation, we can optimize by removing it
                     if (element.OwnerDocument?.DocumentElement != null &&
                         subtreesToInvalidate.Contains(element.OwnerDocument.DocumentElement))
                     {
@@ -379,7 +362,7 @@ namespace AngleSharp.StyleSystem.Integration
                 }
             }
 
-            // Apply the optimizations
+            // Apply optimizations
             foreach (var element in elementsToRemove)
             {
                 elementsToInvalidate.Remove(element);
@@ -390,7 +373,7 @@ namespace AngleSharp.StyleSystem.Integration
                 subtreesToInvalidate.Remove(element);
             }
 
-            // Add the containment boundaries for subtree invalidation if needed
+            // Add containment boundaries to subtrees to invalidate
             foreach (var boundary in containmentBoundaries)
             {
                 subtreesToInvalidate.Add(boundary);
@@ -398,7 +381,7 @@ namespace AngleSharp.StyleSystem.Integration
         }
 
         /// <summary>
-        /// Finds the nearest containment boundary for an element, if any.
+        /// Finds the nearest containment boundary for an element.
         /// </summary>
         private IElement? FindContainmentBoundary(IElement element)
         {
@@ -415,7 +398,7 @@ namespace AngleSharp.StyleSystem.Integration
         }
 
         /// <summary>
-        /// Checks if an element has style containment.
+        /// Determines if an element has style containment.
         /// </summary>
         private bool HasStyleContainment(IElement element)
         {
@@ -423,7 +406,6 @@ namespace AngleSharp.StyleSystem.Integration
             if (string.IsNullOrEmpty(styleAttribute))
                 return false;
 
-            // Simple check for containment properties
             return styleAttribute.Contains("contain: style") ||
                    styleAttribute.Contains("contain: layout style") ||
                    styleAttribute.Contains("contain: strict") ||
@@ -431,13 +413,16 @@ namespace AngleSharp.StyleSystem.Integration
         }
 
         /// <summary>
-        /// Helper method to add an element invalidation with optional properties.
+        /// Adds an element to the invalidation collection with optional specific properties.
         /// </summary>
         private void AddElementInvalidation(
-            IElement element,
+            IElement? element,
             HashSet<string>? properties,
             Dictionary<IElement, HashSet<string>> elementsToInvalidate)
         {
+            if (element == null)
+                return;
+
             if (!elementsToInvalidate.TryGetValue(element, out var existingProps))
             {
                 existingProps = new HashSet<string>();
@@ -461,28 +446,17 @@ namespace AngleSharp.StyleSystem.Integration
             if (string.IsNullOrEmpty(attributeName))
                 return false;
 
-            // Global attributes that affect styling
             var globalStyleAttributes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
                 "class", "style", "id", "lang", "dir", "hidden", "tabindex", "draggable", "contenteditable"
             };
 
-            // Element-specific attributes that affect presentation
             var elementSpecificStyleAttributes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                // Form elements
                 "disabled", "readonly", "checked", "required", "placeholder", "multiple",
-
-                // Table elements
                 "colspan", "rowspan", "headers", "scope", "border",
-
-                // Image elements
                 "width", "height", "align", "valign",
-
-                // Link elements
                 "href", "target", "rel",
-
-                // Other
                 "src", "alt", "title"
             };
 
@@ -491,21 +465,26 @@ namespace AngleSharp.StyleSystem.Integration
         }
 
         /// <summary>
-        /// Determines if a document uses complex selectors that might require more conservative invalidation.
+        /// Determines if a document uses complex selectors.
         /// </summary>
         private bool DocumentUsesComplexSelectors(IDocument? document)
         {
-            // In a real implementation, this would analyze the document's stylesheets
-            // to check for complex selectors like :has(), :is(), :where(), etc.
-
-            // For now, assume any document might have complex selectors
+            // In a real implementation, we would check the document's stylesheets
+            // for complex selectors. For now, we assume all documents use complex selectors.
             return true;
         }
 
-        // Existing methods that need to be implemented for IStyleInvalidationTracker
+        /// <summary>
+        /// Invalidates an element, marking it for style recalculation.
+        /// </summary>
         public void InvalidateElement(IElement element)
         {
+            if (element == null)
+                throw new ArgumentNullException(nameof(element));
+
             MarkAsInvalid(element);
+
+            // Also invalidate dependent elements
             if (_dependencies.TryGetValue(element, out var dependents))
             {
                 foreach (var dependent in dependents)
@@ -515,50 +494,122 @@ namespace AngleSharp.StyleSystem.Integration
             }
         }
 
+        /// <summary>
+        /// Invalidates specific properties of an element.
+        /// </summary>
         public void InvalidateProperties(IElement element, IEnumerable<string> properties)
         {
+            if (element == null)
+                throw new ArgumentNullException(nameof(element));
+            if (properties == null)
+                throw new ArgumentNullException(nameof(properties));
+
+            // For simplicity, we just invalidate the whole element
             InvalidateElement(element);
         }
 
+        /// <summary>
+        /// Determines if an element needs style recalculation.
+        /// </summary>
         public bool NeedsStyleRecalculation(IElement element)
         {
+            if (element == null)
+                throw new ArgumentNullException(nameof(element));
+
             if (_invalidationStates.TryGetValue(element, out var state))
             {
                 return state == InvalidationState.Invalid;
             }
+
+            // If we don't have a state for the element, assume it needs calculation
             return true;
         }
 
+        /// <summary>
+        /// Tracks a style dependency between elements.
+        /// </summary>
         public void TrackDependency(IElement dependent, IElement source)
         {
+            if (dependent == null)
+                throw new ArgumentNullException(nameof(dependent));
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
             if (!_dependencies.TryGetValue(source, out var dependents))
             {
                 dependents = new HashSet<IElement>();
                 _dependencies[source] = dependents;
             }
+
             dependents.Add(dependent);
         }
 
+        /// <summary>
+        /// Gets all elements that need style recalculation in a subtree.
+        /// </summary>
         public IEnumerable<IElement> GetElementsToUpdate(IElement root)
         {
+            if (root == null)
+                throw new ArgumentNullException(nameof(root));
+
             var result = new List<IElement>();
             CollectInvalidElements(root, result);
             return result;
         }
 
+        /// <summary>
+        /// Marks an element as having up-to-date styles.
+        /// </summary>
         public void MarkAsUpToDate(IElement element)
         {
+            if (element == null)
+                throw new ArgumentNullException(nameof(element));
+
             _invalidationStates[element] = InvalidationState.Valid;
         }
 
+        /// <summary>
+        /// Determines if an element has up-to-date styles.
+        /// </summary>
         public bool IsUpToDate(IElement element)
         {
+            if (element == null)
+                throw new ArgumentNullException(nameof(element));
+
             return _invalidationStates.TryGetValue(element, out var state) &&
                    state == InvalidationState.Valid;
         }
 
+        /// <summary>
+        /// Marks an element as having device-dependent styles (e.g., viewport units).
+        /// </summary>
+        public void MarkAsDeviceDependent(IElement element)
+        {
+            if (element == null)
+                throw new ArgumentNullException(nameof(element));
+
+            _deviceDependentElements.Add(element);
+        }
+
+        /// <summary>
+        /// Invalidates all device-dependent elements (e.g., after viewport resize).
+        /// </summary>
+        public void InvalidateForDeviceChange()
+        {
+            foreach (var element in _deviceDependentElements)
+            {
+                MarkAsInvalid(element);
+            }
+        }
+
+        /// <summary>
+        /// Invalidates all elements in a subtree.
+        /// </summary>
         private void InvalidateSubtree(IElement element)
         {
+            if (element == null)
+                return;
+
             foreach (var child in element.Children)
             {
                 MarkAsInvalid(child);
@@ -566,40 +617,43 @@ namespace AngleSharp.StyleSystem.Integration
             }
         }
 
+        /// <summary>
+        /// Marks an element as invalid (needing style recalculation).
+        /// </summary>
         private void MarkAsInvalid(IElement element)
         {
+            if (element == null)
+                return;
+
             _invalidationStates[element] = InvalidationState.Invalid;
         }
 
+        /// <summary>
+        /// Collects all invalid elements in a subtree.
+        /// </summary>
         private void CollectInvalidElements(IElement element, List<IElement> result)
         {
+            if (element == null)
+                return;
+
             if (NeedsStyleRecalculation(element))
             {
                 result.Add(element);
             }
+
             foreach (var child in element.Children)
             {
                 CollectInvalidElements(child, result);
             }
         }
 
+        /// <summary>
+        /// The state of an element's style validity.
+        /// </summary>
         private enum InvalidationState
         {
             Valid,
             Invalid
-        }
-
-        public void MarkAsDeviceDependent(IElement element)
-        {
-            _deviceDependentElements.Add(element);
-        }
-
-        public void InvalidateForDeviceChange()
-        {
-            foreach (var element in _deviceDependentElements)
-            {
-                MarkAsInvalid(element);
-            }
         }
     }
 }
