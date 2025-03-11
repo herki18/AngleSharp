@@ -131,7 +131,7 @@ public class ComputedStyleTests
         var style = CreateComputedStyle(element, declaration, null, propertyTree);
 
         // Assert
-        Assert.That(style.GetPropertyValue("color"), Is.EqualTo("red"));
+        Assert.That(style.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
         Assert.That(style.Display, Is.EqualTo(DisplayMode.Block));
         Assert.That(style.GetPropertyValue("font-size"), Is.EqualTo("16px"));
     }
@@ -173,7 +173,7 @@ public class ComputedStyleTests
         var color = style.GetPropertyValue("color");
 
         // Assert
-        Assert.That(color, Is.EqualTo("red"));
+        Assert.That(color, Is.EqualTo("rgba(255, 0, 0, 1)"));
     }
 
     [Test]
@@ -266,7 +266,7 @@ public class ComputedStyleTests
         var element = CreateMockElement();
         var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
         {
-            { "display", new CssConstantValue<DisplayMode>(CssKeywords.None, displayValue) }
+            { "display", new CssConstantValue<DisplayMode>(cssKeywords, displayValue) }
         });
 
         // Act
@@ -280,26 +280,26 @@ public class ComputedStyleTests
 
     #region Position Property Tests
 
-    // [TestCase("static", PositionMode.Static)]
-    // [TestCase("relative", PositionMode.Relative)]
-    // [TestCase("absolute", PositionMode.Absolute)]
-    // [TestCase("fixed", PositionMode.Fixed)]
-    // [TestCase("sticky", PositionMode.Sticky)]
-    // public void Position_ShouldReturnCorrectPositionMode(string positionValue, PositionMode expectedMode)
-    // {
-    //     // Arrange
-    //     var element = CreateMockElement();
-    //     var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
-    //     {
-    //         { "position", positionValue }
-    //     });
-    //
-    //     // Act
-    //     var style = CreateComputedStyle(element, declaration);
-    //
-    //     // Assert
-    //     Assert.That(style.Position, Is.EqualTo(expectedMode));
-    // }
+    [TestCase(CssKeywords.Static, PositionMode.Static, PositionMode.Static)]
+    [TestCase(CssKeywords.Relative, PositionMode.Relative, PositionMode.Relative)]
+    [TestCase(CssKeywords.Absolute, PositionMode.Absolute, PositionMode.Absolute)]
+    [TestCase(CssKeywords.Fixed, PositionMode.Fixed, PositionMode.Fixed)]
+    [TestCase(CssKeywords.Sticky, PositionMode.Sticky, PositionMode.Sticky)]
+    public void Position_ShouldReturnCorrectPositionMode(string cssKeyword, PositionMode positionValue, PositionMode expectedMode)
+    {
+        // Arrange
+        var element = CreateMockElement();
+        var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
+        {
+            { "position", new CssConstantValue<PositionMode>(cssKeyword, positionValue) }
+        });
+
+        // Act
+        var style = CreateComputedStyle(element, declaration);
+
+        // Assert
+        Assert.That(style.Position, Is.EqualTo(expectedMode));
+    }
 
     #endregion
 
@@ -412,22 +412,22 @@ public class ComputedStyleTests
 
     #region Text Properties Tests
 
-    // [Test]
-    // public void Text_FontFamily_ShouldReturnCorrectValue()
-    // {
-    //     // Arrange
-    //     var element = CreateMockElement();
-    //     var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
-    //     {
-    //         { "font-family", "Arial, sans-serif" }
-    //     });
-    //
-    //     // Act
-    //     var style = CreateComputedStyle(element, declaration);
-    //
-    //     // Assert
-    //     Assert.That(style.Text.FontFamily, Is.EqualTo("Arial, sans-serif"));
-    // }
+    [Test]
+    public void Text_FontFamily_ShouldReturnCorrectValue()
+    {
+        // Arrange
+        var element = CreateMockElement();
+        var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
+        {
+            { "font-family", new CssStringValue("Arial, sans-serif") }
+        });
+
+        // Act
+        var style = CreateComputedStyle(element, declaration);
+
+        // Assert
+        Assert.That(style.Text.FontFamily, Is.EqualTo("Arial, sans-serif"));
+    }
 
     [Test]
     public void Text_FontSize_ShouldReturnCorrectValue()
@@ -448,63 +448,63 @@ public class ComputedStyleTests
 
     // [TestCase("400", 400)]
     // [TestCase("700", 700)]
-    // [TestCase("bold", 700)]
-    // [TestCase("normal", 400)]
-    // public void Text_FontWeight_ShouldReturnCorrectValue(string fontWeightValue, int expectedWeight)
-    // {
-    //     // Arrange
-    //     var element = CreateMockElement();
-    //     var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
-    //     {
-    //         { "font-weight", fontWeightValue }
-    //     });
-    //
-    //     // Act
-    //     var style = CreateComputedStyle(element, declaration);
-    //
-    //     // Assert
-    //     Assert.That(style.Text.FontWeight, Is.EqualTo(expectedWeight));
-    // }
+    [TestCase(CssKeywords.Bold, FontWeight.Bold, 700)]
+    [TestCase(CssKeywords.Normal, FontWeight.Normal, 400)]
+    public void Text_FontWeight_ShouldReturnCorrectValue(string cssKeyword, FontWeight fontWeightValue, int expectedWeight)
+    {
+        // Arrange
+        var element = CreateMockElement();
+        var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
+        {
+            { "font-weight", new CssConstantValue<FontWeight>(cssKeyword, fontWeightValue) }
+        });
 
-    // [TestCase("italic", true)]
-    // [TestCase("normal", false)]
-    // public void Text_IsItalic_ShouldReturnCorrectValue(string fontStyleValue, bool expectedIsItalic)
-    // {
-    //     // Arrange
-    //     var element = CreateMockElement();
-    //     var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
-    //     {
-    //         { "font-style", fontStyleValue }
-    //     });
-    //
-    //     // Act
-    //     var style = CreateComputedStyle(element, declaration);
-    //
-    //     // Assert
-    //     Assert.That(style.Text.IsItalic, Is.EqualTo(expectedIsItalic));
-    // }
+        // Act
+        var style = CreateComputedStyle(element, declaration);
 
-    // [TestCase("left", TextAlign.Left)]
-    // [TestCase("right", TextAlign.Right)]
-    // [TestCase("center", TextAlign.Center)]
-    // [TestCase("justify", TextAlign.Justify)]
-    // [TestCase("start", TextAlign.Start)]
-    // [TestCase("end", TextAlign.End)]
-    // public void Text_TextAlign_ShouldReturnCorrectValue(string textAlignValue, TextAlign expectedAlign)
-    // {
-    //     // Arrange
-    //     var element = CreateMockElement();
-    //     var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
-    //     {
-    //         { "text-align", textAlignValue }
-    //     });
-    //
-    //     // Act
-    //     var style = CreateComputedStyle(element, declaration);
-    //
-    //     // Assert
-    //     Assert.That(style.Text.TextAlign, Is.EqualTo(expectedAlign));
-    // }
+        // Assert
+        Assert.That(style.Text.FontWeight, Is.EqualTo(expectedWeight));
+    }
+
+    [TestCase(CssKeywords.Italic, FontStyle.Italic, true)]
+    [TestCase(CssKeywords.Normal, FontStyle.Normal, false)]
+    public void Text_IsItalic_ShouldReturnCorrectValue(string cssKeyword, FontStyle fontStyleValue, bool expectedIsItalic)
+    {
+        // Arrange
+        var element = CreateMockElement();
+        var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
+        {
+            { "font-style", new CssConstantValue<FontStyle>(cssKeyword, fontStyleValue) }
+        });
+
+        // Act
+        var style = CreateComputedStyle(element, declaration);
+
+        // Assert
+        Assert.That(style.Text.IsItalic, Is.EqualTo(expectedIsItalic));
+    }
+
+    [TestCase(CssKeywords.Left, TextAlign.Left, TextAlign.Left)]
+    [TestCase(CssKeywords.Right, TextAlign.Right, TextAlign.Right)]
+    [TestCase(CssKeywords.Center, TextAlign.Center, TextAlign.Center)]
+    [TestCase(CssKeywords.Justify, TextAlign.Justify, TextAlign.Justify)]
+    [TestCase(CssKeywords.Start, TextAlign.Start, TextAlign.Start)]
+    [TestCase(CssKeywords.End, TextAlign.End, TextAlign.End)]
+    public void Text_TextAlign_ShouldReturnCorrectValue(string cssKeyword, TextAlign textAlignValue, TextAlign expectedAlign)
+    {
+        // Arrange
+        var element = CreateMockElement();
+        var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
+        {
+            { "text-align", new CssConstantValue<TextAlign>(cssKeyword, textAlignValue) }
+        });
+
+        // Act
+        var style = CreateComputedStyle(element, declaration);
+
+        // Assert
+        Assert.That(style.Text.TextAlign, Is.EqualTo(expectedAlign));
+    }
 
     [Test]
     public void Text_Color_ShouldReturnCorrectValue()
@@ -521,71 +521,71 @@ public class ComputedStyleTests
 
         // Assert
         // Note: The exact representation might depend on how AngleSharp normalizes color values
-        Assert.That(style.Text.Color.CssText, Does.Contain("blue").IgnoreCase);
+        Assert.That(style.Text.Color.CssText, Does.Contain(CssColorValue.Blue.CssText).IgnoreCase);
     }
 
     #endregion
 
     #region Writing Mode Tests
 
-    // [TestCase("ltr", "horizontal-tb", DirectionMode.Ltr, WritingModeType.HorizontalTopToBottom)]
-    // [TestCase("rtl", "horizontal-tb", DirectionMode.Rtl, WritingModeType.HorizontalTopToBottom)]
-    // [TestCase("ltr", "vertical-rl", DirectionMode.Ltr, WritingModeType.VerticalRightToLeft)]
-    // [TestCase("rtl", "vertical-lr", DirectionMode.Rtl, WritingModeType.VerticalLeftToRight)]
-    // public void WritingMode_ShouldReturnCorrectValues(string direction, string writingMode,
-    //     DirectionMode expectedDirection, WritingModeType expectedMode)
-    // {
-    //     // Arrange
-    //     var element = CreateMockElement();
-    //     var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
-    //     {
-    //         { "direction", direction },
-    //         { "writing-mode", writingMode }
-    //     });
-    //
-    //     // Act
-    //     var style = CreateComputedStyle(element, declaration);
-    //
-    //     // Assert
-    //     Assert.That(style.WritingMode.Direction, Is.EqualTo(expectedDirection));
-    //     Assert.That(style.WritingMode.Mode, Is.EqualTo(expectedMode));
-    // }
+    [TestCase("ltr", "horizontal-tb", DirectionMode.Ltr, WritingModeType.HorizontalTopToBottom)]
+    [TestCase("rtl", "horizontal-tb", DirectionMode.Rtl, WritingModeType.HorizontalTopToBottom)]
+    [TestCase("ltr", "vertical-rl", DirectionMode.Ltr, WritingModeType.VerticalRightToLeft)]
+    [TestCase("rtl", "vertical-lr", DirectionMode.Rtl, WritingModeType.VerticalLeftToRight)]
+    public void WritingMode_ShouldReturnCorrectValues(string direction, string writingMode,
+        DirectionMode expectedDirection, WritingModeType expectedMode)
+    {
+        // Arrange
+        var element = CreateMockElement();
+        var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
+        {
+            { "direction", new CssConstantValue<DirectionMode>(direction, expectedDirection) },
+            { "writing-mode", new CssConstantValue<WritingModeType>(writingMode, expectedMode) }
+        });
 
-    // [Test]
-    // public void WritingMode_IsHorizontal_ShouldReturnTrue_ForHorizontalMode()
-    // {
-    //     // Arrange
-    //     var element = CreateMockElement();
-    //     var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
-    //     {
-    //         { "writing-mode", "horizontal-tb" }
-    //     });
-    //
-    //     // Act
-    //     var style = CreateComputedStyle(element, declaration);
-    //
-    //     // Assert
-    //     Assert.That(style.WritingMode.IsHorizontal, Is.True);
-    //     Assert.That(style.WritingMode.IsVertical, Is.False);
-    // }
+        // Act
+        var style = CreateComputedStyle(element, declaration);
 
-    // [Test]
-    // public void WritingMode_IsVertical_ShouldReturnTrue_ForVerticalMode()
-    // {
-    //     // Arrange
-    //     var element = CreateMockElement();
-    //     var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
-    //     {
-    //         { "writing-mode", "vertical-rl" }
-    //     });
-    //
-    //     // Act
-    //     var style = CreateComputedStyle(element, declaration);
-    //
-    //     // Assert
-    //     Assert.That(style.WritingMode.IsVertical, Is.True);
-    //     Assert.That(style.WritingMode.IsHorizontal, Is.False);
-    // }
+        // Assert
+        Assert.That(style.WritingMode.Direction, Is.EqualTo(expectedDirection));
+        Assert.That(style.WritingMode.Mode, Is.EqualTo(expectedMode));
+    }
+
+    [Test]
+    public void WritingMode_IsHorizontal_ShouldReturnTrue_ForHorizontalMode()
+    {
+        // Arrange
+        var element = CreateMockElement();
+        var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
+        {
+            { "writing-mode", new CssStringValue("horizontal-tb") }
+        });
+
+        // Act
+        var style = CreateComputedStyle(element, declaration);
+
+        // Assert
+        Assert.That(style.WritingMode.IsHorizontal, Is.True);
+        Assert.That(style.WritingMode.IsVertical, Is.False);
+    }
+
+    [Test]
+    public void WritingMode_IsVertical_ShouldReturnTrue_ForVerticalMode()
+    {
+        // Arrange
+        var element = CreateMockElement();
+        var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
+        {
+            { "writing-mode", new CssStringValue("vertical-rl") }
+        });
+
+        // Act
+        var style = CreateComputedStyle(element, declaration);
+
+        // Assert
+        Assert.That(style.WritingMode.IsVertical, Is.True);
+        Assert.That(style.WritingMode.IsHorizontal, Is.False);
+    }
 
     #endregion
 
@@ -611,31 +611,31 @@ public class ComputedStyleTests
         var childStyle = CreateComputedStyle(childElement, childDeclaration, parentStyle, childTree);
 
         // Assert
-        Assert.That(childStyle.GetPropertyValue("color"), Does.Contain("red").IgnoreCase);
+        Assert.That(childStyle.GetPropertyValue("color"), Does.Contain(CssColorValue.Red.CssText).IgnoreCase);
     }
 
-    // [Test]
-    // public void Inheritance_ShouldInheritFontFamily_FromParent()
-    // {
-    //     // Arrange
-    //     var parentElement = CreateMockElement("div");
-    //     var parentDeclaration = CreateDeclaration(new Dictionary<string, ICssValue>
-    //     {
-    //         { "font-family", "Arial, sans-serif" }
-    //     });
-    //     var parentTree = new PropertyTreeNode(null);
-    //     var parentStyle = CreateComputedStyle(parentElement, parentDeclaration, null, parentTree);
-    //
-    //     var childElement = CreateMockElement("div", parentElement);
-    //     var childDeclaration = CreateEmptyDeclaration();
-    //     var childTree = new PropertyTreeNode(parentTree);
-    //
-    //     // Act
-    //     var childStyle = CreateComputedStyle(childElement, childDeclaration, parentStyle, childTree);
-    //
-    //     // Assert
-    //     Assert.That(childStyle.Text.FontFamily, Is.EqualTo("Arial, sans-serif"));
-    // }
+    [Test]
+    public void Inheritance_ShouldInheritFontFamily_FromParent()
+    {
+        // Arrange
+        var parentElement = CreateMockElement("div");
+        var parentDeclaration = CreateDeclaration(new Dictionary<string, ICssValue>
+        {
+            { "font-family", new CssStringValue("Arial, sans-serif") }
+        });
+        var parentTree = new PropertyTreeNode(null);
+        var parentStyle = CreateComputedStyle(parentElement, parentDeclaration, null, parentTree);
+
+        var childElement = CreateMockElement("div", parentElement);
+        var childDeclaration = CreateEmptyDeclaration();
+        var childTree = new PropertyTreeNode(parentTree);
+
+        // Act
+        var childStyle = CreateComputedStyle(childElement, childDeclaration, parentStyle, childTree);
+
+        // Assert
+        Assert.That(childStyle.Text.FontFamily, Is.EqualTo("Arial, sans-serif"));
+    }
 
     [Test]
     public void Inheritance_ShouldNotInheritWidth_FromParent()
@@ -683,7 +683,7 @@ public class ComputedStyleTests
         var childStyle = CreateComputedStyle(childElement, childDeclaration, parentStyle, childTree);
 
         // Assert
-        Assert.That(childStyle.GetPropertyValue("color"), Does.Contain("blue").IgnoreCase);
+        Assert.That(childStyle.GetPropertyValue("color"), Does.Contain("rgba(0, 0, 255, 1)").IgnoreCase);
     }
 
     #endregion
@@ -702,7 +702,7 @@ public class ComputedStyleTests
 
         // Assert
         // Default color is typically black, but this might depend on browser implementation
-        Assert.That(style.Text.Color.CssText, Does.Contain("rgb(0, 0, 0").IgnoreCase);
+        Assert.That(style.Text.Color.CssText, Does.Contain("rgba(0, 0, 0, 1").IgnoreCase);
     }
 
     [Test]
@@ -738,44 +738,44 @@ public class ComputedStyleTests
 
     #region Integration Tests
 
-    // [Test]
-    // public void Integration_ComplexStyle_ShouldProcessAllProperties()
-    // {
-    //     // Arrange
-    //     var element = CreateMockElement();
-    //     var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
-    //     {
-    //         { "display", "flex" },
-    //         { "position", "relative" },
-    //         { "color", "red" },
-    //         { "background-color", "blue" },
-    //         { "font-size", "18px" },
-    //         { "font-weight", "bold" },
-    //         { "margin", "10px" },
-    //         { "padding", "5px" },
-    //         { "border-width", "1px" },
-    //         { "width", "200px" },
-    //         { "height", "100px" },
-    //         { "z-index", "5" },
-    //         { "opacity", "0.8" }
-    //     });
-    //
-    //     // Act
-    //     var style = CreateComputedStyle(element, declaration);
-    //
-    //     // Assert
-    //     Assert.That(style.Display, Is.EqualTo(DisplayMode.Flex));
-    //     Assert.That(style.Position, Is.EqualTo(PositionMode.Relative));
-    //     Assert.That(style.Text.Color.CssText, Does.Contain("red").IgnoreCase);
-    //     Assert.That(style.FontSize.CssText, Is.EqualTo("18px"));
-    //     Assert.That(style.Text.FontWeight, Is.EqualTo(700)); // bold == 700
-    //     Assert.That(style.Box.Width.CssText, Is.EqualTo("200px"));
-    //     Assert.That(style.Box.Height.CssText, Is.EqualTo("100px"));
-    //     Assert.That(style.Box.Margin.Top.CssText, Is.EqualTo("10px"));
-    //     Assert.That(style.Box.Padding.Top.CssText, Is.EqualTo("5px"));
-    //     Assert.That(style.ZIndex, Is.EqualTo(5));
-    //     Assert.That(style.Opacity, Is.EqualTo(0.8f));
-    // }
+    [Test]
+    public void Integration_ComplexStyle_ShouldProcessAllProperties()
+    {
+        // Arrange
+        var element = CreateMockElement();
+        var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
+        {
+            { "display", new CssConstantValue<DisplayMode>(CssKeywords.Flex, DisplayMode.Flex) },
+            { "position", new CssConstantValue<PositionMode>(CssKeywords.Relative, PositionMode.Relative) },
+            { "color", CssColorValue.Red },
+            { "background-color", CssColorValue.Blue },
+            { "font-size", new CssLengthValue(18, CssLengthValue.Unit.Px) },
+            { "font-weight", new CssConstantValue<Int32>(CssKeywords.Bold, 700) },
+            { "margin", new CssLengthValue(10, CssLengthValue.Unit.Px) },
+            { "padding", new CssLengthValue(5, CssLengthValue.Unit.Px) },
+            { "border-width", new CssLengthValue(1, CssLengthValue.Unit.Px) },
+            { "width", new CssLengthValue(200, CssLengthValue.Unit.Px) },
+            { "height", new CssLengthValue(100, CssLengthValue.Unit.Px) },
+            { "z-index", new CssLengthValue(5, CssLengthValue.Unit.None) },
+            { "opacity", new CssLengthValue(0.8, CssLengthValue.Unit.None) }
+        });
+
+        // Act
+        var style = CreateComputedStyle(element, declaration);
+
+        // Assert
+        Assert.That(style.Display, Is.EqualTo(DisplayMode.Flex));
+        Assert.That(style.Position, Is.EqualTo(PositionMode.Relative));
+        Assert.That(style.Text.Color.CssText, Does.Contain(CssColorValue.Red.CssText).IgnoreCase);
+        Assert.That(style.FontSize.CssText, Is.EqualTo("18px"));
+        Assert.That(style.Text.FontWeight, Is.EqualTo(700)); // bold == 700
+        Assert.That(style.Box.Width.CssText, Is.EqualTo("200px"));
+        Assert.That(style.Box.Height.CssText, Is.EqualTo("100px"));
+        Assert.That(style.Box.Margin.Top.CssText, Is.EqualTo("10px"));
+        Assert.That(style.Box.Padding.Top.CssText, Is.EqualTo("5px"));
+        Assert.That(style.ZIndex, Is.EqualTo(5));
+        Assert.That(style.Opacity, Is.EqualTo(0.8f));
+    }
 
     [Test]
     public void Integration_PropertyTree_ShouldStoreAndRetrieveValues()
@@ -795,7 +795,7 @@ public class ComputedStyleTests
         var fontSize = style.GetPropertyValue("font-size");
 
         // Assert
-        Assert.That(color, Does.Contain("red").IgnoreCase);
+        Assert.That(color, Does.Contain(CssColorValue.Red.CssText).IgnoreCase);
         Assert.That(fontSize, Is.EqualTo("20px"));
     }
 
