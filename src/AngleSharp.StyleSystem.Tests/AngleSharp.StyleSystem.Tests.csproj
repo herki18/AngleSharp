@@ -24,8 +24,4 @@
       <ProjectReference Include="..\AngleSharp\AngleSharp.Core.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="src\End2End\" />
-    </ItemGroup>
-
 </Project>

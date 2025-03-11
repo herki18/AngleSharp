@@ -1,5 +1,4 @@
 ﻿namespace AngleSharp.StyleSystem.Storage;
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,31 +6,22 @@ using System.Runtime.CompilerServices;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using Interfaces;
-
-/// <summary>
-/// Manages property trees for efficient style storage and sharing.
-/// </summary>
 public class PropertyTreeManager : IPropertyTreeManager
 {
     private readonly Dictionary<string, PropertyTreeNode> _rootNodes = new(StringComparer.Ordinal);
     private readonly ConditionalWeakTable<IElement, PropertyTreeNode> _elementToPropertyTree = new();
     private readonly Dictionary<string, HashSet<string>> _propertyGroups = new(StringComparer.OrdinalIgnoreCase);
-
-    // Metrics tracking
     private long _totalPropertiesBeforeOptimization;
     private long _totalPropertiesAfterOptimization;
     private int _sharedNodeCount;
     private int _uniqueNodeCount;
     private readonly Dictionary<string, int> _propertyUsageCount = new(StringComparer.OrdinalIgnoreCase);
-
     public PropertyTreeManager()
     {
         InitializePropertyGroups();
     }
-
     private void InitializePropertyGroups()
     {
-        // Common property groups that frequently appear together in stylesheets
         _propertyGroups["margin"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             { "margin-top", "margin-right", "margin-bottom", "margin-left" };
         _propertyGroups["padding"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -45,15 +35,17 @@ public class PropertyTreeManager : IPropertyTreeManager
         _propertyGroups["text"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             { "color", "text-align", "text-decoration", "letter-spacing" };
     }
-
     public PropertyTreeNode CreateNode(IElement element, PropertyTreeNode? parent = null)
     {
+        // First try to remove any existing entry for this element
+        // This prevents the "An item with the same key has already been added" exception
+        _elementToPropertyTree.Remove(element);
+
         var node = new PropertyTreeNode(parent);
         _elementToPropertyTree.Add(element, node);
         _uniqueNodeCount++;
         return node;
     }
-
     public PropertyTreeNode GetOrCreateNode(IElement element, PropertyTreeNode? parent = null)
     {
         if (_elementToPropertyTree.TryGetValue(element, out var node))
@@ -62,7 +54,6 @@ public class PropertyTreeManager : IPropertyTreeManager
         }
         return CreateNode(element, parent);
     }
-
     public PropertyTreeNode GetSharedNode(string propertyName, ICssValue value)
     {
         var key = $"{propertyName}:{value?.CssText ?? "null"}";
@@ -73,40 +64,32 @@ public class PropertyTreeManager : IPropertyTreeManager
             _rootNodes[key] = node;
             _sharedNodeCount++;
         }
-
         // Track property usage for optimization analysis
         if (!_propertyUsageCount.TryGetValue(propertyName, out _))
         {
             _propertyUsageCount[propertyName] = 0;
         }
         _propertyUsageCount[propertyName]++;
-
         return node;
     }
-
     public void OptimizeTree(PropertyTreeNode node)
     {
         // Get all properties before optimization for metrics
         var properties = node.GetAllProperties();
         _totalPropertiesBeforeOptimization += properties.Count;
-
         // Step 1: Basic property value sharing
         foreach (var property in properties)
         {
             var sharedNode = GetSharedNode(property.Key, property.Value);
             node.ReplaceSubtree(property.Key, sharedNode);
         }
-
         // Step 2: Property group optimization
         OptimizePropertyGroups(node, properties);
-
         // Step 3: Parent-child relationship optimization
         OptimizeWithParent(node);
-
         // Track metrics after optimization
         _totalPropertiesAfterOptimization += node.GetPropertyCount();
     }
-
     /// <summary>
     /// Optimizes groups of related properties by creating shared nodes for common patterns.
     /// </summary>
@@ -118,11 +101,9 @@ public class PropertyTreeManager : IPropertyTreeManager
             var presentProps = properties.Keys
                 .Where(p => group.Value.Contains(p))
                 .ToList();
-
             // Only optimize if multiple properties from the group are present
             if (presentProps.Count <= 1)
                 continue;
-
             // Get values for all present properties in this group
             var groupValues = new Dictionary<string, ICssValue>(StringComparer.OrdinalIgnoreCase);
             foreach (var prop in presentProps)
@@ -132,13 +113,10 @@ public class PropertyTreeManager : IPropertyTreeManager
                     groupValues[prop] = value;
                 }
             }
-
             // Create a unique key for this specific combination of properties and values
             var groupKey = $"group:{group.Key}:" + string.Join(";",
                 groupValues.OrderBy(kv => kv.Key)
                           .Select(kv => $"{kv.Key}:{kv.Value?.CssText ?? "null"}"));
-
-            // Get or create a shared node for this property group
             if (!_rootNodes.TryGetValue(groupKey, out var groupNode))
             {
                 groupNode = new PropertyTreeNode(null);
@@ -149,52 +127,35 @@ public class PropertyTreeManager : IPropertyTreeManager
                 _rootNodes[groupKey] = groupNode;
                 _sharedNodeCount++;
             }
-
-            // Replace individual properties with the shared group node
             foreach (var prop in presentProps)
             {
                 node.ReplaceSubtree(prop, groupNode);
             }
         }
     }
-
-    /// <summary>
-    /// Optimizes nodes by removing properties that are inherited unchanged from parent.
-    /// </summary>
     private void OptimizeWithParent(PropertyTreeNode node)
     {
         var parent = node.GetParent();
         if (parent == null)
             return;
-
         var nodeProperties = node.GetAllProperties();
-
-        // Find properties that are identical to the parent's values
         foreach (var prop in nodeProperties)
         {
             var parentValue = parent.GetPropertyRawValue(prop.Key);
             if (parentValue != null && AreValuesEqual(prop.Value, parentValue))
             {
-                // Property is inherited unchanged - we can remove it
                 node.RemoveProperty(prop.Key);
             }
         }
     }
-
     private bool AreValuesEqual(ICssValue value1, ICssValue value2)
     {
         if (ReferenceEquals(value1, value2))
             return true;
-
         if (value1 == null || value2 == null)
             return false;
-
         return string.Equals(value1.CssText, value2.CssText, StringComparison.Ordinal);
     }
-
-    /// <summary>
-    /// Gets metrics about the effectiveness of tree optimization.
-    /// </summary>
     public OptimizationMetrics GetOptimizationMetrics()
     {
         return new OptimizationMetrics
@@ -211,10 +172,6 @@ public class PropertyTreeManager : IPropertyTreeManager
                 .ToDictionary(kv => kv.Key, kv => kv.Value)
         };
     }
-
-    /// <summary>
-    /// Resets optimization metrics for a new measurement period.
-    /// </summary>
     public void ResetOptimizationMetrics()
     {
         _totalPropertiesBeforeOptimization = 0;
