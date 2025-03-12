@@ -1,4 +1,4 @@
-namespace AngleSharp.StyleSystem.Tests.Unit;
+namespace AngleSharp.StyleSystem.Tests.Unit.Computation;
 
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
