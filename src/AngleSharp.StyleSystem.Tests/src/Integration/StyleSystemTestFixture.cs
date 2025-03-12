@@ -1,5 +1,6 @@
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
+using AngleSharp.Css.Parser;
 using AngleSharp.Css.Values;
 using AngleSharp.Dom;
 using AngleSharp.StyleSystem.Integration;
@@ -8,7 +9,6 @@ using AngleSharp.StyleSystem.Models;
 
 namespace AngleSharp.StyleSystem.Tests.Integration;
 
-using Css.Parser;
 using Services;
 
 /// <summary>
@@ -96,6 +96,15 @@ public class StyleSystemTestFixture
     }
 
     /// <summary>
+    /// Creates a document from HTML content asynchronously.
+    /// </summary>
+    /// <param name="html">The HTML content.</param>
+    protected Task<IDocument> CreateDocumentAsync(string html)
+    {
+        return Context.OpenAsync(req => req.Content(html));
+    }
+
+    /// <summary>
     /// Creates a document with HTML content and embedded CSS.
     /// </summary>
     /// <param name="html">The HTML content for the body.</param>
@@ -113,6 +122,26 @@ public class StyleSystemTestFixture
                 </html>";
 
         return CreateDocument(htmlWithCss);
+    }
+
+    /// <summary>
+    /// Creates a document with HTML content and embedded CSS asynchronously.
+    /// </summary>
+    /// <param name="html">The HTML content for the body.</param>
+    /// <param name="css">The CSS content to include in a style tag.</param>
+    protected Task<IDocument> CreateDocumentWithCssAsync(string html, string css)
+    {
+        var htmlWithCss = $@"
+                <html>
+                <head>
+                    <style>{css}</style>
+                </head>
+                <body>
+                    {html}
+                </body>
+                </html>";
+
+        return CreateDocumentAsync(htmlWithCss);
     }
 
     /// <summary>
@@ -135,6 +164,28 @@ public class StyleSystemTestFixture
                 </html>";
 
         return CreateDocument(htmlWithCss);
+    }
+
+    /// <summary>
+    /// Creates a document with multiple CSS stylesheets asynchronously.
+    /// </summary>
+    /// <param name="html">The HTML content.</param>
+    /// <param name="cssSheets">Array of CSS content strings, each will be a separate stylesheet.</param>
+    protected Task<IDocument> CreateDocumentWithMultipleCssAsync(string html, params string[] cssSheets)
+    {
+        var styleElements = string.Join("", cssSheets.Select(css => $"<style>{css}</style>"));
+
+        var htmlWithCss = $@"
+                <html>
+                <head>
+                    {styleElements}
+                </head>
+                <body>
+                    {html}
+                </body>
+                </html>";
+
+        return CreateDocumentAsync(htmlWithCss);
     }
 
     /// <summary>
@@ -232,10 +283,9 @@ public class StyleSystemTestFixture
     /// <param name="element">The element.</param>
     /// <param name="pseudoElement">The pseudo-element (e.g., "::before").</param>
     /// <returns>The computed style.</returns>
-    protected IComputedStyle GetComputedStyle(IElement element, string pseudoElement)
+    protected IComputedStyle GetComputedPseudoElementStyle(IElement element, string pseudoElement)
     {
-        // return StyleEngine.ComputedElementStyle(element, pseudoElement);
-        throw new NotImplementedException();
+        return StyleEngine.ComputeElementStyle(element, pseudoElement);
     }
 
     /// <summary>
@@ -437,31 +487,61 @@ public class StyleSystemTestFixture
 
     #endregion
 
-    #region CSS Parsing Helpers
+    #region CSS Rule Creation and Cascade Helpers
 
     /// <summary>
-    /// Creates a MatchedRule from CSS text.
+    /// Creates a CSS style rule from a selector and CSS text.
     /// </summary>
-    // protected MatchedRule CreateMatchedRule(string cssText, StylesheetOrigin origin, Priority specificity)
-    // {
-    //     var declaration = Context.GetService<ICssParser>().ParseDeclaration(cssText);
-    //     var style = new Rule { Style = declaration };
-    //
-    //     return new MatchedRule
-    //     {
-    //         Rule = style,
-    //         Specificity = specificity,
-    //         Origin = origin,
-    //         OriginalIndex = 0
-    //     };
-    // }
-
-    private ICssStyleRule CreateStyleRule(string selector, string cssText)
+    /// <param name="selector">The CSS selector.</param>
+    /// <param name="cssText">The CSS declaration text.</param>
+    /// <returns>An ICssStyleRule.</returns>
+    protected ICssStyleRule CreateStyleRule(string selector, string cssText)
     {
         var parser = Context.GetService<ICssParser>();
         Assert.IsNotNull(parser);
         var stylesheet = parser.ParseStyleSheet($"{selector} {{ {cssText} }}");
         return stylesheet.Rules.OfType<ICssStyleRule>().First();
+    }
+
+    /// <summary>
+    /// Creates a MatchedRule for testing cascade resolution.
+    /// </summary>
+    /// <param name="selector">The CSS selector.</param>
+    /// <param name="cssText">The CSS declaration text.</param>
+    /// <param name="origin">The stylesheet origin.</param>
+    /// <param name="specificity">The selector specificity.</param>
+    /// <param name="index">The original index of the rule.</param>
+    /// <returns>A MatchedRule instance.</returns>
+    protected MatchedRule CreateMatchedRule(string selector, string cssText, StylesheetOrigin origin, Priority specificity, int index = 0)
+    {
+        var rule = CreateStyleRule(selector, cssText);
+        return new MatchedRule(rule, specificity, origin, index);
+    }
+
+    /// <summary>
+    /// Creates a MatchedRule from an existing ICssStyleRule.
+    /// </summary>
+    /// <param name="rule">The CSS style rule.</param>
+    /// <param name="origin">The stylesheet origin.</param>
+    /// <param name="specificity">The selector specificity.</param>
+    /// <param name="index">The original index of the rule.</param>
+    /// <returns>A MatchedRule instance.</returns>
+    protected MatchedRule CreateMatchedRule(ICssStyleRule rule, StylesheetOrigin origin, Priority specificity, int index = 0)
+    {
+        return new MatchedRule(rule, specificity, origin, index);
+    }
+
+    /// <summary>
+    /// Creates a Priority object representing selector specificity.
+    /// </summary>
+    /// <param name="a">Style attribute specificity (1 or 0).</param>
+    /// <param name="b">ID selector count.</param>
+    /// <param name="c">Class, attribute, and pseudo-class selector count.</param>
+    /// <param name="d">Element and pseudo-element selector count.</param>
+    /// <returns>A Priority object.</returns>
+    protected Priority CreateSpecificity(byte a, byte b, byte c, byte d)
+    {
+        return new Priority(a, b, c, d);
     }
 
     /// <summary>
@@ -475,24 +555,24 @@ public class StyleSystemTestFixture
         return declaration.ToList();
     }
 
-    #endregion
-
-    #region Helper Classes
-
     /// <summary>
-    /// Simple implementation of ICssStyleRule for testing.
+    /// Creates a set of matched rules for cascade testing.
     /// </summary>
-    // private class Rule : ICssStyleRule
-    // {
-    //     public ICssStyleDeclaration Style { get; set; }
-    //     public string SelectorText => "dummy";
-    //     public ICssSelector Selector => null;
-    //     public ICssRuleList Rules => null;
-    //     public string CssText => $"{SelectorText} {{ {Style?.CssText} }}";
-    //     public ICssRule Parent => null;
-    //     public ICssStyleSheet Sheet => null;
-    //     public IRuleType Type => IRuleType.Style;
-    // }
+    /// <param name="rules">Tuple containing (selector, cssText, origin, specificity a,b,c,d).</param>
+    /// <returns>Collection of MatchedRule objects.</returns>
+    protected IEnumerable<MatchedRule> CreateMatchedRuleSet(params (string selector, string cssText, StylesheetOrigin origin, byte a, byte b, byte c, byte d)[] rules)
+    {
+        var result = new List<MatchedRule>();
+
+        for (int i = 0; i < rules.Length; i++)
+        {
+            var (selector, cssText, origin, a, b, c, d) = rules[i];
+            var specificity = new Priority(a, b, c, d);
+            result.Add(CreateMatchedRule(selector, cssText, origin, specificity, i));
+        }
+
+        return result;
+    }
 
     #endregion
 }
