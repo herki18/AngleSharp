@@ -103,23 +103,27 @@ public class CascadeResolver : ICascadeResolver
             }
         }
 
-        // Create cascade order according to CSS specification:
+        // Create cascade order according to modern CSS cascade behavior:
+        // Normal declarations (applied in order):
         // 1. User agent normal declarations
         // 2. User normal declarations
         // 3. Author normal declarations
-        // 4. Author !important declarations
-        // 5. User !important declarations
-        // 6. User agent !important declarations
         //
-        // Within each category, sort by specificity and then by source order
+        // !important declarations (applied in order):
+        // 4. User agent !important declarations
+        // 5. User !important declarations
+        // 6. Author !important declarations
+        //
+        // Within each category, rules are sorted by specificity (ascending)
+        // and then by source order (ascending).
         var orderedRuleSets = new List<(IEnumerable<MatchedRule> Rules, bool Important)>
         {
             (SortRules(normalUserAgentRules), false),
             (SortRules(normalUserRules), false),
             (SortRules(normalAuthorRules), false),
-            (SortRules(importantAuthorRules), true),
+            (SortRules(importantUserAgentRules), true),
             (SortRules(importantUserRules), true),
-            (SortRules(importantUserAgentRules), true)
+            (SortRules(importantAuthorRules), true)
         };
 
         // Apply rules in cascade order

@@ -9,7 +9,7 @@ namespace AngleSharp.Css
     /// </summary>
     public class DefaultDeclarationFactory : IDeclarationFactory
     {
-        private readonly Dictionary<String, DeclarationInfo> _declarations = new(StringComparer.OrdinalIgnoreCase)
+        private readonly Dictionary<String, IDeclarationInfo> _declarations = new(StringComparer.OrdinalIgnoreCase)
         {
             {
                 AllDeclaration.Name, new DeclarationInfo(
@@ -1867,16 +1867,16 @@ namespace AngleSharp.Css
         /// </summary>
         /// <param name="propertyName">The name of the property.</param>
         /// <param name="converter">The converter to use.</param>
-        public void Register(String propertyName, DeclarationInfo converter) => _declarations.Add(propertyName, converter);
+        public void Register(String propertyName, IDeclarationInfo converter) => _declarations.Add(propertyName, converter);
 
         /// <summary>
         /// Unregisters an existing declaration.
         /// </summary>
         /// <param name="propertyName">The name of the property.</param>
         /// <returns>The registered declaration, if any.</returns>
-        public DeclarationInfo Unregister(String propertyName)
+        public IDeclarationInfo Unregister(String propertyName)
         {
-            if (_declarations.TryGetValue(propertyName, out DeclarationInfo info))
+            if (_declarations.TryGetValue(propertyName, out IDeclarationInfo info))
             {
                 _declarations.Remove(propertyName);
             }
@@ -1889,7 +1889,7 @@ namespace AngleSharp.Css
         /// </summary>
         /// <param name="propertyName">The name of the property.</param>
         /// <returns>The default (any) declaration.</returns>
-        protected virtual DeclarationInfo CreateDefault(String propertyName)
+        protected virtual IDeclarationInfo CreateDefault(String propertyName)
         {
             if (propertyName.StartsWith("--"))
             {
@@ -1904,9 +1904,9 @@ namespace AngleSharp.Css
         /// </summary>
         /// <param name="propertyName">The name of the property.</param>
         /// <returns>The associated declaration.</returns>
-        public DeclarationInfo Create(String propertyName)
+        public IDeclarationInfo Create(String propertyName)
         {
-            var info = default(DeclarationInfo);
+            var info = default(IDeclarationInfo);
 
             if (!String.IsNullOrEmpty(propertyName) && _declarations.TryGetValue(propertyName, out info))
             {

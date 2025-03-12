@@ -7,7 +7,7 @@ namespace AngleSharp.Css
     /// <summary>
     /// A collection of useful information regarding a CSS declaration.
     /// </summary>
-    public class DeclarationInfo
+    public class DeclarationInfo : IDeclarationInfo
     {
         /// <summary>
         /// Constructs a new declaration info.

@@ -12,6 +12,6 @@ namespace AngleSharp.Css
         /// </summary>
         /// <param name="propertyName">The name of the property.</param>
         /// <returns>The associated declaration info.</returns>
-        DeclarationInfo Create(String propertyName);
+        IDeclarationInfo Create(String propertyName);
     }
 }

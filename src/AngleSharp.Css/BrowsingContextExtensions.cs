@@ -52,7 +52,7 @@ namespace AngleSharp.Css
             return null;
         }
 
-        internal static DeclarationInfo GetDeclarationInfo(this IBrowsingContext context, String propertyName)
+        internal static IDeclarationInfo GetDeclarationInfo(this IBrowsingContext context, String propertyName)
         {
             var factory = context.GetFactory<IDeclarationFactory>();
             return factory.Create(propertyName);
@@ -92,7 +92,7 @@ namespace AngleSharp.Css
             return null;
         }
 
-        private static Boolean AllowsDeclaration(this IBrowsingContext context, DeclarationInfo info) =>
+        private static Boolean AllowsDeclaration(this IBrowsingContext context, IDeclarationInfo info) =>
             info.Flags != PropertyFlags.Unknown || context.IsAllowingUnknownDeclarations();
 
         private static Boolean IsAllowingUnknownDeclarations(this IBrowsingContext context)
