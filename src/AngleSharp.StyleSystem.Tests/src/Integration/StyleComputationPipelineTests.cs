@@ -1,44 +1,13 @@
-using AngleSharp.Css;
-using AngleSharp.Dom;
-using AngleSharp.Html.Parser;
-using AngleSharp.StyleSystem.Integration;
-
 namespace AngleSharp.StyleSystem.Tests.Integration;
 
 [TestFixture]
-public class StyleComputationPipelineTests
+public class StyleComputationPipelineTests : StyleSystemTestFixture
 {
-    private IBrowsingContext _context;
-    private StyleEngine _styleEngine;
-    private IHtmlParser _htmlParser;
-
-    [SetUp]
-    public void Setup()
-    {
-        // Create a browsing context with CSS and style system enabled
-        var config = Configuration.Default
-            .WithCss()
-            .WithDefaultLoader();
-
-        _context = BrowsingContext.New(config);
-
-        // Initialize the style engine
-        _styleEngine = new StyleEngine(_context);
-        _htmlParser = _context.GetService<IHtmlParser>()!;
-    }
-
-    [TearDown]
-    public void Cleanup()
-    {
-        _styleEngine?.Dispose();
-        _context?.Dispose();
-    }
-
     [Test]
     public async Task BasicStyleComputation_ShouldProduceCorrectComputedStyle()
     {
         // Arrange
-        var document = await ParseDocumentWithStylesAsync(
+        var document = await CreateDocumentWithCssAsync(
             "<div class='test'>Text</div>",
             ".test { color: red; font-size: 16px; }");
 
@@ -46,19 +15,19 @@ public class StyleComputationPipelineTests
         Assert.IsNotNull(element, "Test element should exist");
 
         // Act
-        var computedStyle = _styleEngine.ComputeElementStyle(element);
+        var computedStyle = GetComputedStyle(element);
 
         // Assert
         Assert.IsNotNull(computedStyle, "Computed style should not be null");
-        Assert.That(computedStyle.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
-        Assert.That(computedStyle.GetPropertyValue("font-size"), Is.EqualTo("16px"));
+        AssertPropertyValue(computedStyle, "color", "rgba(255, 0, 0, 1)");
+        AssertPropertyValue(computedStyle, "font-size", "16px");
     }
 
     [Test]
     public async Task StyleCascade_SpecificityRules_ShouldBeAppliedCorrectly()
     {
         // Arrange
-        var document = await ParseDocumentWithStylesAsync(
+        var document = await CreateDocumentWithCssAsync(
             "<div id='test' class='test-class' style='color: green;'>Text</div>",
             @"
                 div { color: black; font-size: 12px; }
@@ -70,19 +39,18 @@ public class StyleComputationPipelineTests
         Assert.IsNotNull(element, "Test element should exist");
 
         // Act
-        var computedStyle = _styleEngine.ComputeElementStyle(element);
+        var computedStyle = GetComputedStyle(element);
 
         // Assert - inline style should override id selector
-        Assert.That(computedStyle.GetPropertyValue("color"), Is.EqualTo("rgba(0, 128, 0, 1)"));
-        // Id selector should override class selector for font-size
-        Assert.That(computedStyle.GetPropertyValue("font-size"), Is.EqualTo("14px"));
+        AssertPropertyValue(computedStyle, "color", "rgba(0, 128, 0, 1)"); // green
+        AssertPropertyValue(computedStyle, "font-size", "14px");
     }
 
     [Test]
     public async Task Important_Rules_ShouldOverrideCascade()
     {
         // Arrange
-        var document = await ParseDocumentWithStylesAsync(
+        var document = await CreateDocumentWithCssAsync(
             "<div id='test' class='test-class' style='color: green;'>Text</div>",
             @"
                 div { color: black; font-size: 12px; }
@@ -94,18 +62,18 @@ public class StyleComputationPipelineTests
         Assert.IsNotNull(element, "Test element should exist");
 
         // Act
-        var computedStyle = _styleEngine.ComputeElementStyle(element);
+        var computedStyle = GetComputedStyle(element);
 
         // Assert - !important should override inline style
-        Assert.That(computedStyle.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 255, 1)"));
-        Assert.That(computedStyle.GetPropertyValue("font-size"), Is.EqualTo("14px"));
+        AssertPropertyValue(computedStyle, "color", "rgba(0, 0, 255, 1)"); // blue
+        AssertPropertyValue(computedStyle, "font-size", "14px");
     }
 
     [Test]
     public async Task PropertyInheritance_ShouldWorkCorrectly()
     {
         // Arrange
-        var document = await ParseDocumentWithStylesAsync(
+        var document = await CreateDocumentWithCssAsync(
             @"<div id='parent'>
                      <div id='child'>Text</div>
                    </div>",
@@ -121,24 +89,24 @@ public class StyleComputationPipelineTests
         Assert.IsNotNull(childElement, "Child element should exist");
 
         // Act
-        var parentStyle = _styleEngine.ComputeElementStyle(parentElement);
-        var childStyle = _styleEngine.ComputeElementStyle(childElement);
+        var parentStyle = GetComputedStyle(parentElement);
+        var childStyle = GetComputedStyle(childElement);
 
         // Assert
-        Assert.That(parentStyle.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 255, 1)"));
-        Assert.That(parentStyle.GetPropertyValue("font-family"), Is.EqualTo("Arial"));
+        AssertPropertyValue(parentStyle, "color", "rgba(0, 0, 255, 1)");
+        AssertPropertyValue(parentStyle, "font-family", "Arial");
 
         // Child should inherit color and font-family
-        Assert.That(childStyle.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 255, 1)"));
-        Assert.That(childStyle.GetPropertyValue("font-family"), Is.EqualTo("Arial"));
-        Assert.That(childStyle.GetPropertyValue("font-size"), Is.EqualTo("16px"));
+        AssertInheritedFromParent(childStyle, parentStyle, "color");
+        AssertInheritedFromParent(childStyle, parentStyle, "font-family");
+        AssertPropertyValue(childStyle, "font-size", "16px");
     }
 
     [Test]
     public async Task ExplicitInheritKeyword_ShouldForceInheritance()
     {
         // Arrange
-        var document = await ParseDocumentWithStylesAsync(
+        var document = await CreateDocumentWithCssAsync(
             @"<div id='parent'>
                      <div id='child'>Text</div>
                    </div>",
@@ -151,24 +119,24 @@ public class StyleComputationPipelineTests
         var childElement = document.GetElementById("child");
 
         // Act
-        var parentStyle = _styleEngine.ComputeElementStyle(parentElement!);
-        var childStyle = _styleEngine.ComputeElementStyle(childElement!);
+        var parentStyle = GetComputedStyle(parentElement);
+        var childStyle = GetComputedStyle(childElement);
 
         // Assert
-        Assert.That(parentStyle.GetPropertyValue("font-size"), Is.EqualTo("20px"));
-        Assert.That(parentStyle.GetPropertyValue("background-color"), Is.EqualTo("rgba(238, 238, 238, 1)"));
+        AssertPropertyValue(parentStyle, "font-size", "20px");
+        AssertPropertyValue(parentStyle, "background-color", "rgba(238, 238, 238, 1)");
 
         // Child has explicit color but inherits font-size and background-color
-        Assert.That(childStyle.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
-        Assert.That(childStyle.GetPropertyValue("font-size"), Is.EqualTo("20px"));
-        Assert.That(childStyle.GetPropertyValue("background-color"), Is.EqualTo("rgba(238, 238, 238, 1)"));
+        AssertPropertyValue(childStyle, "color", "rgba(255, 0, 0, 1)");
+        AssertPropertyValue(childStyle, "font-size", "20px");
+        AssertPropertyValue(childStyle, "background-color", "rgba(238, 238, 238, 1)");
     }
 
     [Test]
     public async Task InitialKeyword_ShouldResetToInitialValues()
     {
         // Arrange
-        var document = await ParseDocumentWithStylesAsync(
+        var document = await CreateDocumentWithCssAsync(
             @"<div id='parent'>
                      <div id='child'>Text</div>
                    </div>",
@@ -180,18 +148,18 @@ public class StyleComputationPipelineTests
         var childElement = document.GetElementById("child");
 
         // Act
-        var childStyle = _styleEngine.ComputeElementStyle(childElement!);
+        var childStyle = GetComputedStyle(childElement);
 
         // Assert - color should be reset to black (initial)
-        Assert.That(childStyle.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 0, 1)"));
-        Assert.That(childStyle.GetPropertyValue("font-weight"), Is.EqualTo("400"));
+        AssertPropertyValue(childStyle, "color", "rgba(0, 0, 0, 1)");
+        AssertPropertyValue(childStyle, "font-weight", "400");
     }
 
     [Test]
     public async Task UnsetKeyword_ShouldInheritOrUseInitialValue()
     {
         // Arrange
-        var document = await ParseDocumentWithStylesAsync(
+        var document = await CreateDocumentWithCssAsync(
             @"<div id='parent'>
                      <div id='child'>Text</div>
                    </div>",
@@ -203,20 +171,20 @@ public class StyleComputationPipelineTests
         var childElement = document.GetElementById("child");
 
         // Act
-        var childStyle = _styleEngine.ComputeElementStyle(childElement!);
+        var childStyle = GetComputedStyle(childElement);
 
         // Assert
         // color inherits because it's an inherited property
-        Assert.That(childStyle.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 255, 1)"));
+        AssertPropertyValue(childStyle, "color", "rgba(0, 0, 255, 1)");
         // display uses initial value (block) because it's not inherited
-        Assert.That(childStyle.GetPropertyValue("display").ToLowerInvariant(), Is.EqualTo("block"));
+        AssertPropertyValue(childStyle, "display", "block");
     }
 
     [Test]
     public async Task LengthUnits_ShouldBeComputedCorrectly()
     {
         // Arrange
-        var document = await ParseDocumentWithStylesAsync(
+        var document = await CreateDocumentWithCssAsync(
             @"<div id='test'>Text</div>",
             @"
                 html { font-size: 16px; }
@@ -231,20 +199,20 @@ public class StyleComputationPipelineTests
         var element = document.GetElementById("test");
 
         // Act
-        var computedStyle = _styleEngine.ComputeElementStyle(element!);
+        var computedStyle = GetComputedStyle(element);
 
         // Assert
-        Assert.That(computedStyle.GetPropertyValue("width"), Is.EqualTo("200px"));
-        Assert.That(computedStyle.GetPropertyValue("height"), Is.EqualTo("160px")); // 10em = 10 * 16px = 160px
-        Assert.That(computedStyle.GetPropertyValue("padding-top"), Is.EqualTo("16px")); // 1rem = 1 * 16px = 16px
-        Assert.That(computedStyle.GetPropertyValue("margin-top"), Is.EqualTo("32px")); // 2rem = 2 * 16px = 32px
+        AssertPropertyValue(computedStyle, "width", "200px");
+        AssertPropertyValue(computedStyle, "height", "160px"); // 10em = 10 * 16px = 160px
+        AssertPropertyValue(computedStyle, "padding-top", "16px"); // 1rem = 1 * 16px = 16px
+        AssertPropertyValue(computedStyle, "margin-top", "32px"); // 2rem = 2 * 16px = 32px
     }
 
     [Test]
     public async Task CssVariables_ShouldBeResolved()
     {
         // Arrange
-        var document = await ParseDocumentWithStylesAsync(
+        var document = await CreateDocumentWithCssAsync(
             @"<div id='parent'>
                      <div id='child'>Text</div>
                    </div>",
@@ -268,22 +236,22 @@ public class StyleComputationPipelineTests
         var childElement = document.GetElementById("child");
 
         // Act
-        var parentStyle = _styleEngine.ComputeElementStyle(parentElement!);
-        var childStyle = _styleEngine.ComputeElementStyle(childElement!);
+        var parentStyle = GetComputedStyle(parentElement);
+        var childStyle = GetComputedStyle(childElement);
 
         // Assert
-        Assert.That(parentStyle.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 255, 1)")); // --main-color: blue
-        Assert.That(parentStyle.GetPropertyValue("padding-top"), Is.EqualTo("16px")); // --main-padding: 16px
+        AssertPropertyValue(parentStyle, "color", "rgba(0, 0, 255, 1)"); // --main-color: blue
+        AssertPropertyValue(parentStyle, "padding-top", "16px"); // --main-padding: 16px
 
-        Assert.That(childStyle.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)")); // --parent-color: red
-        Assert.That(childStyle.GetPropertyValue("margin-top"), Is.EqualTo("16px")); // --main-padding: 16px
+        AssertPropertyValue(childStyle, "color", "rgba(255, 0, 0, 1)"); // --parent-color: red
+        AssertPropertyValue(childStyle, "margin-top", "16px"); // --main-padding: 16px
     }
 
     [Test]
     public async Task NestedCssVariables_ShouldBeResolved()
     {
         // Arrange
-        var document = await ParseDocumentWithStylesAsync(
+        var document = await CreateDocumentWithCssAsync(
             @"<div id='test'>Text</div>",
             @"
                 :root {
@@ -299,17 +267,17 @@ public class StyleComputationPipelineTests
         var element = document.GetElementById("test");
 
         // Act
-        var computedStyle = _styleEngine.ComputeElementStyle(element!);
+        var computedStyle = GetComputedStyle(element);
 
         // Assert - should resolve through multiple variable references
-        Assert.That(computedStyle.GetPropertyValue("padding-top"), Is.EqualTo("16px"));
+        AssertPropertyValue(computedStyle, "padding-top", "16px");
     }
 
     [Test]
     public async Task CalcExpressions_ShouldBeComputed()
     {
         // Arrange
-        var document = await ParseDocumentWithStylesAsync(
+        var document = await CreateDocumentWithCssAsync(
             @"<div id='test'>Text</div>",
             @"
                 #test {
@@ -322,19 +290,19 @@ public class StyleComputationPipelineTests
         var element = document.GetElementById("test");
 
         // Act
-        var computedStyle = _styleEngine.ComputeElementStyle(element!);
+        var computedStyle = GetComputedStyle(element);
 
         // Assert
-        Assert.That(computedStyle.GetPropertyValue("width"), Is.EqualTo("150px"));
-        Assert.That(computedStyle.GetPropertyValue("height"), Is.EqualTo("200px"));
-        Assert.That(computedStyle.GetPropertyValue("margin-top"), Is.EqualTo("15px"));
+        AssertPropertyValue(computedStyle, "width", "150px");
+        AssertPropertyValue(computedStyle, "height", "200px");
+        AssertPropertyValue(computedStyle, "margin-top", "15px");
     }
 
     [Test]
     public async Task LogicalProperties_ShouldMapToPhysicalProperties()
     {
         // Arrange
-        var document = await ParseDocumentWithStylesAsync(
+        var document = await CreateDocumentWithCssAsync(
             @"<div id='test-ltr' dir='ltr'>LTR Text</div>
                   <div id='test-rtl' dir='rtl'>RTL Text</div>",
             @"
@@ -349,26 +317,26 @@ public class StyleComputationPipelineTests
         var rtlElement = document.GetElementById("test-rtl");
 
         // Act
-        var ltrStyle = _styleEngine.ComputeElementStyle(ltrElement!);
-        var rtlStyle = _styleEngine.ComputeElementStyle(rtlElement!);
+        var ltrStyle = GetComputedStyle(ltrElement);
+        var rtlStyle = GetComputedStyle(rtlElement);
 
         // Assert
         // In LTR, inline-start = left, inline-end = right, block-start = top
-        Assert.That(ltrStyle.GetPropertyValue("margin-left"), Is.EqualTo("10px"));
-        Assert.That(ltrStyle.GetPropertyValue("padding-right"), Is.EqualTo("20px"));
-        Assert.That(ltrStyle.GetPropertyValue("border-top-width"), Is.EqualTo("2px"));
+        AssertPropertyValue(ltrStyle, "margin-left", "10px");
+        AssertPropertyValue(ltrStyle, "padding-right", "20px");
+        AssertPropertyValue(ltrStyle, "border-top-width", "2px");
 
         // In RTL, inline-start = right, inline-end = left, block-start = top
-        Assert.That(rtlStyle.GetPropertyValue("margin-right"), Is.EqualTo("10px"));
-        Assert.That(rtlStyle.GetPropertyValue("padding-left"), Is.EqualTo("20px"));
-        Assert.That(rtlStyle.GetPropertyValue("border-top-width"), Is.EqualTo("2px"));
+        AssertPropertyValue(rtlStyle, "margin-right", "10px");
+        AssertPropertyValue(rtlStyle, "padding-left", "20px");
+        AssertPropertyValue(rtlStyle, "border-top-width", "2px");
     }
 
     [Test]
     public async Task ShorthandProperties_ShouldExpandCorrectly()
     {
         // Arrange
-        var document = await ParseDocumentWithStylesAsync(
+        var document = await CreateDocumentWithCssAsync(
             @"<div id='test'>Text</div>",
             @"
                 #test {
@@ -381,33 +349,33 @@ public class StyleComputationPipelineTests
         var element = document.GetElementById("test");
 
         // Act
-        var computedStyle = _styleEngine.ComputeElementStyle(element!);
+        var computedStyle = GetComputedStyle(element);
 
         // Assert
         // Four-value shorthand expands to top, right, bottom, left
-        Assert.That(computedStyle.GetPropertyValue("margin-top"), Is.EqualTo("10px"));
-        Assert.That(computedStyle.GetPropertyValue("margin-right"), Is.EqualTo("20px"));
-        Assert.That(computedStyle.GetPropertyValue("margin-bottom"), Is.EqualTo("30px"));
-        Assert.That(computedStyle.GetPropertyValue("margin-left"), Is.EqualTo("40px"));
+        AssertPropertyValue(computedStyle, "margin-top", "10px");
+        AssertPropertyValue(computedStyle, "margin-right", "20px");
+        AssertPropertyValue(computedStyle, "margin-bottom", "30px");
+        AssertPropertyValue(computedStyle, "margin-left", "40px");
 
         // Two-value shorthand expands to top/bottom, left/right
-        Assert.That(computedStyle.GetPropertyValue("padding-top"), Is.EqualTo("5px"));
-        Assert.That(computedStyle.GetPropertyValue("padding-right"), Is.EqualTo("15px"));
-        Assert.That(computedStyle.GetPropertyValue("padding-bottom"), Is.EqualTo("5px"));
-        Assert.That(computedStyle.GetPropertyValue("padding-left"), Is.EqualTo("15px"));
+        AssertPropertyValue(computedStyle, "padding-top", "5px");
+        AssertPropertyValue(computedStyle, "padding-right", "15px");
+        AssertPropertyValue(computedStyle, "padding-bottom", "5px");
+        AssertPropertyValue(computedStyle, "padding-left", "15px");
 
         // One-value shorthand expands to all four sides
-        Assert.That(computedStyle.GetPropertyValue("border-top-width"), Is.EqualTo("1px"));
-        Assert.That(computedStyle.GetPropertyValue("border-right-width"), Is.EqualTo("1px"));
-        Assert.That(computedStyle.GetPropertyValue("border-bottom-width"), Is.EqualTo("1px"));
-        Assert.That(computedStyle.GetPropertyValue("border-left-width"), Is.EqualTo("1px"));
+        AssertPropertyValue(computedStyle, "border-top-width", "1px");
+        AssertPropertyValue(computedStyle, "border-right-width", "1px");
+        AssertPropertyValue(computedStyle, "border-bottom-width", "1px");
+        AssertPropertyValue(computedStyle, "border-left-width", "1px");
     }
 
     [Test]
     public async Task ComplexSelectors_ShouldMatchCorrectly()
     {
         // Arrange
-        var document = await ParseDocumentWithStylesAsync(
+        var document = await CreateDocumentWithCssAsync(
             @"<div id='parent'>
                      <div class='item first'>Item 1</div>
                      <div class='item'>Item 2</div>
@@ -426,30 +394,30 @@ public class StyleComputationPipelineTests
         var items = document.QuerySelectorAll(".item").ToArray();
 
         // Act
-        var firstItemStyle = _styleEngine.ComputeElementStyle(items[0]);
-        var secondItemStyle = _styleEngine.ComputeElementStyle(items[1]);
-        var thirdItemStyle = _styleEngine.ComputeElementStyle(items[2]);
-        var lastItemStyle = _styleEngine.ComputeElementStyle(items[3]);
+        var firstItemStyle = GetComputedStyle(items[0]);
+        var secondItemStyle = GetComputedStyle(items[1]);
+        var thirdItemStyle = GetComputedStyle(items[2]);
+        var lastItemStyle = GetComputedStyle(items[3]);
 
         // Assert
-        Assert.That(firstItemStyle.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
-        Assert.That(firstItemStyle.GetPropertyValue("font-weight"), Is.EqualTo("700"));
+        AssertPropertyValue(firstItemStyle, "color", "rgba(255, 0, 0, 1)");
+        AssertPropertyValue(firstItemStyle, "font-weight", "700");
 
-        Assert.That(secondItemStyle.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 0, 1)"));
-        Assert.That(secondItemStyle.GetPropertyValue("background-color"), Is.EqualTo("rgba(240, 240, 240, 1)"));
+        AssertPropertyValue(secondItemStyle, "color", "rgba(0, 0, 0, 1)");
+        AssertPropertyValue(secondItemStyle, "background-color", "rgba(240, 240, 240, 1)");
 
-        Assert.That(thirdItemStyle.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 0, 1)"));
-        Assert.That(thirdItemStyle.GetPropertyValue("margin-top"), Is.EqualTo("10px"));
+        AssertPropertyValue(thirdItemStyle, "color", "rgba(0, 0, 0, 1)");
+        AssertPropertyValue(thirdItemStyle, "margin-top", "10px");
 
-        Assert.That(lastItemStyle.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 255, 1)"));
-        Assert.That(lastItemStyle.GetPropertyValue("background-color"), Is.EqualTo("rgba(240, 240, 240, 1)"));
+        AssertPropertyValue(lastItemStyle, "color", "rgba(0, 0, 255, 1)");
+        AssertPropertyValue(lastItemStyle, "background-color", "rgba(240, 240, 240, 1)");
     }
 
     [Test]
     public async Task MediaQueries_ShouldApplyCorrectStyles()
     {
         // Arrange
-        var document = await ParseDocumentWithStylesAsync(
+        var document = await CreateDocumentWithCssAsync(
             @"<div id='test'>Text</div>",
             @"
                 #test { color: black; }
@@ -464,33 +432,31 @@ public class StyleComputationPipelineTests
                 ");
 
         var element = document.GetElementById("test");
-        var defaultRenderDevice = _context.GetService<IRenderDevice>();
 
         // Act - Test with different viewport widths
-
         // First set to 800px width - should match min-width: 600px
-        defaultRenderDevice!.SetViewport(800, 600);
-        var wideStyle = _styleEngine.ComputeElementStyle(element!);
+        SetViewport(800, 600);
+        var wideStyle = GetComputedStyle(element);
 
         // Then set to 300px width - should match max-width: 400px
-        defaultRenderDevice.SetViewport(300, 600);
-        var narrowStyle = _styleEngine.ComputeElementStyle(element!);
+        SetViewport(300, 600);
+        var narrowStyle = GetComputedStyle(element);
 
         // Finally set to 500px - should match neither media query
-        defaultRenderDevice.SetViewport(500, 600);
-        var mediumStyle = _styleEngine.ComputeElementStyle(element!);
+        SetViewport(500, 600);
+        var mediumStyle = GetComputedStyle(element);
 
         // Assert
-        Assert.That(wideStyle.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 255, 1)")); // blue from min-width: 600px
-        Assert.That(narrowStyle.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)")); // red from max-width: 400px
-        Assert.That(mediumStyle.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 0, 1)")); // black (base style)
+        AssertPropertyValue(wideStyle, "color", "rgba(0, 0, 255, 1)"); // blue from min-width: 600px
+        AssertPropertyValue(narrowStyle, "color", "rgba(255, 0, 0, 1)"); // red from max-width: 400px
+        AssertPropertyValue(mediumStyle, "color", "rgba(0, 0, 0, 1)"); // black (base style)
     }
 
     [Test]
     public async Task PseudoElements_ShouldComputeCorrectly()
     {
         // Arrange
-        var document = await ParseDocumentWithStylesAsync(
+        var document = await CreateDocumentWithCssAsync(
             @"<div id='test'>Text</div>",
             @"
                 #test::before {
@@ -507,34 +473,82 @@ public class StyleComputationPipelineTests
         var element = document.GetElementById("test");
 
         // Act
-        var beforeStyle = _styleEngine.ComputeElementStyle(element!, "before");
-        var afterStyle = _styleEngine.ComputeElementStyle(element!, "after");
+        var beforeStyle = GetComputedPseudoElementStyle(element, "::before");
+        var afterStyle = GetComputedPseudoElementStyle(element, "::after");
 
         // Assert
         Assert.IsNotNull(beforeStyle);
         Assert.IsNotNull(afterStyle);
-        Assert.That(beforeStyle.GetPropertyValue("content"), Is.EqualTo("'Before'"));
-        Assert.That(beforeStyle.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
+        AssertPropertyValue(beforeStyle, "content", "'Before'");
+        AssertPropertyValue(beforeStyle, "color", "rgba(255, 0, 0, 1)");
 
-        Assert.That(afterStyle.GetPropertyValue("content"), Is.EqualTo("'After'"));
-        Assert.That(afterStyle.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 255, 1)"));
+        AssertPropertyValue(afterStyle, "content", "'After'");
+        AssertPropertyValue(afterStyle, "color", "rgba(0, 0, 255, 1)");
     }
 
-    /// <summary>
-    /// Sets up a document with the given HTML and CSS
-    /// </summary>
-    private async Task<IDocument> ParseDocumentWithStylesAsync(string html, string css)
+    [Test]
+    public async Task BoxModel_ShouldHaveCorrectDimensions()
     {
-        var document = await _htmlParser.ParseDocumentAsync(html);
+        // Arrange
+        var document = await CreateDocumentWithCssAsync(
+            @"<div id='box'>Box Model Test</div>",
+            @"
+                #box {
+                    width: 200px;
+                    height: 100px;
+                    margin: 10px 20px 30px 40px;
+                    padding: 5px 15px 25px 35px;
+                    border-width: 1px 2px 3px 4px;
+                    border-style: solid;
+                }
+                ");
 
-        // Add style element
-        var styleElement = document.CreateElement("style");
-        styleElement.TextContent = css;
-        document.Head!.AppendChild(styleElement);
+        var element = document.GetElementById("box");
 
-        // Setup style engine with document
-        _styleEngine.StylesheetManager.AttachToDocument(document);
+        // Act
+        var computedStyle = GetComputedStyle(element);
 
-        return document;
+        // Assert
+        AssertBoxModel(computedStyle,
+            "200px", "100px",
+            "10px", "20px", "30px", "40px");
+
+        AssertPadding(computedStyle,
+            "5px", "15px", "25px", "35px");
+
+        AssertBorders(computedStyle,
+            "1px", "2px", "3px", "4px");
+    }
+
+    [Test]
+    public async Task TypographyProperties_ShouldBeComputedCorrectly()
+    {
+        // Arrange
+        var document = await CreateDocumentWithCssAsync(
+            @"<div id='text'>Typography Test</div>",
+            @"
+                #text {
+                    font-family: 'Arial', sans-serif;
+                    font-size: 18px;
+                    font-weight: 700;
+                    line-height: 1.5;
+                    color: #336699;
+                    text-align: center;
+                }
+                ");
+
+        var element = document.GetElementById("text");
+
+        // Act
+        var computedStyle = GetComputedStyle(element);
+
+        // Assert
+        AssertTypography(computedStyle,
+            "18px", "'Arial', sans-serif", "700",
+            "rgba(51, 102, 153, 1)", "center");
+
+        // Check the line height specifically
+        var lineHeight = computedStyle.GetPropertyValue("line-height");
+        Assert.That(lineHeight, Is.EqualTo("27px")); // 18px * 1.5 = 27px
     }
 }

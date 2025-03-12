@@ -4,39 +4,53 @@
     "type": "split",
     "children": [
       {
-        "id": "7202af703773e2a8",
+        "id": "a1371137fd1d7644",
         "type": "tabs",
         "children": [
           {
-            "id": "a1c586c1346b1360",
+            "id": "8a97c254eff15c68",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "New Arhitecture/StyleSystem Component Interaction Flow Documentation.md",
+                "file": "Modules/Layout System/Layout System Architecture Document.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "StyleSystem Component Interaction Flow Documentation"
+              "title": "Layout System Architecture Document"
             }
           },
           {
-            "id": "5477d1f2e8ae73cd",
+            "id": "93b419e72e94a610",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "New Arhitecture/Rev 1/AngleSharp.StyleSystem Testing Reference.md",
+                "file": "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "AngleSharp.StyleSystem Testing Reference"
+              "title": "StyleSystem Implementation Plan"
+            }
+          },
+          {
+            "id": "fad918890771ffc5",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "New Arhitecture/Rev 3/Improvments.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Improvments"
             }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -68,7 +82,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "browser",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -93,7 +107,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 443.5
+    "width": 494.5
   },
   "right": {
     "id": "8989d77b04c133bb",
@@ -109,7 +123,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "New Arhitecture/Rev 1/AngleSharp.StyleSystem Testing Reference.md",
+                "file": "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -119,7 +133,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for AngleSharp.StyleSystem Testing Reference"
+              "title": "Backlinks for StyleSystem Implementation Plan"
             }
           },
           {
@@ -128,12 +142,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "New Arhitecture/Rev 1/AngleSharp.StyleSystem Testing Reference.md",
+                "file": "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from AngleSharp.StyleSystem Testing Reference"
+              "title": "Outgoing links from StyleSystem Implementation Plan"
             }
           },
           {
@@ -157,16 +171,17 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "New Arhitecture/Rev 1/AngleSharp.StyleSystem Testing Reference.md",
+                "file": "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of AngleSharp.StyleSystem Testing Reference"
+              "title": "Outline of StyleSystem Implementation Plan"
             }
           }
-        ]
+        ],
+        "currentTab": 3
       }
     ],
     "direction": "horizontal",
@@ -183,43 +198,44 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "5477d1f2e8ae73cd",
+  "active": "fad918890771ffc5",
   "lastOpenFiles": [
+    "New Arhitecture/Rev 3/Unit Tests Generated.md",
+    "New Arhitecture/Rev 3/Improvments.md",
     "New Arhitecture/Untitled 10.md",
     "New Arhitecture/Rev 1/AngleSharp.StyleSystem Testing Reference.md",
+    "New Arhitecture/Rev 3/Computation/ComputedStyleFactory",
+    "New Arhitecture/Rev 3/Computation/VariableResolver",
+    "New Arhitecture/Rev 3/Computation/ValueCalculator",
+    "New Arhitecture/Rev 3/Computation/ComputedStyle",
+    "New Arhitecture/Rev 3/Computation/Untitled.md",
+    "New Arhitecture/Rev 3/Computation/ComputedStyleBuilder",
+    "New Arhitecture/Rev 3/Computation",
+    "New Arhitecture/Untitled 8.md",
     "New Arhitecture/Untitled 9.md",
-    "New Arhitecture/Rev 3/Unit Tests Generated.md",
-    "New Arhitecture/Rev 3",
-    "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
+    "New Arhitecture/Untitled.md",
+    "New Arhitecture/StyleSystem Component Interaction Flow Documentation.md",
+    "New Arhitecture/StyleSystem Component Data Flow.md",
+    "New Arhitecture/Project Instructions.md",
     "New Arhitecture/Rev 2/StyleSystemService Integration Design.md",
     "New Arhitecture/Rev 2/DomMutationTracker Design Document.md",
-    "New Arhitecture/Rev 2",
-    "New Arhitecture/Untitled 8.md",
-    "New Arhitecture/Rev 1/StyleSystem Data Flow Diagrams.md",
+    "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
     "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
     "New Arhitecture/Rev 1/Development Guidelines.md",
-    "New Arhitecture/Rev 1/Core Component Interfaces.md",
-    "New Arhitecture/Rev 1/AngleSharp CSS Reference.md",
-    "New Arhitecture/Rev 1/AngleSharp.StyleSystem Development Guide.md",
+    "New Arhitecture/Rev 1/StyleSystem Data Flow Diagrams.md",
     "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
-    "New Arhitecture/Project Instructions.md",
-    "New Arhitecture/StyleSystem Component Data Flow.md",
-    "New Arhitecture/StyleSystem Component Interaction Flow Documentation.md",
+    "Modules/Layout System/Layout System Architecture Document.md",
+    "New Arhitecture/Rev 1/Core Component Interfaces.md",
+    "New Arhitecture/Rev 1/AngleSharp.StyleSystem Development Guide.md",
+    "New Arhitecture/Rev 1/AngleSharp CSS Reference.md",
+    "Diagrams/AngleSharp Layout Engine - Updated Architecture with LayoutNG Approach.md",
+    "Diagrams/AngleSharp Layout Engine - System Data Flow.md",
     "New Arhitecture/Untitled 7.md",
-    "New Arhitecture/Rev 1/StyleSystem Testing Strategy.md",
-    "New Arhitecture/Untitled 3.md",
-    "New Arhitecture/Untitled 4.md",
-    "New Arhitecture/Untitled 5.md",
     "New Arhitecture/Untitled 6.md",
-    "New Arhitecture/Untitled 1.md",
-    "Overall/AngleSharp Layout Engine - System Data Flow.md",
-    "Notes",
+    "New Arhitecture/Rev 3",
+    "New Arhitecture/Rev 2",
     "New Arhitecture/Rev 1",
     "New Arhitecture",
-    "Modules/Style System/Diagrams",
-    "Diagrams",
-    "Overall/Arhitecture",
-    "Overall/Diagrams",
-    "Overall/Implementation"
+    "Untitled.canvas"
   ]
 }

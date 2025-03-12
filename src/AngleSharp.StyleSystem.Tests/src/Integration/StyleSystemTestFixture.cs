@@ -9,15 +9,23 @@ using AngleSharp.StyleSystem.Models;
 
 namespace AngleSharp.StyleSystem.Tests.Integration;
 
+using Computation;
 using Services;
 
 /// <summary>
 /// Base test fixture for StyleSystem integration tests.
 /// Provides common functionality for creating, parsing, and styling documents.
 /// </summary>
-[TestFixture]
 public class StyleSystemTestFixture
 {
+    #region Constatns
+
+    protected const byte Zero = 0;
+    protected const byte One = 1;
+
+    #endregion
+
+
     #region Properties
 
     /// <summary>
@@ -50,7 +58,8 @@ public class StyleSystemTestFixture
         // Create configuration with CSS and StyleSystem support
         var config = Configuration.Default
             .WithCss()
-            .WithStyleSystem();
+            .WithStyleSystem()
+            .WithDefaultLoader();
 
         Context = BrowsingContext.New(config);
         Assert.IsNotNull(Context);
@@ -272,8 +281,9 @@ public class StyleSystemTestFixture
     /// </summary>
     /// <param name="element">The element.</param>
     /// <returns>The computed style.</returns>
-    protected IComputedStyle GetComputedStyle(IElement element)
+    protected IComputedStyle GetComputedStyle(IElement? element)
     {
+        Assert.IsNotNull(element);
         return StyleEngine.ComputeElementStyle(element);
     }
 
@@ -283,8 +293,9 @@ public class StyleSystemTestFixture
     /// <param name="element">The element.</param>
     /// <param name="pseudoElement">The pseudo-element (e.g., "::before").</param>
     /// <returns>The computed style.</returns>
-    protected IComputedStyle GetComputedPseudoElementStyle(IElement element, string pseudoElement)
+    protected IComputedStyle GetComputedPseudoElementStyle(IElement? element, string pseudoElement)
     {
+        Assert.IsNotNull(element);
         return StyleEngine.ComputeElementStyle(element, pseudoElement);
     }
 
@@ -504,6 +515,23 @@ public class StyleSystemTestFixture
     }
 
     /// <summary>
+    /// Parses a CSS rule directly using the rule parser.
+    /// </summary>
+    /// <param name="ruleText">The complete CSS rule text including selector and declarations.</param>
+    /// <returns>An ICssStyleRule.</returns>
+    protected ICssStyleRule? ParseRule(string ruleText)
+    {
+        var parser = Context.GetService<ICssParser>();
+        Assert.IsNotNull(parser);
+
+        // Create an empty stylesheet to parse the rule into
+        var emptyStylesheet = parser.ParseStyleSheet("");
+
+        // Parse the rule
+        return parser.ParseRule(emptyStylesheet, ruleText) as ICssStyleRule;
+    }
+
+    /// <summary>
     /// Creates a MatchedRule for testing cascade resolution.
     /// </summary>
     /// <param name="selector">The CSS selector.</param>
@@ -572,6 +600,203 @@ public class StyleSystemTestFixture
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Combines inline style with stylesheet rules for cascade resolution testing.
+    /// </summary>
+    /// <param name="element">The element with inline style.</param>
+    /// <param name="matchedRules">The matched rules from stylesheets.</param>
+    /// <param name="cascadeResolver">The cascade resolver to use. If null, a new instance will be created.</param>
+    /// <returns>The resolved declaration.</returns>
+    protected ICssStyleDeclaration ResolveCascadeWithInlineStyle(IElement element, IEnumerable<MatchedRule> matchedRules, ICascadeResolver? cascadeResolver = null)
+    {
+        cascadeResolver ??= Context.GetService<ICascadeResolver>();
+        Assert.IsNotNull(cascadeResolver, "Failed to get CascadeResolver");
+
+        return cascadeResolver.ResolveCascade(matchedRules, element);
+    }
+
+    /// <summary>
+    /// Tests common cascade scenarios with the given element and rules.
+    /// </summary>
+    /// <param name="element">The element to test on.</param>
+    /// <param name="propertyName">The CSS property to test.</param>
+    /// <param name="expectedValue">The expected computed value.</param>
+    /// <param name="matchedRules">The matched rules to test with.</param>
+    /// <param name="expectedImportant">Whether the winning declaration should be important.</param>
+    protected void AssertCascadeResult(
+        IElement element,
+        string propertyName,
+        string expectedValue,
+        IEnumerable<MatchedRule> matchedRules,
+        bool expectedImportant = false)
+    {
+        var cascadeResolver = Context.GetService<ICascadeResolver>();
+        if(cascadeResolver == null){}
+        {
+            cascadeResolver = new CascadeResolver(Context);
+        }
+
+        Assert.IsNotNull(cascadeResolver, "Failed to get CascadeResolver");
+
+        var result = cascadeResolver.ResolveCascade(matchedRules, element);
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.GetPropertyValue(propertyName), Is.EqualTo(expectedValue),
+            $"Property '{propertyName}' should be '{expectedValue}' but was '{result.GetPropertyValue(propertyName)}'");
+
+        if (expectedImportant)
+        {
+            Assert.That(result.GetPropertyPriority(propertyName), Is.EqualTo("important"),
+                $"Property '{propertyName}' should have 'important' priority but had '{result.GetPropertyPriority(propertyName)}'");
+        }
+    }
+
+    /// <summary>
+    /// Creates a rule with a specific importance flag.
+    /// </summary>
+    /// <param name="selector">The CSS selector.</param>
+    /// <param name="property">The CSS property name.</param>
+    /// <param name="value">The CSS property value.</param>
+    /// <param name="important">Whether the property should have the !important flag.</param>
+    /// <returns>An ICssStyleRule.</returns>
+    protected ICssStyleRule CreateRuleWithImportance(string selector, string property, string value, bool important)
+    {
+        string importance = important ? " !important" : "";
+        return CreateStyleRule(selector, $"{property}: {value}{importance};");
+    }
+
+    /// <summary>
+    /// Tests the cascade when rules have different origins.
+    /// </summary>
+    /// <param name="element">The element to test.</param>
+    /// <param name="propertyName">The property to test.</param>
+    /// <param name="propertyValue">The expected property value.</param>
+    /// <param name="userAgentRule">The user agent rule.</param>
+    /// <param name="userRule">The user rule.</param>
+    /// <param name="authorRule">The author rule.</param>
+    protected void TestOriginCascade(
+        IElement element,
+        string propertyName,
+        string propertyValue,
+        ICssStyleRule userAgentRule,
+        ICssStyleRule userRule,
+        ICssStyleRule authorRule)
+    {
+        var matchedRules = new List<MatchedRule>
+        {
+            new MatchedRule(userAgentRule, new Priority(0, 0, 0, 1), StylesheetOrigin.UserAgent, 0),
+            new MatchedRule(userRule, new Priority(0, 0, 0, 1), StylesheetOrigin.User, 1),
+            new MatchedRule(authorRule, new Priority(0, 0, 0, 1), StylesheetOrigin.Author, 2)
+        };
+
+        AssertCascadeResult(element, propertyName, propertyValue, matchedRules);
+    }
+
+    /// <summary>
+    /// Tests the cascade with various combinations of !important declarations.
+    /// </summary>
+    /// <param name="element">The element to test.</param>
+    /// <param name="propertyName">The property to test.</param>
+    /// <param name="rules">A collection of rules with their selector, text, origin, and importance.</param>
+    /// <param name="expectedValue">The expected computed value.</param>
+    /// <param name="expectedImportant">Whether the winning declaration should be important.</param>
+    protected void TestImportanceCascade(
+        IElement element,
+        string propertyName,
+        IEnumerable<(string selector, string cssText, StylesheetOrigin origin, bool important)> rules,
+        string expectedValue,
+        bool expectedImportant = true)
+    {
+        var matchedRules = new List<MatchedRule>();
+        int index = 0;
+
+        foreach (var (selector, cssText, origin, important) in rules)
+        {
+            string importantFlag = important ? " !important" : "";
+            var rule = CreateStyleRule(selector, $"{cssText}{importantFlag}");
+            matchedRules.Add(new MatchedRule(rule, new Priority(0, 0, 0, 1), origin, index++));
+        }
+
+        AssertCascadeResult(element, propertyName, expectedValue, matchedRules, expectedImportant);
+    }
+
+    /// <summary>
+    /// Tests the cascade with inline styles and stylesheet rules.
+    /// </summary>
+    /// <param name="inlineStyle">The inline style to set on the element.</param>
+    /// <param name="inlineImportant">Whether the inline property should be important.</param>
+    /// <param name="propertyName">The property to test.</param>
+    /// <param name="stylesheetRules">The stylesheet rules to test against.</param>
+    /// <param name="expectedValue">The expected computed value.</param>
+    /// <param name="expectedImportant">Whether the winning declaration should be important.</param>
+    protected void TestInlineStyleCascade(
+        string inlineStyle,
+        bool inlineImportant,
+        string propertyName,
+        IEnumerable<(string selector, string cssText, StylesheetOrigin origin, bool important)> stylesheetRules,
+        string expectedValue,
+        bool expectedImportant = false)
+    {
+        // Create element with inline style
+        var element = Document.CreateElement("div");
+        string importantFlag = inlineImportant ? " !important" : "";
+        element.SetAttribute("style", $"{inlineStyle}{importantFlag}");
+
+        // Create matched rules
+        var matchedRules = new List<MatchedRule>();
+        int index = 0;
+
+        foreach (var (selector, cssText, origin, important) in stylesheetRules)
+        {
+            string ruleImportantFlag = important ? " !important" : "";
+            var rule = CreateStyleRule(selector, $"{cssText}{ruleImportantFlag}");
+            matchedRules.Add(new MatchedRule(rule, new Priority(0, 0, 0, 1), origin, index++));
+        }
+
+        // Test cascade
+        AssertCascadeResult(element, propertyName, expectedValue, matchedRules, expectedImportant);
+    }
+
+    /// <summary>
+    /// Tests the cascade with shorthand and longhand properties.
+    /// </summary>
+    /// <param name="element">The element to test.</param>
+    /// <param name="shorthandProperty">The shorthand property name.</param>
+    /// <param name="longhandProperties">The longhand property names.</param>
+    /// <param name="rules">The rules to test with.</param>
+    /// <param name="expectedValues">The expected computed values for each longhand property.</param>
+    protected void TestShorthandLonghandCascade(
+        IElement element,
+        string shorthandProperty,
+        string[] longhandProperties,
+        IEnumerable<(string selector, string cssText, StylesheetOrigin origin, byte a, byte b, byte c, byte d)> rules,
+        string[] expectedValues)
+    {
+        // Create matched rules
+        var matchedRules = CreateMatchedRuleSet(rules.ToArray());
+
+        // Resolve cascade
+        var cascadeResolver = Context.GetService<ICascadeResolver>();
+
+        if (cascadeResolver == null)
+        {
+            cascadeResolver = new CascadeResolver(Context);
+        }
+
+
+        var result = cascadeResolver.ResolveCascade(matchedRules, element);
+
+        // Assert longhand values
+        Assert.That(longhandProperties.Length, Is.EqualTo(expectedValues.Length),
+            "Number of longhand properties must match number of expected values");
+
+        for (int i = 0; i < longhandProperties.Length; i++)
+        {
+            Assert.That(result.GetPropertyValue(longhandProperties[i]), Is.EqualTo(expectedValues[i]),
+                $"Property '{longhandProperties[i]}' should be '{expectedValues[i]}' but was '{result.GetPropertyValue(longhandProperties[i])}'");
+        }
     }
 
     #endregion

@@ -1,335 +1,294 @@
 namespace AngleSharp.StyleSystem.Tests.Integration;
 
-using AngleSharp.Css;
-using AngleSharp.Css.Parser;
-using AngleSharp.Css.Values;
-using AngleSharp.Dom;
-using AngleSharp.Html.Parser;
-using AngleSharp.StyleSystem.Computation;
-using AngleSharp.StyleSystem.Integration;
-using AngleSharp.StyleSystem.Models;
-using Moq;
-
 [TestFixture]
-public class ComputedValueTests
+public class ComputedValueTests : StyleSystemTestFixture
 {
-    private IBrowsingContext _context;
-    private StyleEngine _styleEngine;
-    private IHtmlParser _parser;
-    private IDocument _document;
-    private ICssParser _cssParser;
-    private Mock<IRenderDevice> _mockRenderDevice;
-    private ValueCalculator _valueCalculator;
-
-    [SetUp]
-    public void Setup()
-    {
-        var config = Configuration.Default.WithCss();
-        _context = BrowsingContext.New(config);
-        _parser = new HtmlParser();
-        _document = _parser.ParseDocument("<html><head></head><body></body></html>");
-        _cssParser = new CssParser();
-
-        _mockRenderDevice = new Mock<IRenderDevice>();
-        // Basic device properties
-        _mockRenderDevice.Setup(d => d.ViewPortWidth).Returns(1024);
-        _mockRenderDevice.Setup(d => d.ViewPortHeight).Returns(768);
-        _mockRenderDevice.Setup(d => d.FontSize).Returns(16.0);
-
-        // Additional required properties
-        _mockRenderDevice.Setup(d => d.Category).Returns(DeviceCategory.Screen);
-        _mockRenderDevice.Setup(d => d.IsInterlaced).Returns(false);
-        _mockRenderDevice.Setup(d => d.IsScripting).Returns(true);
-        _mockRenderDevice.Setup(d => d.IsGrid).Returns(false);
-        _mockRenderDevice.Setup(d => d.DeviceWidth).Returns(1024);
-        _mockRenderDevice.Setup(d => d.DeviceHeight).Returns(768);
-        _mockRenderDevice.Setup(d => d.Resolution).Returns(96);
-        _mockRenderDevice.Setup(d => d.Frequency).Returns(60);
-        _mockRenderDevice.Setup(d => d.ColorBits).Returns(24);
-        _mockRenderDevice.Setup(d => d.MonochromeBits).Returns(0);
-
-        // Setup RenderWidth and RenderHeight as they might be used for calculations
-        _mockRenderDevice.Setup(d => d.RenderWidth).Returns(1024.0);
-        _mockRenderDevice.Setup(d => d.RenderHeight).Returns(768.0);
-
-        _styleEngine = new StyleEngine(_context);
-        _styleEngine.RenderDevice = _mockRenderDevice.Object;
-
-        // Initialize ValueCalculator for testing value computation
-        _valueCalculator = new ValueCalculator(_context, _mockRenderDevice.Object);
-
-        // Add a default stylesheet to ensure basic styling is available
-        var defaultStyle = "body { margin: 0; font-family: sans-serif; }";
-        var stylesheet = _cssParser.ParseStyleSheet(defaultStyle);
-        _styleEngine.StylesheetManager.RegisterStylesheet(stylesheet, StylesheetOrigin.UserAgent);
-    }
-
-    [TearDown]
-    public void TearDown()
-    {
-        _context?.Dispose();
-        _document?.Dispose();
-        _styleEngine?.Dispose();
-    }
-
     [Test]
     public void LineHeight_AsNumber_ShouldComputeToPixels()
     {
         // Arrange
-        var element = _document.CreateElement("div");
-        element.SetAttribute("style", "font-size: 16px; line-height: 1.5;");
-        _document.Body!.AppendChild(element);
+        var element = CreateTestElement("div");
+        SetInlineStyle(element, "font-size: 16px; line-height: 1.5;");
 
         // Act
-        var style = _styleEngine.ComputeElementStyle(element);
+        var style = GetComputedStyle(element);
 
-        // Assert
-        // LineHeight as number 1.5 should be computed as 24px (1.5 * 16px)
-        Assert.That(style.GetPropertyValue("line-height"), Is.EqualTo("24px"));
+        // Assert - LineHeight as number 1.5 should compute to 24px (1.5 * 16px)
+        AssertPropertyValue(style, "line-height", "24px");
     }
 
     [Test]
     public void LineHeight_AsPixels_ShouldStayAsPixels()
     {
         // Arrange
-        var element = _document.CreateElement("div");
-        element.SetAttribute("style", "line-height: 24px;");
-        _document.Body!.AppendChild(element);
+        var element = CreateTestElement("div");
+        SetInlineStyle(element, "line-height: 24px;");
 
         // Act
-        var style = _styleEngine.ComputeElementStyle(element);
+        var style = GetComputedStyle(element);
 
         // Assert
-        Assert.That(style.GetPropertyValue("line-height"), Is.EqualTo("24px"));
+        AssertPropertyValue(style, "line-height", "24px");
     }
 
     [Test]
     public void LineHeight_AsEm_ShouldComputeToPixels()
     {
         // Arrange
-        var element = _document.CreateElement("div");
-        element.SetAttribute("style", "font-size: 16px; line-height: 1.5em;");
-        _document.Body!.AppendChild(element);
+        var element = CreateTestElement("div");
+        SetInlineStyle(element, "font-size: 16px; line-height: 1.5em;");
 
         // Act
-        var style = _styleEngine.ComputeElementStyle(element);
+        var style = GetComputedStyle(element);
 
-        // Assert
-        // LineHeight as 1.5em should be computed as 24px (1.5 * 16px)
-        Assert.That(style.GetPropertyValue("line-height"), Is.EqualTo("24px"));
+        // Assert - LineHeight as 1.5em should compute to 24px (1.5 * 16px)
+        AssertPropertyValue(style, "line-height", "24px");
     }
 
     [Test]
     public void MarginBottom_AsEm_ShouldComputeToPixels()
     {
         // Arrange
-        var element = _document.CreateElement("div");
-        element.SetAttribute("style", "font-size: 16px; margin-bottom: 1em;");
-        _document.Body!.AppendChild(element);
+        var element = CreateTestElement("div");
+        SetInlineStyle(element, "font-size: 16px; margin-bottom: 1em;");
 
         // Act
-        var style = _styleEngine.ComputeElementStyle(element);
+        var style = GetComputedStyle(element);
 
-        // Assert
-        // 1em margin should be computed as 16px (1 * 16px font-size)
-        Assert.That(style.GetPropertyValue("margin-bottom"), Is.EqualTo("16px"));
+        // Assert - 1em margin should compute to 16px (1 * 16px font-size)
+        AssertPropertyValue(style, "margin-bottom", "16px");
     }
 
     [Test]
     public void Rem_ShouldComputeBasedOnRootFontSize()
     {
-        // Arrange
-        var htmlElement = _document.DocumentElement;
-        htmlElement!.SetAttribute("style", "font-size: 20px;");
+        // Arrange - Set root font size
+        var htmlElement = Document.DocumentElement;
+        SetInlineStyle(htmlElement, "font-size: 20px;");
 
-        var element = _document.CreateElement("div");
-        element.SetAttribute("style", "font-size: 1.5rem; margin: 2rem;");
-        _document.Body!.AppendChild(element);
+        // Create element with rem-based values
+        var element = CreateTestElement("div");
+        SetInlineStyle(element, "font-size: 1.5rem; margin: 2rem;");
 
         // Act
-        var style = _styleEngine.ComputeElementStyle(element);
+        var style = GetComputedStyle(element);
 
         // Assert
-        // 1.5rem should be computed as 30px (1.5 * 20px root font-size)
-        Assert.That(style.GetPropertyValue("font-size"), Is.EqualTo("30px"));
-        // 2rem should be computed as 40px (2 * 20px root font-size)
-        Assert.That(style.GetPropertyValue("margin-top"), Is.EqualTo("40px"));
-        Assert.That(style.GetPropertyValue("margin-right"), Is.EqualTo("40px"));
-        Assert.That(style.GetPropertyValue("margin-bottom"), Is.EqualTo("40px"));
-        Assert.That(style.GetPropertyValue("margin-left"), Is.EqualTo("40px"));
+        // 1.5rem should compute to 30px (1.5 * 20px root font-size)
+        AssertPropertyValue(style, "font-size", "30px");
+
+        // 2rem should compute to 40px (2 * 20px root font-size) for all margin sides
+        AssertPropertyValue(style, "margin-top", "40px");
+        AssertPropertyValue(style, "margin-right", "40px");
+        AssertPropertyValue(style, "margin-bottom", "40px");
+        AssertPropertyValue(style, "margin-left", "40px");
     }
 
     [Test]
     public void FontWeight_Keywords_ShouldComputeToNumericValues()
     {
         // Arrange
-        var element1 = _document.CreateElement("div");
-        element1.SetAttribute("style", "font-weight: bold;");
-        _document.Body!.AppendChild(element1);
+        var element1 = CreateTestElement("div", "bold-element");
+        SetInlineStyle(element1, "font-weight: bold;");
 
-        var element2 = _document.CreateElement("div");
-        element2.SetAttribute("style", "font-weight: normal;");
-        _document.Body!.AppendChild(element2);
+        var element2 = CreateTestElement("div", "normal-element");
+        SetInlineStyle(element2, "font-weight: normal;");
 
         // Act
-        var style1 = _styleEngine.ComputeElementStyle(element1);
-        var style2 = _styleEngine.ComputeElementStyle(element2);
+        var style1 = GetComputedStyle(element1);
+        var style2 = GetComputedStyle(element2);
 
         // Assert
-        // "bold" should be computed as "700"
-        Assert.That(style1.GetPropertyValue("font-weight"), Is.EqualTo("700"));
-        // "normal" should be computed as "400"
-        Assert.That(style2.GetPropertyValue("font-weight"), Is.EqualTo("400"));
+        // "bold" should compute to "700"
+        AssertPropertyValue(style1, "font-weight", "700");
+
+        // "normal" should compute to "400"
+        AssertPropertyValue(style2, "font-weight", "400");
     }
 
     [Test]
     public void Color_Keywords_ShouldComputeToRGBA()
     {
         // Arrange
-        var element1 = _document.CreateElement("div");
-        element1.SetAttribute("style", "color: red;");
-        _document.Body!.AppendChild(element1);
+        var element1 = CreateTestElement("div", "red-element");
+        SetInlineStyle(element1, "color: red;");
 
-        var element2 = _document.CreateElement("div");
-        element2.SetAttribute("style", "color: blue;");
-        _document.Body!.AppendChild(element2);
+        var element2 = CreateTestElement("div", "blue-element");
+        SetInlineStyle(element2, "color: blue;");
 
-        var element3 = _document.CreateElement("div");
-        element3.SetAttribute("style", "color: #ff5500;");
-        _document.Body!.AppendChild(element3);
+        var element3 = CreateTestElement("div", "hex-element");
+        SetInlineStyle(element3, "color: #ff5500;");
 
         // Act
-        var style1 = _styleEngine.ComputeElementStyle(element1);
-        var style2 = _styleEngine.ComputeElementStyle(element2);
-        var style3 = _styleEngine.ComputeElementStyle(element3);
+        var style1 = GetComputedStyle(element1);
+        var style2 = GetComputedStyle(element2);
+        var style3 = GetComputedStyle(element3);
 
-        // Assert
-        // Color keywords and hex values should be computed as rgba()
-        Assert.That(style1.GetPropertyValue("color"), Is.EqualTo("rgba(255, 0, 0, 1)"));
-        Assert.That(style2.GetPropertyValue("color"), Is.EqualTo("rgba(0, 0, 255, 1)"));
-        Assert.That(style3.GetPropertyValue("color"), Is.EqualTo("rgba(255, 85, 0, 1)"));
+        // Assert - Color keywords and hex values should compute to rgba()
+        AssertPropertyValue(style1, "color", "rgba(255, 0, 0, 1)");
+        AssertPropertyValue(style2, "color", "rgba(0, 0, 255, 1)");
+        AssertPropertyValue(style3, "color", "rgba(255, 85, 0, 1)");
     }
 
     [Test]
     public void Percentages_ShouldComputeBasedOnContainer()
     {
         // Arrange
-        var parent = _document.CreateElement("div");
-        parent.SetAttribute("style", "width: 200px; height: 400px;");
-        _document.Body!.AppendChild(parent);
+        var parent = CreateTestElement("div", "parent");
+        SetInlineStyle(parent, "width: 200px; height: 400px;");
 
-        var child = _document.CreateElement("div");
-        child.SetAttribute("style", "width: 50%; height: 25%;");
-        parent.AppendChild(child);
+        var child = CreateTestElement("div", "child", parentElement: parent);
+        SetInlineStyle(child, "width: 50%; height: 25%;");
 
         // Act
-        var styleParent = _styleEngine.ComputeElementStyle(parent);
-        var styleChild = _styleEngine.ComputeElementStyle(child);
+        var styleParent = GetComputedStyle(parent);
+        var styleChild = GetComputedStyle(child);
 
         // Assert
         // Parent has absolute dimensions
-        Assert.That(styleParent.GetPropertyValue("width"), Is.EqualTo("200px"));
-        Assert.That(styleParent.GetPropertyValue("height"), Is.EqualTo("400px"));
+        AssertPropertyValue(styleParent, "width", "200px");
+        AssertPropertyValue(styleParent, "height", "400px");
 
-        // Child percentages should be computed based on parent dimensions
-        Assert.That(styleChild.GetPropertyValue("width"), Is.EqualTo("100px")); // 50% of 200px
-        Assert.That(styleChild.GetPropertyValue("height"), Is.EqualTo("100px")); // 25% of 400px
+        // Child percentages should compute based on parent dimensions
+        AssertPropertyValue(styleChild, "width", "100px"); // 50% of 200px
+        AssertPropertyValue(styleChild, "height", "100px"); // 25% of 400px
     }
 
     [Test]
     public void ViewportUnits_ShouldComputeBasedOnViewport()
     {
-        // Arrange
-        var element = _document.CreateElement("div");
-        element.SetAttribute("style", "width: 50vw; height: 50vh; margin: 5vmin; padding: 5vmax;");
-        _document.Body!.AppendChild(element);
+        // Arrange - Set viewport dimensions
+        SetViewport(1024, 768);
 
-        // Configure viewport dimensions (already set in Setup)
-        // _mockRenderDevice.Setup(d => d.ViewPortWidth).Returns(1024);
-        // _mockRenderDevice.Setup(d => d.ViewPortHeight).Returns(768);
+        var element = CreateTestElement("div");
+        SetInlineStyle(element, "width: 50vw; height: 50vh; margin: 5vmin; padding: 5vmax;");
 
         // Act
-        var style = _styleEngine.ComputeElementStyle(element);
+        var style = GetComputedStyle(element);
 
         // Assert
-        // Viewport units should be computed as pixels based on viewport size
-        Assert.That(style.GetPropertyValue("width"), Is.EqualTo("512px")); // 50% of 1024px
-        Assert.That(style.GetPropertyValue("height"), Is.EqualTo("384px")); // 50% of 768px
+        // Viewport units should compute as pixels based on viewport size
+        AssertPropertyValue(style, "width", "512px"); // 50% of 1024px
+        AssertPropertyValue(style, "height", "384px"); // 50% of 768px
 
         // vmin is based on the smaller viewport dimension (768px)
-        Assert.That(style.GetPropertyValue("margin-top"), Is.EqualTo("38.4px")); // 5% of 768px
+        AssertPropertyValue(style, "margin-top", "38.4px"); // 5% of 768px
 
         // vmax is based on the larger viewport dimension (1024px)
-        Assert.That(style.GetPropertyValue("padding-top"), Is.EqualTo("51.2px")); // 5% of 1024px
+        AssertPropertyValue(style, "padding-top", "51.2px"); // 5% of 1024px
     }
 
     [Test]
     public void LogicalProperties_ShouldComputeToPhysicalProperties()
     {
         // Arrange
-        var element = _document.CreateElement("div");
-        element.SetAttribute("style", "font-size: 16px; margin-block: 1em; padding-inline: 2em;");
-        _document.Body!.AppendChild(element);
+        var element = CreateTestElement("div");
+        SetInlineStyle(element, "font-size: 16px; margin-block: 1em; padding-inline: 2em;");
 
         // Act
-        var style = _styleEngine.ComputeElementStyle(element);
+        var style = GetComputedStyle(element);
 
         // Assert
-        // Logical properties should be computed as physical properties based on writing mode
+        // Logical properties should compute as physical properties based on writing mode
         // For horizontal top-to-bottom (default):
         // - block = top/bottom
         // - inline = left/right
 
         // margin-block expands to margin-top and margin-bottom
-        Assert.That(style.GetPropertyValue("margin-top"), Is.EqualTo("16px")); // 1em = 16px
-        Assert.That(style.GetPropertyValue("margin-bottom"), Is.EqualTo("16px")); // 1em = 16px
+        AssertPropertyValue(style, "margin-top", "16px"); // 1em = 16px
+        AssertPropertyValue(style, "margin-bottom", "16px"); // 1em = 16px
 
         // padding-inline expands to padding-left and padding-right
-        Assert.That(style.GetPropertyValue("padding-left"), Is.EqualTo("32px")); // 2em = 32px
-        Assert.That(style.GetPropertyValue("padding-right"), Is.EqualTo("32px")); // 2em = 32px
+        AssertPropertyValue(style, "padding-left", "32px"); // 2em = 32px
+        AssertPropertyValue(style, "padding-right", "32px"); // 2em = 32px
     }
 
     [Test]
-    public void ValueCalculator_ComputesAbsoluteValues()
+    public void InBlockSize_ShouldComputeToHeightInHorizontalMode()
     {
-        // Arrange - create some CSS values
-        var emValue = new CssLengthValue(1.5, CssLengthValue.Unit.Em);
-        var remValue = new CssLengthValue(2, CssLengthValue.Unit.Rem);
-        var percentValue = new CssPercentageValue(50);
-        var numberValue = new CssNumberValue(1.5);
-
-        var element = _document.CreateElement("div");
-        element.SetAttribute("style", "font-size: 16px;");
-        _document.Body!.AppendChild(element);
-
-        // Set root font size
-        _document.DocumentElement!.SetAttribute("style", "font-size: 20px;");
+        // Arrange
+        var element = CreateTestElement("div");
+        SetInlineStyle(element, "block-size: 100px; inline-size: 200px;");
 
         // Act
-        var computedEm = _valueCalculator.Compute(emValue, element, "margin");
-        var computedRem = _valueCalculator.Compute(remValue, element, "margin");
-        var computedPercent = _valueCalculator.Compute(percentValue, element, "width");
-        var computedNumber = _valueCalculator.Compute(numberValue, element, "line-height");
+        var style = GetComputedStyle(element);
 
         // Assert
-        Assert.That(computedEm, Is.Not.Null);
-        Assert.That(computedEm, Is.InstanceOf<CssLengthValue>());
-        var emLength = (CssLengthValue)computedEm;
-        Assert.That(emLength.Type, Is.EqualTo(CssLengthValue.Unit.Px));
-        Assert.That(emLength.Value, Is.EqualTo(24).Within(0.1)); // 1.5 * 16px
+        // In horizontal writing mode:
+        // - block-size maps to height
+        // - inline-size maps to width
+        AssertPropertyValue(style, "height", "100px");
+        AssertPropertyValue(style, "width", "200px");
+    }
 
-        Assert.That(computedRem, Is.Not.Null);
-        Assert.That(computedRem, Is.InstanceOf<CssLengthValue>());
-        var remLength = (CssLengthValue)computedRem;
-        Assert.That(remLength.Type, Is.EqualTo(CssLengthValue.Unit.Px));
-        Assert.That(remLength.Value, Is.EqualTo(40).Within(0.1)); // 2 * 20px
+    [Test]
+    public void BorderLogicalProperties_ShouldComputeToPhysicalProperties()
+    {
+        // Arrange
+        var element = CreateTestElement("div");
+        SetInlineStyle(element, "border-block-width: 5px; border-inline-width: 10px;");
 
-        Assert.That(computedPercent, Is.Not.Null);
+        // Act
+        var style = GetComputedStyle(element);
 
-        Assert.That(computedNumber, Is.Not.Null);
-        Assert.That(computedNumber, Is.InstanceOf<CssLengthValue>());
-        var lineHeightLength = (CssLengthValue)computedNumber;
-        Assert.That(lineHeightLength.Type, Is.EqualTo(CssLengthValue.Unit.Px));
-        Assert.That(lineHeightLength.Value, Is.EqualTo(24).Within(0.1)); // 1.5 * 16px
+        // Assert
+        // border-block-width expands to border-top-width and border-bottom-width
+        AssertPropertyValue(style, "border-top-width", "5px");
+        AssertPropertyValue(style, "border-bottom-width", "5px");
+
+        // border-inline-width expands to border-left-width and border-right-width
+        AssertPropertyValue(style, "border-left-width", "10px");
+        AssertPropertyValue(style, "border-right-width", "10px");
+    }
+
+    [Test]
+    public void Calc_ShouldComputeToAbsoluteValue()
+    {
+        // Arrange
+        SetViewport(1000, 800);
+        var element = CreateTestElement("div");
+        SetInlineStyle(element, "width: calc(100px + 10%); font-size: 16px; margin-left: calc(1em + 10px);");
+
+        // Act
+        var style = GetComputedStyle(element);
+
+        // Assert
+        // calc(100px + 10%) with parent width of 1000px should be 200px
+        AssertPropertyValue(style, "width", "200px");
+
+        // calc(1em + 10px) with font-size of 16px should be 26px
+        AssertPropertyValue(style, "margin-left", "26px");
+    }
+
+    [Test]
+    public void WritingModeChangesLogicalPropertyMapping()
+    {
+        // Arrange
+        var element = CreateTestElement("div");
+        SetInlineStyle(element, @"
+            writing-mode: vertical-rl;
+            inline-size: 100px;
+            block-size: 200px;
+            margin-inline: 10px;
+            margin-block: 20px;
+        ");
+
+        // Act
+        var style = GetComputedStyle(element);
+
+        // Assert
+        // In vertical-rl writing mode:
+        // - inline-size maps to height
+        // - block-size maps to width
+        AssertPropertyValue(style, "height", "100px");
+        AssertPropertyValue(style, "width", "200px");
+
+        // margin-inline maps to margin-top and margin-bottom
+        AssertPropertyValue(style, "margin-top", "10px");
+        AssertPropertyValue(style, "margin-bottom", "10px");
+
+        // margin-block maps to margin-right and margin-left
+        AssertPropertyValue(style, "margin-right", "20px");
+        AssertPropertyValue(style, "margin-left", "20px");
     }
 }
