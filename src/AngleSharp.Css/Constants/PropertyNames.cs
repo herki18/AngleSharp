@@ -957,10 +957,10 @@ namespace AngleSharp.Css
         /// </summary>
         public const String OverflowY = "overflow-y";
 
-		/// <summary>
-		/// The overflow-wrap declaration.
-		/// </summary>
-		public const String OverflowWrap = "overflow-wrap";
+        /// <summary>
+        /// The overflow-wrap declaration.
+        /// </summary>
+        public const String OverflowWrap = "overflow-wrap";
 
         /// <summary>
         /// The padding-block declaration.
@@ -1431,5 +1431,192 @@ namespace AngleSharp.Css
         /// The bookmark-state declaration.
         /// </summary>
         public const String BookmarkState = "bookmark-state";
+
+        // Add these constants to the PropertyNames.cs file
+
+        /// <summary>
+        /// The border-block CSS property is a shorthand property for setting the individual logical block border properties.
+        /// </summary>
+        public const string BorderBlock = "border-block";
+
+        /// <summary>
+        /// The border-block-start CSS property defines the border of the logical block start of an element.
+        /// </summary>
+        public const string BorderBlockStart = "border-block-start";
+
+        /// <summary>
+        /// The border-block-end CSS property defines the border of the logical block end of an element.
+        /// </summary>
+        public const string BorderBlockEnd = "border-block-end";
+
+        /// <summary>
+        /// The border-block-width CSS property is a shorthand for setting the width of logical block borders.
+        /// </summary>
+        public const string BorderBlockWidth = "border-block-width";
+
+        /// <summary>
+        /// The border-block-start-width CSS property defines the width of the logical block start border.
+        /// </summary>
+        public const string BorderBlockStartWidth = "border-block-start-width";
+
+        /// <summary>
+        /// The border-block-end-width CSS property defines the width of the logical block end border.
+        /// </summary>
+        public const string BorderBlockEndWidth = "border-block-end-width";
+
+        /// <summary>
+        /// The border-block-style CSS property is a shorthand for setting the style of logical block borders.
+        /// </summary>
+        public const string BorderBlockStyle = "border-block-style";
+
+        /// <summary>
+        /// The border-block-start-style CSS property defines the style of the logical block start border.
+        /// </summary>
+        public const string BorderBlockStartStyle = "border-block-start-style";
+
+        /// <summary>
+        /// The border-block-end-style CSS property defines the style of the logical block end border.
+        /// </summary>
+        public const string BorderBlockEndStyle = "border-block-end-style";
+
+        /// <summary>
+        /// The border-block-color CSS property is a shorthand for setting the color of logical block borders.
+        /// </summary>
+        public const string BorderBlockColor = "border-block-color";
+
+        /// <summary>
+        /// The border-block-start-color CSS property defines the color of the logical block start border.
+        /// </summary>
+        public const string BorderBlockStartColor = "border-block-start-color";
+
+        /// <summary>
+        /// The border-block-end-color CSS property defines the color of the logical block end border.
+        /// </summary>
+        public const string BorderBlockEndColor = "border-block-end-color";
+
+        /// <summary>
+        /// The border-inline CSS property is a shorthand property for setting the individual logical inline border properties.
+        /// </summary>
+        public const string BorderInline = "border-inline";
+
+        /// <summary>
+        /// The border-inline-start CSS property defines the border of the logical inline start of an element.
+        /// </summary>
+        public const string BorderInlineStart = "border-inline-start";
+
+        /// <summary>
+        /// The border-inline-end CSS property defines the border of the logical inline end of an element.
+        /// </summary>
+        public const string BorderInlineEnd = "border-inline-end";
+
+        /// <summary>
+        /// The border-inline-width CSS property is a shorthand for setting the width of logical inline borders.
+        /// </summary>
+        public const string BorderInlineWidth = "border-inline-width";
+
+        /// <summary>
+        /// The border-inline-start-width CSS property defines the width of the logical inline start border.
+        /// </summary>
+        public const string BorderInlineStartWidth = "border-inline-start-width";
+
+        /// <summary>
+        /// The border-inline-end-width CSS property defines the width of the logical inline end border.
+        /// </summary>
+        public const string BorderInlineEndWidth = "border-inline-end-width";
+
+        /// <summary>
+        /// The border-inline-style CSS property is a shorthand for setting the style of logical inline borders.
+        /// </summary>
+        public const string BorderInlineStyle = "border-inline-style";
+
+        /// <summary>
+        /// The border-inline-start-style CSS property defines the style of the logical inline start border.
+        /// </summary>
+        public const string BorderInlineStartStyle = "border-inline-start-style";
+
+        /// <summary>
+        /// The border-inline-end-style CSS property defines the style of the logical inline end border.
+        /// </summary>
+        public const string BorderInlineEndStyle = "border-inline-end-style";
+
+        /// <summary>
+        /// The border-inline-color CSS property is a shorthand for setting the color of logical inline borders.
+        /// </summary>
+        public const string BorderInlineColor = "border-inline-color";
+
+        /// <summary>
+        /// The border-inline-start-color CSS property defines the color of the logical inline start border.
+        /// </summary>
+        public const string BorderInlineStartColor = "border-inline-start-color";
+
+        /// <summary>
+        /// The border-inline-end-color CSS property defines the color of the logical inline end border.
+        /// </summary>
+        public const string BorderInlineEndColor = "border-inline-end-color";
+
+        /// <summary>
+        /// The block-size CSS property defines the size of an element in the block dimension.
+        /// </summary>
+        public const string BlockSize = "block-size";
+
+        /// <summary>
+        /// The inline-size CSS property defines the size of an element in the inline dimension.
+        /// </summary>
+        public const string InlineSize = "inline-size";
+
+        /// <summary>
+        /// The min-block-size CSS property defines the minimum size of an element in the block dimension.
+        /// </summary>
+        public const string MinBlockSize = "min-block-size";
+
+        /// <summary>
+        /// The min-inline-size CSS property defines the minimum size of an element in the inline dimension.
+        /// </summary>
+        public const string MinInlineSize = "min-inline-size";
+
+        /// <summary>
+        /// The max-block-size CSS property defines the maximum size of an element in the block dimension.
+        /// </summary>
+        public const string MaxBlockSize = "max-block-size";
+
+        /// <summary>
+        /// The max-inline-size CSS property defines the maximum size of an element in the inline dimension.
+        /// </summary>
+        public const string MaxInlineSize = "max-inline-size";
+
+        /// <summary>
+        /// The inset CSS property is a shorthand for the top, right, bottom, and/or left properties.
+        /// </summary>
+        public const string Inset = "inset";
+
+        /// <summary>
+        /// The inset-block CSS property defines the logical block start and end offsets of an element.
+        /// </summary>
+        public const string InsetBlock = "inset-block";
+
+        /// <summary>
+        /// The inset-block-start CSS property defines the logical block start offset of an element.
+        /// </summary>
+        public const string InsetBlockStart = "inset-block-start";
+
+        /// <summary>
+        /// The inset-block-end CSS property defines the logical block end offset of an element.
+        /// </summary>
+        public const string InsetBlockEnd = "inset-block-end";
+
+        /// <summary>
+        /// The inset-inline CSS property defines the logical inline start and end offsets of an element.
+        /// </summary>
+        public const string InsetInline = "inset-inline";
+
+        /// <summary>
+        /// The inset-inline-start CSS property defines the logical inline start offset of an element.
+        /// </summary>
+        public const string InsetInlineStart = "inset-inline-start";
+
+        /// <summary>
+        /// The inset-inline-end CSS property defines the logical inline end offset of an element.
+        /// </summary>
+        public const string InsetInlineEnd = "inset-inline-end";
     }
 }

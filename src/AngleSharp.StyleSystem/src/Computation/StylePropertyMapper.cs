@@ -1,18 +1,14 @@
 namespace AngleSharp.StyleSystem.Computation;
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Css.Dom;
 using Interfaces;
 using Models;
-
 public class StylePropertyMapper : IStylePropertyMapper
 {
-    // Dictionary for logical property mappings organized by property category
     private static readonly Dictionary<string, LogicalPropertyMapping> _logicalPropertyMappings = new(StringComparer.OrdinalIgnoreCase)
     {
-        // Margin properties
         ["margin-block"] = new LogicalPropertyMapping(
             new[] { "margin-top", "margin-bottom" },
             LogicalPropertyType.Block,
@@ -33,8 +29,6 @@ public class StylePropertyMapper : IStylePropertyMapper
         ["margin-inline-end"] = new LogicalPropertyMapping(
             new[] { "margin-right" },
             LogicalPropertyType.InlineEnd),
-
-        // Padding properties
         ["padding-block"] = new LogicalPropertyMapping(
             new[] { "padding-top", "padding-bottom" },
             LogicalPropertyType.Block,
@@ -55,8 +49,6 @@ public class StylePropertyMapper : IStylePropertyMapper
         ["padding-inline-end"] = new LogicalPropertyMapping(
             new[] { "padding-right" },
             LogicalPropertyType.InlineEnd),
-
-        // Border width properties
         ["border-block-width"] = new LogicalPropertyMapping(
             new[] { "border-top-width", "border-bottom-width" },
             LogicalPropertyType.Block,
@@ -77,8 +69,6 @@ public class StylePropertyMapper : IStylePropertyMapper
         ["border-inline-end-width"] = new LogicalPropertyMapping(
             new[] { "border-right-width" },
             LogicalPropertyType.InlineEnd),
-
-        // Border color properties
         ["border-block-color"] = new LogicalPropertyMapping(
             new[] { "border-top-color", "border-bottom-color" },
             LogicalPropertyType.Block,
@@ -99,8 +89,6 @@ public class StylePropertyMapper : IStylePropertyMapper
         ["border-inline-end-color"] = new LogicalPropertyMapping(
             new[] { "border-right-color" },
             LogicalPropertyType.InlineEnd),
-
-        // Border style properties
         ["border-block-style"] = new LogicalPropertyMapping(
             new[] { "border-top-style", "border-bottom-style" },
             LogicalPropertyType.Block,
@@ -121,8 +109,6 @@ public class StylePropertyMapper : IStylePropertyMapper
         ["border-inline-end-style"] = new LogicalPropertyMapping(
             new[] { "border-right-style" },
             LogicalPropertyType.InlineEnd),
-
-        // Position properties
         ["inset-block"] = new LogicalPropertyMapping(
             new[] { "top", "bottom" },
             LogicalPropertyType.Block,
@@ -147,16 +133,12 @@ public class StylePropertyMapper : IStylePropertyMapper
             new[] { "top", "right", "bottom", "left" },
             LogicalPropertyType.All,
             true),
-
-        // Size properties
         ["block-size"] = new LogicalPropertyMapping(
             new[] { "height" },
             LogicalPropertyType.BlockSize),
         ["inline-size"] = new LogicalPropertyMapping(
             new[] { "width" },
             LogicalPropertyType.InlineSize),
-
-        // Min/max size properties
         ["min-block-size"] = new LogicalPropertyMapping(
             new[] { "min-height" },
             LogicalPropertyType.BlockSize),
@@ -170,14 +152,10 @@ public class StylePropertyMapper : IStylePropertyMapper
             new[] { "max-width" },
             LogicalPropertyType.InlineSize),
     };
-
-    // Dictionary of reverse mappings from physical to logical properties
     private static readonly Dictionary<string, IEnumerable<string>> _physicalToLogicalMap = BuildPhysicalToLogicalMap();
-
     private static Dictionary<string, IEnumerable<string>> BuildPhysicalToLogicalMap()
     {
         var map = new Dictionary<string, IEnumerable<string>>(StringComparer.OrdinalIgnoreCase);
-
         foreach (var mapping in _logicalPropertyMappings)
         {
             foreach (var physicalProperty in mapping.Value.PhysicalProperties)
@@ -192,65 +170,47 @@ public class StylePropertyMapper : IStylePropertyMapper
                 }
             }
         }
-
         return map;
     }
-
     public IDictionary<string, ICssValue> MapLogicalToPhysical(string logicalProperty, ICssValue value, WritingMode writingMode)
     {
         if (string.IsNullOrEmpty(logicalProperty))
             throw new ArgumentException("Logical property name cannot be null or empty", nameof(logicalProperty));
-
         if (value == null)
             throw new ArgumentNullException(nameof(value));
-
         if (!_logicalPropertyMappings.TryGetValue(logicalProperty, out var mapping))
             return new Dictionary<string, ICssValue> { [logicalProperty] = value };
-
         var result = new Dictionary<string, ICssValue>();
-
-        // Handle shorthand properties that set values for multiple physical properties
         if (mapping.IsShorthand)
         {
             return MapLogicalShorthandToPhysical(logicalProperty, value, writingMode, mapping);
         }
-
-        // Handle logical property mapping
         switch (mapping.Type)
         {
             case LogicalPropertyType.BlockStart:
                 result[GetBlockStartProperty(writingMode, mapping)] = value;
                 break;
-
             case LogicalPropertyType.BlockEnd:
                 result[GetBlockEndProperty(writingMode, mapping)] = value;
                 break;
-
             case LogicalPropertyType.InlineStart:
                 result[GetInlineStartProperty(writingMode, mapping)] = value;
                 break;
-
             case LogicalPropertyType.InlineEnd:
                 result[GetInlineEndProperty(writingMode, mapping)] = value;
                 break;
-
             case LogicalPropertyType.BlockSize:
                 result[writingMode.IsHorizontal ? mapping.PhysicalProperties[0] : "width"] = value;
                 break;
-
             case LogicalPropertyType.InlineSize:
                 result[writingMode.IsHorizontal ? mapping.PhysicalProperties[0] : "height"] = value;
                 break;
-
             default:
-                // Fall back to using the original property if we don't have a specific mapping
                 result[logicalProperty] = value;
                 break;
         }
-
         return result;
     }
-
     private IDictionary<string, ICssValue> MapLogicalShorthandToPhysical(
         string logicalProperty,
         ICssValue value,
@@ -258,54 +218,41 @@ public class StylePropertyMapper : IStylePropertyMapper
         LogicalPropertyMapping mapping)
     {
         var result = new Dictionary<string, ICssValue>();
-
         switch (mapping.Type)
         {
             case LogicalPropertyType.Block:
                 result[GetBlockStartProperty(writingMode, mapping)] = value;
                 result[GetBlockEndProperty(writingMode, mapping)] = value;
                 break;
-
             case LogicalPropertyType.Inline:
                 result[GetInlineStartProperty(writingMode, mapping)] = value;
                 result[GetInlineEndProperty(writingMode, mapping)] = value;
                 break;
-
             case LogicalPropertyType.All:
-                // For properties like 'inset' that map to all four sides
                 var blockStartProp = GetBlockStartProperty(writingMode, mapping);
                 var blockEndProp = GetBlockEndProperty(writingMode, mapping);
                 var inlineStartProp = GetInlineStartProperty(writingMode, mapping);
                 var inlineEndProp = GetInlineEndProperty(writingMode, mapping);
-
                 result[blockStartProp] = value;
                 result[blockEndProp] = value;
                 result[inlineStartProp] = value;
                 result[inlineEndProp] = value;
                 break;
         }
-
         return result;
     }
-
     public ICssValue? MapPhysicalToLogical(IDictionary<string, ICssValue> physicalProperties, string logicalProperty, WritingMode writingMode)
     {
         if (physicalProperties == null || physicalProperties.Count == 0)
             throw new ArgumentException("Physical properties dictionary cannot be null or empty", nameof(physicalProperties));
-
         if (string.IsNullOrEmpty(logicalProperty))
             throw new ArgumentException("Logical property name cannot be null or empty", nameof(logicalProperty));
-
         if (!_logicalPropertyMappings.TryGetValue(logicalProperty, out var mapping))
             return null;
-
-        // For shorthand properties, we need all values to match to create a logical property
         if (mapping.IsShorthand)
         {
             return MapPhysicalToLogicalShorthand(physicalProperties, mapping, writingMode);
         }
-
-        // Handle single logical property mapping
         switch (mapping.Type)
         {
             case LogicalPropertyType.BlockStart:
@@ -313,41 +260,34 @@ public class StylePropertyMapper : IStylePropertyMapper
                 return physicalProperties.TryGetValue(blockStartProp, out var blockStartValue)
                     ? blockStartValue
                     : null;
-
             case LogicalPropertyType.BlockEnd:
                 var blockEndProp = GetBlockEndProperty(writingMode, mapping);
                 return physicalProperties.TryGetValue(blockEndProp, out var blockEndValue)
                     ? blockEndValue
                     : null;
-
             case LogicalPropertyType.InlineStart:
                 var inlineStartProp = GetInlineStartProperty(writingMode, mapping);
                 return physicalProperties.TryGetValue(inlineStartProp, out var inlineStartValue)
                     ? inlineStartValue
                     : null;
-
             case LogicalPropertyType.InlineEnd:
                 var inlineEndProp = GetInlineEndProperty(writingMode, mapping);
                 return physicalProperties.TryGetValue(inlineEndProp, out var inlineEndValue)
                     ? inlineEndValue
                     : null;
-
             case LogicalPropertyType.BlockSize:
                 var blockSizeProp = writingMode.IsHorizontal ? mapping.PhysicalProperties[0] : "width";
                 return physicalProperties.TryGetValue(blockSizeProp, out var blockSizeValue)
                     ? blockSizeValue
                     : null;
-
             case LogicalPropertyType.InlineSize:
                 var inlineSizeProp = writingMode.IsHorizontal ? mapping.PhysicalProperties[0] : "height";
                 return physicalProperties.TryGetValue(inlineSizeProp, out var inlineSizeValue)
                     ? inlineSizeValue
                     : null;
         }
-
         return null;
     }
-
     private ICssValue? MapPhysicalToLogicalShorthand(
         IDictionary<string, ICssValue> physicalProperties,
         LogicalPropertyMapping mapping,
@@ -358,7 +298,6 @@ public class StylePropertyMapper : IStylePropertyMapper
             case LogicalPropertyType.Block:
                 var blockStartProp = GetBlockStartProperty(writingMode, mapping);
                 var blockEndProp = GetBlockEndProperty(writingMode, mapping);
-
                 if (physicalProperties.TryGetValue(blockStartProp, out var startValue) &&
                     physicalProperties.TryGetValue(blockEndProp, out var endValue) &&
                     AreValuesEquivalent(startValue, endValue))
@@ -366,11 +305,9 @@ public class StylePropertyMapper : IStylePropertyMapper
                     return startValue;
                 }
                 break;
-
             case LogicalPropertyType.Inline:
                 var inlineStartProp = GetInlineStartProperty(writingMode, mapping);
                 var inlineEndProp = GetInlineEndProperty(writingMode, mapping);
-
                 if (physicalProperties.TryGetValue(inlineStartProp, out var inlineStartValue) &&
                     physicalProperties.TryGetValue(inlineEndProp, out var inlineEndValue) &&
                     AreValuesEquivalent(inlineStartValue, inlineEndValue))
@@ -378,14 +315,11 @@ public class StylePropertyMapper : IStylePropertyMapper
                     return inlineStartValue;
                 }
                 break;
-
             case LogicalPropertyType.All:
-                // For properties like 'inset' that map to all four sides
                 var topProp = GetBlockStartProperty(writingMode, mapping);
                 var bottomProp = GetBlockEndProperty(writingMode, mapping);
                 var leftProp = GetInlineStartProperty(writingMode, mapping);
                 var rightProp = GetInlineEndProperty(writingMode, mapping);
-
                 if (physicalProperties.TryGetValue(topProp, out var topValue) &&
                     physicalProperties.TryGetValue(bottomProp, out var bottomValue) &&
                     physicalProperties.TryGetValue(leftProp, out var leftValue) &&
@@ -398,116 +332,96 @@ public class StylePropertyMapper : IStylePropertyMapper
                 }
                 break;
         }
-
         return null;
     }
-
     public bool IsLogicalProperty(string propertyName)
     {
         if (string.IsNullOrEmpty(propertyName))
             return false;
-
         return _logicalPropertyMappings.ContainsKey(propertyName);
     }
-
     public IEnumerable<string> GetPhysicalProperties(string logicalProperty)
     {
         if (string.IsNullOrEmpty(logicalProperty))
             return Enumerable.Empty<string>();
-
         if (_logicalPropertyMappings.TryGetValue(logicalProperty, out var mapping))
         {
             return mapping.PhysicalProperties;
         }
-
         return Enumerable.Empty<string>();
     }
-
-    // Helper methods for getting the correct physical property based on writing mode
     private string GetBlockStartProperty(WritingMode writingMode, LogicalPropertyMapping mapping)
     {
         if (writingMode.IsHorizontal)
         {
-            // In horizontal writing mode, block-start is top
-            return mapping.PhysicalProperties[0]; // top property
+            return mapping.PhysicalProperties[0];
         }
         else
         {
-            // In vertical writing mode, block-start depends on writing direction
             bool isRightToLeft = IsVerticalRightToLeft(writingMode);
             return isRightToLeft ?
-                mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "right" : // right property
-                mapping.PhysicalProperties.ElementAtOrDefault(3) ?? "left";   // left property
+                mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "right" :
+                mapping.PhysicalProperties.ElementAtOrDefault(3) ?? "left";
         }
     }
-
     private string GetBlockEndProperty(WritingMode writingMode, LogicalPropertyMapping mapping)
     {
         if (writingMode.IsHorizontal)
         {
-            // In horizontal writing mode, block-end is bottom
-            return mapping.PhysicalProperties.ElementAtOrDefault(2) ?? "bottom"; // bottom property
+            // Fix: Changed from ElementAtOrDefault(2) to ElementAtOrDefault(1)
+            // For border-block-width, PhysicalProperties is ["border-top-width", "border-bottom-width"]
+            // So the second element (index 1) is "border-bottom-width"
+            return mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "bottom";
         }
         else
         {
-            // In vertical writing mode, block-end depends on writing direction
             bool isRightToLeft = IsVerticalRightToLeft(writingMode);
             return isRightToLeft ?
-                mapping.PhysicalProperties.ElementAtOrDefault(3) ?? "left" :   // left property
-                mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "right";   // right property
+                mapping.PhysicalProperties.ElementAtOrDefault(3) ?? "left" :
+                mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "right";
         }
     }
-
     private string GetInlineStartProperty(WritingMode writingMode, LogicalPropertyMapping mapping)
     {
         if (writingMode.IsHorizontal)
         {
-            // In horizontal writing mode, inline-start depends on text direction
             return writingMode.IsRightToLeft ?
-                mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "right" : // right property
-                mapping.PhysicalProperties.ElementAtOrDefault(3) ?? "left";   // left property
+                mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "right" :
+                mapping.PhysicalProperties.ElementAtOrDefault(0) ?? "left";
         }
         else
         {
-            // In vertical writing mode, inline-start is top
-            return mapping.PhysicalProperties.ElementAtOrDefault(0) ?? "top"; // top property
+            return mapping.PhysicalProperties.ElementAtOrDefault(0) ?? "top";
         }
     }
-
     private string GetInlineEndProperty(WritingMode writingMode, LogicalPropertyMapping mapping)
     {
         if (writingMode.IsHorizontal)
         {
-            // In horizontal writing mode, inline-end depends on text direction
             return writingMode.IsRightToLeft ?
-                mapping.PhysicalProperties.ElementAtOrDefault(3) ?? "left" :  // left property
-                mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "right";  // right property
+                mapping.PhysicalProperties.ElementAtOrDefault(0) ?? "left" :
+                mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "right";
         }
         else
         {
-            // In vertical writing mode, inline-end is bottom
-            return mapping.PhysicalProperties.ElementAtOrDefault(2) ?? "bottom"; // bottom property
+            // Fix: Changed from ElementAtOrDefault(2) to ElementAtOrDefault(1)
+            // Similar fix for consistency with logical-to-physical mapping
+            return mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "bottom";
         }
     }
-
     private bool IsVerticalRightToLeft(WritingMode writingMode)
     {
         return writingMode.Mode == WritingModeType.VerticalRightToLeft ||
                writingMode.Mode == WritingModeType.SidewaysRightToLeft;
     }
-
     private bool AreValuesEquivalent(ICssValue value1, ICssValue value2)
     {
         if (ReferenceEquals(value1, value2))
             return true;
-
         if (value1 == null || value2 == null)
             return false;
-
-        // Compare the CSS text representation for equality
         return string.Equals(value1.CssText, value2.CssText, StringComparison.OrdinalIgnoreCase);
     }
-
     private enum LogicalPropertyType
     {
         BlockStart,
@@ -520,13 +434,11 @@ public class StylePropertyMapper : IStylePropertyMapper
         InlineSize,
         All
     }
-
     private class LogicalPropertyMapping
     {
         public string[] PhysicalProperties { get; }
         public LogicalPropertyType Type { get; }
         public bool IsShorthand { get; }
-
         public LogicalPropertyMapping(string[] physicalProperties, LogicalPropertyType type, bool isShorthand = false)
         {
             PhysicalProperties = physicalProperties;

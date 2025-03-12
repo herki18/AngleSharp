@@ -15,84 +15,207 @@ namespace AngleSharp.Css
         public static readonly ICssValue BackgroundImageDecl = new CssConstantValue<Object>(CssKeywords.None, null);
         public static readonly ICssValue BackgroundRepeatHorizontalDecl = new CssIdentifierValue(CssKeywords.Repeat);
         public static readonly ICssValue BackgroundRepeatVerticalDecl = new CssIdentifierValue(CssKeywords.Repeat);
-        public static readonly ICssValue BackgroundRepeatDecl = new CssImageRepeatsValue(BackgroundRepeatHorizontalDecl, BackgroundRepeatVerticalDecl);
+
+        public static readonly ICssValue BackgroundRepeatDecl =
+            new CssImageRepeatsValue(BackgroundRepeatHorizontalDecl, BackgroundRepeatVerticalDecl);
+
         public static readonly ICssValue BackgroundPositionXDecl = new CssLengthValue(0, CssLengthValue.Unit.Percent);
         public static readonly ICssValue BackgroundPositionYDecl = new CssLengthValue(0, CssLengthValue.Unit.Percent);
-        public static readonly ICssValue BackgroundPositionDecl = new CssTupleValue(new [] { BackgroundPositionXDecl, BackgroundPositionYDecl });
-        public static readonly ICssValue BackgroundSizeDecl = new CssBackgroundSizeValue(new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto), new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto));
-        public static readonly ICssValue BackgroundOriginDecl = new CssConstantValue<BoxModel>(CssKeywords.BorderBox, BoxModel.PaddingBox);
-        public static readonly ICssValue BackgroundClipDecl = new CssConstantValue<BoxModel>(CssKeywords.BorderBox, BoxModel.BorderBox);
-        public static readonly ICssValue BackgroundAttachmentDecl = new CssConstantValue<BackgroundAttachment>(CssKeywords.Scroll, BackgroundAttachment.Scroll);
-        public static readonly ICssValue BookmarkStateDecl = new CssConstantValue<BookmarkState>(CssKeywords.Open, BookmarkState.Open);
+
+        public static readonly ICssValue BackgroundPositionDecl =
+            new CssTupleValue(new[] { BackgroundPositionXDecl, BackgroundPositionYDecl });
+
+        public static readonly ICssValue BackgroundSizeDecl = new CssBackgroundSizeValue(
+            new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto),
+            new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto));
+
+        public static readonly ICssValue BackgroundOriginDecl =
+            new CssConstantValue<BoxModel>(CssKeywords.BorderBox, BoxModel.PaddingBox);
+
+        public static readonly ICssValue BackgroundClipDecl =
+            new CssConstantValue<BoxModel>(CssKeywords.BorderBox, BoxModel.BorderBox);
+
+        public static readonly ICssValue BackgroundAttachmentDecl =
+            new CssConstantValue<BackgroundAttachment>(CssKeywords.Scroll, BackgroundAttachment.Scroll);
+
+        public static readonly ICssValue BookmarkStateDecl =
+            new CssConstantValue<BookmarkState>(CssKeywords.Open, BookmarkState.Open);
+
         public static readonly ICssValue BookmarkLabelDecl = new CssConstantValue<Object>(CssKeywords.None, null);
         public static readonly ICssValue BookmarkLevelDecl = new CssConstantValue<Int32>(CssKeywords.None, 0);
-        public static readonly ICssValue FootnotePolicyDecl = new CssConstantValue<FootnotePolicy>(CssKeywords.Auto, FootnotePolicy.Auto);
-        public static readonly ICssValue FootnoteDisplayDecl = new CssConstantValue<FootnoteDisplay>(CssKeywords.Block, FootnoteDisplay.Block);
+
+        public static readonly ICssValue FootnotePolicyDecl =
+            new CssConstantValue<FootnotePolicy>(CssKeywords.Auto, FootnotePolicy.Auto);
+
+        public static readonly ICssValue FootnoteDisplayDecl =
+            new CssConstantValue<FootnoteDisplay>(CssKeywords.Block, FootnoteDisplay.Block);
+
         public static readonly ICssValue RunningDecl = new CssIdentifierValue(CssKeywords.None);
         public static readonly ICssValue StringSetDecl = new CssConstantValue<Object>(CssKeywords.None, null);
-        public static readonly ICssValue FontStyleDecl = new CssConstantValue<FontStyle>(CssKeywords.Normal, FontStyle.Normal);
-        public static readonly ICssValue FontVariantDecl = new CssConstantValue<FontVariant>(CssKeywords.Normal, FontVariant.Normal);
-        public static readonly ICssValue FontWeightDecl = new CssConstantValue<FontWeight>(CssKeywords.Normal, FontWeight.Normal);
-        public static readonly ICssValue FontStretchDecl = new CssConstantValue<FontStretch>(CssKeywords.Normal, FontStretch.Normal);
-        public static readonly ICssValue FontSizeDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Medium, CssLengthValue.Medium);
+
+        public static readonly ICssValue FontStyleDecl =
+            new CssConstantValue<FontStyle>(CssKeywords.Normal, FontStyle.Normal);
+
+        public static readonly ICssValue FontVariantDecl =
+            new CssConstantValue<FontVariant>(CssKeywords.Normal, FontVariant.Normal);
+
+        public static readonly ICssValue FontWeightDecl =
+            new CssConstantValue<FontWeight>(CssKeywords.Normal, FontWeight.Normal);
+
+        public static readonly ICssValue FontStretchDecl =
+            new CssConstantValue<FontStretch>(CssKeywords.Normal, FontStretch.Normal);
+
+        public static readonly ICssValue FontSizeDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Medium, CssLengthValue.Medium);
+
         public static readonly ICssValue FontFamilyDecl = new CssStringValue("Times New Roman");
-        public static readonly ICssValue BorderWidthDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Medium, CssLengthValue.Medium);
-        public static readonly ICssValue BorderStyleDecl = new CssConstantValue<LineStyle>(CssKeywords.None, LineStyle.None);
-        public static readonly ICssValue BorderColorDecl = new CssConstantValue<CssColorValue>(CssKeywords.CurrentColor, CssColorValue.CurrentColor);
-        public static readonly ICssValue LineHeightDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Normal, CssLengthValue.Normal);
-        public static readonly ICssValue BorderTopWidthDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Medium, CssLengthValue.Medium);
-        public static readonly ICssValue BorderRightWidthDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Medium, CssLengthValue.Medium);
-        public static readonly ICssValue BorderBottomWidthDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Medium, CssLengthValue.Medium);
-        public static readonly ICssValue BorderLeftWidthDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Medium, CssLengthValue.Medium);
-        public static readonly ICssValue BorderTopStyleDecl = new CssConstantValue<LineStyle>(CssKeywords.None, LineStyle.None);
-        public static readonly ICssValue BorderRightStyleDecl = new CssConstantValue<LineStyle>(CssKeywords.None, LineStyle.None);
-        public static readonly ICssValue BorderBottomStyleDecl = new CssConstantValue<LineStyle>(CssKeywords.None, LineStyle.None);
-        public static readonly ICssValue BorderLeftStyleDecl = new CssConstantValue<LineStyle>(CssKeywords.None, LineStyle.None);
-        public static readonly ICssValue BorderTopColorDecl = new CssConstantValue<CssColorValue>(CssKeywords.CurrentColor, CssColorValue.CurrentColor);
-        public static readonly ICssValue BorderRightColorDecl = new CssConstantValue<CssColorValue>(CssKeywords.CurrentColor, CssColorValue.CurrentColor);
-        public static readonly ICssValue BorderBottomColorDecl = new CssConstantValue<CssColorValue>(CssKeywords.CurrentColor, CssColorValue.CurrentColor);
-        public static readonly ICssValue BorderLeftColorDecl = new CssConstantValue<CssColorValue>(CssKeywords.CurrentColor, CssColorValue.CurrentColor);
-        public static readonly ICssValue ColumnWidthDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
-        public static readonly ICssValue ColumnCountDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
-        public static readonly ICssValue ColumnRuleWidthDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Medium, CssLengthValue.Medium);
-        public static readonly ICssValue ColumnRuleStyleDecl = new CssConstantValue<LineStyle>(CssKeywords.None, LineStyle.None);
-        public static readonly ICssValue ColumnRuleColorDecl = new CssConstantValue<CssColorValue>(CssKeywords.CurrentColor, CssColorValue.CurrentColor);
+
+        public static readonly ICssValue BorderWidthDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Medium, CssLengthValue.Medium);
+
+        public static readonly ICssValue BorderStyleDecl =
+            new CssConstantValue<LineStyle>(CssKeywords.None, LineStyle.None);
+
+        public static readonly ICssValue BorderColorDecl =
+            new CssConstantValue<CssColorValue>(CssKeywords.CurrentColor, CssColorValue.CurrentColor);
+
+        public static readonly ICssValue LineHeightDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Normal, CssLengthValue.Normal);
+
+        public static readonly ICssValue BorderTopWidthDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Medium, CssLengthValue.Medium);
+
+        public static readonly ICssValue BorderRightWidthDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Medium, CssLengthValue.Medium);
+
+        public static readonly ICssValue BorderBottomWidthDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Medium, CssLengthValue.Medium);
+
+        public static readonly ICssValue BorderLeftWidthDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Medium, CssLengthValue.Medium);
+
+        public static readonly ICssValue BorderTopStyleDecl =
+            new CssConstantValue<LineStyle>(CssKeywords.None, LineStyle.None);
+
+        public static readonly ICssValue BorderRightStyleDecl =
+            new CssConstantValue<LineStyle>(CssKeywords.None, LineStyle.None);
+
+        public static readonly ICssValue BorderBottomStyleDecl =
+            new CssConstantValue<LineStyle>(CssKeywords.None, LineStyle.None);
+
+        public static readonly ICssValue BorderLeftStyleDecl =
+            new CssConstantValue<LineStyle>(CssKeywords.None, LineStyle.None);
+
+        public static readonly ICssValue BorderTopColorDecl =
+            new CssConstantValue<CssColorValue>(CssKeywords.CurrentColor, CssColorValue.CurrentColor);
+
+        public static readonly ICssValue BorderRightColorDecl =
+            new CssConstantValue<CssColorValue>(CssKeywords.CurrentColor, CssColorValue.CurrentColor);
+
+        public static readonly ICssValue BorderBottomColorDecl =
+            new CssConstantValue<CssColorValue>(CssKeywords.CurrentColor, CssColorValue.CurrentColor);
+
+        public static readonly ICssValue BorderLeftColorDecl =
+            new CssConstantValue<CssColorValue>(CssKeywords.CurrentColor, CssColorValue.CurrentColor);
+
+        public static readonly ICssValue ColumnWidthDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
+
+        public static readonly ICssValue ColumnCountDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
+
+        public static readonly ICssValue ColumnRuleWidthDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Medium, CssLengthValue.Medium);
+
+        public static readonly ICssValue ColumnRuleStyleDecl =
+            new CssConstantValue<LineStyle>(CssKeywords.None, LineStyle.None);
+
+        public static readonly ICssValue ColumnRuleColorDecl =
+            new CssConstantValue<CssColorValue>(CssKeywords.CurrentColor, CssColorValue.CurrentColor);
+
         public static readonly ICssValue AnimationNameDecl = new CssConstantValue<Object>(CssKeywords.None, null);
         public static readonly ICssValue AnimationDurationDecl = CssTimeValue.Zero;
         public static readonly ICssValue AnimationTimingFunctionDecl = CssCubicBezierValue.Ease;
         public static readonly ICssValue AnimationDelayDecl = CssTimeValue.Zero;
         public static readonly ICssValue AnimationIterationCountDecl = new CssLengthValue(1, CssLengthValue.Unit.None);
-        public static readonly ICssValue AnimationDirectionDecl = new CssConstantValue<AnimationDirection>(CssKeywords.Normal, AnimationDirection.Normal);
-        public static readonly ICssValue AnimationFillModeDecl = new CssConstantValue<AnimationFillStyle>(CssKeywords.None, AnimationFillStyle.None);
-        public static readonly ICssValue AnimationPlayStateDecl = new CssConstantValue<PlayState>(CssKeywords.Running, PlayState.Running);
+
+        public static readonly ICssValue AnimationDirectionDecl =
+            new CssConstantValue<AnimationDirection>(CssKeywords.Normal, AnimationDirection.Normal);
+
+        public static readonly ICssValue AnimationFillModeDecl =
+            new CssConstantValue<AnimationFillStyle>(CssKeywords.None, AnimationFillStyle.None);
+
+        public static readonly ICssValue AnimationPlayStateDecl =
+            new CssConstantValue<PlayState>(CssKeywords.Running, PlayState.Running);
+
         public static readonly ICssValue TransitionDelayDecl = CssTimeValue.Zero;
         public static readonly ICssValue TransitionDurationDecl = CssTimeValue.Zero;
         public static readonly ICssValue TransitionPropertyDecl = new CssIdentifierValue(CssKeywords.All);
         public static readonly ICssValue TransitionTimingFunctionDecl = CssCubicBezierValue.Ease;
-        public static readonly ICssValue DirectionDecl = new CssConstantValue<DirectionMode>(CssKeywords.Ltr, DirectionMode.Ltr);
+
+        public static readonly ICssValue DirectionDecl =
+            new CssConstantValue<DirectionMode>(CssKeywords.Ltr, DirectionMode.Ltr);
+
         public static readonly ICssValue EmptyCellsDecl = new CssConstantValue<Boolean>(CssKeywords.Show, true);
         public static readonly ICssValue FlexGrowDecl = new CssLengthValue(0, CssLengthValue.Unit.None);
         public static readonly ICssValue FlexShrinkDecl = new CssLengthValue(1, CssLengthValue.Unit.None);
-        public static readonly ICssValue FlexBasisDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
-        public static readonly ICssValue FlexWrapDecl = new CssConstantValue<FlexWrapMode>(CssKeywords.Nowrap, FlexWrapMode.NoWrap);
-        public static readonly ICssValue FlexDirectionDecl = new CssConstantValue<FlexDirection>(CssKeywords.Row, FlexDirection.Row);
+
+        public static readonly ICssValue FlexBasisDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
+
+        public static readonly ICssValue FlexWrapDecl =
+            new CssConstantValue<FlexWrapMode>(CssKeywords.Nowrap, FlexWrapMode.NoWrap);
+
+        public static readonly ICssValue FlexDirectionDecl =
+            new CssConstantValue<FlexDirection>(CssKeywords.Row, FlexDirection.Row);
+
         public static readonly ICssValue FloatDecl = new CssConstantValue<Floating>(CssKeywords.None, Floating.None);
         public static readonly ICssValue BorderSpacingDecl = CssLengthValue.Zero;
-        public static readonly ICssValue BoxDecorationBreakDecl = new CssConstantValue<Boolean>(CssKeywords.Slice, false);
+
+        public static readonly ICssValue BoxDecorationBreakDecl =
+            new CssConstantValue<Boolean>(CssKeywords.Slice, false);
+
         public static readonly ICssValue BoxShadowDecl = new CssConstantValue<Object>(CssKeywords.None, null);
-        public static readonly ICssValue BoxSizingDecl = new CssConstantValue<BoxModel>(CssKeywords.ContentBox, BoxModel.ContentBox);
-        public static readonly ICssValue BreakAfterDecl = new CssConstantValue<BreakMode>(CssKeywords.Auto, BreakMode.Auto);
-        public static readonly ICssValue BreakBeforeDecl = new CssConstantValue<BreakMode>(CssKeywords.Auto, BreakMode.Auto);
-        public static readonly ICssValue BreakInsideDecl = new CssConstantValue<BreakMode>(CssKeywords.Auto, BreakMode.Auto);
-        public static readonly ICssValue PageBreakInsideDecl = new CssConstantValue<BreakMode>(CssKeywords.Auto, BreakMode.Auto);
-        public static readonly ICssValue PageBreakBeforeDecl = new CssConstantValue<BreakMode>(CssKeywords.Auto, BreakMode.Auto);
-        public static readonly ICssValue PageBreakAfterDecl = new CssConstantValue<BreakMode>(CssKeywords.Auto, BreakMode.Auto);
-        public static readonly ICssValue BottomDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
-        public static readonly ICssValue TopDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
-        public static readonly ICssValue LeftDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
-        public static readonly ICssValue RightDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
-        public static readonly ICssValue MinHeightDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
-        public static readonly ICssValue MinWidthDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
+
+        public static readonly ICssValue BoxSizingDecl =
+            new CssConstantValue<BoxModel>(CssKeywords.ContentBox, BoxModel.ContentBox);
+
+        public static readonly ICssValue BreakAfterDecl =
+            new CssConstantValue<BreakMode>(CssKeywords.Auto, BreakMode.Auto);
+
+        public static readonly ICssValue BreakBeforeDecl =
+            new CssConstantValue<BreakMode>(CssKeywords.Auto, BreakMode.Auto);
+
+        public static readonly ICssValue BreakInsideDecl =
+            new CssConstantValue<BreakMode>(CssKeywords.Auto, BreakMode.Auto);
+
+        public static readonly ICssValue PageBreakInsideDecl =
+            new CssConstantValue<BreakMode>(CssKeywords.Auto, BreakMode.Auto);
+
+        public static readonly ICssValue PageBreakBeforeDecl =
+            new CssConstantValue<BreakMode>(CssKeywords.Auto, BreakMode.Auto);
+
+        public static readonly ICssValue PageBreakAfterDecl =
+            new CssConstantValue<BreakMode>(CssKeywords.Auto, BreakMode.Auto);
+
+        public static readonly ICssValue BottomDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
+
+        public static readonly ICssValue TopDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
+
+        public static readonly ICssValue LeftDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
+
+        public static readonly ICssValue RightDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
+
+        public static readonly ICssValue MinHeightDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
+
+        public static readonly ICssValue MinWidthDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
+
         public static readonly ICssValue MaxHeightDecl = new CssConstantValue<Object>(CssKeywords.None, null);
         public static readonly ICssValue MaxWidthDecl = new CssConstantValue<Object>(CssKeywords.None, null);
         public static readonly ICssValue MarginBlockEndDecl = CssLengthValue.Zero;
@@ -112,34 +235,81 @@ namespace AngleSharp.Css
         public static readonly ICssValue PaddingRightDecl = CssLengthValue.Zero;
         public static readonly ICssValue PaddingTopDecl = CssLengthValue.Zero;
         public static readonly ICssValue CaptionSideDecl = new CssConstantValue<Boolean>(CssKeywords.Top, true);
-        public static readonly ICssValue CursorDecl = new CssConstantValue<SystemCursor>(CssKeywords.Auto, SystemCursor.Auto);
-        public static readonly ICssValue OverflowWrapDecl = new CssConstantValue<OverflowWrap>(CssKeywords.Normal, OverflowWrap.Normal);
-        public static readonly ICssValue WordSpacingDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Normal, CssLengthValue.Normal);
-        public static readonly ICssValue WordBreakDecl = new CssConstantValue<WordBreak>(CssKeywords.Normal, WordBreak.Normal);
-        public static readonly ICssValue VisibilityDecl = new CssConstantValue<Visibility>(CssKeywords.Visible, Visibility.Visible);
-        public static readonly ICssValue VerticalAlignDecl = new CssConstantValue<VerticalAlignment>(CssKeywords.Baseline, VerticalAlignment.Baseline);
+
+        public static readonly ICssValue CursorDecl =
+            new CssConstantValue<SystemCursor>(CssKeywords.Auto, SystemCursor.Auto);
+
+        public static readonly ICssValue OverflowWrapDecl =
+            new CssConstantValue<OverflowWrap>(CssKeywords.Normal, OverflowWrap.Normal);
+
+        public static readonly ICssValue WordSpacingDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Normal, CssLengthValue.Normal);
+
+        public static readonly ICssValue WordBreakDecl =
+            new CssConstantValue<WordBreak>(CssKeywords.Normal, WordBreak.Normal);
+
+        public static readonly ICssValue VisibilityDecl =
+            new CssConstantValue<Visibility>(CssKeywords.Visible, Visibility.Visible);
+
+        public static readonly ICssValue VerticalAlignDecl =
+            new CssConstantValue<VerticalAlignment>(CssKeywords.Baseline, VerticalAlignment.Baseline);
+
         public static readonly ICssValue OpacityDecl = new CssLengthValue(1.0, CssLengthValue.Unit.None);
-        public static readonly ICssValue OverflowDecl = new CssConstantValue<OverflowMode>(CssKeywords.Visible, OverflowMode.Visible);
-        public static readonly ICssValue OutlineWidthDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Medium, CssLengthValue.Medium);
-        public static readonly ICssValue OutlineStyleDecl = new CssConstantValue<LineStyle>(CssKeywords.None, LineStyle.None);
-        public static readonly ICssValue OutlineColorDecl = new CssConstantValue<CssColorValue>(CssKeywords.Invert, CssColorValue.InvertedColor);
+
+        public static readonly ICssValue OverflowDecl =
+            new CssConstantValue<OverflowMode>(CssKeywords.Visible, OverflowMode.Visible);
+
+        public static readonly ICssValue OutlineWidthDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Medium, CssLengthValue.Medium);
+
+        public static readonly ICssValue OutlineStyleDecl =
+            new CssConstantValue<LineStyle>(CssKeywords.None, LineStyle.None);
+
+        public static readonly ICssValue OutlineColorDecl =
+            new CssConstantValue<CssColorValue>(CssKeywords.Invert, CssColorValue.InvertedColor);
+
         public static readonly ICssValue TextTransformDecl = new CssConstantValue<Object>(CssKeywords.None, null);
         public static readonly ICssValue TextShadowDecl = new CssConstantValue<Object>(CssKeywords.None, null);
         public static readonly ICssValue TextRenderingDecl = new CssConstantValue<Object>(CssKeywords.Auto, null);
-        public static readonly ICssValue TextOverflowDecl = new CssConstantValue<OverflowMode>(CssKeywords.Auto, OverflowMode.Clip);
+
+        public static readonly ICssValue TextOverflowDecl =
+            new CssConstantValue<OverflowMode>(CssKeywords.Auto, OverflowMode.Clip);
+
         public static readonly ICssValue TextOrientationDecl = new CssConstantValue<Object>(CssKeywords.Mixed, null);
-        public static readonly ICssValue TextJustifyDecl = new CssConstantValue<TextJustify>(CssKeywords.Auto, TextJustify.Auto);
+
+        public static readonly ICssValue TextJustifyDecl =
+            new CssConstantValue<TextJustify>(CssKeywords.Auto, TextJustify.Auto);
+
         public static readonly ICssValue TextIndentDecl = CssLengthValue.Zero;
-        public static readonly ICssValue TextAlignDecl = new CssConstantValue<HorizontalAlignment>(CssKeywords.Left, HorizontalAlignment.Left);
-        public static readonly ICssValue TextAlignLastDecl = new CssConstantValue<TextAlignLast>(CssKeywords.Auto, TextAlignLast.Auto);
+
+        public static readonly ICssValue TextAlignDecl =
+            new CssConstantValue<HorizontalAlignment>(CssKeywords.Left, HorizontalAlignment.Left);
+
+        public static readonly ICssValue TextAlignLastDecl =
+            new CssConstantValue<TextAlignLast>(CssKeywords.Auto, TextAlignLast.Auto);
+
         public static readonly ICssValue TextDecorationLineDecl = new CssConstantValue<Object>(CssKeywords.None, null);
-        public static readonly ICssValue TextDecorationStyleDecl = new CssConstantValue<LineStyle>(CssKeywords.Solid, LineStyle.Solid);
-        public static readonly ICssValue TextDecorationColorDecl = new CssConstantValue<CssColorValue>(CssKeywords.CurrentColor, CssColorValue.CurrentColor);
-        public static readonly ICssValue TextAnchorDecl = new CssConstantValue<TextAnchor>(CssKeywords.Start, TextAnchor.Start);
-        public static readonly ICssValue ListStyleTypeDecl = new CssConstantValue<ListStyle>(CssKeywords.Disc, ListStyle.Disc);
-        public static readonly ICssValue ListStylePositionDecl = new CssConstantValue<ListPosition>(CssKeywords.Outside, ListPosition.Outside);
+
+        public static readonly ICssValue TextDecorationStyleDecl =
+            new CssConstantValue<LineStyle>(CssKeywords.Solid, LineStyle.Solid);
+
+        public static readonly ICssValue TextDecorationColorDecl =
+            new CssConstantValue<CssColorValue>(CssKeywords.CurrentColor, CssColorValue.CurrentColor);
+
+        public static readonly ICssValue TextAnchorDecl =
+            new CssConstantValue<TextAnchor>(CssKeywords.Start, TextAnchor.Start);
+
+        public static readonly ICssValue ListStyleTypeDecl =
+            new CssConstantValue<ListStyle>(CssKeywords.Disc, ListStyle.Disc);
+
+        public static readonly ICssValue ListStylePositionDecl =
+            new CssConstantValue<ListPosition>(CssKeywords.Outside, ListPosition.Outside);
+
         public static readonly ICssValue ListStyleImageDecl = new CssConstantValue<Object>(CssKeywords.None, null);
-        public static readonly ICssValue LineBreakDecl = new CssConstantValue<BreakMode>(CssKeywords.Auto, BreakMode.Auto);
+
+        public static readonly ICssValue LineBreakDecl =
+            new CssConstantValue<BreakMode>(CssKeywords.Auto, BreakMode.Auto);
+
         public static readonly ICssValue GridTemplateRowsDecl = new CssConstantValue<Object>(CssKeywords.None, null);
         public static readonly ICssValue GridTemplateColumnsDecl = new CssConstantValue<Object>(CssKeywords.None, null);
         public static readonly ICssValue GridTemplateAreasDecl = new CssConstantValue<Object>(CssKeywords.None, null);
@@ -148,60 +318,122 @@ namespace AngleSharp.Css
         public static readonly ICssValue GridAutoFlowDecl = new CssConstantValue<Boolean>(CssKeywords.Row, false);
         public static readonly ICssValue GridColumnGapDecl = CssLengthValue.Zero;
         public static readonly ICssValue GridRowGapDecl = CssLengthValue.Zero;
-        public static readonly ICssValue ColumnGapDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Normal, CssLengthValue.Normal);
-        public static readonly ICssValue RowGapDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Normal, CssLengthValue.Normal);
+
+        public static readonly ICssValue ColumnGapDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Normal, CssLengthValue.Normal);
+
+        public static readonly ICssValue RowGapDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Normal, CssLengthValue.Normal);
+
         public static readonly ICssValue PerspectiveDecl = new CssConstantValue<Object>(CssKeywords.None, null);
         public static readonly ICssValue PerspectiveOriginDecl = CssPoint2D.Center;
-        public static readonly ICssValue PositionDecl = new CssConstantValue<PositionMode>(CssKeywords.Inline, PositionMode.Static);
+
+        public static readonly ICssValue PositionDecl =
+            new CssConstantValue<PositionMode>(CssKeywords.Inline, PositionMode.Static);
+
         public static readonly ICssValue TransformDecl = new CssConstantValue<Object>(CssKeywords.None, null);
         public static readonly ICssValue TransformStyleDecl = new CssConstantValue<Boolean>(CssKeywords.Flat, true);
         public static readonly ICssValue TransformOriginDecl = CssPoint2D.Center;
         public static readonly ICssValue TableLayoutDecl = new CssConstantValue<Boolean>(CssKeywords.Auto, false);
         public static readonly ICssValue ClearDecl = new CssConstantValue<ClearMode>(CssKeywords.None, ClearMode.None);
-        public static readonly ICssValue ClipDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
+
+        public static readonly ICssValue ClipDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
+
         public static readonly ICssValue StrokeOpacityDecl = new CssLengthValue(1.0, CssLengthValue.Unit.None);
-        public static readonly ICssValue StrokeLinecapDecl = new CssConstantValue<StrokeLinecap>(CssKeywords.Butt, StrokeLinecap.Butt);
-        public static readonly ICssValue StrokeLinejoinDecl = new CssConstantValue<StrokeLinejoin>(CssKeywords.Miter, StrokeLinejoin.Miter);
+
+        public static readonly ICssValue StrokeLinecapDecl =
+            new CssConstantValue<StrokeLinecap>(CssKeywords.Butt, StrokeLinecap.Butt);
+
+        public static readonly ICssValue StrokeLinejoinDecl =
+            new CssConstantValue<StrokeLinejoin>(CssKeywords.Miter, StrokeLinejoin.Miter);
+
         public static readonly ICssValue StrokeDashoffsetDecl = CssLengthValue.Zero;
         public static readonly ICssValue StrokeDasharrayDecl = new CssConstantValue<Object>(CssKeywords.None, null);
         public static readonly ICssValue StrokeWidthDecl = new CssLengthValue(1.0, CssLengthValue.Unit.Px);
         public static readonly ICssValue StrokeMiterlimitDecl = new CssLengthValue(1.0, CssLengthValue.Unit.None);
-        public static readonly ICssValue RubyPositionDecl = new CssConstantValue<RubyPosition>(CssKeywords.Over, RubyPosition.Over);
-        public static readonly ICssValue RubyOverhangDecl = new CssConstantValue<RubyOverhangMode>(CssKeywords.None, RubyOverhangMode.None);
-        public static readonly ICssValue RubyAlignDecl = new CssConstantValue<RubyAlignment>(CssKeywords.SpaceAround, RubyAlignment.SpaceAround);
-        public static readonly ICssValue ResizeDecl = new CssConstantValue<ResizeMode>(CssKeywords.None, ResizeMode.None);
+
+        public static readonly ICssValue RubyPositionDecl =
+            new CssConstantValue<RubyPosition>(CssKeywords.Over, RubyPosition.Over);
+
+        public static readonly ICssValue RubyOverhangDecl =
+            new CssConstantValue<RubyOverhangMode>(CssKeywords.None, RubyOverhangMode.None);
+
+        public static readonly ICssValue RubyAlignDecl =
+            new CssConstantValue<RubyAlignment>(CssKeywords.SpaceAround, RubyAlignment.SpaceAround);
+
+        public static readonly ICssValue ResizeDecl =
+            new CssConstantValue<ResizeMode>(CssKeywords.None, ResizeMode.None);
+
         public static readonly ICssValue QuotesDecl = new CssQuoteValue("«", "»");
-        public static readonly ICssValue PointerEventsDecl = new CssConstantValue<PointerEvent>(CssKeywords.Auto, PointerEvent.Auto);
+
+        public static readonly ICssValue PointerEventsDecl =
+            new CssConstantValue<PointerEvent>(CssKeywords.Auto, PointerEvent.Auto);
+
         public static readonly ICssValue ContentDecl = new CssConstantValue<Object>(CssKeywords.Normal, null);
-        public static readonly ICssValue ContentVisibilityDecl = new CssConstantValue<Visibility>(CssKeywords.Visible, Visibility.Visible);
+
+        public static readonly ICssValue ContentVisibilityDecl =
+            new CssConstantValue<Visibility>(CssKeywords.Visible, Visibility.Visible);
+
         public static readonly ICssValue CounterIncrementDecl = new CssConstantValue<Object>(CssKeywords.None, null);
         public static readonly ICssValue CounterResetDecl = new CssConstantValue<Object>(CssKeywords.None, null);
-        public static readonly ICssValue DisplayDecl = new CssConstantValue<DisplayMode>(CssKeywords.Inline, DisplayMode.Inline);
+
+        public static readonly ICssValue DisplayDecl =
+            new CssConstantValue<DisplayMode>(CssKeywords.Inline, DisplayMode.Inline);
+
         public static readonly ICssValue ColumnFillDecl = new CssConstantValue<Boolean>(CssKeywords.Balance, true);
         public static readonly ICssValue ColumnSpanDecl = new CssConstantValue<Boolean>(CssKeywords.None, false);
-        public static readonly ICssValue BackfaceVisibilityDecl = new CssConstantValue<Visibility>(CssKeywords.Visible, Visibility.Visible);
+
+        public static readonly ICssValue BackfaceVisibilityDecl =
+            new CssConstantValue<Visibility>(CssKeywords.Visible, Visibility.Visible);
+
         public static readonly ICssValue BorderImageSourceDecl = new CssConstantValue<Object>(CssKeywords.None, null);
         public static readonly ICssValue BorderImageSliceDecl = CssLengthValue.Full;
         public static readonly ICssValue BorderImageWidthDecl = new CssLengthValue(1, CssLengthValue.Unit.None);
         public static readonly ICssValue BorderImageOutsetDecl = CssLengthValue.Zero;
-        public static readonly ICssValue BorderImageRepeatDecl = new CssConstantValue<BorderRepeat>(CssKeywords.Stretch, BorderRepeat.Stretch);
+
+        public static readonly ICssValue BorderImageRepeatDecl =
+            new CssConstantValue<BorderRepeat>(CssKeywords.Stretch, BorderRepeat.Stretch);
+
         public static readonly ICssValue BorderCollapseDecl = new CssConstantValue<Boolean>(CssKeywords.Separate, true);
         public static readonly ICssValue BorderRadiusDecl = CssLengthValue.Zero;
-        public static readonly ICssValue AlignSelfDecl = new CssConstantValue<FlexContentMode>(CssKeywords.Auto, FlexContentMode.Auto);
-        public static readonly ICssValue AlignItemsDecl = new CssConstantValue<FlexContentMode>(CssKeywords.Normal, FlexContentMode.Stretch);
-        public static readonly ICssValue AlignContentDecl = new CssConstantValue<FlexContentMode>(CssKeywords.Normal, FlexContentMode.Stretch);
+
+        public static readonly ICssValue AlignSelfDecl =
+            new CssConstantValue<FlexContentMode>(CssKeywords.Auto, FlexContentMode.Auto);
+
+        public static readonly ICssValue AlignItemsDecl =
+            new CssConstantValue<FlexContentMode>(CssKeywords.Normal, FlexContentMode.Stretch);
+
+        public static readonly ICssValue AlignContentDecl =
+            new CssConstantValue<FlexContentMode>(CssKeywords.Normal, FlexContentMode.Stretch);
+
         public static readonly ICssValue JustifyContentDecl = new CssConstantValue<Object>(CssKeywords.Normal, null);
         public static readonly ICssValue JustifyItemsDecl = new CssConstantValue<Object>(CssKeywords.Legacy, null);
-        public static readonly ICssValue JustifySelfDecl = new CssConstantValue<FlexContentMode>(CssKeywords.Auto, FlexContentMode.Auto);
-        public static readonly ICssValue UnicodeBidiDecl = new CssConstantValue<UnicodeMode>(CssKeywords.Normal, UnicodeMode.Normal);
-        public static readonly ICssValue WordWrapDecl = new CssConstantValue<OverflowWrap>(CssKeywords.Normal, OverflowWrap.Normal);
+
+        public static readonly ICssValue JustifySelfDecl =
+            new CssConstantValue<FlexContentMode>(CssKeywords.Auto, FlexContentMode.Auto);
+
+        public static readonly ICssValue UnicodeBidiDecl =
+            new CssConstantValue<UnicodeMode>(CssKeywords.Normal, UnicodeMode.Normal);
+
+        public static readonly ICssValue WordWrapDecl =
+            new CssConstantValue<OverflowWrap>(CssKeywords.Normal, OverflowWrap.Normal);
+
         public static readonly ICssValue WidowsDecl = new CssLengthValue(2, CssLengthValue.Unit.None);
         public static readonly ICssValue OrphansDecl = new CssLengthValue(2, CssLengthValue.Unit.None);
         public static readonly ICssValue OrderDecl = new CssLengthValue(0, CssLengthValue.Unit.None);
-        public static readonly ICssValue ObjectFitDecl = new CssConstantValue<ObjectFitting>(CssKeywords.Fill, ObjectFitting.Fill);
+
+        public static readonly ICssValue ObjectFitDecl =
+            new CssConstantValue<ObjectFitting>(CssKeywords.Fill, ObjectFitting.Fill);
+
         public static readonly ICssValue ObjectPositionDecl = CssPoint2D.Center;
-        public static readonly ICssValue WhiteSpaceDecl = new CssConstantValue<Whitespace>(CssKeywords.Normal, Whitespace.Normal);
-        public static readonly ICssValue ZIndexDecl = new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
+
+        public static readonly ICssValue WhiteSpaceDecl =
+            new CssConstantValue<Whitespace>(CssKeywords.Normal, Whitespace.Normal);
+
+        public static readonly ICssValue ZIndexDecl =
+            new CssConstantValue<CssLengthValue>(CssKeywords.Auto, CssLengthValue.Auto);
+
         public static readonly ICssValue WidthDecl = CssLengthValue.Auto;
         public static readonly ICssValue HeightDecl = CssLengthValue.Auto;
         public static readonly ICssValue ScrollbarTrackColorDecl = CssColors.GetColor("scrollbar");
@@ -216,6 +448,141 @@ namespace AngleSharp.Css
         public static readonly ICssValue FontSizeAdjustDecl = new CssLengthValue(1.0, CssLengthValue.Unit.Em);
         public static readonly ICssValue ScrollSnapTypeDecl = new CssConstantValue<Object>(CssKeywords.None, null);
         public static readonly ICssValue ScrollMarginDecl = CssLengthValue.Zero;
-        public static readonly ICssValue ScrollSnapAlignDecl = new CssConstantValue<ScrollSnapAlign>(CssKeywords.None, ScrollSnapAlign.None);
+
+        public static readonly ICssValue ScrollSnapAlignDecl =
+            new CssConstantValue<ScrollSnapAlign>(CssKeywords.None, ScrollSnapAlign.None);
+        // Add these constants to the InitialValues.cs file
+
+        /// <summary>
+        /// Gets the default value for the border-block-start-width property.
+        /// The initial value is 'medium'.
+        /// </summary>
+        public static readonly ICssValue BorderBlockStartWidthDecl = CssLengthValue.Medium;
+
+        /// <summary>
+        /// Gets the default value for the border-block-end-width property.
+        /// The initial value is 'medium'.
+        /// </summary>
+        public static readonly ICssValue BorderBlockEndWidthDecl = CssLengthValue.Medium;
+
+        /// <summary>
+        /// Gets the default value for the border-inline-start-width property.
+        /// The initial value is 'medium'.
+        /// </summary>
+        public static readonly ICssValue BorderInlineStartWidthDecl = CssLengthValue.Medium;
+
+        /// <summary>
+        /// Gets the default value for the border-inline-end-width property.
+        /// The initial value is 'medium'.
+        /// </summary>
+        public static readonly ICssValue BorderInlineEndWidthDecl = CssLengthValue.Medium;
+
+        /// <summary>
+        /// Gets the default value for the border-block-start-style property.
+        /// The initial value is 'none'.
+        /// </summary>
+        public static readonly ICssValue BorderBlockStartStyleDecl = new CssIdentifierValue(CssKeywords.None);
+
+        /// <summary>
+        /// Gets the default value for the border-block-end-style property.
+        /// The initial value is 'none'.
+        /// </summary>
+        public static readonly ICssValue BorderBlockEndStyleDecl = new CssIdentifierValue(CssKeywords.None);
+
+        /// <summary>
+        /// Gets the default value for the border-inline-start-style property.
+        /// The initial value is 'none'.
+        /// </summary>
+        public static readonly ICssValue BorderInlineStartStyleDecl = new CssIdentifierValue(CssKeywords.None);
+
+        /// <summary>
+        /// Gets the default value for the border-inline-end-style property.
+        /// The initial value is 'none'.
+        /// </summary>
+        public static readonly ICssValue BorderInlineEndStyleDecl = new CssIdentifierValue(CssKeywords.None);
+
+        /// <summary>
+        /// Gets the default value for the border-block-start-color property.
+        /// The initial value is 'currentColor'.
+        /// </summary>
+        public static readonly ICssValue BorderBlockStartColorDecl = new CssIdentifierValue(CssKeywords.CurrentColor);
+
+        /// <summary>
+        /// Gets the default value for the border-block-end-color property.
+        /// The initial value is 'currentColor'.
+        /// </summary>
+        public static readonly ICssValue BorderBlockEndColorDecl = new CssIdentifierValue(CssKeywords.CurrentColor);
+
+        /// <summary>
+        /// Gets the default value for the border-inline-start-color property.
+        /// The initial value is 'currentColor'.
+        /// </summary>
+        public static readonly ICssValue BorderInlineStartColorDecl = new CssIdentifierValue(CssKeywords.CurrentColor);
+
+        /// <summary>
+        /// Gets the default value for the border-inline-end-color property.
+        /// The initial value is 'currentColor'.
+        /// </summary>
+        public static readonly ICssValue BorderInlineEndColorDecl = new CssIdentifierValue(CssKeywords.CurrentColor);
+
+        /// <summary>
+        /// Gets the default value for the block-size property.
+        /// The initial value is 'auto'.
+        /// </summary>
+        public static readonly ICssValue BlockSizeDecl = new CssIdentifierValue(CssKeywords.Auto);
+
+        /// <summary>
+        /// Gets the default value for the inline-size property.
+        /// The initial value is 'auto'.
+        /// </summary>
+        public static readonly ICssValue InlineSizeDecl = new CssIdentifierValue(CssKeywords.Auto);
+
+        /// <summary>
+        /// Gets the default value for the min-block-size property.
+        /// The initial value is '0'.
+        /// </summary>
+        public static readonly ICssValue MinBlockSizeDecl = CssLengthValue.Zero;
+
+        /// <summary>
+        /// Gets the default value for the min-inline-size property.
+        /// The initial value is '0'.
+        /// </summary>
+        public static readonly ICssValue MinInlineSizeDecl = CssLengthValue.Zero;
+
+        /// <summary>
+        /// Gets the default value for the max-block-size property.
+        /// The initial value is 'none'.
+        /// </summary>
+        public static readonly ICssValue MaxBlockSizeDecl = new CssIdentifierValue(CssKeywords.None);
+
+        /// <summary>
+        /// Gets the default value for the max-inline-size property.
+        /// The initial value is 'none'.
+        /// </summary>
+        public static readonly ICssValue MaxInlineSizeDecl = new CssIdentifierValue(CssKeywords.None);
+
+        /// <summary>
+        /// Gets the default value for the inset-block-start property.
+        /// The initial value is 'auto'.
+        /// </summary>
+        public static readonly ICssValue InsetBlockStartDecl = new CssIdentifierValue(CssKeywords.Auto);
+
+        /// <summary>
+        /// Gets the default value for the inset-block-end property.
+        /// The initial value is 'auto'.
+        /// </summary>
+        public static readonly ICssValue InsetBlockEndDecl = new CssIdentifierValue(CssKeywords.Auto);
+
+        /// <summary>
+        /// Gets the default value for the inset-inline-start property.
+        /// The initial value is 'auto'.
+        /// </summary>
+        public static readonly ICssValue InsetInlineStartDecl = new CssIdentifierValue(CssKeywords.Auto);
+
+        /// <summary>
+        /// Gets the default value for the inset-inline-end property.
+        /// The initial value is 'auto'.
+        /// </summary>
+        public static readonly ICssValue InsetInlineEndDecl = new CssIdentifierValue(CssKeywords.Auto);
     }
 }
