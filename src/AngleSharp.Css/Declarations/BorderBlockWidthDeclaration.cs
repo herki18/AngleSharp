@@ -1,55 +1,56 @@
 ﻿namespace AngleSharp.Css.Declarations
 {
+    using AngleSharp.Css.Converters;
     using AngleSharp.Css.Dom;
     using AngleSharp.Css.Values;
     using AngleSharp.Text;
     using System;
     using static ValueConverters;
 
-    /// <summary>
-    /// Represents the border-block-width CSS property.
-    /// </summary>
-    /// <remarks>
-    /// The border-block-width CSS property defines the width of the logical block borders of an element,
-    /// which maps to a physical border width depending on the element's writing mode, directionality, and text orientation.
-    /// </remarks>
     static class BorderBlockWidthDeclaration
     {
-        /// <summary>
-        /// Gets the name of the property.
-        /// </summary>
         public static String Name = PropertyNames.BorderBlockWidth;
-
-        /// <summary>
-        /// Gets the collection of shorthands that contain this property.
-        /// </summary>
         public static String[] Shorthands = new[]
         {
             PropertyNames.BorderBlock,
         };
-
-        /// <summary>
-        /// Gets the converter for the property.
-        /// </summary>
-        public static IValueConverter Converter = AggregatePeriodic(LineWidthConverter);
-
-        /// <summary>
-        /// Gets the initial value of the property.
-        /// </summary>
+        public static IValueConverter Converter = new BorderBlockWidthAggregator();
         public static ICssValue InitialValue = null;
-
-        /// <summary>
-        /// Gets the flags of the property.
-        /// </summary>
         public static PropertyFlags Flags = PropertyFlags.Unitless | PropertyFlags.Animatable | PropertyFlags.Shorthand;
-
-        /// <summary>
-        /// Gets the longhands of the property.
-        /// </summary>
         public static String[] Longhands = new[]
         {
             PropertyNames.BorderBlockStartWidth,
             PropertyNames.BorderBlockEndWidth,
         };
+
+        sealed class BorderBlockWidthAggregator : IValueAggregator, IValueConverter
+        {
+            private static readonly IValueConverter converter = LineWidthConverter.FlowRelative();
+
+            public ICssValue Convert(StringSource source) => converter.Convert(source);
+
+            public ICssValue Merge(ICssValue[] values)
+            {
+                var start = values[0];
+                var end = values[1];
+
+                if (start != null && end != null)
+                {
+                    return new CssFlowRelativeValue(new[] { start, end });
+                }
+
+                return null;
+            }
+
+            public ICssValue[] Split(ICssValue value)
+            {
+                if (value is CssFlowRelativeValue flowRelative)
+                {
+                    return new[] { flowRelative.Start, flowRelative.End };
+                }
+
+                return null;
+            }
+        }
     }
 }

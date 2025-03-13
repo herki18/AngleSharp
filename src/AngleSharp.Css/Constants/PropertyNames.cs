@@ -1618,5 +1618,34 @@ namespace AngleSharp.Css
         /// The inset-inline-end CSS property defines the logical inline end offset of an element.
         /// </summary>
         public const string InsetInlineEnd = "inset-inline-end";
+        /// <summary>
+        /// The border-start-start-radius property.
+        /// </summary>
+        public static readonly String BorderStartStartRadius = "border-start-start-radius";
+
+        /// <summary>
+        /// The border-start-end-radius property.
+        /// </summary>
+        public static readonly String BorderStartEndRadius = "border-start-end-radius";
+
+        /// <summary>
+        /// The border-end-start-radius property.
+        /// </summary>
+        public static readonly String BorderEndStartRadius = "border-end-start-radius";
+
+        /// <summary>
+        /// The border-end-end-radius property.
+        /// </summary>
+        public static readonly String BorderEndEndRadius = "border-end-end-radius";
+
+        /// <summary>
+        /// The overflow-block property.
+        /// </summary>
+        public static readonly String OverflowBlock = "overflow-block";
+
+        /// <summary>
+        /// The overflow-inline property.
+        /// </summary>
+        public static readonly String OverflowInline = "overflow-inline";
     }
 }

@@ -53,6 +53,9 @@
             PropertyNames.InsetInlineEnd,
         };
 
+        /// <summary>
+        /// Custom aggregator for inset-inline that handles flow-relative values correctly.
+        /// </summary>
         sealed class InsetInlineAggregator : IValueAggregator, IValueConverter
         {
             private static readonly IValueConverter converter = AutoLengthOrPercentConverter.FlowRelative();

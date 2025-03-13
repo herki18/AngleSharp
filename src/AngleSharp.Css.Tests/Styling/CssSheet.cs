@@ -1300,13 +1300,13 @@ font-weight:bold;}";
         {
             // Arrange
             var css = @"
-                .logical-box {
-                    border-block: 1px solid blue;
-                    margin-inline: 20px;
-                    padding-block-start: 10px;
-                    inset-inline-end: 5px;
-                }
-            ";
+        .logical-box {
+            border-block: 1px solid blue;
+            margin-inline: 20px;
+            padding-block-start: 10px;
+            inset-inline-end: 5px;
+        }
+    ";
 
             // Act
             var sheet = ParseStyleSheet(css);
@@ -1315,11 +1315,34 @@ font-weight:bold;}";
             // Assert
             Assert.IsNotNull(rule);
             Assert.AreEqual(".logical-box", rule.SelectorText);
-            Assert.AreEqual(4, rule.Style.Length);
-            Assert.AreEqual("border-block", rule.Style[0]);
-            Assert.AreEqual("margin-inline", rule.Style[1]);
-            Assert.AreEqual("padding-block-start", rule.Style[2]);
-            Assert.AreEqual("inset-inline-end", rule.Style[3]);
+
+            // Verify the total number of properties
+            Assert.AreEqual(10, rule.Style.Length);
+
+            // Check that each expected property has a non-empty value
+            // For border-block expanded properties
+            Assert.IsFalse(string.IsNullOrEmpty(rule.Style.GetPropertyValue("border-block-start-width")));
+            Assert.IsFalse(string.IsNullOrEmpty(rule.Style.GetPropertyValue("border-block-end-width")));
+            Assert.IsFalse(string.IsNullOrEmpty(rule.Style.GetPropertyValue("border-block-start-style")));
+            Assert.IsFalse(string.IsNullOrEmpty(rule.Style.GetPropertyValue("border-block-end-style")));
+            Assert.IsFalse(string.IsNullOrEmpty(rule.Style.GetPropertyValue("border-block-start-color")));
+            Assert.IsFalse(string.IsNullOrEmpty(rule.Style.GetPropertyValue("border-block-end-color")));
+
+            // For margin-inline expanded properties
+            Assert.IsFalse(string.IsNullOrEmpty(rule.Style.GetPropertyValue("margin-inline-start")));
+            Assert.IsFalse(string.IsNullOrEmpty(rule.Style.GetPropertyValue("margin-inline-end")));
+
+            // For direct properties
+            Assert.IsFalse(string.IsNullOrEmpty(rule.Style.GetPropertyValue("padding-block-start")));
+            Assert.IsFalse(string.IsNullOrEmpty(rule.Style.GetPropertyValue("inset-inline-end")));
+
+            // Test the specific values
+            Assert.AreEqual("1px", rule.Style.GetPropertyValue("border-block-start-width"));
+            Assert.AreEqual("solid", rule.Style.GetPropertyValue("border-block-start-style"));
+            Assert.AreEqual("rgba(0, 0, 255, 1)", rule.Style.GetPropertyValue("border-block-start-color"));
+            Assert.AreEqual("20px", rule.Style.GetPropertyValue("margin-inline-start"));
+            Assert.AreEqual("10px", rule.Style.GetPropertyValue("padding-block-start"));
+            Assert.AreEqual("5px", rule.Style.GetPropertyValue("inset-inline-end"));
         }
 
         [Test]
@@ -1567,7 +1590,7 @@ font-weight:bold;}";
 
             var rule = sheet.Rules[0] as ICssStyleRule;
             Assert.IsNotNull(rule);
-            Assert.AreEqual(6, rule.Style.Length);
+            Assert.AreEqual(12, rule.Style.Length);
 
             // Verify individual property values
             Assert.AreEqual("2px", rule.Style.GetPropertyValue("border-block-width"));

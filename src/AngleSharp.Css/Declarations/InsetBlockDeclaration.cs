@@ -53,6 +53,9 @@
             PropertyNames.InsetBlockEnd,
         };
 
+        /// <summary>
+        /// Custom aggregator for inset-block that handles flow-relative values correctly.
+        /// </summary>
         sealed class InsetBlockAggregator : IValueAggregator, IValueConverter
         {
             private static readonly IValueConverter converter = AutoLengthOrPercentConverter.FlowRelative();

@@ -2168,6 +2168,48 @@ namespace AngleSharp.Css
                     flags: InsetInlineEndDeclaration.Flags,
                     shorthands: InsetInlineEndDeclaration.Shorthands)
             },
+            {
+                BorderStartStartRadiusDeclaration.Name, new DeclarationInfo(
+                    name: BorderStartStartRadiusDeclaration.Name,
+                    converter: BorderStartStartRadiusDeclaration.Converter,
+                    initialValue: BorderStartStartRadiusDeclaration.InitialValue,
+                    flags: BorderStartStartRadiusDeclaration.Flags)
+            },
+            {
+                BorderStartEndRadiusDeclaration.Name, new DeclarationInfo(
+                    name: BorderStartEndRadiusDeclaration.Name,
+                    converter: BorderStartEndRadiusDeclaration.Converter,
+                    initialValue: BorderStartEndRadiusDeclaration.InitialValue,
+                    flags: BorderStartEndRadiusDeclaration.Flags)
+            },
+            {
+                BorderEndStartRadiusDeclaration.Name, new DeclarationInfo(
+                    name: BorderEndStartRadiusDeclaration.Name,
+                    converter: BorderEndStartRadiusDeclaration.Converter,
+                    initialValue: BorderEndStartRadiusDeclaration.InitialValue,
+                    flags: BorderEndStartRadiusDeclaration.Flags)
+            },
+            {
+                BorderEndEndRadiusDeclaration.Name, new DeclarationInfo(
+                    name: BorderEndEndRadiusDeclaration.Name,
+                    converter: BorderEndEndRadiusDeclaration.Converter,
+                    initialValue: BorderEndEndRadiusDeclaration.InitialValue,
+                    flags: BorderEndEndRadiusDeclaration.Flags)
+            },
+            {
+                OverflowBlockDeclaration.Name, new DeclarationInfo(
+                    name: OverflowBlockDeclaration.Name,
+                    converter: OverflowBlockDeclaration.Converter,
+                    initialValue: OverflowBlockDeclaration.InitialValue,
+                    flags: OverflowBlockDeclaration.Flags)
+            },
+            {
+                OverflowInlineDeclaration.Name, new DeclarationInfo(
+                    name: OverflowInlineDeclaration.Name,
+                    converter: OverflowInlineDeclaration.Converter,
+                    initialValue: OverflowInlineDeclaration.InitialValue,
+                    flags: OverflowInlineDeclaration.Flags)
+            },
         };
 
         /// <summary>

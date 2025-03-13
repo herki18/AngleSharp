@@ -9,6 +9,10 @@ public class StylePropertyMapper : IStylePropertyMapper
 {
     private static readonly Dictionary<string, LogicalPropertyMapping> _logicalPropertyMappings = new(StringComparer.OrdinalIgnoreCase)
     {
+        ["border-block"] = new LogicalPropertyMapping(
+            new[] { "border-top", "border-bottom" },
+            LogicalPropertyType.Block,
+            true),
         ["margin-block"] = new LogicalPropertyMapping(
             new[] { "margin-top", "margin-bottom" },
             LogicalPropertyType.Block,
@@ -385,9 +389,20 @@ public class StylePropertyMapper : IStylePropertyMapper
     {
         if (writingMode.IsHorizontal)
         {
-            return writingMode.IsRightToLeft ?
-                mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "right" :
-                mapping.PhysicalProperties.ElementAtOrDefault(0) ?? "left";
+            if (writingMode.IsRightToLeft)
+            {
+                // For RTL, if there's only one physical property (like "margin-left"),
+                // we need to convert it to the corresponding right property
+                if (mapping.PhysicalProperties.Length == 1 && mapping.PhysicalProperties[0].EndsWith("-left"))
+                {
+                    return mapping.PhysicalProperties[0].Replace("-left", "-right");
+                }
+                return mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "right";
+            }
+            else
+            {
+                return mapping.PhysicalProperties.ElementAtOrDefault(0) ?? "left";
+            }
         }
         else
         {
