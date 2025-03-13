@@ -11,6 +11,9 @@ using System;
 using System.Collections.Generic;
 using Properties;
 
+/// <summary>
+/// Represents a computed style for an element, with optimized access to CSS properties.
+/// </summary>
 public class ComputedStyle : IComputedStyle
 {
     internal readonly IElement _element;
@@ -19,13 +22,17 @@ public class ComputedStyle : IComputedStyle
     private readonly TextProperties _textProperties;
     private readonly RareProperties _rareProperties;
     private readonly SurrogateBitfields _bitfields;
-    private readonly PropertyTreeNode _propertyTree;
+    private readonly IPropertyTreeNode _propertyTree;
     private readonly WritingMode _writingMode;
     private readonly IRenderDevice _renderDevice;
     private readonly IStyleInvalidationTracker _invalidationTracker;
     private readonly IBrowsingContext _context;
     private readonly Dictionary<string, object> _computedValueCache;
     private bool _isInitialized = false;
+
+    /// <summary>
+    /// List of CSS properties that are not inherited from parent elements.
+    /// </summary>
     private static readonly HashSet<string> _nonInheritedProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         "width", "height", "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
@@ -41,11 +48,14 @@ public class ComputedStyle : IComputedStyle
         "vertical-align", "page-break-before", "page-break-after", "page-break-inside"
     };
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ComputedStyle"/> class.
+    /// </summary>
     public ComputedStyle(
         IElement element,
         IComputedStyle? parentStyle,
         ICssStyleDeclaration declaration,
-        PropertyTreeNode propertyTree,
+        IPropertyTreeNode propertyTree,
         IRenderDevice renderDevice,
         IStyleInvalidationTracker invalidationTracker,
         IBrowsingContext context)
@@ -67,12 +77,28 @@ public class ComputedStyle : IComputedStyle
         _isInitialized = true;
     }
 
+    /// <inheritdoc />
     public ICssStyleDeclaration Declaration { get; }
 
+    /// <inheritdoc />
     public string GetPropertyValue(string propertyName)
     {
         // First check if the property is in the property tree of this element
-        string value = _propertyTree.GetSelfPropertyValue(propertyName);
+        string value = string.Empty;
+
+        if (_propertyTree is PropertyTreeNode concreteNode)
+        {
+            value = concreteNode.GetSelfPropertyValue(propertyName);
+        }
+        else
+        {
+            // Fallback if we're using a different IPropertyTreeNode implementation
+            ICssValue? rawValue = _propertyTree.GetPropertyRawValue(propertyName);
+            if (rawValue != null)
+            {
+                value = rawValue.CssText;
+            }
+        }
 
         // If not found in this element's properties
         if (string.IsNullOrEmpty(value) && _isInitialized)
@@ -102,6 +128,7 @@ public class ComputedStyle : IComputedStyle
         return value;
     }
 
+    /// <inheritdoc />
     public T? GetValue<T>(string propertyName)
     {
         if (_computedValueCache.TryGetValue(propertyName, out var cachedValue) && cachedValue is T typedCachedValue)
@@ -133,15 +160,34 @@ public class ComputedStyle : IComputedStyle
         return default;
     }
 
+    /// <inheritdoc />
     public DisplayMode Display => _bitfields.DisplayType;
+
+    /// <inheritdoc />
     public PositionMode Position => _bitfields.PositionType;
+
+    /// <inheritdoc />
     public float Opacity => _rareProperties.Opacity;
+
+    /// <inheritdoc />
     public int ZIndex => _rareProperties.ZIndex;
+
+    /// <inheritdoc />
     public CssLengthValue FontSize => _textProperties.FontSize;
+
+    /// <inheritdoc />
     public WritingMode WritingMode => _writingMode;
+
+    /// <inheritdoc />
     public IBoxProperties Box => _boxProperties;
+
+    /// <inheritdoc />
     public ITextProperties Text => _textProperties;
-    internal PropertyTreeNode PropertyTreeNode => _propertyTree;
+
+    /// <summary>
+    /// Gets the property tree node associated with this computed style.
+    /// </summary>
+    internal IPropertyTreeNode PropertyTreeNode => _propertyTree;
 
     private void ProcessStyleProperties(ICssStyleDeclaration declaration)
     {
@@ -485,8 +531,8 @@ public class ComputedStyle : IComputedStyle
         }
         if (!_propertyTree.HasProperty("font-family"))
         {
-            _textProperties.SetFontFamily("sans-serif");
-            _propertyTree.SetProperty("font-family", "sans-serif");
+            _textProperties.SetFontFamily("Times New Roman");
+            _propertyTree.SetProperty("font-family", "Times New Roman");
         }
         if (!_propertyTree.HasProperty("font-size"))
         {

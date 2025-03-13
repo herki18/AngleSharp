@@ -3,17 +3,31 @@ using System;
 using System.Collections.Generic;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Values;
-public class PropertyTreeNode
+using AngleSharp.StyleSystem.Interfaces;
+
+/// <summary>
+/// Represents a node in the property tree that efficiently stores CSS property values.
+/// </summary>
+public class PropertyTreeNode : IPropertyTreeNode
 {
-    private readonly PropertyTreeNode? _parent;
+    private readonly IPropertyTreeNode? _parent;
     private readonly Dictionary<string, ICssValue> _properties = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, object> _computedValues = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, PropertyTreeNode> _children = new(StringComparer.OrdinalIgnoreCase);
-    public PropertyTreeNode(PropertyTreeNode? parent)
+    private readonly Dictionary<string, IPropertyTreeNode> _children = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PropertyTreeNode"/> class.
+    /// </summary>
+    /// <param name="parent">The parent node.</param>
+    public PropertyTreeNode(IPropertyTreeNode? parent)
     {
         _parent = parent;
     }
-    public PropertyTreeNode? GetParent() => _parent;
+
+    /// <inheritdoc />
+    public IPropertyTreeNode? GetParent() => _parent;
+
+    /// <inheritdoc />
     public void SetProperty(string name, ICssValue? value)
     {
         if (value != null)
@@ -28,11 +42,22 @@ public class PropertyTreeNode
         }
         _children.Remove(name);
     }
+
+    /// <inheritdoc />
     public void SetProperty(string name, string? value)
     {
         if (value != null)
         {
-            SetProperty(name, new CssStringValue(value));
+            // For color values and other CSS identifiers, we should use CssIdentifierValue
+            // instead of CssStringValue to avoid the quotes
+            if (IsLikelyCssIdentifier(name))
+            {
+                SetProperty(name, new CssIdentifierValue(value));
+            }
+            else
+            {
+                SetProperty(name, new CssStringValue(value));
+            }
         }
         else
         {
@@ -41,6 +66,19 @@ public class PropertyTreeNode
             _children.Remove(name);
         }
     }
+
+    private bool IsLikelyCssIdentifier(string propertyName)
+    {
+        // Common CSS properties that typically use identifiers rather than strings
+        return propertyName.Equals("color", StringComparison.OrdinalIgnoreCase) ||
+               propertyName.Equals("background-color", StringComparison.OrdinalIgnoreCase) ||
+               propertyName.EndsWith("-color", StringComparison.OrdinalIgnoreCase) ||
+               propertyName.Equals("display", StringComparison.OrdinalIgnoreCase) ||
+               propertyName.Equals("position", StringComparison.OrdinalIgnoreCase) ||
+               propertyName.Equals("font-family", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <inheritdoc />
     public void RemoveProperty(string name)
     {
         _properties.Remove(name);
@@ -48,9 +86,7 @@ public class PropertyTreeNode
         _children.Remove(name);
     }
 
-    /// <summary>
-    /// Gets the property value considering inheritance from parent nodes.
-    /// </summary>
+    /// <inheritdoc />
     public string GetPropertyValue(string name)
     {
         if (_properties.TryGetValue(name, out var value))
@@ -64,9 +100,7 @@ public class PropertyTreeNode
         return _parent?.GetPropertyValue(name) ?? string.Empty;
     }
 
-    /// <summary>
-    /// Gets the property value from this node only, without checking parent nodes.
-    /// </summary>
+    /// <inheritdoc />
     public string GetSelfPropertyValue(string name)
     {
         if (_properties.TryGetValue(name, out var value))
@@ -80,6 +114,7 @@ public class PropertyTreeNode
         return string.Empty;
     }
 
+    /// <inheritdoc />
     public ICssValue? GetPropertyRawValue(string name)
     {
         if (_properties.TryGetValue(name, out var value))
@@ -92,6 +127,8 @@ public class PropertyTreeNode
         }
         return _parent?.GetPropertyRawValue(name);
     }
+
+    /// <inheritdoc />
     public object? GetPropertyCachedValue(string name)
     {
         if (_computedValues.TryGetValue(name, out var cachedValue))
@@ -115,8 +152,11 @@ public class PropertyTreeNode
         }
         return null;
     }
+
+    /// <inheritdoc />
     public bool HasProperty(string name)
     {
+        // Only check the current node and its children, not parent
         if (_properties.ContainsKey(name))
         {
             return true;
@@ -125,8 +165,10 @@ public class PropertyTreeNode
         {
             return true;
         }
-        return _parent?.HasProperty(name) ?? false;
+        return false; // Don't check parent - that's handled by inheritance
     }
+
+    /// <inheritdoc />
     public Dictionary<string, ICssValue> GetAllProperties()
     {
         var result = new Dictionary<string, ICssValue>(_properties, StringComparer.OrdinalIgnoreCase);
@@ -140,25 +182,37 @@ public class PropertyTreeNode
         }
         return result;
     }
+
+    /// <inheritdoc />
     public int GetPropertyCount()
     {
         return _properties.Count + _children.Count;
     }
-    public void ReplaceSubtree(string property, PropertyTreeNode sharedNode)
+
+    /// <inheritdoc />
+    public void ReplaceSubtree(string property, IPropertyTreeNode sharedNode)
     {
         if (_properties.ContainsKey(property))
         {
-            _children[property] = sharedNode;
-            _properties.Remove(property);
-            _computedValues.Remove(property);
+            if (sharedNode is PropertyTreeNode concreteNode)
+            {
+                _children[property] = concreteNode;
+                _properties.Remove(property);
+                _computedValues.Remove(property);
+            }
         }
     }
-    public bool IsSharedWith(PropertyTreeNode other, string propertyName)
+
+    /// <inheritdoc />
+    public bool IsSharedWith(IPropertyTreeNode other, string propertyName)
     {
         if (!_children.TryGetValue(propertyName, out var childNode))
             return false;
-        if (!other._children.TryGetValue(propertyName, out var otherChildNode))
+
+        if (other is PropertyTreeNode otherNode &&
+            !otherNode._children.TryGetValue(propertyName, out var otherChildNode))
             return false;
-        return ReferenceEquals(childNode, otherChildNode);
+
+        return ReferenceEquals(childNode, other.GetPropertyCachedValue(propertyName));
     }
 }

@@ -121,7 +121,7 @@ public class StyleTreeResolver : IStyleTreeResolver
         _pendingOptimizations.Clear();
     }
 
-    private int GetNodeDepth(PropertyTreeNode node)
+    private int GetNodeDepth(IPropertyTreeNode node)
     {
         int depth = 0;
         var current = node;
@@ -316,7 +316,7 @@ public class StyleTreeResolver : IStyleTreeResolver
         throw new InvalidOperationException("Unable to create an empty style: StyleFactory is not available or is not a ComputedStyleFactory");
     }
 
-    private PropertyTreeNode? GetPropertyTreeNode(IElement element)
+    private IPropertyTreeNode? GetPropertyTreeNode(IElement element)
     {
         // Extract the PropertyTreeNode from the element's computed style
         if (_styleCache.TryGetValue(new StyleCacheKey(element, null), out var style) &&

@@ -63,7 +63,7 @@ public class ComputedStyleBuilder
     private void ProcessDeclarationProperties(
         ICssStyleDeclaration declaration,
         IElement element,
-        Storage.PropertyTreeNode node,
+        IPropertyTreeNode node,
         WritingMode writingMode)
     {
         // Process each property in the declaration

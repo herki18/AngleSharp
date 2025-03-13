@@ -192,7 +192,7 @@ public class StyleEngine : IStyleEngine, IDisposable
 
         // This is an expensive operation that should be used sparingly
         // It's primarily for benchmarking or when memory usage needs to be reduced
-        var treeNodes = new HashSet<PropertyTreeNode>();
+        var treeNodes = new HashSet<IPropertyTreeNode>();
 
         // First, collect all unique PropertyTreeNodes from the style cache
         foreach (var style in _styleCache.GetAllStyles())

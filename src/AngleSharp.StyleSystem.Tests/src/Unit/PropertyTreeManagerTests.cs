@@ -4,6 +4,7 @@ using AngleSharp.Css.Values;
 using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
 using AngleSharp.StyleSystem.Storage;
+using Interfaces;
 
 [TestFixture]
 public class PropertyTreeManagerTests
@@ -321,8 +322,8 @@ public class PropertyTreeManagerTests
     {
         // Arrange
         const int elementCount = 10;
+        var nodes = new IPropertyTreeNode[elementCount];
         var elements = new IElement[elementCount];
-        var nodes = new PropertyTreeNode[elementCount];
 
         // Create multiple elements with the same properties
         for (int i = 0; i < elementCount; i++)

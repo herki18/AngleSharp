@@ -69,12 +69,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Revision Two/Layout Engine/Integration with StyleSystem.md",
+                "file": "Notes/Font Family.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Integration with StyleSystem"
+              "title": "Font Family"
             }
           }
         ],
@@ -151,7 +151,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Revision Two/Layout Engine/Integration with StyleSystem.md",
+                "file": "Notes/Font Family.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -161,7 +161,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Integration with StyleSystem"
+              "title": "Backlinks for Font Family"
             }
           },
           {
@@ -170,12 +170,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Revision Two/Layout Engine/Integration with StyleSystem.md",
+                "file": "Notes/Font Family.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Integration with StyleSystem"
+              "title": "Outgoing links from Font Family"
             }
           },
           {
@@ -199,13 +199,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Revision Two/Layout Engine/Integration with StyleSystem.md",
+                "file": "Notes/Font Family.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Integration with StyleSystem"
+              "title": "Outline of Font Family"
             }
           }
         ]
@@ -227,17 +227,19 @@
   },
   "active": "86e71335362ef5a8",
   "lastOpenFiles": [
-    "Revision Two/Layout Engine/AngleSharp.LayoutEngine Architecture Plan.md",
+    "Notes/CssColorValue Alpha Issue.md",
+    "Notes/Font Family.md",
+    "Test.md",
+    "Untitled 1.md",
+    "Untitled.md",
     "Revision Two/Layout Engine/Integration with StyleSystem.md",
+    "Revision Two/Layout Engine/AngleSharp.LayoutEngine Architecture Plan.md",
     "Revision Two/Layout Engine/Layout System Core Interfaces.md",
     "Revision Two/Layout Engine/Layout System Data Flow.md",
     "Revision Two/Layout Engine/Layout System Component Architecture.md",
-    "Untitled 1.md",
     "Revision Two/Layout Engine",
     "Revision Two",
     "Revision One",
-    "Untitled.md",
-    "Test.md",
     "New Arhitecture/Rev 1/AngleSharp.StyleSystem Testing Reference.md",
     "New Arhitecture/Rev 4/Untitled.md",
     "New Arhitecture/Rev 4",
@@ -257,8 +259,6 @@
     "New Arhitecture/Rev 1/Core Component Interfaces.md",
     "New Arhitecture/Rev 1/AngleSharp CSS Reference.md",
     "New Arhitecture/Rev 1/AngleSharp.StyleSystem Development Guide.md",
-    "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
-    "New Arhitecture/Project Instructions.md",
     "Notes",
     "New Arhitecture/Rev 1",
     "New Arhitecture",

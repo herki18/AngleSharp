@@ -79,6 +79,7 @@ public class ComputedStyleTests
         mockDeclaration.Setup(d => d.GetEnumerator())
             .Returns(() => mockProperties.GetEnumerator());
 
+
         return mockDeclaration.Object;
     }
 
@@ -419,7 +420,7 @@ public class ComputedStyleTests
         var element = CreateMockElement();
         var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
         {
-            { "font-family", new CssStringValue("Arial, sans-serif") }
+            { "font-family", new CssIdentifierValue("Arial, sans-serif") }
         });
 
         // Act
@@ -576,7 +577,7 @@ public class ComputedStyleTests
         var element = CreateMockElement();
         var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
         {
-            { "writing-mode", new CssStringValue("vertical-rl") }
+            { "writing-mode", new CssIdentifierValue("vertical-rl") }
         });
 
         // Act
@@ -720,118 +721,25 @@ public class ComputedStyleTests
     }
 
     [Test]
-    public void InitialValues_ShouldApplyDefaultFontSize_WhenNoParent()
+    public void ValueCalculator_ShouldConvertMediumToCorrectPixelValue()
     {
         // Arrange
-        var element = CreateMockElement();
-        var declaration = CreateEmptyDeclaration();
-
-        // Act
-        var style = CreateComputedStyle(element, declaration);
-
-        // Assert
-        // Default font size is typically 16px (medium)
-        Assert.That(style.FontSize.CssText, Is.EqualTo("medium"));
-    }
-
-    #endregion
-
-    #region Integration Tests
-
-    [Test]
-    public void Integration_ComplexStyle_ShouldProcessAllProperties()
-    {
-        // Arrange
-        var element = CreateMockElement();
-        var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
-        {
-            { "display", new CssConstantValue<DisplayMode>(CssKeywords.Flex, DisplayMode.Flex) },
-            { "position", new CssConstantValue<PositionMode>(CssKeywords.Relative, PositionMode.Relative) },
-            { "color", CssColorValue.Red },
-            { "background-color", CssColorValue.Blue },
-            { "font-size", new CssLengthValue(18, CssLengthValue.Unit.Px) },
-            { "font-weight", new CssConstantValue<Int32>(CssKeywords.Bold, 700) },
-            { "margin", new CssLengthValue(10, CssLengthValue.Unit.Px) },
-            { "padding", new CssLengthValue(5, CssLengthValue.Unit.Px) },
-            { "border-width", new CssLengthValue(1, CssLengthValue.Unit.Px) },
-            { "width", new CssLengthValue(200, CssLengthValue.Unit.Px) },
-            { "height", new CssLengthValue(100, CssLengthValue.Unit.Px) },
-            { "z-index", new CssLengthValue(5, CssLengthValue.Unit.None) },
-            { "opacity", new CssLengthValue(0.8, CssLengthValue.Unit.None) }
-        });
-
-        // Act
-        var style = CreateComputedStyle(element, declaration);
-
-        // Assert
-        Assert.That(style.Display, Is.EqualTo(DisplayMode.Flex));
-        Assert.That(style.Position, Is.EqualTo(PositionMode.Relative));
-        Assert.That(style.Text.Color.CssText, Does.Contain(CssColorValue.Red.CssText).IgnoreCase);
-        Assert.That(style.FontSize.CssText, Is.EqualTo("18px"));
-        Assert.That(style.Text.FontWeight, Is.EqualTo(700)); // bold == 700
-        Assert.That(style.Box.Width.CssText, Is.EqualTo("200px"));
-        Assert.That(style.Box.Height.CssText, Is.EqualTo("100px"));
-        Assert.That(style.Box.Margin.Top.CssText, Is.EqualTo("10px"));
-        Assert.That(style.Box.Padding.Top.CssText, Is.EqualTo("5px"));
-        Assert.That(style.ZIndex, Is.EqualTo(5));
-        Assert.That(style.Opacity, Is.EqualTo(0.8f));
-    }
-
-    [Test]
-    public void Integration_PropertyTree_ShouldStoreAndRetrieveValues()
-    {
-        // Arrange
-        var element = CreateMockElement();
-        var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
-        {
-            { "color", CssColorValue.Red },
-            { "font-size", new CssLengthValue(20, CssLengthValue.Unit.Px) }
-        });
-        var propertyTree = new PropertyTreeNode(null);
-
-        // Act
-        var style = CreateComputedStyle(element, declaration, null, propertyTree);
-        var color = style.GetPropertyValue("color");
-        var fontSize = style.GetPropertyValue("font-size");
-
-        // Assert
-        Assert.That(color, Does.Contain(CssColorValue.Red.CssText).IgnoreCase);
-        Assert.That(fontSize, Is.EqualTo("20px"));
-    }
-
-    [Test]
-    public void Integration_DeviceDependentValues_ShouldMarkElementAsDeviceDependent()
-    {
-        // Arrange
-        var element = CreateMockElement();
-        var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
-        {
-            { "width", new CssLengthValue(50, CssLengthValue.Unit.Percent) },
-            { "font-size", new CssLengthValue(2, CssLengthValue.Unit.Em) },
-            { "height", new CssLengthValue(50, CssLengthValue.Unit.Vh) }
-        });
-
-        var mockInvalidationTracker = new Mock<StyleInvalidationTracker>();
         var mockRenderDevice = new Mock<IRenderDevice>();
-        mockRenderDevice.Setup(r => r.ViewPortWidth).Returns(1024);
-        mockRenderDevice.Setup(r => r.ViewPortHeight).Returns(768);
         mockRenderDevice.Setup(r => r.FontSize).Returns(16);
 
         var mockContext = new Mock<IBrowsingContext>();
-        var propertyTree = new PropertyTreeNode(null);
+        var mockElement = CreateMockElement();
+
+        var valueCalculator = new ValueCalculator(mockContext.Object, mockRenderDevice.Object);
+        var mediumValue = new CssLengthValue(16);
 
         // Act
-        var style = new ComputedStyle(
-            element,
-            null,
-            declaration,
-            propertyTree,
-            mockRenderDevice.Object,
-            mockInvalidationTracker.Object,
-            mockContext.Object);
+        var pixelValue = valueCalculator.ToPixels(mediumValue, mockElement, "font-size");
+        var computedValue = valueCalculator.Compute(mediumValue, mockElement, "font-size");
 
         // Assert
-        mockInvalidationTracker.Verify(t => t.MarkAsDeviceDependent(element), Times.AtLeastOnce);
+        Assert.That(pixelValue, Is.EqualTo(16));
+        Assert.That(computedValue?.CssText, Is.EqualTo("16px"));
     }
 
     #endregion

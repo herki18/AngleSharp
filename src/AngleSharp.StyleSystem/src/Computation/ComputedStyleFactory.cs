@@ -56,7 +56,7 @@ public class ComputedStyleFactory : IComputedStyleFactory
         throw new ArgumentException("Source style must be a ComputedStyle instance", nameof(source));
     }
 
-    internal IComputedStyle CreateComputedStyle(IElement element, IComputedStyle? parentStyle, ICssStyleDeclaration declaration, PropertyTreeNode? node = null)
+    internal IComputedStyle CreateComputedStyle(IElement element, IComputedStyle? parentStyle, ICssStyleDeclaration declaration, IPropertyTreeNode? node = null)
     {
         // Handle empty style case with style sharing optimization
         if (declaration.Length == 0 && parentStyle != null)
@@ -127,7 +127,7 @@ public class ComputedStyleFactory : IComputedStyleFactory
     }
 
     // Create a declaration that reflects the values in the property tree
-    private CssStyleDeclaration CreateDeclarationFromPropertyTree(PropertyTreeNode node)
+    private CssStyleDeclaration CreateDeclarationFromPropertyTree(IPropertyTreeNode node)
     {
         var declaration = new CssStyleDeclaration(_engine.Context);
         var properties = node.GetAllProperties();
