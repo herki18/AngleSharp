@@ -34,9 +34,51 @@
               "icon": "lucide-file",
               "title": "AngleSharp.StyleSystem Testing Reference"
             }
+          },
+          {
+            "id": "f974ce5c89c3c529",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Test.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Test"
+            }
+          },
+          {
+            "id": "43a5e0af50b8b743",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Untitled.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Untitled"
+            }
+          },
+          {
+            "id": "86e71335362ef5a8",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Revision Two/Layout Engine/Integration with StyleSystem.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Integration with StyleSystem"
+            }
           }
         ],
-        "currentTab": 1
+        "currentTab": 4
       }
     ],
     "direction": "vertical"
@@ -109,7 +151,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "New Arhitecture/Rev 1/AngleSharp.StyleSystem Testing Reference.md",
+                "file": "Revision Two/Layout Engine/Integration with StyleSystem.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -119,7 +161,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for AngleSharp.StyleSystem Testing Reference"
+              "title": "Backlinks for Integration with StyleSystem"
             }
           },
           {
@@ -128,12 +170,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "New Arhitecture/Rev 1/AngleSharp.StyleSystem Testing Reference.md",
+                "file": "Revision Two/Layout Engine/Integration with StyleSystem.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from AngleSharp.StyleSystem Testing Reference"
+              "title": "Outgoing links from Integration with StyleSystem"
             }
           },
           {
@@ -157,13 +199,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "New Arhitecture/Rev 1/AngleSharp.StyleSystem Testing Reference.md",
+                "file": "Revision Two/Layout Engine/Integration with StyleSystem.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of AngleSharp.StyleSystem Testing Reference"
+              "title": "Outline of Integration with StyleSystem"
             }
           }
         ]
@@ -183,13 +225,24 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "5477d1f2e8ae73cd",
+  "active": "86e71335362ef5a8",
   "lastOpenFiles": [
+    "Revision Two/Layout Engine/AngleSharp.LayoutEngine Architecture Plan.md",
+    "Revision Two/Layout Engine/Integration with StyleSystem.md",
+    "Revision Two/Layout Engine/Layout System Core Interfaces.md",
+    "Revision Two/Layout Engine/Layout System Data Flow.md",
+    "Revision Two/Layout Engine/Layout System Component Architecture.md",
+    "Untitled 1.md",
+    "Revision Two/Layout Engine",
+    "Revision Two",
+    "Revision One",
+    "Untitled.md",
+    "Test.md",
+    "New Arhitecture/Rev 1/AngleSharp.StyleSystem Testing Reference.md",
     "New Arhitecture/Rev 4/Untitled.md",
     "New Arhitecture/Rev 4",
     "New Arhitecture/Rev 3/Improvments.md",
     "New Arhitecture/Untitled 10.md",
-    "New Arhitecture/Rev 1/AngleSharp.StyleSystem Testing Reference.md",
     "New Arhitecture/Untitled 9.md",
     "New Arhitecture/Rev 3/Unit Tests Generated.md",
     "New Arhitecture/Rev 3",
@@ -206,20 +259,9 @@
     "New Arhitecture/Rev 1/AngleSharp.StyleSystem Development Guide.md",
     "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
     "New Arhitecture/Project Instructions.md",
-    "New Arhitecture/StyleSystem Component Data Flow.md",
-    "New Arhitecture/StyleSystem Component Interaction Flow Documentation.md",
-    "New Arhitecture/Untitled 7.md",
-    "New Arhitecture/Rev 1/StyleSystem Testing Strategy.md",
-    "New Arhitecture/Untitled 3.md",
-    "New Arhitecture/Untitled 4.md",
-    "New Arhitecture/Untitled 5.md",
-    "New Arhitecture/Untitled 6.md",
     "Notes",
     "New Arhitecture/Rev 1",
     "New Arhitecture",
-    "Modules/Style System/Diagrams",
-    "Diagrams",
-    "Overall/Arhitecture",
-    "Overall/Diagrams"
+    "Modules/Style System/Diagrams"
   ]
 }
