@@ -717,7 +717,7 @@ public class ComputedStyleTests
         var style = CreateComputedStyle(element, declaration);
 
         // Assert
-        Assert.That(style.Text.FontFamily, Is.EqualTo("sans-serif"));
+        Assert.That(style.Text.FontFamily, Is.EqualTo("Times New Roman"));
     }
 
     [Test]

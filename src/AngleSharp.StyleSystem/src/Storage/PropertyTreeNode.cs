@@ -52,7 +52,7 @@ public class PropertyTreeNode : IPropertyTreeNode
             // instead of CssStringValue to avoid the quotes
             if (IsLikelyCssIdentifier(name))
             {
-                SetProperty(name, new CssIdentifierValue(value));
+                SetProperty(name, new CssStringValue(value));
             }
             else
             {
