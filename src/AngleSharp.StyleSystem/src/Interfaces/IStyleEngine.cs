@@ -3,6 +3,7 @@
 using AngleSharp.Css;
 using AngleSharp.Dom;
 using AngleSharp.StyleSystem.Integration;
+using Computation;
 
 /// <summary>
 /// Main entry point for style computation.
@@ -35,4 +36,11 @@ public interface IStyleEngine
 
     IRenderDevice RenderDevice { get; }
     StyleSheetManager StylesheetManager { get; }
+    IPropertyTreeManager PropertyTreeManager { get; }
+    IRuleCollector RuleCollector { get; }
+    ICascadeResolver CascadeResolver { get; }
+    InheritanceProcessor InheritanceProcessor { get; }
+    IVariableResolver VariableResolver { get; }
+    ComputedStyleBuilder ComputedStyleBuilder { get; }
+    IBrowsingContext Context { get; }
 }

@@ -12,10 +12,10 @@ using Storage;
 
 public class StyleTreeResolver : IStyleTreeResolver
 {
-    private readonly StyleEngine _styleEngine;
+    private readonly IStyleEngine _styleEngine;
     private readonly IStyleApplicationStrategy _strategy;
-    private readonly StyleCache _styleCache;
-    private readonly StyleInvalidationTracker _invalidationTracker;
+    private readonly IStyleCache _styleCache;
+    private readonly IStyleInvalidationTracker _invalidationTracker;
     private readonly Stack<IElement> _processingStack;
     private readonly Dictionary<IElement, IElement> _styleSharingMap;
 
@@ -24,10 +24,10 @@ public class StyleTreeResolver : IStyleTreeResolver
     private readonly List<PropertyTreeNode> _pendingOptimizations = new List<PropertyTreeNode>();
 
     public StyleTreeResolver(
-        StyleEngine styleEngine,
+        IStyleEngine styleEngine,
         IStyleApplicationStrategy strategy,
-        StyleCache styleCache,
-        StyleInvalidationTracker invalidationTracker)
+        IStyleCache styleCache,
+        IStyleInvalidationTracker invalidationTracker)
     {
         _styleEngine = styleEngine ?? throw new ArgumentNullException(nameof(styleEngine));
         _strategy = strategy ?? throw new ArgumentNullException(nameof(strategy));

@@ -11,19 +11,11 @@ using Storage;
 
 public class StyleEngine : IStyleEngine, IDisposable
 {
-    private readonly IBrowsingContext _context;
     private IRenderDevice _renderDevice;
-    private readonly StyleCache _styleCache;
+    private readonly IStyleCache _styleCache;
     private readonly StyleSheetManager _stylesheetManager;
-    private readonly RuleCollector _ruleCollector;
-    private readonly CascadeResolver _cascadeResolver;
-    private readonly InheritanceProcessor _inheritanceProcessor;
-    private readonly ComputedStyleBuilder _computedStyleBuilder;
-    private readonly StyleInvalidationTracker _invalidationTracker;
-    private readonly VariableResolver _variableResolver;
-    private readonly ValueCalculator _valueCalculator;
-    private readonly StylePropertyMapper _stylePropertyMapper;
-    private readonly PropertyTreeManager _propertyTreeManager;
+    private readonly IValueCalculator _valueCalculator;
+    private readonly IStylePropertyMapper _stylePropertyMapper;
     private readonly IStyleApplicationStrategy _styleApplicationStrategy;
     private readonly IStyleTreeResolver _styleTreeResolver;
 
@@ -33,42 +25,45 @@ public class StyleEngine : IStyleEngine, IDisposable
 
     public StyleEngine(IBrowsingContext context)
     {
-        _context = context;
+        Context = context;
         _renderDevice = context.GetService<IRenderDevice>() ?? new DefaultRenderDevice();
-        _propertyTreeManager = new PropertyTreeManager();
+        PropertyTreeManager = new PropertyTreeManager();
         _styleCache = new StyleCache();
         _stylesheetManager = new StyleSheetManager(context);
-        _invalidationTracker = new StyleInvalidationTracker();
-        _ruleCollector = new RuleCollector(context, _stylesheetManager);
-        _cascadeResolver = new CascadeResolver(context);
-        _inheritanceProcessor = new InheritanceProcessor(_context);
-        _variableResolver = new VariableResolver(context);
+        InvalidationTracker = new StyleInvalidationTracker();
+        RuleCollector = new RuleCollector(context, _stylesheetManager);
+        CascadeResolver = new CascadeResolver(context);
+        InheritanceProcessor = new InheritanceProcessor(Context);
+        VariableResolver = new VariableResolver(context);
         _stylePropertyMapper = new StylePropertyMapper();
         _valueCalculator = new ValueCalculator(context, _renderDevice);
         StyleFactory = new ComputedStyleFactory(this);
-        _computedStyleBuilder = new ComputedStyleBuilder(
+        ComputedStyleBuilder = new ComputedStyleBuilder(
             context,
             this,
-            _variableResolver,
+            VariableResolver,
             _valueCalculator,
             _stylePropertyMapper,
-            _propertyTreeManager,
+            PropertyTreeManager,
             _renderDevice);
         _styleApplicationStrategy = new BasicStyleApplicationStrategy(this);
         _styleTreeResolver = new StyleTreeResolver(
             this,
             _styleApplicationStrategy,
             _styleCache,
-            _invalidationTracker);
+            InvalidationTracker);
         _stylesheetManager.StylesheetChanged += StylesheetManager_StylesheetChanged;
     }
 
     public StyleSheetManager StylesheetManager => _stylesheetManager;
-    public RuleCollector RuleCollector => _ruleCollector;
-    public CascadeResolver CascadeResolver => _cascadeResolver;
-    public InheritanceProcessor InheritanceProcessor => _inheritanceProcessor;
-    public ComputedStyleBuilder ComputedStyleBuilder => _computedStyleBuilder;
-    public VariableResolver VariableResolver => _variableResolver;
+    public IRuleCollector RuleCollector { get; }
+
+    public ICascadeResolver CascadeResolver { get; }
+
+    public InheritanceProcessor InheritanceProcessor { get; }
+    public IVariableResolver VariableResolver { get; }
+
+    public ComputedStyleBuilder ComputedStyleBuilder { get; }
 
     /// <summary>
     /// Gets or sets whether style tree optimization is enabled.
@@ -90,7 +85,7 @@ public class StyleEngine : IStyleEngine, IDisposable
             if (value && !_collectMetrics)
             {
                 // Reset metrics when starting collection
-                _propertyTreeManager.ResetOptimizationMetrics();
+                PropertyTreeManager.ResetOptimizationMetrics();
             }
             _collectMetrics = value;
         }
@@ -102,15 +97,15 @@ public class StyleEngine : IStyleEngine, IDisposable
     /// <returns>The optimization metrics.</returns>
     public OptimizationMetrics GetOptimizationMetrics()
     {
-        return _propertyTreeManager.GetOptimizationMetrics();
+        return PropertyTreeManager.GetOptimizationMetrics();
     }
 
     private void StylesheetManager_StylesheetChanged(object? sender, StylesheetChangedEventArgs e)
     {
         _styleCache.Clear();
-        if (_context.Active?.DocumentElement != null)
+        if (Context.Active?.DocumentElement != null)
         {
-            _invalidationTracker.InvalidateElement(_context.Active.DocumentElement);
+            InvalidationTracker.InvalidateElement(Context.Active.DocumentElement);
         }
     }
 
@@ -147,18 +142,19 @@ public class StyleEngine : IStyleEngine, IDisposable
     private void InvalidateDeviceDependentStyles()
     {
         _styleCache.Clear();
-        if (_invalidationTracker is StyleInvalidationTracker tracker)
+        if (InvalidationTracker is StyleInvalidationTracker tracker)
         {
             tracker.InvalidateForDeviceChange();
         }
     }
 
     IRenderDevice IStyleEngine.RenderDevice => RenderDevice;
-    public IStyleInvalidationTracker InvalidationTracker => _invalidationTracker;
-    public IComputedStyleFactory StyleFactory { get; }
-    public IBrowsingContext Context => _context;
+    public IStyleInvalidationTracker InvalidationTracker { get; }
 
-    internal PropertyTreeManager PropertyTreeManager => _propertyTreeManager;
+    public IComputedStyleFactory StyleFactory { get; }
+    public IBrowsingContext Context { get; }
+
+    public IPropertyTreeManager PropertyTreeManager { get; }
 
     public IComputedStyle ComputeElementStyle(IElement element, string? pseudoElement = null)
     {
@@ -178,7 +174,7 @@ public class StyleEngine : IStyleEngine, IDisposable
     {
         if (_optimizationEnabled)
         {
-            _propertyTreeManager.OptimizeTree(node);
+            PropertyTreeManager.OptimizeTree(node);
         }
     }
 
@@ -206,7 +202,7 @@ public class StyleEngine : IStyleEngine, IDisposable
         // Then optimize them
         foreach (var node in treeNodes)
         {
-            _propertyTreeManager.OptimizeTree(node);
+            PropertyTreeManager.OptimizeTree(node);
         }
     }
 

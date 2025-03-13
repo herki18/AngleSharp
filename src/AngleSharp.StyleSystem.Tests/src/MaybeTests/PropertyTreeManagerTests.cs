@@ -1,10 +1,10 @@
-﻿namespace AngleSharp.StyleSystem.Tests.Unit;
+﻿namespace AngleSharp.StyleSystem.Tests.MaybeTests;
 
 using AngleSharp.Css.Values;
 using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
+using AngleSharp.StyleSystem.Interfaces;
 using AngleSharp.StyleSystem.Storage;
-using Interfaces;
 
 [TestFixture]
 public class PropertyTreeManagerTests
