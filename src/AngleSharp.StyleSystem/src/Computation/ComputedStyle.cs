@@ -10,6 +10,7 @@ using AngleSharp.StyleSystem.Storage;
 using System;
 using System.Collections.Generic;
 using Properties;
+using StyleSystem.Properties;
 
 public class ComputedStyle : IComputedStyle
 {
@@ -17,8 +18,8 @@ public class ComputedStyle : IComputedStyle
 
     internal readonly IElement _element;
     internal readonly IComputedStyle? _parentStyle;
-    private readonly BoxProperties _boxProperties;
-    private readonly TextProperties _textProperties;
+    private readonly IBoxProperties _boxProperties;
+    private readonly ITextProperties _textProperties;
     private readonly RareProperties _rareProperties;
     private readonly SurrogateBitfields _bitfields;
     private readonly IPropertyTreeNode _propertyTree;
@@ -261,14 +262,14 @@ public class ComputedStyle : IComputedStyle
             case PropertyNames.BackgroundColor:
                 if (value is CssColorValue bgcolor)
                 {
-                    _rareProperties.BackgroundColor = bgcolor;
+                    _rareProperties.SetValue(PropertyNames.BackgroundColor, bgcolor);
                     _bitfields.HasBackground = !bgcolor.Equals(CssColorValue.Transparent);
                 }
                 break;
             case PropertyNames.BorderColor:
                 if (value is CssColorValue borderColor)
                 {
-                    _rareProperties.BorderColor = borderColor;
+                    _rareProperties.SetValue(PropertyNames.BorderColor, borderColor);
                 }
                 break;
             default:
