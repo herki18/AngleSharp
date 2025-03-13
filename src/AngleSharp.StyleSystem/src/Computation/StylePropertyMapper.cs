@@ -3,16 +3,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Css.Dom;
+using AngleSharp.Css.Values;
 using Interfaces;
 using Models;
+
 public class StylePropertyMapper : IStylePropertyMapper
 {
     private static readonly Dictionary<string, LogicalPropertyMapping> _logicalPropertyMappings = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["border-block"] = new LogicalPropertyMapping(
-            new[] { "border-top", "border-bottom" },
-            LogicalPropertyType.Block,
-            true),
         ["margin-block"] = new LogicalPropertyMapping(
             new[] { "margin-top", "margin-bottom" },
             LogicalPropertyType.Block,
@@ -53,6 +51,10 @@ public class StylePropertyMapper : IStylePropertyMapper
         ["padding-inline-end"] = new LogicalPropertyMapping(
             new[] { "padding-right" },
             LogicalPropertyType.InlineEnd),
+        ["border-block"] = new LogicalPropertyMapping(
+            new[] { "border-top", "border-bottom" },
+            LogicalPropertyType.Block,
+            true),
         ["border-block-width"] = new LogicalPropertyMapping(
             new[] { "border-top-width", "border-bottom-width" },
             LogicalPropertyType.Block,
@@ -156,7 +158,9 @@ public class StylePropertyMapper : IStylePropertyMapper
             new[] { "max-width" },
             LogicalPropertyType.InlineSize),
     };
+
     private static readonly Dictionary<string, IEnumerable<string>> _physicalToLogicalMap = BuildPhysicalToLogicalMap();
+
     private static Dictionary<string, IEnumerable<string>> BuildPhysicalToLogicalMap()
     {
         var map = new Dictionary<string, IEnumerable<string>>(StringComparer.OrdinalIgnoreCase);
@@ -176,19 +180,23 @@ public class StylePropertyMapper : IStylePropertyMapper
         }
         return map;
     }
+
     public IDictionary<string, ICssValue> MapLogicalToPhysical(string logicalProperty, ICssValue value, WritingMode writingMode)
     {
         if (string.IsNullOrEmpty(logicalProperty))
             throw new ArgumentException("Logical property name cannot be null or empty", nameof(logicalProperty));
         if (value == null)
             throw new ArgumentNullException(nameof(value));
+
         if (!_logicalPropertyMappings.TryGetValue(logicalProperty, out var mapping))
             return new Dictionary<string, ICssValue> { [logicalProperty] = value };
+
         var result = new Dictionary<string, ICssValue>();
         if (mapping.IsShorthand)
         {
             return MapLogicalShorthandToPhysical(logicalProperty, value, writingMode, mapping);
         }
+
         switch (mapping.Type)
         {
             case LogicalPropertyType.BlockStart:
@@ -215,6 +223,7 @@ public class StylePropertyMapper : IStylePropertyMapper
         }
         return result;
     }
+
     private IDictionary<string, ICssValue> MapLogicalShorthandToPhysical(
         string logicalProperty,
         ICssValue value,
@@ -245,18 +254,22 @@ public class StylePropertyMapper : IStylePropertyMapper
         }
         return result;
     }
+
     public ICssValue? MapPhysicalToLogical(IDictionary<string, ICssValue> physicalProperties, string logicalProperty, WritingMode writingMode)
     {
         if (physicalProperties == null || physicalProperties.Count == 0)
             throw new ArgumentException("Physical properties dictionary cannot be null or empty", nameof(physicalProperties));
         if (string.IsNullOrEmpty(logicalProperty))
             throw new ArgumentException("Logical property name cannot be null or empty", nameof(logicalProperty));
+
         if (!_logicalPropertyMappings.TryGetValue(logicalProperty, out var mapping))
             return null;
+
         if (mapping.IsShorthand)
         {
             return MapPhysicalToLogicalShorthand(physicalProperties, mapping, writingMode);
         }
+
         switch (mapping.Type)
         {
             case LogicalPropertyType.BlockStart:
@@ -292,6 +305,7 @@ public class StylePropertyMapper : IStylePropertyMapper
         }
         return null;
     }
+
     private ICssValue? MapPhysicalToLogicalShorthand(
         IDictionary<string, ICssValue> physicalProperties,
         LogicalPropertyMapping mapping,
@@ -302,48 +316,89 @@ public class StylePropertyMapper : IStylePropertyMapper
             case LogicalPropertyType.Block:
                 var blockStartProp = GetBlockStartProperty(writingMode, mapping);
                 var blockEndProp = GetBlockEndProperty(writingMode, mapping);
+
                 if (physicalProperties.TryGetValue(blockStartProp, out var startValue) &&
-                    physicalProperties.TryGetValue(blockEndProp, out var endValue) &&
-                    AreValuesEquivalent(startValue, endValue))
+                    physicalProperties.TryGetValue(blockEndProp, out var endValue))
                 {
-                    return startValue;
+                    if (AreValuesEquivalent(startValue, endValue))
+                    {
+                        return startValue;
+                    }
+                    else
+                    {
+                        // Create a combined value for different start and end values
+                        return CreateCombinedValue(startValue, endValue);
+                    }
                 }
                 break;
+
             case LogicalPropertyType.Inline:
                 var inlineStartProp = GetInlineStartProperty(writingMode, mapping);
                 var inlineEndProp = GetInlineEndProperty(writingMode, mapping);
+
                 if (physicalProperties.TryGetValue(inlineStartProp, out var inlineStartValue) &&
-                    physicalProperties.TryGetValue(inlineEndProp, out var inlineEndValue) &&
-                    AreValuesEquivalent(inlineStartValue, inlineEndValue))
+                    physicalProperties.TryGetValue(inlineEndProp, out var inlineEndValue))
                 {
-                    return inlineStartValue;
+                    if (AreValuesEquivalent(inlineStartValue, inlineEndValue))
+                    {
+                        return inlineStartValue;
+                    }
+                    else
+                    {
+                        // Create a combined value for different start and end values
+                        return CreateCombinedValue(inlineStartValue, inlineEndValue);
+                    }
                 }
                 break;
+
             case LogicalPropertyType.All:
                 var topProp = GetBlockStartProperty(writingMode, mapping);
                 var bottomProp = GetBlockEndProperty(writingMode, mapping);
                 var leftProp = GetInlineStartProperty(writingMode, mapping);
                 var rightProp = GetInlineEndProperty(writingMode, mapping);
+
                 if (physicalProperties.TryGetValue(topProp, out var topValue) &&
                     physicalProperties.TryGetValue(bottomProp, out var bottomValue) &&
                     physicalProperties.TryGetValue(leftProp, out var leftValue) &&
-                    physicalProperties.TryGetValue(rightProp, out var rightValue) &&
-                    AreValuesEquivalent(topValue, bottomValue) &&
-                    AreValuesEquivalent(topValue, leftValue) &&
-                    AreValuesEquivalent(topValue, rightValue))
+                    physicalProperties.TryGetValue(rightProp, out var rightValue))
                 {
-                    return topValue;
+                    if (AreValuesEquivalent(topValue, bottomValue) &&
+                        AreValuesEquivalent(topValue, leftValue) &&
+                        AreValuesEquivalent(topValue, rightValue))
+                    {
+                        return topValue;
+                    }
+                    else
+                    {
+                        // Create a combined value for different values
+                        return CreateCombinedPeriodicValue(new[] { topValue, rightValue, bottomValue, leftValue });
+                    }
                 }
                 break;
         }
         return null;
     }
+
+    private ICssValue CreateCombinedValue(ICssValue startValue, ICssValue endValue)
+    {
+        // Create a combined value from start and end values
+        // For margin-inline, padding-inline, etc. this should be a CssPeriodicValue with two values
+        return new CssPeriodicValue(new[] { startValue, endValue });
+    }
+
+    private ICssValue CreateCombinedPeriodicValue(ICssValue[] values)
+    {
+        // Create a CssPeriodicValue for all four sides (top, right, bottom, left)
+        return new CssPeriodicValue(values);
+    }
+
     public bool IsLogicalProperty(string propertyName)
     {
         if (string.IsNullOrEmpty(propertyName))
             return false;
         return _logicalPropertyMappings.ContainsKey(propertyName);
     }
+
     public IEnumerable<string> GetPhysicalProperties(string logicalProperty)
     {
         if (string.IsNullOrEmpty(logicalProperty))
@@ -354,6 +409,7 @@ public class StylePropertyMapper : IStylePropertyMapper
         }
         return Enumerable.Empty<string>();
     }
+
     private string GetBlockStartProperty(WritingMode writingMode, LogicalPropertyMapping mapping)
     {
         if (writingMode.IsHorizontal)
@@ -368,13 +424,12 @@ public class StylePropertyMapper : IStylePropertyMapper
                 mapping.PhysicalProperties.ElementAtOrDefault(3) ?? "left";
         }
     }
+
     private string GetBlockEndProperty(WritingMode writingMode, LogicalPropertyMapping mapping)
     {
         if (writingMode.IsHorizontal)
         {
-            // Fix: Changed from ElementAtOrDefault(2) to ElementAtOrDefault(1)
-            // For border-block-width, PhysicalProperties is ["border-top-width", "border-bottom-width"]
-            // So the second element (index 1) is "border-bottom-width"
+            // Fix: Use ElementAtOrDefault(1) instead of ElementAtOrDefault(2)
             return mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "bottom";
         }
         else
@@ -385,6 +440,7 @@ public class StylePropertyMapper : IStylePropertyMapper
                 mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "right";
         }
     }
+
     private string GetInlineStartProperty(WritingMode writingMode, LogicalPropertyMapping mapping)
     {
         if (writingMode.IsHorizontal)
@@ -409,26 +465,45 @@ public class StylePropertyMapper : IStylePropertyMapper
             return mapping.PhysicalProperties.ElementAtOrDefault(0) ?? "top";
         }
     }
+
     private string GetInlineEndProperty(WritingMode writingMode, LogicalPropertyMapping mapping)
     {
         if (writingMode.IsHorizontal)
         {
-            return writingMode.IsRightToLeft ?
-                mapping.PhysicalProperties.ElementAtOrDefault(0) ?? "left" :
-                mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "right";
+            if (writingMode.IsRightToLeft)
+            {
+                // For RTL, if there's only one physical property (like "margin-right"),
+                // we need to convert it to the corresponding left property
+                if (mapping.PhysicalProperties.Length == 1 && mapping.PhysicalProperties[0].EndsWith("-right"))
+                {
+                    return mapping.PhysicalProperties[0].Replace("-right", "-left");
+                }
+                return mapping.PhysicalProperties.ElementAtOrDefault(0) ?? "left";
+            }
+            else
+            {
+                // For LTR, if there's only one physical property (like "margin-left"),
+                // we need to convert it to the corresponding right property
+                if (mapping.PhysicalProperties.Length == 1 && mapping.PhysicalProperties[0].EndsWith("-left"))
+                {
+                    return mapping.PhysicalProperties[0].Replace("-left", "-right");
+                }
+                return mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "right";
+            }
         }
         else
         {
-            // Fix: Changed from ElementAtOrDefault(2) to ElementAtOrDefault(1)
-            // Similar fix for consistency with logical-to-physical mapping
+            // Fixed to use ElementAtOrDefault(1) instead of ElementAtOrDefault(2)
             return mapping.PhysicalProperties.ElementAtOrDefault(1) ?? "bottom";
         }
     }
+
     private bool IsVerticalRightToLeft(WritingMode writingMode)
     {
         return writingMode.Mode == WritingModeType.VerticalRightToLeft ||
                writingMode.Mode == WritingModeType.SidewaysRightToLeft;
     }
+
     private bool AreValuesEquivalent(ICssValue value1, ICssValue value2)
     {
         if (ReferenceEquals(value1, value2))
@@ -437,6 +512,7 @@ public class StylePropertyMapper : IStylePropertyMapper
             return false;
         return string.Equals(value1.CssText, value2.CssText, StringComparison.OrdinalIgnoreCase);
     }
+
     private enum LogicalPropertyType
     {
         BlockStart,
@@ -449,11 +525,13 @@ public class StylePropertyMapper : IStylePropertyMapper
         InlineSize,
         All
     }
+
     private class LogicalPropertyMapping
     {
         public string[] PhysicalProperties { get; }
         public LogicalPropertyType Type { get; }
         public bool IsShorthand { get; }
+
         public LogicalPropertyMapping(string[] physicalProperties, LogicalPropertyType type, bool isShorthand = false)
         {
             PhysicalProperties = physicalProperties;

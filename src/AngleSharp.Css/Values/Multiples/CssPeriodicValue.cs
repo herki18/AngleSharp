@@ -160,10 +160,11 @@ namespace AngleSharp.Css.Values
     /// <summary>
     /// Represents a periodic CSS value.
     /// </summary>
-    sealed class CssPeriodicValue : CssPeriodicValue<ICssValue>
+    public class CssPeriodicValue : CssPeriodicValue<ICssValue>
     {
         #region ctor
 
+        /// <inheritdoc />
         public CssPeriodicValue(ICssValue[] values = null)
             : base(values)
         {
