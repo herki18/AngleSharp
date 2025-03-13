@@ -8,6 +8,7 @@ using AngleSharp.Html.Parser;
 using AngleSharp.StyleSystem.Computation;
 using AngleSharp.StyleSystem.Integration;
 using AngleSharp.StyleSystem.Models;
+using Interfaces;
 
 [TestFixture]
 public class RuleCollectorTests
@@ -17,7 +18,7 @@ public class RuleCollectorTests
     private IHtmlParser _parser;
     private IDocument _document;
     private ICssParser _cssParser;
-    private StyleSheetManager _stylesheetManager;
+    private IStyleSheetManager _stylesheetManager;
     private ICssStyleSheet _stylesheet;
 
     [SetUp]

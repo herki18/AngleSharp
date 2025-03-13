@@ -1,13 +1,17 @@
 ﻿namespace AngleSharp.StyleSystem.Computation;
+
 using System;
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
-using Integration;
-using Interfaces;
-using Models;
+using AngleSharp.StyleSystem.Integration;
+using AngleSharp.StyleSystem.Interfaces;
+using AngleSharp.StyleSystem.Models;
 
-public class ComputedStyleBuilder
+/// <summary>
+/// Builds computed style objects from CSS declarations.
+/// </summary>
+public class ComputedStyleBuilder : IComputedStyleBuilder
 {
     private readonly IBrowsingContext _context;
     private readonly StyleEngine _engine;
@@ -17,6 +21,16 @@ public class ComputedStyleBuilder
     private readonly IPropertyTreeManager _propertyTreeManager;
     private readonly IRenderDevice _renderDevice;
 
+    /// <summary>
+    /// Creates a new computed style builder.
+    /// </summary>
+    /// <param name="context">The browsing context.</param>
+    /// <param name="engine">The style engine.</param>
+    /// <param name="variableResolver">The variable resolver.</param>
+    /// <param name="valueCalculator">The value calculator.</param>
+    /// <param name="stylePropertyMapper">The style property mapper.</param>
+    /// <param name="propertyTreeManager">The property tree manager.</param>
+    /// <param name="renderDevice">The render device.</param>
     public ComputedStyleBuilder(
         IBrowsingContext context,
         StyleEngine engine,
@@ -35,28 +49,26 @@ public class ComputedStyleBuilder
         _renderDevice = renderDevice ?? throw new ArgumentNullException(nameof(renderDevice));
     }
 
+    /// <summary>
+    /// Builds a computed style from a CSS style declaration.
+    /// </summary>
+    /// <param name="declaration">The CSS style declaration to process.</param>
+    /// <param name="element">The element being styled.</param>
+    /// <param name="parentStyle">The parent element's computed style.</param>
+    /// <returns>A computed style object.</returns>
     public IComputedStyle? BuildComputedStyle(ICssStyleDeclaration declaration, IElement element, IComputedStyle? parentStyle)
     {
-        // First extract CSS variables from the declaration
         _variableResolver.ExtractVariablesFromStyle(element, declaration);
 
-        // Get parent node if available
         var parentNode = parentStyle is ComputedStyle parentComputed ?
             parentComputed.PropertyTreeNode : null;
 
-        // Get or create property tree node
         var node = _propertyTreeManager.GetOrCreateNode(element, parentNode);
-
-        // Get the writing mode to handle logical properties
         var writingMode = GetWritingMode(declaration, element, parentStyle);
 
-        // Process each property in the declaration
         ProcessDeclarationProperties(declaration, element, node, writingMode);
-
-        // Optimize the property tree for sharing and memory efficiency
         _propertyTreeManager.OptimizeTree(node);
 
-        // Create the computed style using the property tree node
         return (_engine.StyleFactory as ComputedStyleFactory)?.CreateComputedStyle(element, parentStyle, declaration, node);
     }
 
@@ -66,7 +78,6 @@ public class ComputedStyleBuilder
         IPropertyTreeNode node,
         WritingMode writingMode)
     {
-        // Process each property in the declaration
         foreach (var property in declaration)
         {
             if (property.RawValue == null)
@@ -75,22 +86,17 @@ public class ComputedStyleBuilder
             var propertyName = property.Name;
             var propertyValue = property.RawValue;
 
-            // Resolve CSS variables
             var resolvedValue = _variableResolver.ResolveVariablesInValue(propertyValue, element, propertyName);
-
-            // Compute absolute values (unit conversion, calc() evaluation, etc.)
             var computedValue = _valueCalculator.Compute(resolvedValue, element, propertyName);
 
             if (computedValue == null)
                 continue;
 
-            // Handle logical properties (mapping to physical properties based on writing mode)
             if (_stylePropertyMapper.IsLogicalProperty(propertyName))
             {
                 var physicalProps = _stylePropertyMapper.MapLogicalToPhysical(
                     propertyName, computedValue, writingMode);
 
-                // Store each physical property in the node
                 foreach (var physicalProp in physicalProps)
                 {
                     node.SetProperty(physicalProp.Key, physicalProp.Value);
@@ -98,7 +104,6 @@ public class ComputedStyleBuilder
             }
             else
             {
-                // Store the computed value in the property tree
                 node.SetProperty(propertyName, computedValue);
             }
         }
@@ -109,7 +114,6 @@ public class ComputedStyleBuilder
         var directionValue = declaration.GetPropertyValue("direction");
         var writingModeValue = declaration.GetPropertyValue("writing-mode");
 
-        // If no direction or writing-mode specified, inherit from parent
         if (parentStyle != null && string.IsNullOrEmpty(directionValue) && string.IsNullOrEmpty(writingModeValue))
         {
             return parentStyle.WritingMode;

@@ -7,12 +7,10 @@ using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
 using AngleSharp.Dom;
+using Interfaces;
 using Models;
 
-/// <summary>
-/// Manages stylesheets from different origins and provides centralized access to them.
-/// </summary>
-public class StyleSheetManager : IDisposable
+public sealed class StyleSheetManager : IStyleSheetManager
 {
     private readonly List<StylesheetEntry> _stylesheets = new();
     private readonly IBrowsingContext _context;
@@ -20,16 +18,8 @@ public class StyleSheetManager : IDisposable
     private IDocument? _currentDocument;
     private MutationObserver? _observer;
 
-    /// <summary>
-    /// Event raised when stylesheets are added, removed, or modified.
-    /// </summary>
     public event EventHandler<StylesheetChangedEventArgs>? StylesheetChanged;
 
-    /// <summary>
-    /// Creates a new StyleSheetManager instance.
-    /// </summary>
-    /// <param name="context">The browsing context.</param>
-    /// <param name="loadUserAgentStylesheets"></param>
     public StyleSheetManager(IBrowsingContext context, bool loadUserAgentStylesheets = true)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -50,9 +40,6 @@ public class StyleSheetManager : IDisposable
         }
     }
 
-    /// <summary>
-    /// Attaches to a document and loads its stylesheets.
-    /// </summary>
     public void AttachToDocument(IDocument document)
     {
         if (document == null)
@@ -76,9 +63,6 @@ public class StyleSheetManager : IDisposable
         SetupMutationObserver(document);
     }
 
-    /// <summary>
-    /// Detaches from the current document.
-    /// </summary>
     public void DetachFromDocument(IDocument document)
     {
         if (document == null)
@@ -96,9 +80,6 @@ public class StyleSheetManager : IDisposable
         }
     }
 
-    /// <summary>
-    /// Registers a stylesheet with the manager.
-    /// </summary>
     public void RegisterStylesheet(ICssStyleSheet stylesheet, StylesheetOrigin origin)
     {
         if (stylesheet == null)
@@ -116,9 +97,6 @@ public class StyleSheetManager : IDisposable
         OnStylesheetChanged(new StylesheetChangedEventArgs(stylesheet, StylesheetChangeType.Added));
     }
 
-    /// <summary>
-    /// Unregisters a stylesheet from the manager.
-    /// </summary>
     public void UnregisterStylesheet(ICssStyleSheet stylesheet)
     {
         if (stylesheet == null)
@@ -132,18 +110,12 @@ public class StyleSheetManager : IDisposable
         OnStylesheetChanged(new StylesheetChangedEventArgs(stylesheet, StylesheetChangeType.Removed));
     }
 
-    /// <summary>
-    /// Gets all registered stylesheets in priority order.
-    /// </summary>
     public IEnumerable<StylesheetEntry> GetStylesheets()
     {
         // Return in cascade order: user agent, user, author
         return _stylesheets.OrderBy(e => e.Origin);
     }
 
-    /// <summary>
-    /// Gets stylesheets from a specific origin.
-    /// </summary>
     public IEnumerable<ICssStyleSheet> GetStylesheetsByOrigin(StylesheetOrigin origin)
     {
         return _stylesheets
@@ -151,9 +123,6 @@ public class StyleSheetManager : IDisposable
             .Select(e => e.Stylesheet);
     }
 
-    /// <summary>
-    /// Gets the origin of a stylesheet.
-    /// </summary>
     public StylesheetOrigin GetStylesheetOrigin(ICssStyleSheet stylesheet)
     {
         if (_originCache.TryGetValue(stylesheet, out var origin))
@@ -164,9 +133,6 @@ public class StyleSheetManager : IDisposable
         return StylesheetOrigin.Author; // Default
     }
 
-    /// <summary>
-    /// Gets all rules from all stylesheets in cascade order.
-    /// </summary>
     public IEnumerable<ICssRule> GetAllRules()
     {
         var rules = new List<ICssRule>();
@@ -179,17 +145,11 @@ public class StyleSheetManager : IDisposable
         return rules;
     }
 
-    /// <summary>
-    /// Gets all style rules from all stylesheets in cascade order.
-    /// </summary>
     public IEnumerable<ICssStyleRule> GetAllStyleRules()
     {
         return GetAllRules().OfType<ICssStyleRule>();
     }
 
-    /// <summary>
-    /// Recursively collects all rules, including those nested in container rules.
-    /// </summary>
     private void CollectRulesRecursively(IEnumerable<ICssRule> rules, List<ICssRule> collectedRules)
     {
         foreach (var rule in rules)
@@ -205,9 +165,6 @@ public class StyleSheetManager : IDisposable
         }
     }
 
-    /// <summary>
-    /// Checks for changes in the document's stylesheets and updates if needed.
-    /// </summary>
     public void RefreshDocumentStylesheets()
     {
         if (_currentDocument == null)
@@ -219,9 +176,6 @@ public class StyleSheetManager : IDisposable
         LoadDocumentStylesheets(_currentDocument);
     }
 
-    /// <summary>
-    /// Disposes the StyleSheetManager.
-    /// </summary>
     public void Dispose()
     {
         _observer?.Disconnect();
@@ -367,7 +321,7 @@ public class StyleSheetManager : IDisposable
         return false;
     }
 
-    protected virtual void OnStylesheetChanged(StylesheetChangedEventArgs e)
+    private void OnStylesheetChanged(StylesheetChangedEventArgs e)
     {
         StylesheetChanged?.Invoke(this, e);
     }

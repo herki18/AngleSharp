@@ -7,13 +7,14 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
 using AngleSharp.StyleSystem.Computation;
 using AngleSharp.StyleSystem.Integration;
+using Interfaces;
 using Moq;
 
 [TestFixture]
 public class InheritanceProcessorTests
 {
     private IBrowsingContext _context;
-    private InheritanceProcessor _inheritanceProcessor;
+    private IInheritanceProcessor _inheritanceProcessor;
     private IHtmlParser _parser;
     private IDocument _document;
     private ICssParser _cssParser;

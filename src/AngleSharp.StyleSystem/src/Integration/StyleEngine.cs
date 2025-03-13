@@ -13,7 +13,7 @@ public class StyleEngine : IStyleEngine, IDisposable
 {
     private IRenderDevice _renderDevice;
     private readonly IStyleCache _styleCache;
-    private readonly StyleSheetManager _stylesheetManager;
+    private readonly IStyleSheetManager _stylesheetManager;
     private readonly IValueCalculator _valueCalculator;
     private readonly IStylePropertyMapper _stylePropertyMapper;
     private readonly IStyleApplicationStrategy _styleApplicationStrategy;
@@ -55,15 +55,15 @@ public class StyleEngine : IStyleEngine, IDisposable
         _stylesheetManager.StylesheetChanged += StylesheetManager_StylesheetChanged;
     }
 
-    public StyleSheetManager StylesheetManager => _stylesheetManager;
+    public IStyleSheetManager StylesheetManager => _stylesheetManager;
     public IRuleCollector RuleCollector { get; }
 
     public ICascadeResolver CascadeResolver { get; }
 
-    public InheritanceProcessor InheritanceProcessor { get; }
+    public IInheritanceProcessor InheritanceProcessor { get; }
     public IVariableResolver VariableResolver { get; }
 
-    public ComputedStyleBuilder ComputedStyleBuilder { get; }
+    public IComputedStyleBuilder ComputedStyleBuilder { get; }
 
     /// <summary>
     /// Gets or sets whether style tree optimization is enabled.

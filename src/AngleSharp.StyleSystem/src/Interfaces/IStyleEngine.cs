@@ -35,12 +35,12 @@ public interface IStyleEngine
     IStyleInvalidationTracker InvalidationTracker { get; }
 
     IRenderDevice RenderDevice { get; }
-    StyleSheetManager StylesheetManager { get; }
+    IStyleSheetManager StylesheetManager { get; }
     IPropertyTreeManager PropertyTreeManager { get; }
     IRuleCollector RuleCollector { get; }
     ICascadeResolver CascadeResolver { get; }
-    InheritanceProcessor InheritanceProcessor { get; }
+    IInheritanceProcessor InheritanceProcessor { get; }
     IVariableResolver VariableResolver { get; }
-    ComputedStyleBuilder ComputedStyleBuilder { get; }
+    IComputedStyleBuilder ComputedStyleBuilder { get; }
     IBrowsingContext Context { get; }
 }

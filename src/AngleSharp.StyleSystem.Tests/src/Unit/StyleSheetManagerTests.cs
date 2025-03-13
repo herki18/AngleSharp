@@ -5,12 +5,13 @@ using AngleSharp.Css.Parser;
 using AngleSharp.Html.Parser;
 using AngleSharp.StyleSystem.Integration;
 using AngleSharp.StyleSystem.Models;
+using Interfaces;
 
 [TestFixture]
 public class StyleSheetManagerTests
 {
     private IBrowsingContext _context;
-    private StyleSheetManager _stylesheetManager;
+    private IStyleSheetManager _stylesheetManager;
     private IHtmlParser _parser;
     private ICssParser _cssParser;
     private bool _eventRaised;

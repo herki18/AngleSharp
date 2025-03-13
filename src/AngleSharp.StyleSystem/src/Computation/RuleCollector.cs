@@ -17,7 +17,7 @@ using Models;
 public class RuleCollector : IRuleCollector
 {
     private readonly IBrowsingContext _context;
-    private readonly StyleSheetManager _stylesheetManager;
+    private readonly IStyleSheetManager _stylesheetManager;
     private readonly Dictionary<string, List<MatchedRule>> _selectorMatchCache = new();
     private readonly ICssSelectorParser _selectorParser;
 
@@ -37,7 +37,7 @@ public class RuleCollector : IRuleCollector
     /// <param name="context">The browsing context.</param>
     /// <param name="stylesheetManager">The stylesheet manager.</param>
     /// <exception cref="ArgumentNullException">Thrown when context or stylesheetManager is null.</exception>
-    public RuleCollector(IBrowsingContext context, StyleSheetManager stylesheetManager)
+    public RuleCollector(IBrowsingContext context, IStyleSheetManager stylesheetManager)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _stylesheetManager = stylesheetManager ?? throw new ArgumentNullException(nameof(stylesheetManager));
