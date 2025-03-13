@@ -198,7 +198,67 @@ public class StylePropertyMapper : IStylePropertyMapper
             return MapLogicalShorthandToPhysical(logicalProperty, value, writingMode, mapping);
         }
 
-        // Direct mapping for each logical property type with consistent handling for different writing modes
+        // Handle size-related properties
+        if (logicalProperty.Contains("inline-size") || logicalProperty.Contains("block-size"))
+        {
+            // Handle inline-size properties
+            if (logicalProperty.Contains("inline-size"))
+            {
+                if (writingMode.IsHorizontal)
+                {
+                    // In horizontal modes, inline-size maps to width
+                    string prefix = "";
+                    if (logicalProperty.StartsWith("min-"))
+                        prefix = "min-";
+                    else if (logicalProperty.StartsWith("max-"))
+                        prefix = "max-";
+
+                    result[$"{prefix}width"] = value;
+                }
+                else
+                {
+                    // In vertical modes, inline-size maps to height
+                    string prefix = "";
+                    if (logicalProperty.StartsWith("min-"))
+                        prefix = "min-";
+                    else if (logicalProperty.StartsWith("max-"))
+                        prefix = "max-";
+
+                    result[$"{prefix}height"] = value;
+                }
+                return result;
+            }
+
+            // Handle block-size properties
+            if (logicalProperty.Contains("block-size"))
+            {
+                if (writingMode.IsHorizontal)
+                {
+                    // In horizontal modes, block-size maps to height
+                    string prefix = "";
+                    if (logicalProperty.StartsWith("min-"))
+                        prefix = "min-";
+                    else if (logicalProperty.StartsWith("max-"))
+                        prefix = "max-";
+
+                    result[$"{prefix}height"] = value;
+                }
+                else
+                {
+                    // In vertical modes, block-size maps to width
+                    string prefix = "";
+                    if (logicalProperty.StartsWith("min-"))
+                        prefix = "min-";
+                    else if (logicalProperty.StartsWith("max-"))
+                        prefix = "max-";
+
+                    result[$"{prefix}width"] = value;
+                }
+                return result;
+            }
+        }
+
+        // Direct mapping for block and inline direction properties
         string baseProperty = ExtractBaseProperty(logicalProperty);
         string suffix = ExtractPropertySuffix(logicalProperty);
 
@@ -290,20 +350,8 @@ public class StylePropertyMapper : IStylePropertyMapper
             return result;
         }
 
-        // Use the switch for other property types
-        switch (mapping.Type)
-        {
-            case LogicalPropertyType.BlockSize:
-                result[writingMode.IsHorizontal ? mapping.PhysicalProperties[0] : mapping.PhysicalProperties[1]] = value;
-                break;
-            case LogicalPropertyType.InlineSize:
-                result[writingMode.IsHorizontal ? mapping.PhysicalProperties[0] : mapping.PhysicalProperties[1]] = value;
-                break;
-            default:
-                result[logicalProperty] = value;
-                break;
-        }
-
+        // Fall back to the original property if nothing matched
+        result[logicalProperty] = value;
         return result;
     }
 
