@@ -2,120 +2,122 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using AngleSharp.Css;
+using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using AngleSharp.StyleSystem.Computation;
-using Interfaces;
-using Properties;
-using Storage;
+using AngleSharp.StyleSystem.Interfaces;
+using AngleSharp.StyleSystem.Models;
+using AngleSharp.StyleSystem.Observers;
+using AngleSharp.StyleSystem.Storage;
 
-public class StyleEngine : IStyleEngine, IDisposable
+/// <summary>
+/// Central component for style computation that implements the observer pattern for loose coupling.
+/// </summary>
+public class StyleEngine : IStyleEngine, IDocumentLifecycleObserver, IStyleComputationObserver, IDisposable
 {
-    private IRenderDevice _renderDevice;
-    private readonly IStyleCache _styleCache;
-    private readonly IStyleSheetManager _stylesheetManager;
-    private readonly IValueCalculator _valueCalculator;
-    private readonly IStylePropertyMapper _stylePropertyMapper;
-    private readonly IStyleApplicationStrategy _styleApplicationStrategy;
-    private readonly IStyleTreeResolver _styleTreeResolver;
+    #region Fields
 
-    // Performance tracking options
+    private IRenderDevice _renderDevice;
+    private readonly List<IStyleComputationObserver> _computationObservers = new();
+    private IStyleInvalidationTracker? _invalidationTracker;
+    private IStyleTreeResolver? _styleTreeResolver;
+    private IStyleSheetManager? _stylesheetManager;
+    private IValueCalculator? _valueCalculator;
+    private IVariableResolver? _variableResolver;
+    private ICascadeResolver? _cascadeResolver;
+    private IRuleCollector? _ruleCollector;
+    private IInheritanceProcessor? _inheritanceProcessor;
+    private IComputedStyleBuilder? _computedStyleBuilder;
+    private IPropertyTreeManager? _propertyTreeManager;
+    private IStyleCache? _styleCache;
     private bool _optimizationEnabled = true;
     private bool _collectMetrics = false;
+    private bool _isDisposed = false;
 
+    #endregion
+
+    #region Constructor
+
+    /// <summary>
+    /// Creates a new StyleEngine.
+    /// </summary>
+    /// <param name="context">The browsing context.</param>
     public StyleEngine(IBrowsingContext context)
     {
-        Context = context;
+        Context = context ?? throw new ArgumentNullException(nameof(context));
         _renderDevice = context.GetService<IRenderDevice>() ?? new DefaultRenderDevice();
-        PropertyTreeManager = new PropertyTreeManager();
-        _styleCache = new StyleCache();
-        _stylesheetManager = new StyleSheetManager(context);
-        InvalidationTracker = new StyleInvalidationTracker();
-        RuleCollector = new RuleCollector(context, _stylesheetManager);
-        CascadeResolver = new CascadeResolver(context);
-        InheritanceProcessor = new InheritanceProcessor(Context);
-        VariableResolver = new VariableResolver(context);
-        _stylePropertyMapper = new StylePropertyMapper();
-        _valueCalculator = new ValueCalculator(context, _renderDevice);
         StyleFactory = new ComputedStyleFactory(this);
-        ComputedStyleBuilder = new ComputedStyleBuilder(
-            context,
-            this,
-            VariableResolver,
-            _valueCalculator,
-            _stylePropertyMapper,
-            PropertyTreeManager,
-            _renderDevice);
-        _styleApplicationStrategy = new BasicStyleApplicationStrategy(this);
-        _styleTreeResolver = new StyleTreeResolver(
-            this,
-            _styleApplicationStrategy,
-            _styleCache,
-            InvalidationTracker);
-        _stylesheetManager.StylesheetChanged += StylesheetManager_StylesheetChanged;
+
+        // Add self as a computation observer for optimization
+        AddComputationObserver(this);
     }
 
-    public IStyleSheetManager StylesheetManager => _stylesheetManager;
-    public IRuleCollector RuleCollector { get; }
+    #endregion
 
-    public ICascadeResolver CascadeResolver { get; }
+    #region IStyleEngine Implementation
 
-    public IInheritanceProcessor InheritanceProcessor { get; }
-    public IVariableResolver VariableResolver { get; }
-
-    public IComputedStyleBuilder ComputedStyleBuilder { get; }
-
-    /// <summary>
-    /// Gets or sets whether style tree optimization is enabled.
-    /// </summary>
-    public bool OptimizationEnabled
+    /// <inheritdoc />
+    public IComputedStyle ComputeElementStyle(IElement element, string? pseudoElement = null)
     {
-        get => _optimizationEnabled;
-        set => _optimizationEnabled = value;
-    }
+        if (element == null)
+            throw new ArgumentNullException(nameof(element));
 
-    /// <summary>
-    /// Gets or sets whether to collect optimization metrics.
-    /// </summary>
-    public bool CollectMetrics
-    {
-        get => _collectMetrics;
-        set
+        if (_styleTreeResolver == null)
+            throw new InvalidOperationException("StyleTreeResolver not set");
+
+        var style = _styleTreeResolver.ResolveElementStyle(element, null, pseudoElement);
+
+        // Notify observers
+        foreach (var observer in _computationObservers.ToList())
         {
-            if (value && !_collectMetrics)
-            {
-                // Reset metrics when starting collection
-                PropertyTreeManager.ResetOptimizationMetrics();
-            }
-            _collectMetrics = value;
+            observer.OnStyleComputed(element, style);
+        }
+
+        return style;
+    }
+
+    /// <inheritdoc />
+    public void UpdateStyles(IElement root)
+    {
+        if (root == null)
+            throw new ArgumentNullException(nameof(root));
+
+        if (_styleTreeResolver == null)
+            throw new InvalidOperationException("StyleTreeResolver not set");
+
+        _styleTreeResolver.ResolveStylesForSubtree(root);
+
+        // Notify observers
+        foreach (var observer in _computationObservers.ToList())
+        {
+            observer.OnSubtreeStylesUpdated(root);
         }
     }
 
-    /// <summary>
-    /// Gets the current optimization metrics.
-    /// </summary>
-    /// <returns>The optimization metrics.</returns>
-    public OptimizationMetrics GetOptimizationMetrics()
-    {
-        return PropertyTreeManager.GetOptimizationMetrics();
-    }
+    /// <inheritdoc />
+    public IStyleInvalidationTracker InvalidationTracker =>
+        _invalidationTracker ?? throw new InvalidOperationException("InvalidationTracker not set");
 
-    private void StylesheetManager_StylesheetChanged(object? sender, StylesheetChangedEventArgs e)
-    {
-        _styleCache.Clear();
-        if (Context.Active?.DocumentElement != null)
-        {
-            InvalidationTracker.InvalidateElement(Context.Active.DocumentElement);
-        }
-    }
+    /// <inheritdoc />
+    public IComputedStyleFactory StyleFactory { get; }
 
+    /// <inheritdoc />
+    public IBrowsingContext Context { get; }
+
+    /// <inheritdoc />
     public IRenderDevice RenderDevice
     {
         get => _renderDevice;
         set
         {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+
             var oldDevice = _renderDevice;
-            _renderDevice = value ?? new DefaultRenderDevice();
+            _renderDevice = value;
+
             if (ShouldInvalidateStyles(oldDevice, _renderDevice))
             {
                 InvalidateDeviceDependentStyles();
@@ -123,8 +125,69 @@ public class StyleEngine : IStyleEngine, IDisposable
         }
     }
 
+    /// <inheritdoc />
+    public IStyleSheetManager StylesheetManager =>
+        _stylesheetManager ?? throw new InvalidOperationException("StylesheetManager not set");
+
+    /// <inheritdoc />
+    public IRuleCollector RuleCollector =>
+        _ruleCollector ?? throw new InvalidOperationException("RuleCollector not set");
+
+    /// <inheritdoc />
+    public ICascadeResolver CascadeResolver =>
+        _cascadeResolver ?? throw new InvalidOperationException("CascadeResolver not set");
+
+    /// <inheritdoc />
+    public IInheritanceProcessor InheritanceProcessor =>
+        _inheritanceProcessor ?? throw new InvalidOperationException("InheritanceProcessor not set");
+
+    /// <inheritdoc />
+    public IVariableResolver VariableResolver =>
+        _variableResolver ?? throw new InvalidOperationException("VariableResolver not set");
+
+    /// <inheritdoc />
+    public IComputedStyleBuilder ComputedStyleBuilder =>
+        _computedStyleBuilder ?? throw new InvalidOperationException("ComputedStyleBuilder not set");
+
+    /// <inheritdoc />
+    public IPropertyTreeManager PropertyTreeManager =>
+        _propertyTreeManager ?? throw new InvalidOperationException("PropertyTreeManager not set");
+
+    /// <inheritdoc />
+    public bool OptimizationEnabled
+    {
+        get => _optimizationEnabled;
+        set => _optimizationEnabled = value;
+    }
+
+    /// <inheritdoc />
+    public bool CollectMetrics
+    {
+        get => _collectMetrics;
+        set
+        {
+            if (value && !_collectMetrics && _propertyTreeManager != null)
+            {
+                _propertyTreeManager.ResetOptimizationMetrics();
+            }
+            _collectMetrics = value;
+        }
+    }
+
+    /// <inheritdoc />
+    public OptimizationMetrics GetOptimizationMetrics()
+    {
+        return PropertyTreeManager.GetOptimizationMetrics();
+    }
+
+    /// <inheritdoc />
     public void NotifyViewportChanged(int width, int height)
     {
+        if (width <= 0)
+            throw new ArgumentOutOfRangeException(nameof(width), "Viewport width must be positive");
+        if (height <= 0)
+            throw new ArgumentOutOfRangeException(nameof(height), "Viewport height must be positive");
+
         if (_renderDevice.ViewPortWidth != width || _renderDevice.ViewPortHeight != height)
         {
             _renderDevice.SetViewport(width, height);
@@ -132,65 +195,36 @@ public class StyleEngine : IStyleEngine, IDisposable
         }
     }
 
-    private bool ShouldInvalidateStyles(IRenderDevice oldDevice, IRenderDevice newDevice)
+    /// <inheritdoc />
+    public void AddComputationObserver(IStyleComputationObserver observer)
     {
-        return oldDevice.ViewPortWidth != newDevice.ViewPortWidth ||
-               oldDevice.ViewPortHeight != newDevice.ViewPortHeight ||
-               oldDevice.FontSize != newDevice.FontSize;
-    }
+        if (observer == null)
+            throw new ArgumentNullException(nameof(observer));
 
-    private void InvalidateDeviceDependentStyles()
-    {
-        _styleCache.Clear();
-        if (InvalidationTracker is StyleInvalidationTracker tracker)
+        if (!_computationObservers.Contains(observer))
         {
-            tracker.InvalidateForDeviceChange();
+            _computationObservers.Add(observer);
         }
     }
 
-    IRenderDevice IStyleEngine.RenderDevice => RenderDevice;
-    public IStyleInvalidationTracker InvalidationTracker { get; }
-
-    public IComputedStyleFactory StyleFactory { get; }
-    public IBrowsingContext Context { get; }
-
-    public IPropertyTreeManager PropertyTreeManager { get; }
-
-    public IComputedStyle ComputeElementStyle(IElement element, string? pseudoElement = null)
+    /// <inheritdoc />
+    public void RemoveComputationObserver(IStyleComputationObserver observer)
     {
-        return _styleTreeResolver.ResolveElementStyle(element, null, pseudoElement);
+        if (observer == null)
+            throw new ArgumentNullException(nameof(observer));
+
+        _computationObservers.Remove(observer);
     }
 
-    public void UpdateStyles(IElement root)
-    {
-        _styleTreeResolver.ResolveStylesForSubtree(root);
-    }
-
-    /// <summary>
-    /// Optimizes a single property tree node.
-    /// </summary>
-    /// <param name="node">The node to optimize.</param>
-    public void OptimizeTreeNode(PropertyTreeNode node)
-    {
-        if (_optimizationEnabled)
-        {
-            PropertyTreeManager.OptimizeTree(node);
-        }
-    }
-
-    /// <summary>
-    /// Forces optimization of all cached styles.
-    /// </summary>
+    /// <inheritdoc />
     public void OptimizeAllStyles()
     {
-        if (!_optimizationEnabled)
+        if (!_optimizationEnabled || _styleCache == null || _propertyTreeManager == null)
             return;
 
-        // This is an expensive operation that should be used sparingly
-        // It's primarily for benchmarking or when memory usage needs to be reduced
         var treeNodes = new HashSet<IPropertyTreeNode>();
 
-        // First, collect all unique PropertyTreeNodes from the style cache
+        // Collect unique property tree nodes
         foreach (var style in _styleCache.GetAllStyles())
         {
             if (style is ComputedStyle computedStyle)
@@ -199,15 +233,351 @@ public class StyleEngine : IStyleEngine, IDisposable
             }
         }
 
-        // Then optimize them
+        // Optimize each node
         foreach (var node in treeNodes)
         {
-            PropertyTreeManager.OptimizeTree(node);
+            _propertyTreeManager.OptimizeTree(node);
         }
     }
 
+    #endregion
+
+    #region Observer Pattern Methods
+
+    /// <summary>
+    /// Sets the style invalidation tracker.
+    /// </summary>
+    /// <param name="invalidationTracker">The tracker to use.</param>
+    public void SetInvalidationTracker(IStyleInvalidationTracker invalidationTracker)
+    {
+        _invalidationTracker = invalidationTracker ?? throw new ArgumentNullException(nameof(invalidationTracker));
+    }
+
+    /// <summary>
+    /// Sets the style tree resolver.
+    /// </summary>
+    /// <param name="styleTreeResolver">The resolver to use.</param>
+    public void SetStyleTreeResolver(IStyleTreeResolver styleTreeResolver)
+    {
+        _styleTreeResolver = styleTreeResolver ?? throw new ArgumentNullException(nameof(styleTreeResolver));
+    }
+
+    /// <summary>
+    /// Sets the stylesheet manager.
+    /// </summary>
+    /// <param name="stylesheetManager">The manager to use.</param>
+    public void SetStylesheetManager(IStyleSheetManager stylesheetManager)
+    {
+        _stylesheetManager = stylesheetManager ?? throw new ArgumentNullException(nameof(stylesheetManager));
+        _stylesheetManager.StylesheetChanged += StylesheetManager_StylesheetChanged;
+    }
+
+    /// <summary>
+    /// Sets the value calculator.
+    /// </summary>
+    /// <param name="valueCalculator">The calculator to use.</param>
+    public void SetValueCalculator(IValueCalculator valueCalculator)
+    {
+        _valueCalculator = valueCalculator ?? throw new ArgumentNullException(nameof(valueCalculator));
+    }
+
+    /// <summary>
+    /// Sets the variable resolver.
+    /// </summary>
+    /// <param name="variableResolver">The resolver to use.</param>
+    public void SetVariableResolver(IVariableResolver variableResolver)
+    {
+        _variableResolver = variableResolver ?? throw new ArgumentNullException(nameof(variableResolver));
+    }
+
+    /// <summary>
+    /// Sets the cascade resolver.
+    /// </summary>
+    /// <param name="cascadeResolver">The resolver to use.</param>
+    public void SetCascadeResolver(ICascadeResolver cascadeResolver)
+    {
+        _cascadeResolver = cascadeResolver ?? throw new ArgumentNullException(nameof(cascadeResolver));
+    }
+
+    /// <summary>
+    /// Sets the rule collector.
+    /// </summary>
+    /// <param name="ruleCollector">The collector to use.</param>
+    public void SetRuleCollector(IRuleCollector ruleCollector)
+    {
+        _ruleCollector = ruleCollector ?? throw new ArgumentNullException(nameof(ruleCollector));
+    }
+
+    /// <summary>
+    /// Sets the inheritance processor.
+    /// </summary>
+    /// <param name="inheritanceProcessor">The processor to use.</param>
+    public void SetInheritanceProcessor(IInheritanceProcessor inheritanceProcessor)
+    {
+        _inheritanceProcessor = inheritanceProcessor ?? throw new ArgumentNullException(nameof(inheritanceProcessor));
+    }
+
+    /// <summary>
+    /// Sets the computed style builder.
+    /// </summary>
+    /// <param name="computedStyleBuilder">The builder to use.</param>
+    public void SetComputedStyleBuilder(IComputedStyleBuilder computedStyleBuilder)
+    {
+        _computedStyleBuilder = computedStyleBuilder ?? throw new ArgumentNullException(nameof(computedStyleBuilder));
+    }
+
+    /// <summary>
+    /// Sets the property tree manager.
+    /// </summary>
+    /// <param name="propertyTreeManager">The manager to use.</param>
+    public void SetPropertyTreeManager(IPropertyTreeManager propertyTreeManager)
+    {
+        _propertyTreeManager = propertyTreeManager ?? throw new ArgumentNullException(nameof(propertyTreeManager));
+    }
+
+    /// <summary>
+    /// Sets the style cache.
+    /// </summary>
+    /// <param name="styleCache">The cache to use.</param>
+    public void SetStyleCache(IStyleCache styleCache)
+    {
+        _styleCache = styleCache ?? throw new ArgumentNullException(nameof(styleCache));
+    }
+
+    #endregion
+
+    #region IDocumentLifecycleObserver Implementation
+
+    /// <inheritdoc />
+    public void OnDocumentAttached(IDocument document)
+    {
+        if (document == null)
+            throw new ArgumentNullException(nameof(document));
+
+        try
+        {
+            _stylesheetManager?.AttachToDocument(document);
+
+            if (document.DocumentElement != null)
+            {
+                UpdateStyles(document.DocumentElement);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log exceptions instead of letting them propagate
+            Console.WriteLine($"Error attaching to document: {ex.Message}");
+        }
+    }
+
+    /// <inheritdoc />
+    public void OnDocumentDetached(IDocument document)
+    {
+        if (document == null)
+            throw new ArgumentNullException(nameof(document));
+
+        try
+        {
+            _stylesheetManager?.DetachFromDocument(document);
+
+            // Clear caches for this document
+            _styleCache?.Clear();
+            _ruleCollector?.ClearCache();
+
+            if (_valueCalculator != null)
+            {
+                _valueCalculator.ClearCache();
+            }
+
+            if (_variableResolver != null && document.DocumentElement != null)
+            {
+                // Clear variables for all elements in this document
+                ClearVariablesRecursively(document.DocumentElement);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error detaching from document: {ex.Message}");
+        }
+    }
+
+    /// <inheritdoc />
+    public void OnDomUpdated(IDocument document)
+    {
+        if (document == null)
+            throw new ArgumentNullException(nameof(document));
+
+        try
+        {
+            // This could be a viewport resize or other DOM change
+            if (document.DocumentElement != null && _invalidationTracker != null)
+            {
+                _invalidationTracker.InvalidateElement(document.DocumentElement);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error handling DOM update: {ex.Message}");
+        }
+    }
+
+    /// <inheritdoc />
+    public void OnReadyStateChanged(IDocument document, DocumentReadyState readyState)
+    {
+        if (document == null)
+            throw new ArgumentNullException(nameof(document));
+
+        try
+        {
+            if ((readyState == DocumentReadyState.Interactive ||
+                 readyState == DocumentReadyState.Complete) &&
+                document.DocumentElement != null)
+            {
+                UpdateStyles(document.DocumentElement);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error handling ready state change: {ex.Message}");
+        }
+    }
+
+    #endregion
+
+    #region IStyleComputationObserver Implementation
+
+    /// <inheritdoc />
+    public void OnStyleComputed(IElement element, IComputedStyle style)
+    {
+        if (element == null)
+            throw new ArgumentNullException(nameof(element));
+        if (style == null)
+            throw new ArgumentNullException(nameof(style));
+
+        try
+        {
+            // For self-observation (optimization)
+            if (_optimizationEnabled && style is ComputedStyle computedStyle &&
+                _propertyTreeManager != null && computedStyle.PropertyTreeNode is PropertyTreeNode node)
+            {
+                _propertyTreeManager.OptimizeTree(node);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in style computation observer: {ex.Message}");
+        }
+    }
+
+    /// <inheritdoc />
+    public void OnSubtreeStylesUpdated(IElement rootElement)
+    {
+        if (rootElement == null)
+            throw new ArgumentNullException(nameof(rootElement));
+
+        try
+        {
+            // For self-observation (optimization)
+            if (_optimizationEnabled)
+            {
+                OptimizeAllStyles();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in subtree styles observer: {ex.Message}");
+        }
+    }
+
+    #endregion
+
+    #region Helper Methods
+
+    private bool ShouldInvalidateStyles(IRenderDevice oldDevice, IRenderDevice newDevice)
+    {
+        return oldDevice.ViewPortWidth != newDevice.ViewPortWidth ||
+               oldDevice.ViewPortHeight != newDevice.ViewPortHeight ||
+               oldDevice.FontSize != newDevice.FontSize ||
+               oldDevice.Resolution != newDevice.Resolution;
+    }
+
+    private void InvalidateDeviceDependentStyles()
+    {
+        _styleCache?.Clear();
+
+        if (_invalidationTracker != null)
+        {
+            _invalidationTracker.InvalidateForDeviceChange();
+        }
+
+        if (_valueCalculator != null)
+        {
+            _valueCalculator.ClearCache();
+        }
+    }
+
+    private void ClearVariablesRecursively(IElement element)
+    {
+        if (_variableResolver == null)
+            return;
+
+        _variableResolver.ClearElementVariables(element);
+
+        foreach (var child in element.Children)
+        {
+            ClearVariablesRecursively(child);
+        }
+    }
+
+    private void StylesheetManager_StylesheetChanged(object? sender, StylesheetChangedEventArgs e)
+    {
+        // When a stylesheet changes, we need to invalidate styles
+        _styleCache?.Clear();
+
+        if (Context.Active?.DocumentElement != null && _invalidationTracker != null)
+        {
+            _invalidationTracker.InvalidateElement(Context.Active.DocumentElement);
+        }
+
+        if (_ruleCollector != null)
+        {
+            _ruleCollector.ClearCache();
+        }
+    }
+
+    #endregion
+
+    #region IDisposable Implementation
+
+    /// <inheritdoc />
     public void Dispose()
     {
-        _stylesheetManager?.Dispose();
+        if (_isDisposed)
+            return;
+
+        // Unhook events
+        if (_stylesheetManager != null)
+        {
+            _stylesheetManager.StylesheetChanged -= StylesheetManager_StylesheetChanged;
+            _stylesheetManager.Dispose();
+        }
+
+        // Clear references
+        _computationObservers.Clear();
+        _invalidationTracker = null;
+        _styleTreeResolver = null;
+        _stylesheetManager = null;
+        _valueCalculator = null;
+        _variableResolver = null;
+        _cascadeResolver = null;
+        _ruleCollector = null;
+        _inheritanceProcessor = null;
+        _computedStyleBuilder = null;
+        _propertyTreeManager = null;
+        _styleCache = null;
+
+        _isDisposed = true;
     }
+
+    #endregion
 }

@@ -69,12 +69,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Untitled 4.md",
-                "mode": "preview",
+                "file": "Untitled 10.md",
+                "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Untitled 4"
+              "title": "Untitled 10"
             }
           }
         ],
@@ -151,7 +151,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Untitled 4.md",
+                "file": "Untitled 10.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -161,7 +161,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Untitled 4"
+              "title": "Backlinks for Untitled 10"
             }
           },
           {
@@ -170,12 +170,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Untitled 4.md",
+                "file": "Untitled 10.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Untitled 4"
+              "title": "Outgoing links from Untitled 10"
             }
           },
           {
@@ -199,13 +199,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Untitled 4.md",
+                "file": "Untitled 10.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Untitled 4"
+              "title": "Outline of Untitled 10"
             }
           }
         ]
@@ -227,15 +227,22 @@
   },
   "active": "86e71335362ef5a8",
   "lastOpenFiles": [
+    "Notes/DocumentLifeCycler.md",
+    "Untitled 10.md",
+    "Untitled 9.md",
+    "Untitled 8.md",
+    "Untitled 6.md",
+    "Untitled 7.md",
+    "Untitled 5.md",
     "Untitled 3.md",
     "Untitled 4.md",
     "Untitled 2.md",
+    "Untitled 1.md",
+    "Untitled.md",
     "Notes/CascadeResolver Test Plan.md",
     "Notes/Font Family.md",
     "Notes/CssColorValue Alpha Issue.md",
     "Test.md",
-    "Untitled 1.md",
-    "Untitled.md",
     "Revision Two/Layout Engine/Integration with StyleSystem.md",
     "Revision Two/Layout Engine/AngleSharp.LayoutEngine Architecture Plan.md",
     "Revision Two/Layout Engine/Layout System Core Interfaces.md",
@@ -250,15 +257,8 @@
     "New Arhitecture/Rev 3/Improvments.md",
     "New Arhitecture/Untitled 10.md",
     "New Arhitecture/Untitled 9.md",
-    "New Arhitecture/Rev 3/Unit Tests Generated.md",
     "New Arhitecture/Rev 3",
-    "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
-    "New Arhitecture/Rev 2/StyleSystemService Integration Design.md",
-    "New Arhitecture/Rev 2/DomMutationTracker Design Document.md",
     "New Arhitecture/Rev 2",
-    "New Arhitecture/Untitled 8.md",
-    "New Arhitecture/Rev 1/StyleSystem Data Flow Diagrams.md",
-    "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
     "Notes",
     "New Arhitecture/Rev 1",
     "New Arhitecture",

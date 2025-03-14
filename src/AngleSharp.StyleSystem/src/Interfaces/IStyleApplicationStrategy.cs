@@ -4,43 +4,58 @@ using System.Collections.Generic;
 using AngleSharp.Dom;
 
 /// <summary>
-/// Defines the strategy for how styles are applied to elements in the document tree.
-/// This includes traversal order, style sharing decisions, and optimization rules.
+/// Defines a strategy for applying styles to elements in a document.
+/// This interface determines which elements to style, how to traverse the DOM,
+/// and when style sharing is possible.
 /// </summary>
 public interface IStyleApplicationStrategy
 {
     /// <summary>
-    /// Determines if a subtree starting at the specified element can be skipped during style computation.
+    /// Determines whether style computation should skip the specified element's subtree.
     /// </summary>
-    /// <param name="element">The root element of the potential subtree to skip.</param>
-    /// <returns>True if the subtree can be skipped; otherwise, false.</returns>
+    /// <param name="element">The element to check.</param>
+    /// <returns>True if the subtree should be skipped; otherwise, false.</returns>
+    /// <remarks>
+    /// This is used to optimize style computation by avoiding unnecessary work on elements
+    /// that don't require styling, such as script elements or elements with display:none.
+    /// </remarks>
     bool ShouldSkipSubtree(IElement element);
 
     /// <summary>
-    /// Determines if the target element can potentially share style with the donor element.
+    /// Determines whether an element can share computed styles with a potential donor element.
     /// </summary>
-    /// <param name="target">The element that might receive the shared style.</param>
-    /// <param name="donor">The element that might donate its computed style.</param>
-    /// <returns>True if style sharing is possible; otherwise, false.</returns>
+    /// <param name="target">The element that needs styling.</param>
+    /// <param name="donor">The potential style donor element.</param>
+    /// <returns>True if styles can be shared; otherwise, false.</returns>
+    /// <remarks>
+    /// Style sharing is an optimization that reduces memory usage and computation time
+    /// by reusing style data between similar elements.
+    /// </remarks>
     bool CanShareStyleWith(IElement target, IElement donor);
 
     /// <summary>
-    /// Determines the traversal order for style computation.
+    /// Gets the order in which elements should be traversed for styling.
     /// </summary>
-    /// <param name="root">The root element where traversal begins.</param>
-    /// <returns>An enumerable of elements in the order they should be processed.</returns>
+    /// <param name="root">The root element of the subtree to traverse.</param>
+    /// <returns>An enumerable of elements in the desired traversal order.</returns>
+    /// <remarks>
+    /// The traversal order can affect performance and style inheritance.
+    /// </remarks>
     IEnumerable<IElement> GetElementTraversalOrder(IElement root);
 
     /// <summary>
-    /// Creates a style context for an element, identifying information necessary for style computation.
+    /// Creates a style context for an element, which includes information needed for style computation.
     /// </summary>
     /// <param name="element">The element to create a context for.</param>
-    /// <returns>A context object containing information needed for style computation.</returns>
+    /// <returns>A style context for the element.</returns>
+    /// <remarks>
+    /// The style context includes parent style, visibility information, and potential style donors.
+    /// </remarks>
     StyleContext CreateStyleContext(IElement element);
 }
 
 /// <summary>
-/// Represents the context needed for computing an element's style.
+/// Contains context information for style computation.
 /// </summary>
 public class StyleContext
 {
@@ -50,22 +65,52 @@ public class StyleContext
     public IElement Element { get; set; } = null!;
 
     /// <summary>
-    /// Gets or sets the parent element's computed style.
+    /// Gets or sets the computed style of the parent element, if available.
     /// </summary>
     public IComputedStyle? ParentStyle { get; set; }
 
     /// <summary>
-    /// Gets or sets whether this element is in the normal document flow.
+    /// Gets or sets whether the element is in the normal document flow.
     /// </summary>
+    /// <remarks>
+    /// Elements with position:absolute or position:fixed are not in the normal document flow.
+    /// </remarks>
     public bool IsInDocumentFlow { get; set; } = true;
 
     /// <summary>
-    /// Gets or sets whether this element is visible.
+    /// Gets or sets whether the element is visible.
     /// </summary>
+    /// <remarks>
+    /// Elements with display:none or visibility:hidden are not visible.
+    /// </remarks>
     public bool IsVisible { get; set; } = true;
 
     /// <summary>
-    /// Gets or sets the potential style donor element, if style sharing is possible.
+    /// Gets or sets a potential element from which styles can be shared.
     /// </summary>
+    /// <remarks>
+    /// This is used for style sharing optimization.
+    /// </remarks>
     public IElement? StyleDonor { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the element has content that needs to be styled.
+    /// </summary>
+    /// <remarks>
+    /// Some elements, like empty divs with no background, may not need full styling.
+    /// </remarks>
+    public bool HasContent { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the element is contained within a style containment boundary.
+    /// </summary>
+    /// <remarks>
+    /// Elements with contain:style create a new style containment boundary.
+    /// </remarks>
+    public bool IsContained { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets the containment root element, if any.
+    /// </summary>
+    public IElement? ContainmentRoot { get; set; }
 }
