@@ -69,12 +69,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Notes/Font Family.md",
-                "mode": "source",
+                "file": "Notes/CascadeResolver Test Plan.md",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Font Family"
+              "title": "CascadeResolver Test Plan"
             }
           }
         ],
@@ -151,7 +151,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Notes/Font Family.md",
+                "file": "Notes/CascadeResolver Test Plan.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -161,7 +161,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Font Family"
+              "title": "Backlinks for CascadeResolver Test Plan"
             }
           },
           {
@@ -170,12 +170,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Notes/Font Family.md",
+                "file": "Notes/CascadeResolver Test Plan.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Font Family"
+              "title": "Outgoing links from CascadeResolver Test Plan"
             }
           },
           {
@@ -199,13 +199,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Notes/Font Family.md",
+                "file": "Notes/CascadeResolver Test Plan.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Font Family"
+              "title": "Outline of CascadeResolver Test Plan"
             }
           }
         ]
@@ -227,8 +227,9 @@
   },
   "active": "86e71335362ef5a8",
   "lastOpenFiles": [
-    "Notes/CssColorValue Alpha Issue.md",
     "Notes/Font Family.md",
+    "Notes/CascadeResolver Test Plan.md",
+    "Notes/CssColorValue Alpha Issue.md",
     "Test.md",
     "Untitled 1.md",
     "Untitled.md",
@@ -258,7 +259,6 @@
     "New Arhitecture/Rev 1/Development Guidelines.md",
     "New Arhitecture/Rev 1/Core Component Interfaces.md",
     "New Arhitecture/Rev 1/AngleSharp CSS Reference.md",
-    "New Arhitecture/Rev 1/AngleSharp.StyleSystem Development Guide.md",
     "Notes",
     "New Arhitecture/Rev 1",
     "New Arhitecture",
