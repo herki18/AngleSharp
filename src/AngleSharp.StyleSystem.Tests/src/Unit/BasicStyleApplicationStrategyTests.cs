@@ -6,6 +6,7 @@ using AngleSharp.Html.Parser;
 using AngleSharp.StyleSystem.Interfaces;
 using AngleSharp.StyleSystem.Properties;
 using Moq;
+using StyleSystem.Computation;
 using StyleSystem.Integration;
 
 [TestFixture]

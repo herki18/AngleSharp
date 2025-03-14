@@ -19,44 +19,6 @@ namespace AngleSharp.StyleSystem
         private static readonly object _documentChangedKey = new object();
 
         /// <summary>
-        /// Registers the StyleSystem service with the configuration.
-        /// </summary>
-        /// <param name="configuration">The configuration to extend.</param>
-        /// <returns>The modified configuration.</returns>
-        public static IConfiguration WithStyleSystem(this IConfiguration configuration)
-        {
-            if (configuration == null)
-                throw new ArgumentNullException(nameof(configuration));
-
-            var service = new StyleSystemService();
-            var services = configuration.Services.Concat(new[] { service });
-
-            return new Configuration(services);
-        }
-
-        /// <summary>
-        /// Registers the StyleSystem service with the configuration and provides additional options.
-        /// </summary>
-        /// <param name="configuration">The configuration to extend.</param>
-        /// <param name="configureAction">The action to configure the StyleSystem.</param>
-        /// <returns>The modified configuration.</returns>
-        public static IConfiguration WithStyleSystem(this IConfiguration configuration, Action<StyleSystemOptions> configureAction)
-        {
-            if (configuration == null)
-                throw new ArgumentNullException(nameof(configuration));
-            if (configureAction == null)
-                throw new ArgumentNullException(nameof(configureAction));
-
-            var options = new StyleSystemOptions();
-            configureAction(options);
-
-            var service = new StyleSystemService();
-            var services = configuration.Services.Concat(new[] { service });
-
-            return new Configuration(services);
-        }
-
-        /// <summary>
         /// Gets the StyleSystem service from the browsing context.
         /// </summary>
         /// <param name="context">The browsing context.</param>
@@ -178,32 +140,5 @@ namespace AngleSharp.StyleSystem
 
             return context;
         }
-    }
-
-    /// <summary>
-    /// Options for configuring the StyleSystem.
-    /// </summary>
-    public class StyleSystemOptions
-    {
-        /// <summary>
-        /// Gets or sets whether style optimization is enabled. Default is true.
-        /// </summary>
-        public bool EnableOptimization { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets whether to collect optimization metrics. Default is false.
-        /// </summary>
-        public bool CollectMetrics { get; set; } = false;
-
-        /// <summary>
-        /// Gets or sets whether to update styles immediately after context creation. Default is true.
-        /// </summary>
-        public bool UpdateStylesImmediately { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets the maximum number of worker threads to use for style computation.
-        /// Default is 0, which uses Environment.ProcessorCount - 1.
-        /// </summary>
-        public int MaxWorkerThreads { get; set; } = 0;
     }
 }
