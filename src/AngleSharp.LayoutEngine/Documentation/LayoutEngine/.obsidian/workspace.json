@@ -69,12 +69,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Notes/CascadeResolver Test Plan.md",
+                "file": "Untitled 4.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "CascadeResolver Test Plan"
+              "title": "Untitled 4"
             }
           }
         ],
@@ -151,7 +151,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Notes/CascadeResolver Test Plan.md",
+                "file": "Untitled 4.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -161,7 +161,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for CascadeResolver Test Plan"
+              "title": "Backlinks for Untitled 4"
             }
           },
           {
@@ -170,12 +170,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Notes/CascadeResolver Test Plan.md",
+                "file": "Untitled 4.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from CascadeResolver Test Plan"
+              "title": "Outgoing links from Untitled 4"
             }
           },
           {
@@ -199,13 +199,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Notes/CascadeResolver Test Plan.md",
+                "file": "Untitled 4.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of CascadeResolver Test Plan"
+              "title": "Outline of Untitled 4"
             }
           }
         ]
@@ -227,8 +227,11 @@
   },
   "active": "86e71335362ef5a8",
   "lastOpenFiles": [
-    "Notes/Font Family.md",
+    "Untitled 3.md",
+    "Untitled 4.md",
+    "Untitled 2.md",
     "Notes/CascadeResolver Test Plan.md",
+    "Notes/Font Family.md",
     "Notes/CssColorValue Alpha Issue.md",
     "Test.md",
     "Untitled 1.md",
@@ -256,9 +259,6 @@
     "New Arhitecture/Untitled 8.md",
     "New Arhitecture/Rev 1/StyleSystem Data Flow Diagrams.md",
     "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
-    "New Arhitecture/Rev 1/Development Guidelines.md",
-    "New Arhitecture/Rev 1/Core Component Interfaces.md",
-    "New Arhitecture/Rev 1/AngleSharp CSS Reference.md",
     "Notes",
     "New Arhitecture/Rev 1",
     "New Arhitecture",
