@@ -14,7 +14,7 @@ using AngleSharp.StyleSystem.Models;
 public class ComputedStyleBuilder : IComputedStyleBuilder
 {
     private readonly IBrowsingContext _context;
-    private readonly StyleEngine _engine;
+    private readonly IStyleEngine _engine;
     private readonly IVariableResolver _variableResolver;
     private readonly IValueCalculator _valueCalculator;
     private readonly IStylePropertyMapper _stylePropertyMapper;
@@ -33,7 +33,7 @@ public class ComputedStyleBuilder : IComputedStyleBuilder
     /// <param name="renderDevice">The render device.</param>
     public ComputedStyleBuilder(
         IBrowsingContext context,
-        StyleEngine engine,
+        IStyleEngine  engine,
         IVariableResolver variableResolver,
         IValueCalculator valueCalculator,
         IStylePropertyMapper stylePropertyMapper,

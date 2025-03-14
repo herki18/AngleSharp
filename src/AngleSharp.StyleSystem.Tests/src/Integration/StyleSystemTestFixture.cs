@@ -58,7 +58,7 @@ public class StyleSystemTestFixture
         // Create configuration with CSS and StyleSystem support
         var config = Configuration.Default
             .WithCss()
-            .WithStyleSystem()
+            // .WithStyleSystem()
             .WithDefaultLoader();
 
         Context = BrowsingContext.New(config);

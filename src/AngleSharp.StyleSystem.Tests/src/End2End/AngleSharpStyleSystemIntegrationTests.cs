@@ -1,61 +1,66 @@
 ﻿namespace AngleSharp.StyleSystem.Tests.End2End;
 
+using System.Threading.Tasks;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
-using AngleSharp.Html.Parser;
-using AngleSharp.StyleSystem.DependencyInjection;
-using AngleSharp.StyleSystem.Interfaces;
+using AngleSharp.Dom;
+using AngleSharp.StyleSystem;
 using AngleSharp.StyleSystem.Services;
+using AngleSharp.StyleSystem.DependencyInjection;
+using Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using NUnit.Framework;
 
 [TestFixture]
 public class AngleSharpStyleSystemIntegrationTests
 {
-    private IServiceProvider _serviceProvider;
     private IBrowsingContext _context;
-    private IStyleEngine _styleEngine;
-
+    private IDocument _document;
+    private ServiceProvider _serviceProvider;
     [OneTimeSetUp]
-    public void SetupFixture()
+    public async Task SetupFixture()
     {
-        // Create service collection
-        var services = new ServiceCollection();
+        // Create AngleSharp configuration with CSS support
+        var serviceCollection = new ServiceCollection();
 
-        // Create AngleSharp context with configuration
         var config = Configuration.Default
             .WithCss()
             .WithDefaultLoader();
 
-        var context = BrowsingContext.New(config);
+        _context = BrowsingContext.New(config);
 
-        // Register AngleSharp services
-        services.AddAngleSharpServices(context);
-
-        // Register StyleSystem services
-        services.AddStyleSystem(options => {
+        serviceCollection.AddStyleSystem(options => {
             options.EnableOptimization = true;
-            options.LoadUserAgentStylesheets = true;
+            options.BatchSize = 200;
             options.UpdateStylesImmediately = true;
         });
 
-        // Build the service provider
-        _serviceProvider = services.BuildServiceProvider();
+        serviceCollection.AddAngleSharpServices(_context);;
+        _serviceProvider = serviceCollection.BuildServiceProvider();
+        _context.RegisterStyleSystemServices(_serviceProvider);
+        // Not like this
+        // _context.UseStyleSystem(options => {
+        //     options.EnableOptimization = true;
+        //     options.BatchSize = 200;
+        //     options.UpdateStylesImmediately = true;
+        // });
 
-        // Get the browsing context
-        _context = _serviceProvider.GetRequiredService<IBrowsingContext>();
 
-        // Initialize StyleSystem
-        var styleSystemService = _serviceProvider.GetRequiredService<StyleSystemService>();
-        styleSystemService.Initialize(_context);
 
-        // Get the style engine
-        _styleEngine = _serviceProvider.GetRequiredService<IStyleEngine>();
-    }
+        // _context.RegisterStyleSystemServices();
 
-    [Test]
-    public async Task ComputeStyles_WithDependencyInjection_ShouldReturnCorrectComputedValues()
-    {
-        // Arrange - Create a simple HTML document with CSS
+        var styleSystemProvider = _serviceProvider.GetRequiredService<StyleSystemService>();
+        Assert.That(styleSystemProvider, Is.Not.Null, "StyleSystem service should be available");
+        Assert.That(styleSystemProvider.IsInitialized, Is.True, "StyleSystem should be initialized");
+
+
+
+        // Verify StyleSystem is properly initialized using the extension method
+        var styleSystem = _context.GetStyleSystem();
+        Assert.That(styleSystem, Is.Not.Null, "StyleSystem service should be available");
+        Assert.That(styleSystem.IsInitialized, Is.True, "StyleSystem should be initialized");
+
+        // Load a test document
         string html = @"
                 <!DOCTYPE html>
                 <html>
@@ -78,15 +83,26 @@ public class AngleSharpStyleSystemIntegrationTests
                 </body>
                 </html>";
 
-        // Act - Parse and compute styles
-        var document = await _context.OpenAsync(req => req.Content(html));
-        var testElement = document.GetElementById("test-element");
+        // Load the document
+        _document = await _context.OpenAsync(req => req.Content(html));
+    }
 
+    [OneTimeTearDown]
+    public void OneTimeTearDown()
+    {
+        // Dispose the service provider to clean up resources
+        _serviceProvider?.Dispose();
+    }
+
+    [Test]
+    public void ComputeStyles_WithStyleSystem_ShouldReturnCorrectComputedValues()
+    {
+        // Arrange - Get the test element
+        var testElement = _document.GetElementById("test-element");
         Assert.That(testElement, Is.Not.Null, "Test element should exist");
 
-        // Trigger style computation
-        _styleEngine.UpdateStyles(document.DocumentElement);
-        var computedStyle = _styleEngine.ComputeElementStyle(testElement);
+        // The GetComputedStyle extension method uses StyleSystem behind the scenes
+        var computedStyle = testElement.GetComputedStyle();
 
         // Assert - Verify style values using constraints
         Assert.That(computedStyle, Is.Not.Null, "Computed style should not be null");
@@ -95,8 +111,8 @@ public class AngleSharpStyleSystemIntegrationTests
         Assert.That(computedStyle.Display, Is.EqualTo(DisplayMode.Block), "Display should be block");
 
         // Check dimensions
-        Assert.That(computedStyle.GetPropertyValue("width"), Contains.Substring("200px"), "Width should be 200px");
-        Assert.That(computedStyle.GetPropertyValue("height"), Contains.Substring("100px"), "Height should be 100px");
+        Assert.That(computedStyle.GetPropertyValue("width"), Does.Contain("200px"), "Width should be 200px");
+        Assert.That(computedStyle.GetPropertyValue("height"), Does.Contain("100px"), "Height should be 100px");
 
         // Check color
         Assert.That(computedStyle.GetPropertyValue("color"), Does.Contain("rgb(255, 0, 0)")
@@ -117,53 +133,54 @@ public class AngleSharpStyleSystemIntegrationTests
     }
 
     [Test]
-    public async Task StyleSystemServiceDI_ShouldWorkWithAngleSharpTypes()
+    public Task AngleSharpCssParser_ShouldIntegrateWithStyleSystem()
     {
-        // Arrange - Get services via DI
-        var cssParser = _serviceProvider.GetService<ICssParser>();
-        var htmlParser = _serviceProvider.GetService<IHtmlParser>();
-        var cssStyleEngine = _serviceProvider.GetService<IStyleEngine>();
-
-        // Assert service availability
+        // Get a CSS parser from the context - still using GetService for built-in AngleSharp services
+        var cssParser = _context.GetService<ICssParser>();
         Assert.That(cssParser, Is.Not.Null, "CSS Parser should be available");
-        Assert.That(htmlParser, Is.Not.Null, "HTML Parser should be available");
-        Assert.That(cssStyleEngine, Is.Not.Null, "Style Engine should be available");
 
-        // Act - Use services together
-        string html = "<div style='color: blue;'>Test</div>";
-        string css = "div { background-color: yellow; }";
+        // Create a new style
+        var style = cssParser.ParseDeclaration("background-color: yellow; color: blue;");
+        Assert.That(style, Is.Not.Null, "Style should be parsed successfully");
 
-        var fragment = await htmlParser.ParseDocumentAsync(html);
-        var stylesheet = cssParser.ParseStyleSheet(css);
+        // Apply the style inline to a new div element
+        var div = _document.CreateElement("div");
+        div.SetAttribute("style", style.CssText);
+        Assert.IsNotNull(_document.Body);
+        _document.Body.AppendChild(div);
 
-        var styleSheetManager = _serviceProvider.GetRequiredService<IStyleSheetManager>();
-        styleSheetManager.RegisterStylesheet(stylesheet, Models.StylesheetOrigin.Author);
+        // Get computed style using the extension method
+        var computedStyle = div.GetComputedStyle();
+        Assert.That(computedStyle, Is.Not.Null, "Computed style should not be null");
 
-        var divElement = fragment.QuerySelector("div");
-
-        // Make sure styles are computed
-        if (divElement != null)
-        {
-            cssStyleEngine.ComputeElementStyle(divElement);
-        }
-        else
-        {
-            Assert.Fail("Div element not found in the parsed document");
-        }
-
-        // Assert style computation worked correctly
-        Assert.IsNotNull(divElement);
-        var style = divElement.GetComputedStyle();
-        Assert.That(style, Is.Not.Null, "Computed style should not be null");
-
-        // Verify color and background-color properties
-        string colorValue = style.GetPropertyValue("color");
-        string bgColorValue = style.GetPropertyValue("background-color");
+        // Check the applied styles
+        string colorValue = computedStyle.GetPropertyValue("color");
+        string bgColorValue = computedStyle.GetPropertyValue("background-color");
 
         Assert.That(colorValue, Does.Contain("rgb(0, 0, 255)").Or.Contain("rgba(0, 0, 255"),
             "Color should be blue");
         Assert.That(bgColorValue, Does.Contain("rgb(255, 255, 0)").Or.Contain("rgba(255, 255, 0"),
             "Background color should be yellow");
+        return Task.CompletedTask;
+    }
+
+    [Test]
+    public void StyleSystem_ShouldBeAccessibleThroughDifferentExtensionMethods()
+    {
+        // Test GetStyleSystemService with interface
+        var styleEngine = _context.GetStyleSystemService<IStyleEngine>();
+        Assert.That(styleEngine, Is.Not.Null, "Should be able to get style engine through GetStyleSystemService");
+
+        // Test direct extension method on element
+        var element = _document.GetElementById("test-element");
+        Assert.IsNotNull(element);
+        var computedStyle = element.GetComputedStyle();
+        Assert.That(computedStyle, Is.Not.Null, "Should be able to get computed style directly from element");
+
+        // Test context style operations
+        _context.RecalculateStyles();
+        var metrics = _context.GetStyleOptimizationMetrics();
+        Assert.That(metrics, Is.Not.Null, "Should be able to get optimization metrics");
     }
 
     [OneTimeTearDown]
@@ -171,17 +188,5 @@ public class AngleSharpStyleSystemIntegrationTests
     {
         // Dispose the context to clean up resources
         _context?.Dispose();
-
-        // Dispose the service provider if it implements IDisposable
-        if (_serviceProvider is IDisposable disposable)
-        {
-            disposable.Dispose();
-        }
-
-        // For .NET Core 3.0+ ServiceProvider
-        if (_serviceProvider is ServiceProvider serviceProvider)
-        {
-            serviceProvider.Dispose();
-        }
     }
 }

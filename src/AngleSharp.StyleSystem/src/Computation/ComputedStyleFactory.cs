@@ -9,10 +9,10 @@ using Storage;
 
 public class ComputedStyleFactory : IComputedStyleFactory
 {
-    private readonly StyleEngine _engine;
+    private readonly IStyleEngine _engine;
     private readonly Dictionary<string, ComputedStyle> _emptyStylePrototypes = new();
 
-    public ComputedStyleFactory(StyleEngine engine)
+    public ComputedStyleFactory(IStyleEngine engine)
     {
         _engine = engine;
     }
