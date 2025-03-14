@@ -7,6 +7,8 @@ using AngleSharp.StyleSystem.Services;
 
 namespace AngleSharp.StyleSystem
 {
+    using Css.Parser;
+
     /// <summary>
     /// Extensions for integrating StyleSystem with AngleSharp configuration.
     /// </summary>
@@ -38,9 +40,16 @@ namespace AngleSharp.StyleSystem
             // Create service collection and register StyleSystem
             var services = new ServiceCollection();
 
+            var context = BrowsingContext.New(configuration);
+
             // Add IBrowsingContext factory to service collection
-            services.AddSingleton(provider =>
-                BrowsingContext.New(configuration));
+            services.AddSingleton(provider => context);
+
+            ICssParser? cssParser = context.GetService<ICssParser>();
+            if(cssParser != null)
+            {
+                services.AddSingleton(provider => cssParser);
+            }
 
             // Add StyleSystem with options
             services.AddStyleSystem(configure);
