@@ -1,7 +1,6 @@
 ﻿namespace AngleSharp.StyleSystem.Computation;
 
 using System;
-using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using AngleSharp.StyleSystem.Integration;
@@ -13,40 +12,30 @@ using AngleSharp.StyleSystem.Models;
 /// </summary>
 public class ComputedStyleBuilder : IComputedStyleBuilder
 {
-    private readonly IBrowsingContext _context;
     private readonly IVariableResolver _variableResolver;
     private readonly IValueCalculator _valueCalculator;
     private readonly IStylePropertyMapper _stylePropertyMapper;
     private readonly IPropertyTreeManager _propertyTreeManager;
-    private readonly IRenderDevice _renderDevice;
     private readonly IComputedStyleFactory _styleFactory;
 
     /// <summary>
     /// Creates a new computed style builder.
     /// </summary>
-    /// <param name="context">The browsing context.</param>
-    /// <param name="engine">The style engine.</param>
     /// <param name="variableResolver">The variable resolver.</param>
     /// <param name="valueCalculator">The value calculator.</param>
     /// <param name="stylePropertyMapper">The style property mapper.</param>
     /// <param name="propertyTreeManager">The property tree manager.</param>
-    /// <param name="renderDevice">The render device.</param>
     public ComputedStyleBuilder(
-        IBrowsingContext context,
-        IStyleEngine  engine,
         IVariableResolver variableResolver,
         IValueCalculator valueCalculator,
         IStylePropertyMapper stylePropertyMapper,
         IPropertyTreeManager propertyTreeManager,
-        IRenderDevice renderDevice,
         IComputedStyleFactory styleFactory)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
         _variableResolver = variableResolver ?? throw new ArgumentNullException(nameof(variableResolver));
         _valueCalculator = valueCalculator ?? throw new ArgumentNullException(nameof(valueCalculator));
         _stylePropertyMapper = stylePropertyMapper ?? throw new ArgumentNullException(nameof(stylePropertyMapper));
         _propertyTreeManager = propertyTreeManager ?? throw new ArgumentNullException(nameof(propertyTreeManager));
-        _renderDevice = renderDevice ?? throw new ArgumentNullException(nameof(renderDevice));
         _styleFactory = styleFactory ?? throw new ArgumentNullException(nameof(styleFactory));
     }
 

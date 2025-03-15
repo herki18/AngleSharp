@@ -12,6 +12,8 @@ using AngleSharp.StyleSystem.Events;
 
 namespace AngleSharp.StyleSystem.DependencyInjection
 {
+    using Properties;
+
     public static class StyleSystemServiceCollectionExtensions
     {
         public static IServiceCollection AddStyleSystem(this IServiceCollection services)
@@ -89,6 +91,9 @@ namespace AngleSharp.StyleSystem.DependencyInjection
                 sp.GetService<IRenderDevice>() ?? new DefaultRenderDevice());
 
             services.AddSingleton<StyleSystemService>();
+
+            services.AddSingleton<IStyleApplicationStrategy, BasicStyleApplicationStrategy>();
+
 
             return services;
         }

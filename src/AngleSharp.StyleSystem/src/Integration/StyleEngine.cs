@@ -26,6 +26,7 @@ public class StyleEngine : IStyleEngine, IDisposable
     private readonly IVariableResolver _variableResolver;
     private readonly IBrowsingContext _context;
     private readonly IEventAggregator _eventAggregator;
+    private readonly IStyleTreeResolver _styleTreeResolver;
     private readonly ISubscriptionToken[] _subscriptionTokens;
 
     private bool _optimizationEnabled = true;
@@ -45,7 +46,8 @@ public class StyleEngine : IStyleEngine, IDisposable
         ICascadeResolver cascadeResolver,
         IInheritanceProcessor inheritanceProcessor,
         IVariableResolver variableResolver,
-        IEventAggregator eventAggregator)
+        IEventAggregator eventAggregator,
+        IStyleTreeResolver styleTreeResolver)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _renderDevice = renderDevice ?? throw new ArgumentNullException(nameof(renderDevice));
@@ -58,6 +60,7 @@ public class StyleEngine : IStyleEngine, IDisposable
         _inheritanceProcessor = inheritanceProcessor ?? throw new ArgumentNullException(nameof(inheritanceProcessor));
         _variableResolver = variableResolver ?? throw new ArgumentNullException(nameof(variableResolver));
         _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+        _styleTreeResolver = styleTreeResolver;
 
         _stylesheetManager.StylesheetChanged += StylesheetManager_StylesheetChanged;
 
@@ -83,11 +86,7 @@ public class StyleEngine : IStyleEngine, IDisposable
             return cachedStyle;
         }
 
-        var styleTreeResolver = GetStyleTreeResolver();
-        if (styleTreeResolver == null)
-            throw new InvalidOperationException("StyleTreeResolver not available");
-
-        var style = styleTreeResolver.ResolveElementStyle(element, null, pseudoElement);
+        var style = _styleTreeResolver.ResolveElementStyle(element, null, pseudoElement);
         _eventAggregator.Publish(new StyleComputedEvent(element, style));
 
         return style;
@@ -98,11 +97,7 @@ public class StyleEngine : IStyleEngine, IDisposable
         if (root == null)
             throw new ArgumentNullException(nameof(root));
 
-        var styleTreeResolver = GetStyleTreeResolver();
-        if (styleTreeResolver == null)
-            throw new InvalidOperationException("StyleTreeResolver not available");
-
-        styleTreeResolver.ResolveStylesForSubtree(root);
+        _styleTreeResolver.ResolveStylesForSubtree(root);
         _eventAggregator.Publish(new SubtreeStylesUpdatedEvent(root));
     }
 
@@ -313,10 +308,6 @@ public class StyleEngine : IStyleEngine, IDisposable
         _ruleCollector.ClearCache();
     }
 
-    private IStyleTreeResolver? GetStyleTreeResolver()
-    {
-        return _context.GetService<IStyleTreeResolver>();
-    }
     #endregion
 
     #region IDisposable Implementation

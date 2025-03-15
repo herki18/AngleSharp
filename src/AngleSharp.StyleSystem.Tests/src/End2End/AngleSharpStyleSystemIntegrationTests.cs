@@ -37,7 +37,7 @@ public class AngleSharpStyleSystemIntegrationTests
 
         serviceCollection.AddAngleSharpServices(_context);;
         _serviceProvider = serviceCollection.BuildServiceProvider();
-        _context.RegisterStyleSystemServices(_serviceProvider);
+        // _context.RegisterStyleSystemServices(_serviceProvider);
         // Not like this
         // _context.UseStyleSystem(options => {
         //     options.EnableOptimization = true;

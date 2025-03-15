@@ -1,246 +1,201 @@
-﻿namespace AngleSharp.StyleSystem.Properties;
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using AngleSharp.Dom;
-using AngleSharp.StyleSystem.Interfaces;
-
-/// <summary>
-/// Basic implementation of IStyleApplicationStrategy that determines how styles
-/// are applied to elements.
-/// </summary>
-public class BasicStyleApplicationStrategy : IStyleApplicationStrategy
+﻿namespace AngleSharp.StyleSystem.Properties
 {
-    private readonly IStyleEngine _styleEngine;
+    using System.Collections.Generic;
+    using AngleSharp.Dom;
+    using AngleSharp.StyleSystem.Interfaces;
 
     /// <summary>
-    /// Creates a new BasicStyleApplicationStrategy with the specified style engine.
+    /// Basic implementation of IStyleApplicationStrategy without any dependency on IStyleEngine.
     /// </summary>
-    /// <param name="styleEngine">The style engine to use.</param>
-    public BasicStyleApplicationStrategy(IStyleEngine styleEngine)
+    public class BasicStyleApplicationStrategy : IStyleApplicationStrategy
     {
-        _styleEngine = styleEngine ?? throw new ArgumentNullException(nameof(styleEngine));
-    }
-
-    /// <inheritdoc />
-    public bool ShouldSkipSubtree(IElement element)
-    {
-        if (element == null)
-            throw new ArgumentNullException(nameof(element));
-
-        // Skip SCRIPT, STYLE, NOSCRIPT elements
-        if (element.NodeName.Equals("SCRIPT", StringComparison.OrdinalIgnoreCase) ||
-            element.NodeName.Equals("STYLE", StringComparison.OrdinalIgnoreCase) ||
-            element.NodeName.Equals("NOSCRIPT", StringComparison.OrdinalIgnoreCase))
+        /// <summary>
+        /// Determines if a subtree should be skipped during style computation.
+        /// </summary>
+        public bool ShouldSkipSubtree(IElement element)
         {
-            return true;
+            if (element == null)
+                return true;
+
+            // Check for display:none in inline style
+            var styleAttr = element.GetAttribute("style");
+            if (styleAttr != null &&
+                (styleAttr.Contains("display:none") ||
+                 styleAttr.Contains("display: none")))
+                return true;
+
+            // Check for hidden attribute
+            if (element.HasAttribute("hidden"))
+                return true;
+
+            return false;
         }
 
-        // Skip elements that are not displayed (display: none)
-        var displayAttr = element.GetAttribute("style");
-        if (displayAttr != null && displayAttr.Contains("display: none"))
+        /// <summary>
+        /// Determines if the target element can share its style with the donor element.
+        /// </summary>
+        public bool CanShareStyleWith(IElement target, IElement donor)
         {
-            return true;
-        }
-
-        return false;
-    }
-
-    /// <inheritdoc />
-    public bool CanShareStyleWith(IElement target, IElement donor)
-    {
-        if (target == null)
-            throw new ArgumentNullException(nameof(target));
-        if (donor == null)
-            throw new ArgumentNullException(nameof(donor));
-
-        // Check basic identity criteria for style sharing
-
-        // 1. Must be the same element type
-        if (target.NodeName != donor.NodeName)
-            return false;
-
-        // 2. Must have same ID, class, and style attributes
-        if (target.Id != donor.Id)
-            return false;
-
-        if (target.ClassName != donor.ClassName)
-            return false;
-
-        if (target.GetAttribute("style") != donor.GetAttribute("style"))
-            return false;
-
-        // 3. Must have same parent structure for inheritance
-        if (target.ParentElement?.NodeName != donor.ParentElement?.NodeName)
-            return false;
-
-        // 4. Must have the same context-dependent attributes
-        var contextAttrs = new[] { "disabled", "checked", "required", "selected" };
-        foreach (var attr in contextAttrs)
-        {
-            if (target.HasAttribute(attr) != donor.HasAttribute(attr))
+            if (target == null || donor == null)
                 return false;
-        }
 
-        // 5. Must have same structural position
-        if (GetElementPosition(target) != GetElementPosition(donor))
-            return false;
+            // Check basic element properties that affect styling
+            if (target.NodeName != donor.NodeName)
+                return false;
 
-        return true;
-    }
+            if (target.Id != donor.Id)
+                return false;
 
-    /// <inheritdoc />
-    public IEnumerable<IElement> GetElementTraversalOrder(IElement root)
-    {
-        if (root == null)
-            throw new ArgumentNullException(nameof(root));
+            if (target.ClassName != donor.ClassName)
+                return false;
 
-        // Implement breadth-first traversal
-        var queue = new Queue<IElement>();
-        queue.Enqueue(root);
+            // Check inline styles
+            bool targetHasStyle = target.HasAttribute("style");
+            bool donorHasStyle = donor.HasAttribute("style");
 
-        while (queue.Count > 0)
-        {
-            var current = queue.Dequeue();
-            yield return current;
+            if (targetHasStyle != donorHasStyle)
+                return false;
 
-            // Skip traversing into subtrees we should skip
-            if (ShouldSkipSubtree(current))
-                continue;
-
-            foreach (var child in current.Children)
+            if (targetHasStyle && donorHasStyle)
             {
-                queue.Enqueue(child);
+                if (target.GetAttribute("style") != donor.GetAttribute("style"))
+                    return false;
             }
-        }
-    }
 
-    /// <inheritdoc />
-    public StyleContext CreateStyleContext(IElement element)
-    {
-        if (element == null)
-            throw new ArgumentNullException(nameof(element));
+            // Check other key attributes that affect styling
+            string[] styleAffectingAttributes = {
+                "dir", "lang", "title", "disabled", "checked", "readonly", "selected"
+            };
 
-        var context = new StyleContext
-        {
-            Element = element,
-            IsInDocumentFlow = IsInDocumentFlow(element),
-            IsVisible = IsVisible(element),
-            HasContent = HasContent(element)
-        };
-
-        // Get parent style
-        if (element.ParentElement != null)
-        {
-            try
+            foreach (var attr in styleAffectingAttributes)
             {
-                context.ParentStyle = _styleEngine.ComputeElementStyle(element.ParentElement);
-            }
-            catch (Exception)
-            {
-                // If parent style can't be computed, proceed without it
-                context.ParentStyle = null;
-            }
-        }
+                bool targetHasAttr = target.HasAttribute(attr);
+                bool donorHasAttr = donor.HasAttribute(attr);
 
-        // Check for style donor
-        var siblings = element.ParentElement?.Children
-            .Where(e => e != element && _styleEngine.InvalidationTracker.IsUpToDate(e))
-            .ToList();
+                if (targetHasAttr != donorHasAttr)
+                    return false;
 
-        if (siblings != null)
-        {
-            foreach (var sibling in siblings)
-            {
-                if (CanShareStyleWith(element, sibling))
+                if (targetHasAttr && donorHasAttr)
                 {
-                    context.StyleDonor = sibling;
-                    break;
+                    if (target.GetAttribute(attr) != donor.GetAttribute(attr))
+                        return false;
+                }
+            }
+
+            // Check parent context - elements can only share styles if they have the same parent
+            var targetParent = target.ParentElement;
+            var donorParent = donor.ParentElement;
+
+            if (targetParent == null || donorParent == null)
+                return targetParent == donorParent;
+
+            return targetParent.NodeName == donorParent.NodeName &&
+                   targetParent.Id == donorParent.Id &&
+                   targetParent.ClassName == donorParent.ClassName;
+        }
+
+        /// <summary>
+        /// Gets elements in the optimal traversal order for style computation.
+        /// </summary>
+        public IEnumerable<IElement> GetElementTraversalOrder(IElement root)
+        {
+            if (root == null)
+                yield break;
+
+            // Use breadth-first traversal for style computation
+            // This is optimal for style sharing and inheritance
+            var queue = new Queue<IElement>();
+            queue.Enqueue(root);
+
+            while (queue.Count > 0)
+            {
+                var element = queue.Dequeue();
+                yield return element;
+
+                foreach (var child in element.Children)
+                {
+                    queue.Enqueue(child);
                 }
             }
         }
 
-        // Check for containment
-        context.IsContained = HasStyleContainment(element);
-        if (context.IsContained)
+        /// <summary>
+        /// Creates a style context for the element without depending on IStyleEngine.
+        /// The StyleTreeResolver will populate the parent style.
+        /// </summary>
+        public StyleContext CreateStyleContext(IElement element)
         {
-            context.ContainmentRoot = element;
-        }
-        else
-        {
-            context.ContainmentRoot = FindContainmentRoot(element);
-        }
+            if (element == null)
+                return new StyleContext();
 
-        return context;
-    }
-
-    private bool IsInDocumentFlow(IElement element)
-    {
-        if (element.GetAttribute("style")?.Contains("position: absolute") == true ||
-            element.GetAttribute("style")?.Contains("position: fixed") == true)
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    private bool IsVisible(IElement element)
-    {
-        if (element.GetAttribute("style")?.Contains("display: none") == true ||
-            element.GetAttribute("style")?.Contains("visibility: hidden") == true ||
-            element.GetAttribute("hidden") != null)
-        {
-            return false;
+            // Create context with minimal information - StyleTreeResolver will fill in the rest
+            return new StyleContext
+            {
+                Element = element,
+                ParentStyle = null, // StyleTreeResolver will set this
+                IsInDocumentFlow = !IsOutOfFlow(element),
+                IsVisible = !ShouldSkipSubtree(element),
+                HasContent = true,
+                IsContained = HasStyleContainment(element),
+                ContainmentRoot = FindContainmentRoot(element)
+            };
         }
 
-        return true;
-    }
-
-    private bool HasContent(IElement element)
-    {
-        return element.ChildNodes.Length > 0 || !string.IsNullOrEmpty(element.TextContent);
-    }
-
-    private int GetElementPosition(IElement element)
-    {
-        if (element.ParentElement == null)
-            return 0;
-
-        int index = 0;
-        foreach (var child in element.ParentElement.Children)
+        private bool IsOutOfFlow(IElement element)
         {
-            if (child == element)
-                return index;
-            index++;
+            if (element == null)
+                return false;
+
+            var style = element.GetAttribute("style");
+            if (style == null)
+                return false;
+
+            return style.Contains("position: absolute") ||
+                   style.Contains("position:absolute") ||
+                   style.Contains("position: fixed") ||
+                   style.Contains("position:fixed") ||
+                   style.Contains("float: left") ||
+                   style.Contains("float:left") ||
+                   style.Contains("float: right") ||
+                   style.Contains("float:right");
         }
 
-        return -1;
-    }
-
-    private bool HasStyleContainment(IElement element)
-    {
-        var styleAttr = element.GetAttribute("style");
-        return styleAttr != null && (
-            styleAttr.Contains("contain: style") ||
-            styleAttr.Contains("contain: layout style") ||
-            styleAttr.Contains("contain: strict") ||
-            styleAttr.Contains("contain: content")
-        );
-    }
-
-    private IElement? FindContainmentRoot(IElement element)
-    {
-        var current = element.ParentElement;
-        while (current != null)
+        private bool HasStyleContainment(IElement element)
         {
-            if (HasStyleContainment(current))
-                return current;
+            if (element == null)
+                return false;
 
-            current = current.ParentElement;
+            var style = element.GetAttribute("style");
+            if (style == null)
+                return false;
+
+            return style.Contains("contain: style") ||
+                   style.Contains("contain:style") ||
+                   style.Contains("contain: layout") ||
+                   style.Contains("contain:layout") ||
+                   style.Contains("contain: paint") ||
+                   style.Contains("contain:paint") ||
+                   style.Contains("contain: strict") ||
+                   style.Contains("contain:strict") ||
+                   style.Contains("contain: content") ||
+                   style.Contains("contain:content");
         }
 
-        return null;
+        private IElement? FindContainmentRoot(IElement element)
+        {
+            if (element == null)
+                return null;
+
+            var current = element.ParentElement;
+            while (current != null)
+            {
+                if (HasStyleContainment(current))
+                    return current;
+
+                current = current.ParentElement;
+            }
+
+            return null;
+        }
     }
 }
