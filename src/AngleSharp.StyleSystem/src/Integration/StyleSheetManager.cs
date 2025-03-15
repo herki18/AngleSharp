@@ -7,6 +7,7 @@ using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
 using AngleSharp.Dom;
+using Events;
 using Interfaces;
 using Models;
 
@@ -15,19 +16,19 @@ public sealed class StyleSheetManager : IStyleSheetManager
     private readonly List<StylesheetEntry> _stylesheets = new();
     private readonly IBrowsingContext _context;
     private readonly Dictionary<ICssStyleSheet, StylesheetOrigin> _originCache = new();
+    private readonly IEventAggregator _eventAggregator;
     private IDocument? _currentDocument;
     private MutationObserver? _observer;
 
-    public event EventHandler<StylesheetChangedEventArgs>? StylesheetChanged;
-
-    public StyleSheetManager(IBrowsingContext context, bool loadUserAgentStylesheets = true)
+    public StyleSheetManager(
+        IBrowsingContext context,
+        IEventAggregator eventAggregator,
+        bool loadUserAgentStylesheets = true)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
-
-        // Create the mutation observer
+        _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
         _observer = new MutationObserver(MutationCallback);
 
-        // Register for document change events
         if (_context.Active != null)
         {
             AttachToDocument(_context.Active);
@@ -35,7 +36,6 @@ public sealed class StyleSheetManager : IStyleSheetManager
 
         if(loadUserAgentStylesheets)
         {
-            // Load user agent stylesheets
             LoadUserAgentStylesheets();
         }
     }
@@ -45,21 +45,14 @@ public sealed class StyleSheetManager : IStyleSheetManager
         if (document == null)
             throw new ArgumentNullException(nameof(document));
 
-        // Detach from current document if exists
         if (_currentDocument != null)
         {
             DetachFromDocument(_currentDocument);
         }
 
         _currentDocument = document;
-
-        // Clear previous document stylesheets
         ClearStylesheetsByOrigin(StylesheetOrigin.Author);
-
-        // Load all stylesheets from the document
         LoadDocumentStylesheets(document);
-
-        // Setup mutation observer for the document
         SetupMutationObserver(document);
     }
 
@@ -68,10 +61,7 @@ public sealed class StyleSheetManager : IStyleSheetManager
         if (document == null)
             throw new ArgumentNullException(nameof(document));
 
-        // Disconnect mutation observer
         _observer?.Disconnect();
-
-        // Clear document stylesheets
         ClearStylesheetsByOrigin(StylesheetOrigin.Author);
 
         if (_currentDocument == document)
@@ -85,7 +75,6 @@ public sealed class StyleSheetManager : IStyleSheetManager
         if (stylesheet == null)
             throw new ArgumentNullException(nameof(stylesheet));
 
-        // Don't add duplicates
         if (_originCache.ContainsKey(stylesheet))
             return;
 
@@ -93,8 +82,7 @@ public sealed class StyleSheetManager : IStyleSheetManager
         _stylesheets.Add(entry);
         _originCache[stylesheet] = origin;
 
-        // Notify listeners
-        OnStylesheetChanged(new StylesheetChangedEventArgs(stylesheet, StylesheetChangeType.Added));
+        _eventAggregator.Publish(new StylesheetChangedEvent(stylesheet, StylesheetChangeType.Added));
     }
 
     public void UnregisterStylesheet(ICssStyleSheet stylesheet)
@@ -102,17 +90,14 @@ public sealed class StyleSheetManager : IStyleSheetManager
         if (stylesheet == null)
             throw new ArgumentNullException(nameof(stylesheet));
 
-        // Remove from collections
         _stylesheets.RemoveAll(e => e.Stylesheet == stylesheet);
         _originCache.Remove(stylesheet);
 
-        // Notify listeners
-        OnStylesheetChanged(new StylesheetChangedEventArgs(stylesheet, StylesheetChangeType.Removed));
+        _eventAggregator.Publish(new StylesheetChangedEvent(stylesheet, StylesheetChangeType.Removed));
     }
 
     public IEnumerable<StylesheetEntry> GetStylesheets()
     {
-        // Return in cascade order: user agent, user, author
         return _stylesheets.OrderBy(e => e.Origin);
     }
 
@@ -130,13 +115,12 @@ public sealed class StyleSheetManager : IStyleSheetManager
             return origin;
         }
 
-        return StylesheetOrigin.Author; // Default
+        return StylesheetOrigin.Author;
     }
 
     public IEnumerable<ICssRule> GetAllRules()
     {
         var rules = new List<ICssRule>();
-
         foreach (var entry in GetStylesheets())
         {
             CollectRulesRecursively(entry.Stylesheet.Rules, rules);
@@ -154,10 +138,8 @@ public sealed class StyleSheetManager : IStyleSheetManager
     {
         foreach (var rule in rules)
         {
-            // Add the current rule
             collectedRules.Add(rule);
 
-            // If this is a container rule (like @media or @supports), collect its nested rules
             if (rule is ICssGroupingRule groupingRule)
             {
                 CollectRulesRecursively(groupingRule.Rules, collectedRules);
@@ -169,11 +151,11 @@ public sealed class StyleSheetManager : IStyleSheetManager
     {
         if (_currentDocument == null)
             return;
-        // Clear existing author stylesheets
-        ClearStylesheetsByOrigin(StylesheetOrigin.Author);
 
-        // Re-load all stylesheets from the document
+        ClearStylesheetsByOrigin(StylesheetOrigin.Author);
         LoadDocumentStylesheets(_currentDocument);
+
+        _eventAggregator.Publish(new StylesheetsRefreshedEvent(_currentDocument));
     }
 
     public void Dispose()
@@ -185,7 +167,6 @@ public sealed class StyleSheetManager : IStyleSheetManager
     private void LoadUserAgentStylesheets()
     {
         var defaultStyleSheetProviders = _context.GetServices<ICssDefaultStyleSheetProvider>();
-
         foreach (var provider in defaultStyleSheetProviders)
         {
             if (provider.Default != null)
@@ -204,10 +185,8 @@ public sealed class StyleSheetManager : IStyleSheetManager
 
         foreach (var styleElement in document.QuerySelectorAll("style"))
         {
-            // Only process style elements that don't already have associated stylesheets
             if (document.StyleSheets.All(sheet => sheet.OwnerNode != styleElement))
             {
-                // Force AngleSharp to process this style element
                 var cssParser = _context.GetService<ICssParser>();
                 if (cssParser != null && !string.IsNullOrWhiteSpace(styleElement.TextContent))
                 {
@@ -237,13 +216,11 @@ public sealed class StyleSheetManager : IStyleSheetManager
         if (_observer == null)
             return;
 
-        // Watch for changes in the head
         if (document.Head != null)
         {
             _observer.Connect(document.Head, childList: true, subtree: true, attributes: true);
         }
 
-        // Also watch for changes in the body (in case styles are added there)
         if (document.Body != null)
         {
             _observer.Connect(document.Body, childList: true, subtree: true, attributes: true);
@@ -256,12 +233,10 @@ public sealed class StyleSheetManager : IStyleSheetManager
 
         foreach (var mutation in mutations)
         {
-            // Check for added/removed style/link elements
             if (mutation.Type == "childList")
             {
                 if (mutation.Added != null)
                 {
-                    // Check added nodes
                     foreach (var node in mutation.Added)
                     {
                         if (IsStyleElement(node))
@@ -272,7 +247,6 @@ public sealed class StyleSheetManager : IStyleSheetManager
                     }
                 }
 
-                // Check removed nodes
                 if (!needsRefresh && mutation.Removed != null)
                 {
                     foreach (var node in mutation.Removed)
@@ -285,8 +259,6 @@ public sealed class StyleSheetManager : IStyleSheetManager
                     }
                 }
             }
-
-            // Check for attribute changes on link elements that might affect stylesheets
             else if (mutation.Type == "attributes" &&
                      IsLinkElement(mutation.Target) &&
                      (mutation.AttributeName == "href" || mutation.AttributeName == "rel"))
@@ -318,62 +290,20 @@ public sealed class StyleSheetManager : IStyleSheetManager
             var rel = element.GetAttribute("rel");
             return rel != null && rel.Contains("stylesheet", StringComparison.OrdinalIgnoreCase);
         }
-        return false;
-    }
 
-    private void OnStylesheetChanged(StylesheetChangedEventArgs e)
-    {
-        StylesheetChanged?.Invoke(this, e);
+        return false;
     }
 }
 
-/// <summary>
-/// Represents a stylesheet with its origin.
-/// </summary>
 public class StylesheetEntry
 {
-    /// <summary>
-    /// Gets the stylesheet.
-    /// </summary>
     public ICssStyleSheet Stylesheet { get; }
-
-    /// <summary>
-    /// Gets the origin of the stylesheet.
-    /// </summary>
     public StylesheetOrigin Origin { get; }
 
-    /// <summary>
-    /// Creates a new StylesheetEntry.
-    /// </summary>
     public StylesheetEntry(ICssStyleSheet stylesheet, StylesheetOrigin origin)
     {
         Stylesheet = stylesheet ?? throw new ArgumentNullException(nameof(stylesheet));
         Origin = origin;
-    }
-}
-
-/// <summary>
-/// Arguments for the StylesheetChanged event.
-/// </summary>
-public class StylesheetChangedEventArgs : EventArgs
-{
-    /// <summary>
-    /// Gets the stylesheet that changed.
-    /// </summary>
-    public ICssStyleSheet Stylesheet { get; }
-
-    /// <summary>
-    /// Gets the type of change.
-    /// </summary>
-    public StylesheetChangeType ChangeType { get; }
-
-    /// <summary>
-    /// Creates new StylesheetChangedEventArgs.
-    /// </summary>
-    public StylesheetChangedEventArgs(ICssStyleSheet stylesheet, StylesheetChangeType changeType)
-    {
-        Stylesheet = stylesheet;
-        ChangeType = changeType;
     }
 }
 

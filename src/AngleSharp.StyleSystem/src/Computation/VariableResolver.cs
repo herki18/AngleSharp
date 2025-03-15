@@ -1,6 +1,5 @@
 namespace AngleSharp.StyleSystem.Computation;
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Css.Dom;
@@ -10,7 +9,6 @@ using Interfaces;
 
 public class VariableResolver : IVariableResolver
 {
-    private readonly IBrowsingContext _context;
     private readonly Dictionary<IElement, Dictionary<string, ICssValue>> _elementVariables;
     private readonly Dictionary<string, ICssValue> _resolvedVariableCache;
     private readonly HashSet<string> _processingVariables;
@@ -18,7 +16,6 @@ public class VariableResolver : IVariableResolver
 
     public VariableResolver(IBrowsingContext context)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
         _elementVariables = new Dictionary<IElement, Dictionary<string, ICssValue>>();
         _resolvedVariableCache = new Dictionary<string, ICssValue>();
         _processingVariables = new HashSet<string>();

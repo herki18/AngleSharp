@@ -13,10 +13,15 @@ public class StyleInvalidationTracker : IStyleInvalidationTracker
     private readonly Dictionary<IElement, HashSet<IElement>> _dependencies = new();
     private readonly HashSet<IElement> _deviceDependentElements = new();
     private readonly IEventAggregator _eventAggregator;
-
+    private readonly ISubscriptionToken[] _subscriptionTokens;
     public StyleInvalidationTracker(IEventAggregator eventAggregator)
     {
-        _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+        _eventAggregator = eventAggregator;
+        _subscriptionTokens = new[]
+        {
+            _eventAggregator.Subscribe<DomChangesEvent>(OnDomChanges)
+            // Other subscriptions...
+        };
     }
 
     public void ProcessDomChanges(IEnumerable<DomChange> changes)
@@ -141,6 +146,11 @@ public class StyleInvalidationTracker : IStyleInvalidationTracker
             MarkAsInvalid(child);
             InvalidateChildrenRecursively(child);
         }
+    }
+
+    private void OnDomChanges(DomChangesEvent eventData)
+    {
+        ProcessDomChanges(eventData.Changes);
     }
 
     private void ProcessDomChange(

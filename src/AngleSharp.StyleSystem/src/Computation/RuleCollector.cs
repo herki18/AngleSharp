@@ -1,5 +1,4 @@
 ﻿namespace AngleSharp.StyleSystem.Computation;
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,23 +6,20 @@ using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
 using AngleSharp.Dom;
-using Integration;
-using Interfaces;
-using Models;
+using AngleSharp.StyleSystem.Events;
+using AngleSharp.StyleSystem.Integration;
+using AngleSharp.StyleSystem.Interfaces;
+using AngleSharp.StyleSystem.Models;
 
-/// <summary>
-/// Collects and matches CSS rules to elements, handling specificity calculation and caching.
-/// </summary>
-public class RuleCollector : IRuleCollector
+public class RuleCollector : IRuleCollector, IDisposable
 {
     private readonly IBrowsingContext _context;
     private readonly IStyleSheetManager _stylesheetManager;
     private readonly Dictionary<string, List<MatchedRule>> _selectorMatchCache = new();
     private readonly ICssSelectorParser _selectorParser;
+    private readonly IEventAggregator _eventAggregator;
+    private readonly ISubscriptionToken[] _subscriptionTokens;
 
-    /// <summary>
-    /// Set of known CSS pseudo-elements.
-    /// </summary>
     private static readonly HashSet<string> _pseudoElements = new(StringComparer.OrdinalIgnoreCase)
     {
         "before", "after", "first-line", "first-letter",
@@ -31,21 +27,25 @@ public class RuleCollector : IRuleCollector
         "spelling-error", "grammar-error"
     };
 
-    /// <summary>
-    /// Creates a new rule collector with the specified browsing context and stylesheet manager.
-    /// </summary>
-    /// <param name="context">The browsing context.</param>
-    /// <param name="stylesheetManager">The stylesheet manager.</param>
-    /// <exception cref="ArgumentNullException">Thrown when context or stylesheetManager is null.</exception>
-    public RuleCollector(IBrowsingContext context, IStyleSheetManager stylesheetManager)
+    public RuleCollector(
+        IBrowsingContext context,
+        IStyleSheetManager stylesheetManager,
+        IEventAggregator eventAggregator)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _stylesheetManager = stylesheetManager ?? throw new ArgumentNullException(nameof(stylesheetManager));
-        _stylesheetManager.StylesheetChanged += StylesheetManager_StylesheetChanged;
-        _selectorParser = _context.GetService<ICssSelectorParser>() ?? throw new InvalidOperationException("CSS Selector Parser service not available");
+        _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+
+        _selectorParser = _context.GetService<ICssSelectorParser>() ??
+            throw new InvalidOperationException("CSS Selector Parser service not available");
+
+        _subscriptionTokens = new[]
+        {
+            _eventAggregator.Subscribe<StylesheetChangedEvent>(_ => ClearCache()),
+            _eventAggregator.Subscribe<StylesheetsRefreshedEvent>(_ => ClearCache())
+        };
     }
 
-    /// <inheritdoc />
     public IEnumerable<MatchedRule> CollectMatchingRules(IElement element, string? pseudoElement = null)
     {
         var cacheKey = GetElementCacheKey(element, pseudoElement);
@@ -85,7 +85,6 @@ public class RuleCollector : IRuleCollector
         return sortedRules;
     }
 
-    /// <inheritdoc />
     public void ClearCache()
     {
         _selectorMatchCache.Clear();
@@ -97,21 +96,15 @@ public class RuleCollector : IRuleCollector
         return $"{elementHash}:{pseudoElement ?? "null"}";
     }
 
-    private void StylesheetManager_StylesheetChanged(object? sender, StylesheetChangedEventArgs e)
-    {
-        // Any stylesheet change invalidates the entire cache
-        ClearCache();
-    }
+    // Rest of the implementation remains the same
 
-    /// <summary>
-    /// Checks if a rule's selector matches an element.
-    /// </summary>
+    // (Keeping the remaining methods from the original implementation)
+
     private bool DoesSelectorMatch(ICssStyleRule rule, IElement element, string? pseudoElement)
     {
         try
         {
             var selectorText = rule.SelectorText;
-
             // Case 1: Looking for a pseudo-element
             if (pseudoElement != null)
             {
@@ -121,18 +114,14 @@ public class RuleCollector : IRuleCollector
                 {
                     return false;
                 }
-
                 // Extract the base selector (the part before the pseudo-element)
                 string baseSelector = ExtractBaseSelector(selectorText, pseudoElement);
-
                 // Check if the base selector matches the element
                 return string.IsNullOrEmpty(baseSelector) || element.Matches(baseSelector);
             }
-
             // Case 2: Looking for a regular element (no pseudo-element)
             // First check if the selector matches the element
             bool matches = element.Matches(selectorText);
-
             // Then make sure it doesn't contain pseudo-elements
             return matches && !HasAnyPseudoElement(selectorText);
         }
@@ -155,7 +144,6 @@ public class RuleCollector : IRuleCollector
         int doubleColonPos = selectorText.IndexOf($"::{pseudoElement}", StringComparison.OrdinalIgnoreCase);
         int singleColonPos = selectorText.IndexOf($":{pseudoElement}", StringComparison.OrdinalIgnoreCase);
         int pseudoPos;
-
         if (doubleColonPos >= 0)
         {
             pseudoPos = doubleColonPos;
@@ -168,7 +156,6 @@ public class RuleCollector : IRuleCollector
         {
             return selectorText; // Shouldn't happen as we already checked for the pseudo-element
         }
-
         // Return everything before the pseudo-element part
         return selectorText.Substring(0, pseudoPos).Trim();
     }
@@ -178,7 +165,6 @@ public class RuleCollector : IRuleCollector
         // Check for double-colon pseudo-elements (modern syntax)
         if (selectorText.Contains("::"))
             return true;
-
         // Check for single-colon pseudo-elements (legacy syntax)
         int colonPos = -1;
         while ((colonPos = selectorText.IndexOf(':', colonPos + 1)) >= 0)
@@ -189,27 +175,19 @@ public class RuleCollector : IRuleCollector
                 colonPos++;
                 continue;
             }
-
             // Extract the pseudo name
             string pseudoName = ExtractPseudoName(selectorText, colonPos + 1);
-
             // Check if it's a known pseudo-element
             if (_pseudoElements.Contains(pseudoName))
                 return true;
         }
-
         return false;
     }
 
-    /// <summary>
-    /// Calculates the specificity of a CSS selector according to the CSS specification.
-    /// </summary>
-    /// <param name="selectorText">The CSS selector text to analyze.</param>
     private Priority CalculateSpecificity(string selectorText)
     {
         if (string.IsNullOrWhiteSpace(selectorText))
             return Priority.Zero;
-
         try
         {
             if (_selectorParser != null)
@@ -223,26 +201,21 @@ public class RuleCollector : IRuleCollector
         }
         catch
         {
-            // Fall back to manual calculation if parser fails
         }
-
         byte inlines = 0;
         byte ids = 0;
         byte classes = 0;
         byte tags = 0;
-
         if (selectorText.Contains("[style]", StringComparison.OrdinalIgnoreCase))
         {
             inlines = 1;
         }
-
         ids = CountOccurrences(selectorText, '#');
         classes += CountOccurrences(selectorText, '.');
         classes += CountAttributeSelectors(selectorText);
         classes += CountPseudoClasses(selectorText);
         tags += CountElementSelectors(selectorText);
         tags += CountPseudoElements(selectorText);
-
         return new Priority(inlines, ids, classes, tags);
     }
 
@@ -255,7 +228,6 @@ public class RuleCollector : IRuleCollector
     {
         byte count = 0;
         int startIndex = 0;
-
         while ((startIndex = selectorText.IndexOf('[', startIndex)) >= 0)
         {
             int endIndex = selectorText.IndexOf(']', startIndex);
@@ -269,7 +241,6 @@ public class RuleCollector : IRuleCollector
                 break;
             }
         }
-
         return count;
     }
 
@@ -277,7 +248,6 @@ public class RuleCollector : IRuleCollector
     {
         byte count = 0;
         int index = 0;
-
         while ((index = selectorText.IndexOf(':', index)) >= 0)
         {
             if (index + 1 < selectorText.Length && selectorText[index + 1] == ':')
@@ -285,7 +255,6 @@ public class RuleCollector : IRuleCollector
                 index += 2;
                 continue;
             }
-
             if (index + 1 < selectorText.Length && selectorText[index + 1] != ':')
             {
                 string pseudoName = ExtractPseudoName(selectorText, index + 1);
@@ -294,10 +263,8 @@ public class RuleCollector : IRuleCollector
                     count++;
                 }
             }
-
             index++;
         }
-
         return count;
     }
 
@@ -305,15 +272,11 @@ public class RuleCollector : IRuleCollector
     {
         byte count = 0;
         int index = 0;
-
-        // Count double-colon syntax
         while ((index = selectorText.IndexOf("::", index)) >= 0)
         {
             count++;
             index += 2;
         }
-
-        // Count single-colon syntax for pseudo-elements
         index = 0;
         while ((index = selectorText.IndexOf(':', index)) >= 0)
         {
@@ -325,10 +288,8 @@ public class RuleCollector : IRuleCollector
                     count++;
                 }
             }
-
             index++;
         }
-
         return count;
     }
 
@@ -344,10 +305,8 @@ public class RuleCollector : IRuleCollector
             }
             endIndex++;
         }
-
         if (endIndex > startIndex)
             return selectorText.Substring(startIndex, endIndex - startIndex);
-
         return string.Empty;
     }
 
@@ -355,33 +314,28 @@ public class RuleCollector : IRuleCollector
     {
         byte count = 0;
         int index = 0;
-
         while (index < selectorText.Length)
         {
             while (index < selectorText.Length && char.IsWhiteSpace(selectorText[index]))
             {
                 index++;
             }
-
             if (index >= selectorText.Length)
             {
                 break;
             }
-
             if (selectorText[index] == '>' || selectorText[index] == '+' ||
                 selectorText[index] == '~' || selectorText[index] == ',')
             {
                 index++;
                 continue;
             }
-
             if (selectorText[index] == '[' || selectorText[index] == '#' ||
                 selectorText[index] == '.' || selectorText[index] == ':')
             {
                 index++;
                 continue;
             }
-
             if (char.IsLetter(selectorText[index]) || selectorText[index] == '*' || selectorText[index] == '_')
             {
                 if (selectorText[index] == '*')
@@ -389,7 +343,6 @@ public class RuleCollector : IRuleCollector
                     index++;
                     continue;
                 }
-
                 count++;
                 while (index < selectorText.Length &&
                        (char.IsLetterOrDigit(selectorText[index]) ||
@@ -404,7 +357,14 @@ public class RuleCollector : IRuleCollector
                 index++;
             }
         }
-
         return count;
+    }
+
+    public void Dispose()
+    {
+        foreach (var token in _subscriptionTokens)
+        {
+            token.Dispose();
+        }
     }
 }

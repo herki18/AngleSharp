@@ -1,7 +1,12 @@
 ﻿namespace AngleSharp.StyleSystem.Events;
+
+using System;
 using System.Collections.Generic;
 using AngleSharp.Dom;
-using AngleSharp.StyleSystem.Interfaces;
+using Interfaces;
+using Css.Dom;
+using Integration;
+using Models;
 
 // Style Invalidation Events
 public class ElementInvalidatedEvent
@@ -83,25 +88,72 @@ public class ReadyStateChangedEvent
     }
 }
 
-// Style Computation Events
-public class StyleComputedEvent
+/// <summary>
+/// Event published when DOM changes are detected that may affect styles.
+/// </summary>
+public class DomChangesEvent
 {
-    public IElement Element { get; }
-    public IComputedStyle Style { get; }
+    /// <summary>
+    /// Gets the collection of DOM changes that were detected.
+    /// </summary>
+    public IReadOnlyList<DomChange> Changes { get; }
 
-    public StyleComputedEvent(IElement element, IComputedStyle style)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DomChangesEvent"/> class.
+    /// </summary>
+    /// <param name="changes">The collection of DOM changes.</param>
+    public DomChangesEvent(IEnumerable<DomChange> changes)
     {
-        Element = element;
-        Style = style;
+        if (changes == null)
+            throw new ArgumentNullException(nameof(changes));
+
+        Changes = new List<DomChange>(changes);
     }
 }
 
-public class SubtreeStylesUpdatedEvent
+/// <summary>
+/// Event published when a stylesheet is added, removed, or modified in the system.
+/// </summary>
+public class StylesheetChangedEvent
 {
-    public IElement RootElement { get; }
+    /// <summary>
+    /// Gets the stylesheet that was changed.
+    /// </summary>
+    public ICssStyleSheet Stylesheet { get; }
 
-    public SubtreeStylesUpdatedEvent(IElement rootElement)
+    /// <summary>
+    /// Gets the type of change that occurred.
+    /// </summary>
+    public StylesheetChangeType ChangeType { get; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StylesheetChangedEvent"/> class.
+    /// </summary>
+    /// <param name="stylesheet">The stylesheet that was changed.</param>
+    /// <param name="changeType">The type of change that occurred.</param>
+    public StylesheetChangedEvent(ICssStyleSheet stylesheet, StylesheetChangeType changeType)
     {
-        RootElement = rootElement;
+        Stylesheet = stylesheet ?? throw new ArgumentNullException(nameof(stylesheet));
+        ChangeType = changeType;
+    }
+}
+
+/// <summary>
+/// Event published when all stylesheets have been refreshed.
+/// </summary>
+public class StylesheetsRefreshedEvent
+{
+    /// <summary>
+    /// Gets the document to which the stylesheets belong.
+    /// </summary>
+    public IDocument Document { get; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StylesheetsRefreshedEvent"/> class.
+    /// </summary>
+    /// <param name="document">The document whose stylesheets were refreshed.</param>
+    public StylesheetsRefreshedEvent(IDocument document)
+    {
+        Document = document ?? throw new ArgumentNullException(nameof(document));
     }
 }

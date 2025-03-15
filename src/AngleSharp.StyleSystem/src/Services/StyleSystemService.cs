@@ -223,22 +223,6 @@ public sealed class StyleSystemService : IDisposable
             styleEngine.OptimizationEnabled = _options.EnableOptimization;
             styleEngine.CollectMetrics = _options.CollectMetrics;
         }
-
-        var lifecycleCoordinator = GetService<DocumentLifecycleCoordinator>();
-        var stylesheetManager = GetService<IStyleSheetManager>();
-
-        if (stylesheetManager != null && _options.UpdateStylesImmediately)
-        {
-            stylesheetManager.StylesheetChanged += StylesheetManager_StylesheetChanged;
-        }
-    }
-
-    private void StylesheetManager_StylesheetChanged(object? sender, StylesheetChangedEventArgs e)
-    {
-        if (_context?.Active?.DocumentElement != null && StyleEngine != null)
-        {
-            StyleEngine.UpdateStyles(_context.Active.DocumentElement);
-        }
     }
 
     private void HookDocumentEvents(IDocument document)
@@ -324,12 +308,6 @@ public sealed class StyleSystemService : IDisposable
     {
         if (_isDisposed)
             return;
-
-        var stylesheetManager = GetService<IStyleSheetManager>();
-        if (stylesheetManager != null)
-        {
-            stylesheetManager.StylesheetChanged -= StylesheetManager_StylesheetChanged;
-        }
 
         if (_currentDocument != null)
         {

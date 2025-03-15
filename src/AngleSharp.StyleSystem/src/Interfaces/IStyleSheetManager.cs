@@ -1,5 +1,4 @@
 namespace AngleSharp.StyleSystem.Interfaces;
-
 using System;
 using System.Collections.Generic;
 using AngleSharp.Css.Dom;
@@ -8,23 +7,18 @@ using AngleSharp.StyleSystem.Integration;
 using AngleSharp.StyleSystem.Models;
 
 /// <summary>
-/// Manages stylesheets from different origins and provides centralized access to them.
+/// Manages stylesheets within the style system.
 /// </summary>
 public interface IStyleSheetManager : IDisposable
 {
     /// <summary>
-    /// Event raised when stylesheets are added, removed, or modified.
-    /// </summary>
-    event EventHandler<StylesheetChangedEventArgs>? StylesheetChanged;
-
-    /// <summary>
-    /// Attaches to a document and loads its stylesheets.
+    /// Attaches the manager to a document to track its stylesheets.
     /// </summary>
     /// <param name="document">The document to attach to.</param>
     void AttachToDocument(IDocument document);
 
     /// <summary>
-    /// Detaches from the specified document.
+    /// Detaches the manager from a document.
     /// </summary>
     /// <param name="document">The document to detach from.</param>
     void DetachFromDocument(IDocument document);
@@ -43,16 +37,16 @@ public interface IStyleSheetManager : IDisposable
     void UnregisterStylesheet(ICssStyleSheet stylesheet);
 
     /// <summary>
-    /// Gets all registered stylesheets in priority order.
+    /// Gets all registered stylesheets.
     /// </summary>
-    /// <returns>Stylesheets ordered by cascade priority.</returns>
+    /// <returns>The collection of stylesheet entries.</returns>
     IEnumerable<StylesheetEntry> GetStylesheets();
 
     /// <summary>
-    /// Gets stylesheets from a specific origin.
+    /// Gets all stylesheets from the specified origin.
     /// </summary>
     /// <param name="origin">The origin to filter by.</param>
-    /// <returns>Stylesheets from the specified origin.</returns>
+    /// <returns>The collection of stylesheets.</returns>
     IEnumerable<ICssStyleSheet> GetStylesheetsByOrigin(StylesheetOrigin origin);
 
     /// <summary>
@@ -63,19 +57,19 @@ public interface IStyleSheetManager : IDisposable
     StylesheetOrigin GetStylesheetOrigin(ICssStyleSheet stylesheet);
 
     /// <summary>
-    /// Gets all rules from all stylesheets in cascade order.
+    /// Gets all rules from all registered stylesheets.
     /// </summary>
-    /// <returns>All CSS rules.</returns>
+    /// <returns>The collection of rules.</returns>
     IEnumerable<ICssRule> GetAllRules();
 
     /// <summary>
-    /// Gets all style rules from all stylesheets in cascade order.
+    /// Gets all style rules from all registered stylesheets.
     /// </summary>
-    /// <returns>All CSS style rules.</returns>
+    /// <returns>The collection of style rules.</returns>
     IEnumerable<ICssStyleRule> GetAllStyleRules();
 
     /// <summary>
-    /// Checks for changes in the document's stylesheets and updates if needed.
+    /// Refreshes all document stylesheets.
     /// </summary>
     void RefreshDocumentStylesheets();
 }

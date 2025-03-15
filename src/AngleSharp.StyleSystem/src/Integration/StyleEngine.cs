@@ -62,15 +62,14 @@ public class StyleEngine : IStyleEngine, IDisposable
         _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
         _styleTreeResolver = styleTreeResolver;
 
-        _stylesheetManager.StylesheetChanged += StylesheetManager_StylesheetChanged;
-
-        // Subscribe to document lifecycle and style events
-        _subscriptionTokens = new ISubscriptionToken[]
+        _subscriptionTokens = new[]
         {
             _eventAggregator.Subscribe<DocumentAttachedEvent>(OnDocumentAttached),
             _eventAggregator.Subscribe<DocumentDetachedEvent>(OnDocumentDetached),
             _eventAggregator.Subscribe<DomUpdatedEvent>(OnDomUpdated),
-            _eventAggregator.Subscribe<ReadyStateChangedEvent>(OnReadyStateChanged)
+            _eventAggregator.Subscribe<ReadyStateChangedEvent>(OnReadyStateChanged),
+            _eventAggregator.Subscribe<StylesheetChangedEvent>(OnStylesheetChanged),
+            _eventAggregator.Subscribe<StylesheetsRefreshedEvent>(OnStylesheetsRefreshed)
         };
     }
     #endregion
@@ -87,7 +86,18 @@ public class StyleEngine : IStyleEngine, IDisposable
         }
 
         var style = _styleTreeResolver.ResolveElementStyle(element, null, pseudoElement);
-        _eventAggregator.Publish(new StyleComputedEvent(element, style));
+
+        try
+        {
+            if (_optimizationEnabled && style is ComputedStyle computedStyle)
+            {
+                _propertyTreeManager.OptimizeTree(computedStyle.PropertyTreeNode);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in style computation handler: {ex.Message}");
+        }
 
         return style;
     }
@@ -98,7 +108,18 @@ public class StyleEngine : IStyleEngine, IDisposable
             throw new ArgumentNullException(nameof(root));
 
         _styleTreeResolver.ResolveStylesForSubtree(root);
-        _eventAggregator.Publish(new SubtreeStylesUpdatedEvent(root));
+
+        try
+        {
+            if (_optimizationEnabled)
+            {
+                OptimizeAllStyles();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in subtree styles handler: {ex.Message}");
+        }
     }
 
     public IBrowsingContext Context => _context;
@@ -252,35 +273,26 @@ public class StyleEngine : IStyleEngine, IDisposable
         }
     }
 
-    private void OnStyleComputed(StyleComputedEvent eventData)
+    private void OnStylesheetChanged(StylesheetChangedEvent eventData)
     {
-        try
+        _styleCache.Clear();
+        if (_context.Active?.DocumentElement != null)
         {
-            if (_optimizationEnabled && eventData.Style is ComputedStyle computedStyle)
-            {
-                _propertyTreeManager.OptimizeTree(computedStyle.PropertyTreeNode);
-            }
+            _invalidationTracker.InvalidateElement(_context.Active.DocumentElement);
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in style computation handler: {ex.Message}");
-        }
+        _ruleCollector.ClearCache();
     }
 
-    private void OnSubtreeStylesUpdated(SubtreeStylesUpdatedEvent eventData)
+    private void OnStylesheetsRefreshed(StylesheetsRefreshedEvent eventData)
     {
-        try
+        _styleCache.Clear();
+        if (eventData.Document.DocumentElement != null)
         {
-            if (_optimizationEnabled)
-            {
-                OptimizeAllStyles();
-            }
+            _invalidationTracker.InvalidateElement(eventData.Document.DocumentElement);
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in subtree styles handler: {ex.Message}");
-        }
+        _ruleCollector.ClearCache();
     }
+
     #endregion
 
     #region Helper Methods
@@ -298,16 +310,6 @@ public class StyleEngine : IStyleEngine, IDisposable
         _invalidationTracker.InvalidateForDeviceChange();
     }
 
-    private void StylesheetManager_StylesheetChanged(object? sender, StylesheetChangedEventArgs e)
-    {
-        _styleCache.Clear();
-        if (_context.Active?.DocumentElement != null)
-        {
-            _invalidationTracker.InvalidateElement(_context.Active.DocumentElement);
-        }
-        _ruleCollector.ClearCache();
-    }
-
     #endregion
 
     #region IDisposable Implementation
@@ -315,8 +317,6 @@ public class StyleEngine : IStyleEngine, IDisposable
     {
         if (_isDisposed)
             return;
-
-        _stylesheetManager.StylesheetChanged -= StylesheetManager_StylesheetChanged;
 
         // Dispose all subscription tokens
         foreach (var token in _subscriptionTokens)

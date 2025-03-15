@@ -17,14 +17,17 @@ using Css.Parser;
 public class CascadeResolver : ICascadeResolver
 {
     private readonly IBrowsingContext _context;
+    private readonly ICssParser _cssParser;
 
     /// <summary>
     /// Creates a new cascade resolver for CSS style rules.
     /// </summary>
     /// <param name="context">The browsing context to operate with.</param>
-    public CascadeResolver(IBrowsingContext context)
+    /// <param name="cssParser"></param>
+    public CascadeResolver(IBrowsingContext context, ICssParser cssParser)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _cssParser = cssParser;
     }
 
     /// <summary>
@@ -188,12 +191,12 @@ public class CascadeResolver : ICascadeResolver
             return;
 
         // Get an ICssParser from the context
-        var cssParser = _context.GetService<ICssParser>();
-        if (cssParser == null)
-            return;
+        // var cssParser = _context.GetService<ICssParser>();
+        // if (cssParser == null)
+        //     return;
 
         // Parse the inline style declaration
-        var inlineStyle = cssParser.ParseDeclaration(styleAttr);
+        var inlineStyle = _cssParser.ParseDeclaration(styleAttr);
         if (inlineStyle == null)
             return;
 
