@@ -24,8 +24,6 @@ public class StyleEngine : IStyleEngine, IDisposable
     private readonly ICascadeResolver _cascadeResolver;
     private readonly IInheritanceProcessor _inheritanceProcessor;
     private readonly IVariableResolver _variableResolver;
-    private readonly IComputedStyleBuilder _computedStyleBuilder;
-    private readonly IComputedStyleFactory _styleFactory;
     private readonly IBrowsingContext _context;
     private readonly IEventAggregator _eventAggregator;
     private readonly ISubscriptionToken[] _subscriptionTokens;
@@ -47,8 +45,6 @@ public class StyleEngine : IStyleEngine, IDisposable
         ICascadeResolver cascadeResolver,
         IInheritanceProcessor inheritanceProcessor,
         IVariableResolver variableResolver,
-        IComputedStyleBuilder computedStyleBuilder,
-        IComputedStyleFactory styleFactory,
         IEventAggregator eventAggregator)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -61,8 +57,6 @@ public class StyleEngine : IStyleEngine, IDisposable
         _cascadeResolver = cascadeResolver ?? throw new ArgumentNullException(nameof(cascadeResolver));
         _inheritanceProcessor = inheritanceProcessor ?? throw new ArgumentNullException(nameof(inheritanceProcessor));
         _variableResolver = variableResolver ?? throw new ArgumentNullException(nameof(variableResolver));
-        _computedStyleBuilder = computedStyleBuilder ?? throw new ArgumentNullException(nameof(computedStyleBuilder));
-        _styleFactory = styleFactory ?? throw new ArgumentNullException(nameof(styleFactory));
         _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
 
         _stylesheetManager.StylesheetChanged += StylesheetManager_StylesheetChanged;
@@ -138,9 +132,7 @@ public class StyleEngine : IStyleEngine, IDisposable
     public ICascadeResolver CascadeResolver => _cascadeResolver;
     public IInheritanceProcessor InheritanceProcessor => _inheritanceProcessor;
     public IVariableResolver VariableResolver => _variableResolver;
-    public IComputedStyleBuilder ComputedStyleBuilder => _computedStyleBuilder;
     public IPropertyTreeManager PropertyTreeManager => _propertyTreeManager;
-    public IComputedStyleFactory StyleFactory => _styleFactory;
 
     public bool OptimizationEnabled
     {

@@ -12,29 +12,51 @@ using Storage;
 
 public class StyleTreeResolver : IStyleTreeResolver
 {
-    private readonly IStyleEngine _styleEngine;
+    private readonly IBrowsingContext _context;
     private readonly IStyleApplicationStrategy _strategy;
     private readonly IStyleCache _styleCache;
     private readonly IStyleInvalidationTracker _invalidationTracker;
     private readonly Stack<IElement> _processingStack;
     private readonly Dictionary<IElement, IElement> _styleSharingMap;
+    private readonly IComputedStyleFactory _styleFactory;
+    private readonly IComputedStyleBuilder _styleBuilder;
+
+    private readonly IPropertyTreeManager _propertyTreeManager;
+    private readonly IRuleCollector _ruleCollector;
+    private readonly ICascadeResolver _cascadeResolver;
+    private readonly IInheritanceProcessor _inheritanceProcessor;
+    private readonly IVariableResolver _variableResolver;
 
     // Settings for optimization batching
     private const int OptimizationBatchSize = 50;
     private readonly List<PropertyTreeNode> _pendingOptimizations = new List<PropertyTreeNode>();
 
     public StyleTreeResolver(
-        IStyleEngine styleEngine,
+        IBrowsingContext context,
         IStyleApplicationStrategy strategy,
         IStyleCache styleCache,
-        IStyleInvalidationTracker invalidationTracker)
+        IStyleInvalidationTracker invalidationTracker,
+        IComputedStyleFactory styleFactory,
+        IComputedStyleBuilder styleBuilder,
+        IPropertyTreeManager propertyTreeManager,
+        IRuleCollector ruleCollector,
+        ICascadeResolver cascadeResolver,
+        IInheritanceProcessor inheritanceProcessor,
+        IVariableResolver variableResolver)
     {
-        _styleEngine = styleEngine ?? throw new ArgumentNullException(nameof(styleEngine));
+        _context = context;
         _strategy = strategy ?? throw new ArgumentNullException(nameof(strategy));
         _styleCache = styleCache ?? throw new ArgumentNullException(nameof(styleCache));
         _invalidationTracker = invalidationTracker ?? throw new ArgumentNullException(nameof(invalidationTracker));
         _processingStack = new Stack<IElement>();
         _styleSharingMap = new Dictionary<IElement, IElement>();
+        _styleFactory = styleFactory ?? throw new ArgumentNullException(nameof(styleFactory));
+        _styleBuilder = styleBuilder ?? throw new ArgumentNullException(nameof(styleBuilder));
+        _propertyTreeManager = propertyTreeManager;
+        _ruleCollector = ruleCollector;
+        _cascadeResolver = cascadeResolver;
+        _inheritanceProcessor = inheritanceProcessor;
+        _variableResolver = variableResolver;
     }
 
     public IElement? CurrentElement => _processingStack.Count > 0 ? _processingStack.Peek() : null;
@@ -115,7 +137,7 @@ public class StyleTreeResolver : IStyleTreeResolver
 
         foreach (var node in sortedNodes)
         {
-            _styleEngine.PropertyTreeManager.OptimizeTree(node);
+            _propertyTreeManager.OptimizeTree(node);
         }
 
         _pendingOptimizations.Clear();
@@ -296,24 +318,18 @@ public class StyleTreeResolver : IStyleTreeResolver
 
     private IComputedStyle ComputeElementStyleInternal(IElement element, IComputedStyle? parentStyle, string? pseudoElement)
     {
-        var matchedRules = _styleEngine.RuleCollector.CollectMatchingRules(element, pseudoElement);
-        var cascadedStyle = _styleEngine.CascadeResolver.ResolveCascade(matchedRules, element);
-        var inheritedStyle = _styleEngine.InheritanceProcessor.ApplyInheritance(cascadedStyle, parentStyle);
-        _styleEngine.VariableResolver.ExtractVariablesFromStyle(element, inheritedStyle);
-        var computedStyle = _styleEngine.ComputedStyleBuilder.BuildComputedStyle(inheritedStyle, element, parentStyle);
+        var matchedRules = _ruleCollector.CollectMatchingRules(element, pseudoElement);
+        var cascadedStyle = _cascadeResolver.ResolveCascade(matchedRules, element);
+        var inheritedStyle = _inheritanceProcessor.ApplyInheritance(cascadedStyle, parentStyle);
+        _variableResolver.ExtractVariablesFromStyle(element, inheritedStyle);
+        var computedStyle = _styleBuilder.BuildComputedStyle(inheritedStyle, element, parentStyle);
         return computedStyle!;
     }
 
     private IComputedStyle CreateEmptyStyle(IElement element)
     {
-        var factory = _styleEngine.StyleFactory as ComputedStyleFactory;
-        if (factory != null)
-        {
-            var emptyStyle = new CssStyleDeclaration(_styleEngine.Context);
-            return factory.CreateComputedStyle(element, null, emptyStyle);
-        }
-
-        throw new InvalidOperationException("Unable to create an empty style: StyleFactory is not available or is not a ComputedStyleFactory");
+        var emptyStyle = new CssStyleDeclaration(_context);
+        return _styleFactory.CreateComputedStyle(element, null, emptyStyle);
     }
 
     private IPropertyTreeNode? GetPropertyTreeNode(IElement element)

@@ -56,7 +56,7 @@ public class ComputedStyleFactory : IComputedStyleFactory
         throw new ArgumentException("Source style must be a ComputedStyle instance", nameof(source));
     }
 
-    internal IComputedStyle CreateComputedStyle(IElement element, IComputedStyle? parentStyle, ICssStyleDeclaration declaration, IPropertyTreeNode? node = null)
+    public IComputedStyle CreateComputedStyle(IElement element, IComputedStyle? parentStyle, ICssStyleDeclaration declaration, IPropertyTreeNode? node = null)
     {
         // Handle empty style case with style sharing optimization
         if (declaration.Length == 0 && parentStyle != null)

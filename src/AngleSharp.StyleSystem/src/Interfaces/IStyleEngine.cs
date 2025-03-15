@@ -29,11 +29,6 @@ public interface IStyleEngine
     IStyleInvalidationTracker InvalidationTracker { get; }
 
     /// <summary>
-    /// Gets the factory used to create computed style objects.
-    /// </summary>
-    IComputedStyleFactory StyleFactory { get; }
-
-    /// <summary>
     /// Gets the browsing context this engine is associated with.
     /// </summary>
     IBrowsingContext Context { get; }
@@ -67,11 +62,6 @@ public interface IStyleEngine
     /// Gets the variable resolver used by this engine.
     /// </summary>
     IVariableResolver VariableResolver { get; }
-
-    /// <summary>
-    /// Gets the computed style builder used by this engine.
-    /// </summary>
-    IComputedStyleBuilder ComputedStyleBuilder { get; }
 
     /// <summary>
     /// Gets the property tree manager used by this engine.

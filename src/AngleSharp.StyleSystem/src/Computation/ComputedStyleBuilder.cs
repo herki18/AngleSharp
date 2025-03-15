@@ -14,12 +14,12 @@ using AngleSharp.StyleSystem.Models;
 public class ComputedStyleBuilder : IComputedStyleBuilder
 {
     private readonly IBrowsingContext _context;
-    private readonly IStyleEngine _engine;
     private readonly IVariableResolver _variableResolver;
     private readonly IValueCalculator _valueCalculator;
     private readonly IStylePropertyMapper _stylePropertyMapper;
     private readonly IPropertyTreeManager _propertyTreeManager;
     private readonly IRenderDevice _renderDevice;
+    private readonly IComputedStyleFactory _styleFactory;
 
     /// <summary>
     /// Creates a new computed style builder.
@@ -38,15 +38,16 @@ public class ComputedStyleBuilder : IComputedStyleBuilder
         IValueCalculator valueCalculator,
         IStylePropertyMapper stylePropertyMapper,
         IPropertyTreeManager propertyTreeManager,
-        IRenderDevice renderDevice)
+        IRenderDevice renderDevice,
+        IComputedStyleFactory styleFactory)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
-        _engine = engine ?? throw new ArgumentNullException(nameof(engine));
         _variableResolver = variableResolver ?? throw new ArgumentNullException(nameof(variableResolver));
         _valueCalculator = valueCalculator ?? throw new ArgumentNullException(nameof(valueCalculator));
         _stylePropertyMapper = stylePropertyMapper ?? throw new ArgumentNullException(nameof(stylePropertyMapper));
         _propertyTreeManager = propertyTreeManager ?? throw new ArgumentNullException(nameof(propertyTreeManager));
         _renderDevice = renderDevice ?? throw new ArgumentNullException(nameof(renderDevice));
+        _styleFactory = styleFactory ?? throw new ArgumentNullException(nameof(styleFactory));
     }
 
     /// <summary>
@@ -69,7 +70,7 @@ public class ComputedStyleBuilder : IComputedStyleBuilder
         ProcessDeclarationProperties(declaration, element, node, writingMode);
         _propertyTreeManager.OptimizeTree(node);
 
-        return (_engine.StyleFactory as ComputedStyleFactory)?.CreateComputedStyle(element, parentStyle, declaration, node);
+        return _styleFactory.CreateComputedStyle(element, parentStyle, declaration, node);
     }
 
     private void ProcessDeclarationProperties(
