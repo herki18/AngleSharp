@@ -32,9 +32,6 @@ public class ComputedStyleTests
 
         var mockDeclarationFactory = Substitute.For<IDeclarationFactory>();
 
-        var mockContext = Substitute.For<IBrowsingContext>();
-        mockContext.GetServices<IDeclarationFactory>().Returns(new List<IDeclarationFactory> { mockDeclarationFactory });
-
         var mockInvalidationTracker = Substitute.For<IStyleInvalidationTracker>();
 
         propertyTree ??= new PropertyTreeNode(null);
@@ -46,7 +43,7 @@ public class ComputedStyleTests
             propertyTree,
             mockRenderDevice,
             mockInvalidationTracker,
-            mockContext);
+            mockDeclarationFactory);
     }
 
     private ICssStyleDeclaration CreateDeclaration(Dictionary<string, ICssValue> properties)

@@ -9,22 +9,25 @@
 
     public class ComputedStyleFactory : IComputedStyleFactory
     {
-        private readonly IBrowsingContext _context;
         private readonly IRenderDevice _renderDevice;
         private readonly IStyleInvalidationTracker _invalidationTracker;
         private readonly IPropertyTreeManager _propertyTreeManager;
+        private readonly IDeclarationFactory _declarationFactory;
+        private readonly ICssStyleDeclarationFactory _cssStyleDeclarationFactory;
         private readonly Dictionary<string, ComputedStyle> _emptyStylePrototypes = new();
 
         public ComputedStyleFactory(
-            IBrowsingContext context,
             IRenderDevice renderDevice,
             IStyleInvalidationTracker invalidationTracker,
-            IPropertyTreeManager propertyTreeManager)
+            IPropertyTreeManager propertyTreeManager,
+            IDeclarationFactory declarationFactory,
+            ICssStyleDeclarationFactory cssStyleDeclarationFactory)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
             _renderDevice = renderDevice ?? throw new ArgumentNullException(nameof(renderDevice));
             _invalidationTracker = invalidationTracker ?? throw new ArgumentNullException(nameof(invalidationTracker));
             _propertyTreeManager = propertyTreeManager ?? throw new ArgumentNullException(nameof(propertyTreeManager));
+            _declarationFactory = declarationFactory;
+            _cssStyleDeclarationFactory = cssStyleDeclarationFactory;
         }
 
         public IComputedStyle CreateComputedStyle()
@@ -53,7 +56,7 @@
                     newNode,
                     _renderDevice,
                     _invalidationTracker,
-                    _context);
+                    _declarationFactory);
             }
             throw new ArgumentException("Source style must be a ComputedStyle instance", nameof(source));
         }
@@ -69,7 +72,7 @@
                         ? parentComputed.PropertyTreeNode
                         : null;
                     var propertyNode = _propertyTreeManager.GetOrCreateNode(element, parentNode);
-                    var emptyDeclaration = new CssStyleDeclaration(_context);
+                    var emptyDeclaration = _cssStyleDeclarationFactory.Create();
                     prototype = new ComputedStyle(
                         element,
                         parentStyle,
@@ -77,7 +80,7 @@
                         propertyNode,
                         _renderDevice,
                         _invalidationTracker,
-                        _context);
+                        _declarationFactory);
                     _emptyStylePrototypes[prototypeKey] = prototype;
                 }
                 return CopyComputedStyle(prototype);
@@ -99,7 +102,7 @@
                     node,
                     _renderDevice,
                     _invalidationTracker,
-                    _context);
+                    _declarationFactory);
             }
 
             return new ComputedStyle(
@@ -109,12 +112,12 @@
                 node,
                 _renderDevice,
                 _invalidationTracker,
-                _context);
+                _declarationFactory);
         }
 
-        private CssStyleDeclaration CreateDeclarationFromPropertyTree(IPropertyTreeNode node)
+        private ICssStyleDeclaration CreateDeclarationFromPropertyTree(IPropertyTreeNode node)
         {
-            var declaration = new CssStyleDeclaration(_context);
+            var declaration = _cssStyleDeclarationFactory.Create();
             var properties = node.GetAllProperties();
             foreach (var property in properties)
             {
@@ -128,7 +131,7 @@
             return declaration;
         }
 
-        private void MergeDeclarations(CssStyleDeclaration target, ICssStyleDeclaration source)
+        private void MergeDeclarations(ICssStyleDeclaration target, ICssStyleDeclaration source)
         {
             foreach (var property in source)
             {

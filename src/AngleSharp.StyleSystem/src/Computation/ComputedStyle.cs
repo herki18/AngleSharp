@@ -26,7 +26,7 @@ public class ComputedStyle : IComputedStyle
     private readonly WritingMode _writingMode;
     private readonly IRenderDevice _renderDevice;
     private readonly IStyleInvalidationTracker _invalidationTracker;
-    private readonly IBrowsingContext _context;
+    private readonly IDeclarationFactory _declarationFactory;
     private readonly Dictionary<string, object> _computedValueCache;
     private bool _isInitialized = false;
 
@@ -60,14 +60,14 @@ public class ComputedStyle : IComputedStyle
         IPropertyTreeNode propertyTree,
         IRenderDevice renderDevice,
         IStyleInvalidationTracker invalidationTracker,
-        IBrowsingContext context)
+        IDeclarationFactory declarationFactory)
     {
         _element = element ?? throw new ArgumentNullException(nameof(element));
         _parentStyle = parentStyle;
         _propertyTree = propertyTree ?? throw new ArgumentNullException(nameof(propertyTree));
         _renderDevice = renderDevice ?? throw new ArgumentNullException(nameof(renderDevice));
         _invalidationTracker = invalidationTracker ?? throw new ArgumentNullException(nameof(invalidationTracker));
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _declarationFactory = declarationFactory;
         _boxProperties = new BoxProperties(this, _renderDevice);
         _textProperties = new TextProperties(this, _renderDevice);
         _rareProperties = new RareProperties();
@@ -110,8 +110,7 @@ public class ComputedStyle : IComputedStyle
         }
         if (string.IsNullOrEmpty(value))
         {
-            var factory = _context.GetFactory<IDeclarationFactory>();
-            var declarationInfo = factory?.Create(propertyName);
+            var declarationInfo = _declarationFactory?.Create(propertyName);
             if (declarationInfo?.InitialValue != null)
             {
                 return declarationInfo.InitialValue.CssText;

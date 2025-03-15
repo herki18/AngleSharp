@@ -16,17 +16,17 @@ using Css.Parser;
 /// </summary>
 public class CascadeResolver : ICascadeResolver
 {
-    private readonly IBrowsingContext _context;
+    private readonly ICssStyleDeclarationFactory _styleDeclarationFactory;
     private readonly ICssParser _cssParser;
 
     /// <summary>
     /// Creates a new cascade resolver for CSS style rules.
     /// </summary>
-    /// <param name="context">The browsing context to operate with.</param>
+    /// <param name="styleDeclarationFactory"></param>
     /// <param name="cssParser"></param>
-    public CascadeResolver(IBrowsingContext context, ICssParser cssParser)
+    public CascadeResolver(ICssStyleDeclarationFactory styleDeclarationFactory, ICssParser cssParser)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _styleDeclarationFactory = styleDeclarationFactory;
         _cssParser = cssParser;
     }
 
@@ -41,7 +41,7 @@ public class CascadeResolver : ICascadeResolver
         if (element == null)
             throw new ArgumentNullException(nameof(element));
 
-        var resolvedStyle = new CssStyleDeclaration(_context);
+        var resolvedStyle = _styleDeclarationFactory.Create();
 
         // Group rules by origin and importance
         var importantAuthorRules = new List<MatchedRule>();
