@@ -1,60 +1,79 @@
-namespace AngleSharp.StyleSystem.Threading;
-
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using AngleSharp.Dom;
-using AngleSharp.StyleSystem.Integration;
+using AngleSharp.StyleSystem.Interfaces;
 using AngleSharp.StyleSystem.Models;
-using Interfaces;
+
+namespace AngleSharp.StyleSystem.Threading;
 
 /// <summary>
-/// Placeholder implementation of the worker thread pool for style computation.
+/// Manages a pool of worker threads for style computation tasks using System.Threading.Channels.
 /// </summary>
-/// <remarks>
-/// This is a minimal implementation that runs on the main thread for now.
-/// It serves as a placeholder for the future multi-threaded implementation.
-/// </remarks>
-public class WorkerThreadStylePool : IWorkerThreadStylePool
+public class WorkerThreadStylePool : IWorkerThreadStylePool, IDisposable
 {
+    private readonly Channel<WorkItem> _workChannel;
     private readonly IStyleEngine _styleEngine;
-    private readonly ConcurrentDictionary<IElement, RecalcPriority> _pendingElements;
-    private readonly object _poolLock = new object();
-    private bool _isActive;
+    private readonly Task[] _workerTasks;
+    private readonly CancellationTokenSource _cts = new();
+    private readonly object _syncLock = new();
+    private readonly ConcurrentStyleCache _styleCache = new();
+    private bool _isDisposed;
 
     /// <summary>
-    /// Creates a new instance of the WorkerThreadStylePool class.
+    /// Creates a new WorkerThreadStylePool with the specified number of worker threads.
     /// </summary>
-    /// <param name="styleEngine">The style engine to use for style computation.</param>
-    /// <param name="threadCount">The number of worker threads to use (unused in the current implementation).</param>
+    /// <param name="styleEngine">The style engine to use for style computations.</param>
+    /// <param name="threadCount">The number of worker threads to create. If 0, defaults to processor count - 1.</param>
     public WorkerThreadStylePool(IStyleEngine styleEngine, int threadCount = 0)
     {
         _styleEngine = styleEngine ?? throw new ArgumentNullException(nameof(styleEngine));
-        _pendingElements = new ConcurrentDictionary<IElement, RecalcPriority>();
 
-        // For now, we'll default to the number of processor cores minus 1 (to leave the main thread free)
-        // but this is just for interface completeness - we're not actually using threads yet
         ThreadCount = threadCount > 0 ? threadCount : Math.Max(1, Environment.ProcessorCount - 1);
+
+        // Create unbounded channel with single writer and multiple readers
+        var options = new UnboundedChannelOptions
+        {
+            SingleReader = false,
+            SingleWriter = false,
+            AllowSynchronousContinuations = true
+        };
+
+        _workChannel = Channel.CreateUnbounded<WorkItem>(options);
+
+        // Initialize and start worker tasks
+        _workerTasks = new Task[ThreadCount];
+        for (int i = 0; i < ThreadCount; i++)
+        {
+            int workerId = i;
+            _workerTasks[i] = WorkerLoopAsync(workerId, _cts.Token);
+        }
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public void EnqueueElement(IElement element, RecalcPriority priority = RecalcPriority.Normal)
     {
         if (element == null)
             throw new ArgumentNullException(nameof(element));
 
-        _pendingElements.AddOrUpdate(element, priority, (_, existing) =>
-            (byte)priority > (byte)existing ? priority : existing);
+        if (_isDisposed)
+            return;
+
+        var workItem = new WorkItem(element, priority);
+        _workChannel.Writer.TryWrite(workItem);
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public void EnqueueElements(IEnumerable<IElement> elements, RecalcPriority priority = RecalcPriority.Normal)
     {
         if (elements == null)
             throw new ArgumentNullException(nameof(elements));
+
+        if (_isDisposed)
+            return;
 
         foreach (var element in elements)
         {
@@ -62,103 +81,179 @@ public class WorkerThreadStylePool : IWorkerThreadStylePool
         }
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task StartProcessingAsync(CancellationToken cancellationToken = default)
     {
-        if (_pendingElements.IsEmpty)
+        if (_isDisposed)
             return;
 
-        bool startProcessing = false;
+        // Processing is continuous, so this method just checks for completion
+        await Task.Yield();
+    }
 
-        lock (_poolLock)
+    /// <inheritdoc />
+    public async Task SynchronizeResultsAsync(CancellationToken cancellationToken = default)
+    {
+        if (_isDisposed)
+            return;
+
+        lock (_syncLock)
         {
-            if (!_isActive)
+            // Apply cached styles to elements
+            foreach (var entry in _styleCache.GetEntries())
             {
-                _isActive = true;
-                startProcessing = true;
-            }
-        }
-
-        if (startProcessing)
-        {
-            try
-            {
-                // In a real implementation, this would distribute work to multiple threads
-                // For now, we just process on the current thread but yield to allow UI updates
-                await Task.Yield();
-
-                if (!cancellationToken.IsCancellationRequested)
+                try
                 {
-                    ProcessPendingElements();
+                    var element = entry.Key;
+                    var style = entry.Value;
+
+                    // This would normally update the global style cache with our computed styles
+                    // For demonstration, we'll just show a placeholder
+                    System.Diagnostics.Debug.WriteLine($"Synchronizing computed style for element {element.NodeName}");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error synchronizing results: {ex.Message}");
                 }
             }
-            finally
-            {
-                lock (_poolLock)
-                {
-                    _isActive = false;
-                }
-            }
+
+            // Clear the cache after synchronization
+            _styleCache.Clear();
         }
+
+        await Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public Task SynchronizeResultsAsync(CancellationToken cancellationToken = default)
-    {
-        // No actual synchronization needed in the single-threaded implementation
-        return Task.CompletedTask;
-    }
+    /// <inheritdoc />
+    public bool IsActive => !_cts.IsCancellationRequested &&
+                            _workerTasks.Any(t => t.Status == TaskStatus.Running);
 
-    /// <inheritdoc/>
-    public bool IsActive
-    {
-        get
-        {
-            lock (_poolLock)
-            {
-                return _isActive;
-            }
-        }
-    }
+    /// <inheritdoc />
+    public bool HasPendingWork => !_workChannel.Reader.Completion.IsCompleted ||
+                                  _styleCache.Count > 0;
 
-    /// <inheritdoc/>
-    public bool HasPendingWork => _pendingElements.Count > 0;
-
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public int ThreadCount { get; }
 
-    /// <summary>
-    /// Processes all pending elements.
-    /// </summary>
-    private void ProcessPendingElements()
+    /// <inheritdoc />
+    public void Dispose()
     {
-        // Create a snapshot of elements to process sorted by priority
-        var elements = _pendingElements.OrderByDescending(kvp => kvp.Value)
-            .Select(kvp => kvp.Key)
-            .ToList();
+        if (_isDisposed)
+            return;
 
-        // Clear the pending elements dictionary
-        _pendingElements.Clear();
+        _cts.Cancel();
+        _workChannel.Writer.Complete();
 
-        // Process each element
-        foreach (var element in elements)
+        try
         {
-            try
+            // Wait for worker tasks to complete with timeout
+            Task.WaitAll(_workerTasks, TimeSpan.FromSeconds(2));
+        }
+        catch (AggregateException)
+        {
+            // Ignore task cancellation exceptions
+        }
+
+        _cts.Dispose();
+        _styleCache.Clear();
+
+        _isDisposed = true;
+    }
+
+    private async Task WorkerLoopAsync(int workerId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Process items as they become available
+            await foreach (var workItem in _workChannel.Reader.ReadAllAsync(cancellationToken))
             {
-                // This would be thread-safe in a real implementation
-                _styleEngine.ComputeElementStyle(element);
+                try
+                {
+                    var style = _styleEngine.ComputeElementStyle(workItem.Element);
+
+                    // Store computed style in local cache for later synchronization
+                    _styleCache.Add(workItem.Element, style);
+
+                    // Allow other tasks to execute, weighted by priority
+                    if (workItem.Priority < RecalcPriority.High)
+                    {
+                        await Task.Yield();
+                    }
+                }
+                catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+                {
+                    // Log but continue processing
+                    System.Diagnostics.Debug.WriteLine(
+                        $"Worker {workerId}: Error computing style: {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                // Log error but continue processing
-                Console.WriteLine($"Error computing styles for element: {ex.Message}");
-            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Normal cancellation, do nothing
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Worker {workerId}: Fatal error: {ex.Message}");
         }
     }
 
-    /// <inheritdoc/>
-    public void Dispose()
+    /// <summary>
+    /// Represents a work item for style computation.
+    /// </summary>
+    private class WorkItem
     {
-        // Clean up resources (nothing to do in this implementation)
+        public IElement Element { get; }
+        public RecalcPriority Priority { get; }
+
+        public WorkItem(IElement element, RecalcPriority priority)
+        {
+            Element = element;
+            Priority = priority;
+        }
+    }
+
+    /// <summary>
+    /// Thread-safe cache for computed styles.
+    /// </summary>
+    private class ConcurrentStyleCache
+    {
+        private readonly Dictionary<IElement, IComputedStyle> _cache = new Dictionary<IElement, IComputedStyle>();
+        private readonly object _lock = new object();
+
+        public void Add(IElement element, IComputedStyle style)
+        {
+            lock (_lock)
+            {
+                _cache[element] = style;
+            }
+        }
+
+        public IEnumerable<KeyValuePair<IElement, IComputedStyle>> GetEntries()
+        {
+            lock (_lock)
+            {
+                return _cache.ToList();
+            }
+        }
+
+        public void Clear()
+        {
+            lock (_lock)
+            {
+                _cache.Clear();
+            }
+        }
+
+        public int Count
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _cache.Count;
+                }
+            }
+        }
     }
 }

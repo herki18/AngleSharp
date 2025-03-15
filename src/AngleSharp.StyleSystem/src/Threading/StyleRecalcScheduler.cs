@@ -1,10 +1,8 @@
-namespace AngleSharp.StyleSystem.Threading;
-
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using AngleSharp.Dom;
 using AngleSharp.StyleSystem.Events;
@@ -13,32 +11,34 @@ using AngleSharp.StyleSystem.Interfaces;
 using AngleSharp.StyleSystem.Models;
 using AngleSharp.StyleSystem.Tasks;
 
+namespace AngleSharp.StyleSystem.Threading;
+
+/// <summary>
+/// Schedules style recalculation work using System.Threading.Channels for improved performance.
+/// </summary>
 public class StyleRecalcScheduler : IStyleRecalcScheduler, IDisposable
 {
+    private readonly Channel<StyleRecalcWork> _workChannel;
+    private readonly PriorityMap<StyleRecalcWork> _priorityMap;
     private readonly IBrowsingContext _context;
     private readonly IStyleEngine _styleEngine;
     private readonly IStyleTaskScheduler _taskScheduler;
     private readonly IMainThreadStyleWork? _mainThreadWork;
     private readonly IWorkerThreadStylePool? _workerThreadPool;
     private readonly ViewportDetector _viewportDetector;
-    private readonly object _processingLock = new();
-    private readonly ConcurrentDictionary<IElement, StyleRecalcWork> _pendingWork = new();
-    private readonly SemaphoreSlim _workSemaphore = new(1, 1);
-    private readonly List<IElement> _deviceDependentElements = new();
-    private readonly object _configLock = new();
     private readonly ISubscriptionToken[] _subscriptionTokens;
 
+    private readonly CancellationTokenSource _processingCts = new();
+    private readonly Task _processingTask;
     private int _throttleIntervalMs = 16;
     private int _maxBatchSize = 100;
     private bool _useWorkerThreads = true;
-    private Timer? _throttleTimer;
-    private Timer? _frameEndTimer;
-    private CancellationTokenSource? _processingCts;
-    private bool _isProcessing;
     private Action? _completionCallback;
     private bool _isDisposed;
-    private int _maxProcessingTime = 5;
 
+    /// <summary>
+    /// Creates a new StyleRecalcScheduler instance.
+    /// </summary>
     public StyleRecalcScheduler(
         IStyleEngine styleEngine,
         IBrowsingContext context,
@@ -57,6 +57,19 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IDisposable
         _throttleIntervalMs = throttleIntervalMs;
         _maxBatchSize = maxBatchSize;
         _viewportDetector = new ViewportDetector(_styleEngine.RenderDevice);
+        _priorityMap = new PriorityMap<StyleRecalcWork>();
+
+        // Create a bounded channel for work items
+        var options = new BoundedChannelOptions(maxBatchSize * 10)
+        {
+            FullMode = BoundedChannelFullMode.Wait,
+            SingleReader = true,
+            SingleWriter = false
+        };
+        _workChannel = Channel.CreateBounded<StyleRecalcWork>(options);
+
+        // Start the background processing task
+        _processingTask = ProcessWorkItemsAsync(_processingCts.Token);
 
         // Subscribe to events
         _subscriptionTokens = new ISubscriptionToken[]
@@ -69,177 +82,157 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IDisposable
     }
 
     #region IStyleRecalcScheduler Implementation
+
+    /// <inheritdoc />
     public int ThrottleIntervalMs
     {
         get => _throttleIntervalMs;
-        set
-        {
-            lock (_configLock)
-            {
-                _throttleIntervalMs = Math.Max(1, value);
-            }
-        }
+        set => _throttleIntervalMs = Math.Max(1, value);
     }
 
+    /// <inheritdoc />
     public int MaxBatchSize
     {
         get => _maxBatchSize;
-        set
-        {
-            lock (_configLock)
-            {
-                _maxBatchSize = Math.Max(1, value);
-            }
-        }
+        set => _maxBatchSize = Math.Max(1, value);
     }
 
+    /// <inheritdoc />
     public bool UseWorkerThreads
     {
         get => _useWorkerThreads;
-        set
-        {
-            lock (_configLock)
-            {
-                _useWorkerThreads = value;
-            }
-        }
+        set => _useWorkerThreads = value;
     }
 
+    /// <inheritdoc />
     public void ScheduleElementRecalc(IElement element, RecalcPriority priority = RecalcPriority.Normal)
     {
         if (element == null)
             throw new ArgumentNullException(nameof(element));
+
         var work = new StyleRecalcWork(element, priority, StyleWorkType.Element);
-        _pendingWork.AddOrUpdate(element, work, (_, existing) =>
-            new StyleRecalcWork(element,
+
+        _priorityMap.AddOrUpdate(element, work, (existing) => {
+            // Keep the highest priority and prefer subtree work over element work
+            return new StyleRecalcWork(
+                element,
                 (RecalcPriority)Math.Max((byte)existing.Priority, (byte)priority),
-                existing.WorkType == StyleWorkType.Subtree ? StyleWorkType.Subtree : StyleWorkType.Element));
-        ScheduleProcessing();
+                existing.WorkType == StyleWorkType.Subtree ? StyleWorkType.Subtree : StyleWorkType.Element
+            );
+        });
+
+        // Try to write to the channel without blocking
+        if (!_workChannel.Writer.TryWrite(work))
+        {
+            // Only log if we couldn't write - the work will still be in the priorityMap
+            // and will be picked up by the periodic processing
+            System.Diagnostics.Debug.WriteLine("Channel is full - work queued for later processing");
+        }
     }
 
+    /// <inheritdoc />
     public void ScheduleSubtreeRecalc(IElement rootElement, RecalcPriority priority = RecalcPriority.Normal)
     {
         if (rootElement == null)
             throw new ArgumentNullException(nameof(rootElement));
+
         var work = new StyleRecalcWork(rootElement, priority, StyleWorkType.Subtree);
-        _pendingWork.AddOrUpdate(rootElement, work, (_, existing) =>
-            new StyleRecalcWork(rootElement,
+
+        _priorityMap.AddOrUpdate(rootElement, work, (existing) => {
+            // Always upgrade to subtree and use highest priority
+            return new StyleRecalcWork(
+                rootElement,
                 (RecalcPriority)Math.Max((byte)existing.Priority, (byte)priority),
-                StyleWorkType.Subtree));
-        ScheduleProcessing();
+                StyleWorkType.Subtree
+            );
+        });
+
+        // Try to write to the channel without blocking
+        if (!_workChannel.Writer.TryWrite(work))
+        {
+            // Work will be processed on next cycle through priorityMap
+            System.Diagnostics.Debug.WriteLine("Channel is full - work queued for later processing");
+        }
     }
 
+    /// <inheritdoc />
     public void ProcessImmediately()
     {
-        lock (_processingLock)
+        // Process any pending work in the priority map
+        ProcessPendingWorkSync();
+
+        // Drain the channel
+        while (_workChannel.Reader.TryRead(out var work))
         {
-            if (_isProcessing)
-                return;
-            _isProcessing = true;
-            _processingCts = new CancellationTokenSource();
+            ProcessWorkItem(work);
         }
-        try
+
+        // Process any worker thread results
+        if (_workerThreadPool != null && _workerThreadPool.HasPendingWork)
         {
-            ProcessPendingWork(_processingCts.Token);
-            _completionCallback?.Invoke();
+            _workerThreadPool.SynchronizeResultsAsync(CancellationToken.None).GetAwaiter().GetResult();
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error processing style work: {ex.Message}");
-        }
-        finally
-        {
-            lock (_processingLock)
-            {
-                _isProcessing = false;
-                _processingCts?.Dispose();
-                _processingCts = null;
-            }
-        }
+
+        _completionCallback?.Invoke();
     }
 
+    /// <inheritdoc />
     public async Task ProcessAsync(CancellationToken cancellationToken = default)
     {
-        await _workSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
+        using var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        // First process items from the priority map
+        await Task.Run(() => ProcessPendingWorkSync(), linkedTokenSource.Token);
+
+        // Process as many items from the channel as possible
+        var count = 0;
+        while (count < _maxBatchSize &&
+               !linkedTokenSource.Token.IsCancellationRequested &&
+               _workChannel.Reader.TryRead(out var work))
         {
-            CancellationTokenSource? linkedCts = null;
-            lock (_processingLock)
-            {
-                if (_isProcessing)
-                    return;
-                _isProcessing = true;
-                _processingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                linkedCts = _processingCts;
-            }
-            try
-            {
-                await Task.Run(() => ProcessPendingWork(linkedCts.Token), linkedCts.Token)
-                    .ConfigureAwait(false);
-                _completionCallback?.Invoke();
-            }
-            catch (Exception ex)
-            {
-                if (!(ex is OperationCanceledException && cancellationToken.IsCancellationRequested))
-                {
-                    Console.WriteLine($"Error processing style work: {ex.Message}");
-                }
-            }
-            finally
-            {
-                lock (_processingLock)
-                {
-                    _isProcessing = false;
-                    linkedCts?.Dispose();
-                    _processingCts = null;
-                }
-            }
+            await Task.Run(() => ProcessWorkItem(work), linkedTokenSource.Token);
+            count++;
         }
-        finally
+
+        // Process any worker thread results
+        if (_workerThreadPool != null && _workerThreadPool.HasPendingWork)
         {
-            _workSemaphore.Release();
+            await _workerThreadPool.SynchronizeResultsAsync(linkedTokenSource.Token);
         }
+
+        _completionCallback?.Invoke();
     }
 
+    /// <inheritdoc />
     public void CancelPendingWork()
     {
-        lock (_processingLock)
-        {
-            _processingCts?.Cancel();
-        }
-        _throttleTimer?.Change(Timeout.Infinite, Timeout.Infinite);
-        _frameEndTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+        _processingCts.Cancel();
     }
 
+    /// <inheritdoc />
     public bool HasPendingWork =>
-        _pendingWork.Count > 0 ||
+        _priorityMap.Count > 0 ||
+        !_workChannel.Reader.Completion.IsCompleted ||
         (_mainThreadWork?.HasPendingWork ?? false) ||
         (_workerThreadPool?.HasPendingWork ?? false) ||
         _taskScheduler.HasPendingTasks;
 
+    /// <inheritdoc />
     public void FlushPendingStylesAtEndOfFrame()
     {
-        if (_frameEndTimer == null)
-        {
-            _frameEndTimer = new Timer(
-                _ => ProcessImmediately(),
-                null,
-                _throttleIntervalMs,
-                Timeout.Infinite);
-        }
-        else
-        {
-            _frameEndTimer.Change(_throttleIntervalMs, Timeout.Infinite);
-        }
+        Task.Delay(_throttleIntervalMs).ContinueWith(_ => ProcessImmediately());
     }
 
+    /// <inheritdoc />
     public void SetCompletionCallback(Action callback)
     {
         _completionCallback = callback ?? throw new ArgumentNullException(nameof(callback));
     }
+
     #endregion
 
     #region Event Handlers
+
     private void OnElementInvalidated(ElementInvalidatedEvent eventData)
     {
         RecalcPriority priority = DeterminePriority(eventData.Element);
@@ -273,178 +266,126 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IDisposable
 
     private void OnDeviceDependentElementsInvalidated(DeviceDependentElementsInvalidatedEvent eventData)
     {
-        foreach (var element in _deviceDependentElements)
-        {
-            ScheduleElementRecalc(element, RecalcPriority.High);
-        }
-
         if (_context.Active?.DocumentElement != null)
         {
             ScheduleSubtreeRecalc(_context.Active.DocumentElement, RecalcPriority.High);
         }
     }
+
     #endregion
 
     #region Processing Logic
-    private void ProcessPendingWork(CancellationToken cancellationToken)
+
+    private async Task ProcessWorkItemsAsync(CancellationToken cancellationToken)
     {
-        var startTime = DateTime.UtcNow;
-        var timeLimit = TimeSpan.FromMilliseconds(_maxProcessingTime);
         try
         {
-            ProcessElementsByPriority(RecalcPriority.Critical, cancellationToken);
-            if (!cancellationToken.IsCancellationRequested &&
-                DateTime.UtcNow - startTime < timeLimit)
+            // Periodically process the priority map (for items that couldn't be written to channel)
+            _ = Task.Run(async () => {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    await Task.Delay(_throttleIntervalMs, cancellationToken);
+                    ProcessPendingWorkSync();
+                }
+            }, cancellationToken);
+
+            // Process items from the channel as they arrive
+            await foreach (var work in _workChannel.Reader.ReadAllAsync(cancellationToken))
             {
-                ProcessElementsByPriority(RecalcPriority.High, cancellationToken);
-            }
-            if (!cancellationToken.IsCancellationRequested &&
-                DateTime.UtcNow - startTime < timeLimit)
-            {
-                ProcessElementsByPriority(RecalcPriority.Normal, cancellationToken);
-            }
-            if (!cancellationToken.IsCancellationRequested &&
-                DateTime.UtcNow - startTime < timeLimit)
-            {
-                ProcessElementsByPriority(RecalcPriority.Low, cancellationToken);
-            }
-            if (_pendingWork.Count > 0 && !cancellationToken.IsCancellationRequested)
-            {
-                ScheduleProcessing();
-            }
-            if (_workerThreadPool != null && _workerThreadPool.HasPendingWork &&
-                !cancellationToken.IsCancellationRequested)
-            {
-                _workerThreadPool.StartProcessingAsync(cancellationToken).Wait(cancellationToken);
-                _workerThreadPool.SynchronizeResultsAsync(cancellationToken).Wait(cancellationToken);
+                ProcessWorkItem(work);
+
+                // Allow other tasks to run if not high priority
+                if (work.Priority < RecalcPriority.High)
+                {
+                    await Task.Yield();
+                }
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            // Normal cancellation, do nothing
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error in style processing: {ex.Message}");
         }
     }
 
-    private void ProcessElementsByPriority(RecalcPriority priority, CancellationToken cancellationToken)
+    private void ProcessPendingWorkSync()
     {
-        var elements = _pendingWork.Values
-            .Where(w => w.Priority == priority)
-            .OrderBy(GetElementSortOrder)
-            .Take(_maxBatchSize)
-            .ToList();
-        if (elements.Count == 0)
-            return;
-        foreach (var work in elements)
+        // Process items in priority order
+        foreach (var priority in new[] { RecalcPriority.Critical, RecalcPriority.High, RecalcPriority.Normal, RecalcPriority.Low })
         {
-            if (cancellationToken.IsCancellationRequested)
-                break;
-            _pendingWork.TryRemove(work.Element, out _);
-            if (work.WorkType == StyleWorkType.Subtree)
+            var items = _priorityMap.GetItemsByPriority(priority);
+            foreach (var work in items.Take(_maxBatchSize))
             {
-                ProcessSubtreeWork(work, cancellationToken);
-            }
-            else
-            {
-                ProcessElementWork(work, cancellationToken);
+                ProcessWorkItem(work);
+                _priorityMap.Remove(work.Element);
             }
         }
     }
 
-    private void ProcessElementWork(StyleRecalcWork work, CancellationToken cancellationToken)
+    private void ProcessWorkItem(StyleRecalcWork work)
     {
         try
         {
             if (work.Priority == RecalcPriority.Critical && _mainThreadWork != null)
             {
+                // Critical work goes to main thread
                 _mainThreadWork.EnqueueElement(work.Element, work.Priority);
                 _mainThreadWork.ProcessSync();
             }
             else if (_useWorkerThreads && _workerThreadPool != null && work.Priority != RecalcPriority.Critical)
             {
-                _workerThreadPool.EnqueueElement(work.Element, work.Priority);
+                // Non-critical work can go to worker threads if available
+                if (work.WorkType == StyleWorkType.Subtree)
+                {
+                    // Process children through worker pool for subtree work
+                    var childElements = work.Element.Children.ToList();
+                    _workerThreadPool.EnqueueElements(childElements, work.Priority);
+                }
+                else
+                {
+                    _workerThreadPool.EnqueueElement(work.Element, work.Priority);
+                }
             }
             else
             {
-                var task = StyleTasks.ComputeElementStyle(work.Element, work.Priority);
+                // Otherwise use the task scheduler
+                var task = work.WorkType == StyleWorkType.Subtree
+                    ? StyleTasks.UpdateSubtreeStyles(work.Element, work.Priority)
+                    : StyleTasks.ComputeElementStyle(work.Element, work.Priority);
+
                 _taskScheduler.EnqueueTask(task);
-                _taskScheduler.ProcessTasks();
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error processing element style: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"Error processing style work: {ex.Message}");
         }
     }
 
-    private void ProcessSubtreeWork(StyleRecalcWork work, CancellationToken cancellationToken)
-    {
-        try
-        {
-            if (_useWorkerThreads && _workerThreadPool != null && work.Priority != RecalcPriority.Critical)
-            {
-                _workerThreadPool.EnqueueElement(work.Element, work.Priority);
-            }
-            else
-            {
-                var task = StyleTasks.UpdateSubtreeStyles(work.Element, work.Priority);
-                _taskScheduler.EnqueueTask(task);
-                _taskScheduler.ProcessTasks();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error processing subtree styles: {ex.Message}");
-        }
-    }
-
-    private int GetElementSortOrder(StyleRecalcWork work)
-    {
-        if (_viewportDetector.IsInViewport(work.Element))
-            return 0;
-        if (_viewportDetector.IsNearViewport(work.Element))
-            return 10;
-        var depth = 0;
-        var element = work.Element;
-        while (element.ParentElement != null)
-        {
-            depth++;
-            element = element.ParentElement;
-        }
-        return 100 + depth;
-    }
-
-    private void ScheduleProcessing()
-    {
-        if (_throttleTimer == null)
-        {
-            _throttleTimer = new Timer(
-                _ => ProcessImmediately(),
-                null,
-                _throttleIntervalMs,
-                Timeout.Infinite);
-        }
-        else
-        {
-            _throttleTimer.Change(_throttleIntervalMs, Timeout.Infinite);
-        }
-    }
     #endregion
 
     #region Helper Methods
+
     private RecalcPriority DeterminePriority(IElement element)
     {
         if (_viewportDetector.IsInViewport(element))
         {
-            _deviceDependentElements.Add(element);
             return RecalcPriority.Critical;
         }
+
         if (_viewportDetector.IsNearViewport(element))
         {
             return RecalcPriority.High;
         }
+
         if (ElementIsLikelyToBeVisibleSoon(element))
         {
             return RecalcPriority.Normal;
         }
+
         return RecalcPriority.Low;
     }
 
@@ -455,8 +396,10 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IDisposable
         {
             if (_viewportDetector.IsInViewport(parent) || _viewportDetector.IsNearViewport(parent))
                 return true;
+
             parent = parent.ParentElement;
         }
+
         return false;
     }
 
@@ -500,28 +443,139 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IDisposable
             p.StartsWith("flex") ||
             p.StartsWith("grid"));
     }
+
     #endregion
 
     #region IDisposable Implementation
+
+    /// <inheritdoc />
     public void Dispose()
     {
         if (_isDisposed)
             return;
 
-        CancelPendingWork();
-        _throttleTimer?.Dispose();
-        _frameEndTimer?.Dispose();
-        _workSemaphore.Dispose();
-        _processingCts?.Dispose();
-        _completionCallback = null;
+        _processingCts.Cancel();
+        _workChannel.Writer.Complete();
 
-        // Unsubscribe from events
+        try
+        {
+            _processingTask.Wait(TimeSpan.FromSeconds(1));
+        }
+        catch { /* Ignore task cancellation exceptions */ }
+
         foreach (var token in _subscriptionTokens)
         {
             token.Dispose();
         }
 
+        _processingCts.Dispose();
+
         _isDisposed = true;
     }
+
     #endregion
+}
+
+/// <summary>
+/// Helper class to maintain a priority-based map of work items.
+/// </summary>
+internal class PriorityMap<T> where T : class
+{
+    private readonly Dictionary<object, T> _items = new Dictionary<object, T>();
+    private readonly Dictionary<RecalcPriority, HashSet<object>> _priorityToKeys = new Dictionary<RecalcPriority, HashSet<object>>();
+    private readonly object _lock = new object();
+
+    public int Count
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _items.Count;
+            }
+        }
+    }
+
+    public void AddOrUpdate(object key, T item, Func<T, T> updateFactory)
+    {
+        lock (_lock)
+        {
+            RecalcPriority oldPriority = RecalcPriority.Normal;
+
+            if (_items.TryGetValue(key, out var existingItem))
+            {
+                oldPriority = GetPriority(existingItem);
+
+                // Remove from old priority group
+                if (_priorityToKeys.TryGetValue(oldPriority, out var keys))
+                {
+                    keys.Remove(key);
+                }
+
+                // Update the item
+                _items[key] = updateFactory(existingItem);
+            }
+            else
+            {
+                _items[key] = item;
+            }
+
+            // Add to new priority group
+            var priority = GetPriority(_items[key]);
+            if (!_priorityToKeys.TryGetValue(priority, out var priorityKeys))
+            {
+                priorityKeys = new HashSet<object>();
+                _priorityToKeys[priority] = priorityKeys;
+            }
+
+            priorityKeys.Add(key);
+        }
+    }
+
+    public bool Remove(object key)
+    {
+        lock (_lock)
+        {
+            if (_items.TryGetValue(key, out var item))
+            {
+                var priority = GetPriority(item);
+                if (_priorityToKeys.TryGetValue(priority, out var keys))
+                {
+                    keys.Remove(key);
+                }
+
+                return _items.Remove(key);
+            }
+
+            return false;
+        }
+    }
+
+    public IEnumerable<T> GetItemsByPriority(RecalcPriority priority)
+    {
+        lock (_lock)
+        {
+            if (_priorityToKeys.TryGetValue(priority, out var keys))
+            {
+                foreach (var key in keys)
+                {
+                    if (_items.TryGetValue(key, out var item))
+                    {
+                        yield return item;
+                    }
+                }
+            }
+        }
+    }
+
+    private RecalcPriority GetPriority(T item)
+    {
+        // Assumes the item is a StyleRecalcWork
+        if (item is StyleRecalcWork work)
+        {
+            return work.Priority;
+        }
+
+        return RecalcPriority.Normal;
+    }
 }

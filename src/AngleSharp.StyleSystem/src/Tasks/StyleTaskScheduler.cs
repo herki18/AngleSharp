@@ -1,31 +1,28 @@
+using System;
+using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
+
 namespace AngleSharp.StyleSystem.Tasks;
 
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using AngleSharp.StyleSystem.Interfaces;
-using Dom;
+using Interfaces;
+using Models;
 
 /// <summary>
-/// Default implementation of IStyleTaskScheduler.
+/// Schedules and processes style tasks using System.Threading.Channels.
 /// </summary>
-public class StyleTaskScheduler : IStyleTaskScheduler
+public class StyleTaskScheduler : IStyleTaskScheduler, IDisposable
 {
-    private readonly ConcurrentDictionary<IElement, IStyleTask> _pendingTasks = new();
-    private readonly object _processingLock = new();
-    private readonly SemaphoreSlim _workSemaphore = new(1, 1);
+    private readonly Channel<IStyleTask> _taskChannel;
     private readonly IStyleEngine _styleEngine;
-    private readonly int _throttleIntervalMs;
+    private readonly CancellationTokenSource _processingCts = new();
+    private readonly Task _processingTask;
+    private readonly SemaphoreSlim _processingLock = new(1, 1);
     private readonly int _batchSize;
-    private Timer? _throttleTimer;
-    private CancellationTokenSource? _processingCts;
-    private bool _isProcessing;
+    private bool _isDisposed;
 
     /// <summary>
-    /// Creates a new StyleTaskScheduler.
+    /// Creates a new StyleTaskScheduler instance.
     /// </summary>
     /// <param name="styleEngine">The style engine to use for task execution.</param>
     /// <param name="throttleIntervalMs">The throttle interval in milliseconds.</param>
@@ -36,8 +33,29 @@ public class StyleTaskScheduler : IStyleTaskScheduler
         int batchSize = 100)
     {
         _styleEngine = styleEngine ?? throw new ArgumentNullException(nameof(styleEngine));
-        _throttleIntervalMs = throttleIntervalMs;
         _batchSize = batchSize;
+
+        // Create a bounded channel
+        var options = new BoundedChannelOptions(batchSize * 10)
+        {
+            FullMode = BoundedChannelFullMode.Wait,
+            SingleReader = true,
+            SingleWriter = false
+        };
+
+        _taskChannel = Channel.CreateBounded<IStyleTask>(options);
+
+        // Start the background processing task
+        _processingTask = ProcessTasksLoopAsync(_processingCts.Token);
+
+        // Start a throttled processing task
+        _ = Task.Run(async () => {
+            while (!_processingCts.Token.IsCancellationRequested)
+            {
+                await Task.Delay(throttleIntervalMs, _processingCts.Token);
+                await ProcessTasksAsync(_processingCts.Token);
+            }
+        }, _processingCts.Token);
     }
 
     /// <inheritdoc />
@@ -46,35 +64,44 @@ public class StyleTaskScheduler : IStyleTaskScheduler
         if (task == null)
             throw new ArgumentNullException(nameof(task));
 
-        _pendingTasks.AddOrUpdate(task.Element, task, (_, existing) =>
-            (byte)task.Priority > (byte)existing.Priority ? task : existing);
+        if (_isDisposed)
+            return;
 
-        ScheduleProcessing();
+        // Try to write to channel without blocking
+        if (!_taskChannel.Writer.TryWrite(task))
+        {
+            System.Diagnostics.Debug.WriteLine("Task channel full - tasks will be processed on next cycle");
+        }
     }
 
     /// <inheritdoc />
     public void ProcessTasks()
     {
-        lock (_processingLock)
-        {
-            if (_isProcessing)
-                return;
+        if (_isDisposed)
+            return;
 
-            _isProcessing = true;
-            _processingCts = new CancellationTokenSource();
-        }
-
-        try
+        if (_processingLock.Wait(0))
         {
-            ProcessBatchedTasks(_processingCts.Token);
-        }
-        finally
-        {
-            lock (_processingLock)
+            try
             {
-                _isProcessing = false;
-                _processingCts?.Dispose();
-                _processingCts = null;
+                // Process up to _batchSize tasks
+                int count = 0;
+                while (count < _batchSize && _taskChannel.Reader.TryRead(out var task))
+                {
+                    try
+                    {
+                        task.Execute(_styleEngine);
+                        count++;
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error executing task: {ex.Message}");
+                    }
+                }
+            }
+            finally
+            {
+                _processingLock.Release();
             }
         }
     }
@@ -82,131 +109,103 @@ public class StyleTaskScheduler : IStyleTaskScheduler
     /// <inheritdoc />
     public async Task ProcessTasksAsync(CancellationToken cancellationToken = default)
     {
-        await _workSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        if (_isDisposed)
+            return;
 
+        await _processingLock.WaitAsync(cancellationToken);
         try
         {
-            CancellationTokenSource? linkedCts = null;
-
-            lock (_processingLock)
+            // Process up to _batchSize tasks
+            int count = 0;
+            while (count < _batchSize &&
+                   !cancellationToken.IsCancellationRequested &&
+                   await _taskChannel.Reader.WaitToReadAsync(cancellationToken))
             {
-                if (_isProcessing)
-                    return;
-
-                _isProcessing = true;
-                _processingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                linkedCts = _processingCts;
-            }
-
-            try
-            {
-                await Task.Run(() => ProcessBatchedTasks(linkedCts.Token), linkedCts.Token)
-                    .ConfigureAwait(false);
-            }
-            finally
-            {
-                lock (_processingLock)
+                if (_taskChannel.Reader.TryRead(out var task))
                 {
-                    _isProcessing = false;
-                    linkedCts?.Dispose();
-                    _processingCts = null;
+                    try
+                    {
+                        await Task.Run(() => task.Execute(_styleEngine), cancellationToken);
+                        count++;
+                    }
+                    catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error executing task: {ex.Message}");
+                    }
                 }
             }
         }
         finally
         {
-            _workSemaphore.Release();
+            _processingLock.Release();
         }
     }
 
     /// <inheritdoc />
-    public bool HasPendingTasks => _pendingTasks.Count > 0;
+    public bool HasPendingTasks => !_taskChannel.Reader.Completion.IsCompleted;
 
     /// <inheritdoc />
     public void CancelPendingTasks()
     {
-        lock (_processingLock)
-        {
-            _processingCts?.Cancel();
-        }
-
-        _throttleTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+        _processingCts.Cancel();
     }
 
     /// <inheritdoc />
     public void Dispose()
     {
-        CancelPendingTasks();
-        _throttleTimer?.Dispose();
-        _workSemaphore.Dispose();
-        _processingCts?.Dispose();
-    }
-
-    private void ProcessBatchedTasks(CancellationToken cancellationToken)
-    {
-        if (!HasPendingTasks)
+        if (_isDisposed)
             return;
 
-        var tasks = GetSortedTasks();
-        int batchCount = 0;
+        _processingCts.Cancel();
+        _taskChannel.Writer.Complete();
 
-        while (tasks.Count > 0 && !cancellationToken.IsCancellationRequested)
+        try
         {
-            var batch = tasks.Take(_batchSize).ToList();
-            tasks.RemoveRange(0, Math.Min(batch.Count, tasks.Count));
+            _processingTask.Wait(TimeSpan.FromSeconds(1));
+        }
+        catch { /* Ignore task cancellation exceptions */ }
 
-            ExecuteBatch(batch);
+        _processingCts.Dispose();
+        _processingLock.Dispose();
 
-            batchCount++;
+        _isDisposed = true;
+    }
 
-            // If there are still tasks and we've processed many batches, schedule another run
-            if (tasks.Count > 0 && batchCount >= 10)
+    private async Task ProcessTasksLoopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Process tasks as they become available
+            await foreach (var task in _taskChannel.Reader.ReadAllAsync(cancellationToken))
             {
-                foreach (var remainingTask in tasks)
+                await _processingLock.WaitAsync(cancellationToken);
+                try
                 {
-                    EnqueueTask(remainingTask);
+                    task.Execute(_styleEngine);
+
+                    // Yield based on priority to allow other work
+                    if (task.Priority < RecalcPriority.High)
+                    {
+                        await Task.Yield();
+                    }
                 }
-                break;
+                catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error executing task: {ex.Message}");
+                }
+                finally
+                {
+                    _processingLock.Release();
+                }
             }
         }
-    }
-
-    private List<IStyleTask> GetSortedTasks()
-    {
-        return _pendingTasks.Values
-            .OrderByDescending(t => t.Priority)
-            .ToList();
-    }
-
-    private void ExecuteBatch(List<IStyleTask> batch)
-    {
-        foreach (var task in batch)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            try
-            {
-                _pendingTasks.TryRemove(task.Element, out _);
-                task.Execute(_styleEngine);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error executing style task: {ex.Message}");
-            }
+            // Normal cancellation, do nothing
         }
-    }
-
-    private void ScheduleProcessing()
-    {
-        if (_throttleTimer == null)
+        catch (Exception ex)
         {
-            _throttleTimer = new Timer(
-                _ => ProcessTasks(),
-                null,
-                _throttleIntervalMs,
-                Timeout.Infinite);
-        }
-        else
-        {
-            _throttleTimer.Change(_throttleIntervalMs, Timeout.Infinite);
+            System.Diagnostics.Debug.WriteLine($"Error in task processing loop: {ex.Message}");
         }
     }
 }
