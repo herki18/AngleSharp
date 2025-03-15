@@ -6,9 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-/// <summary>
-/// Default implementation of <see cref="ICssStyleDeclarationFactory"/>.
-/// </summary>
 public class CssStyleDeclarationFactory : ICssStyleDeclarationFactory
 {
     private readonly IBrowsingContext _context;

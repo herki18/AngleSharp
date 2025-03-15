@@ -62,18 +62,18 @@ public class ComputedStyle : IComputedStyle
         IStyleInvalidationTracker invalidationTracker,
         IDeclarationFactory declarationFactory)
     {
-        _element = element ?? throw new ArgumentNullException(nameof(element));
+        _element = element;
         _parentStyle = parentStyle;
-        _propertyTree = propertyTree ?? throw new ArgumentNullException(nameof(propertyTree));
-        _renderDevice = renderDevice ?? throw new ArgumentNullException(nameof(renderDevice));
-        _invalidationTracker = invalidationTracker ?? throw new ArgumentNullException(nameof(invalidationTracker));
+        _propertyTree = propertyTree;
+        _renderDevice = renderDevice;
+        _invalidationTracker = invalidationTracker;
         _declarationFactory = declarationFactory;
         _boxProperties = new BoxProperties(this, _renderDevice);
         _textProperties = new TextProperties(this, _renderDevice);
         _rareProperties = new RareProperties();
         _bitfields = new SurrogateBitfields();
         _computedValueCache = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-        Declaration = declaration ?? throw new ArgumentNullException(nameof(declaration));
+        Declaration = declaration;
         _writingMode = ComputeWritingMode(declaration);
         ProcessStyleProperties(declaration);
         _isInitialized = true;

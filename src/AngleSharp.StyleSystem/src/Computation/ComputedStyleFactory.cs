@@ -23,9 +23,9 @@
             IDeclarationFactory declarationFactory,
             ICssStyleDeclarationFactory cssStyleDeclarationFactory)
         {
-            _renderDevice = renderDevice ?? throw new ArgumentNullException(nameof(renderDevice));
-            _invalidationTracker = invalidationTracker ?? throw new ArgumentNullException(nameof(invalidationTracker));
-            _propertyTreeManager = propertyTreeManager ?? throw new ArgumentNullException(nameof(propertyTreeManager));
+            _renderDevice = renderDevice;
+            _invalidationTracker = invalidationTracker;
+            _propertyTreeManager = propertyTreeManager;
             _declarationFactory = declarationFactory;
             _cssStyleDeclarationFactory = cssStyleDeclarationFactory;
         }

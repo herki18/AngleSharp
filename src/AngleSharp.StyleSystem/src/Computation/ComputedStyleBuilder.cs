@@ -25,6 +25,7 @@ public class ComputedStyleBuilder : IComputedStyleBuilder
     /// <param name="valueCalculator">The value calculator.</param>
     /// <param name="stylePropertyMapper">The style property mapper.</param>
     /// <param name="propertyTreeManager">The property tree manager.</param>
+    /// <param name="styleFactory"></param>
     public ComputedStyleBuilder(
         IVariableResolver variableResolver,
         IValueCalculator valueCalculator,
@@ -32,11 +33,11 @@ public class ComputedStyleBuilder : IComputedStyleBuilder
         IPropertyTreeManager propertyTreeManager,
         IComputedStyleFactory styleFactory)
     {
-        _variableResolver = variableResolver ?? throw new ArgumentNullException(nameof(variableResolver));
-        _valueCalculator = valueCalculator ?? throw new ArgumentNullException(nameof(valueCalculator));
-        _stylePropertyMapper = stylePropertyMapper ?? throw new ArgumentNullException(nameof(stylePropertyMapper));
-        _propertyTreeManager = propertyTreeManager ?? throw new ArgumentNullException(nameof(propertyTreeManager));
-        _styleFactory = styleFactory ?? throw new ArgumentNullException(nameof(styleFactory));
+        _variableResolver = variableResolver;
+        _valueCalculator = valueCalculator;
+        _stylePropertyMapper = stylePropertyMapper;
+        _propertyTreeManager = propertyTreeManager;
+        _styleFactory = styleFactory;
     }
 
     /// <summary>

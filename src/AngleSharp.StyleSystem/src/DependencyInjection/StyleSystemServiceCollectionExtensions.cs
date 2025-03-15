@@ -47,11 +47,7 @@ namespace AngleSharp.StyleSystem.DependencyInjection
 
             services.AddSingleton<IStyleCache, StyleCache>();
             services.AddSingleton<IStyleInvalidationTracker, StyleInvalidationTracker>();
-            services.AddSingleton<IRuleCollector, RuleCollector>(sp =>
-                new RuleCollector(
-                    sp.GetRequiredService<IBrowsingContext>(),
-                    sp.GetRequiredService<IStyleSheetManager>(),
-                    sp.GetRequiredService<IEventAggregator>()));
+            services.AddSingleton<IRuleCollector, RuleCollector>();
             services.AddSingleton<ICascadeResolver, CascadeResolver>();
             services.AddSingleton<IInheritanceProcessor, InheritanceProcessor>();
             services.AddSingleton<IVariableResolver, VariableResolver>();

@@ -11,15 +11,14 @@ using AngleSharp.StyleSystem.Interfaces;
 /// </summary>
 public class InheritanceProcessor : IInheritanceProcessor
 {
-    private readonly IBrowsingContext _context;
+    private readonly ICssStyleDeclarationFactory _cssStyleDeclarationFactory;
 
     /// <summary>
     /// Creates a new inheritance processor.
     /// </summary>
-    /// <param name="context">The browsing context.</param>
-    public InheritanceProcessor(IBrowsingContext context)
+    public InheritanceProcessor(ICssStyleDeclarationFactory cssStyleDeclarationFactory)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _cssStyleDeclarationFactory = cssStyleDeclarationFactory;
     }
 
     /// <summary>
@@ -70,7 +69,7 @@ public class InheritanceProcessor : IInheritanceProcessor
 
     private ICssStyleDeclaration? GetStyleDeclarationFromComputedStyle(IComputedStyle computedStyle)
     {
-        var declaration = new CssStyleDeclaration(_context);
+        var declaration = _cssStyleDeclarationFactory.Create();
 
         foreach (var propertyName in GetInheritablePropertyNames())
         {
@@ -86,7 +85,7 @@ public class InheritanceProcessor : IInheritanceProcessor
 
     private ICssStyleDeclaration HandleAllProperty(string allValue, ICssStyleDeclaration elementStyle, ICssStyleDeclaration parentStyle)
     {
-        var result = new CssStyleDeclaration(_context);
+        var result = _cssStyleDeclarationFactory.Create();
         result.SetProperty("all", allValue, elementStyle.GetPropertyPriority("all"));
         var isCssResult = result is CssStyleDeclaration cssResult;
 
@@ -212,7 +211,7 @@ public class InheritanceProcessor : IInheritanceProcessor
 
     private ICssStyleDeclaration CloneStyleDeclaration(ICssStyleDeclaration style)
     {
-        var clone = new CssStyleDeclaration(_context);
+        var clone = _cssStyleDeclarationFactory.Create();
 
         if (clone is CssStyleDeclaration cssClone)
         {

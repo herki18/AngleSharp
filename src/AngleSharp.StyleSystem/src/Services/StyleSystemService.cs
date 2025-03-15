@@ -28,9 +28,9 @@ public sealed class StyleSystemService : IDisposable
         StyleSystemOptions options,
         IEventAggregator eventAggregator)
     {
-        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        _options = options ?? new StyleSystemOptions();
-        _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+        _serviceProvider = serviceProvider;
+        _options = options;
+        _eventAggregator = eventAggregator;
 
         // Subscribe to document events
         _subscriptionTokens = new[]

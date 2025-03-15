@@ -18,8 +18,8 @@ public sealed class DocumentLifecycleCoordinator : IDocumentLifecycleCoordinator
         IEventAggregator eventAggregator,
         DomMutationTracker? mutationTracker = null)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
-        _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+        _context = context;
+        _eventAggregator = eventAggregator;
         _mutationTracker = mutationTracker;
 
         if (context.Active != null)

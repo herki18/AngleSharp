@@ -7,13 +7,11 @@ using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
 using AngleSharp.Dom;
 using AngleSharp.StyleSystem.Events;
-using AngleSharp.StyleSystem.Integration;
 using AngleSharp.StyleSystem.Interfaces;
 using AngleSharp.StyleSystem.Models;
 
 public class RuleCollector : IRuleCollector, IDisposable
 {
-    private readonly IBrowsingContext _context;
     private readonly IStyleSheetManager _stylesheetManager;
     private readonly Dictionary<string, List<MatchedRule>> _selectorMatchCache = new();
     private readonly ICssSelectorParser _selectorParser;
@@ -28,16 +26,14 @@ public class RuleCollector : IRuleCollector, IDisposable
     };
 
     public RuleCollector(
-        IBrowsingContext context,
         IStyleSheetManager stylesheetManager,
-        IEventAggregator eventAggregator)
+        IEventAggregator eventAggregator,
+        ICssSelectorParser selectorParser)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
         _stylesheetManager = stylesheetManager ?? throw new ArgumentNullException(nameof(stylesheetManager));
         _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
 
-        _selectorParser = _context.GetService<ICssSelectorParser>() ??
-            throw new InvalidOperationException("CSS Selector Parser service not available");
+        _selectorParser = selectorParser;
 
         _subscriptionTokens = new[]
         {
