@@ -32,7 +32,7 @@ namespace AngleSharp.StyleSystem.DependencyInjection
             configure(options);
 
             services.AddSingleton(options);
-
+            services.AddMemoryCache();
             // services.AddSingleton<IRenderDevice>(new DefaultRenderDevice());
 
             // Add the EventAggregator first as it's needed by many services

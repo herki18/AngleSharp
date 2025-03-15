@@ -41,12 +41,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Revision Two/Testing/ValueCalculator Unit Testing.md",
+                "file": "Notes/Explore EXCSS Framework.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "ValueCalculator Unit Testing"
+              "title": "Explore EXCSS Framework"
             }
           }
         ],
@@ -200,8 +200,9 @@
   },
   "active": "fad918890771ffc5",
   "lastOpenFiles": [
-    "Test.md",
     "Revision Two/Testing/ValueCalculator Unit Testing.md",
+    "Notes/Explore EXCSS Framework.md",
+    "Test.md",
     "Revision Two/Testing",
     "Revision Two/Event Aggregator/EventAggregator Documentation.md",
     "Revision Two/Event Aggregator/Recommendations and Analysis.md",
@@ -227,7 +228,6 @@
     "Untitled 2.md",
     "Untitled 12.md",
     "Untitled 11.md",
-    "Untitled 10.md",
     "Revision Two/Layout Engine",
     "Revision Two",
     "New Arhitecture/Rev 4",

@@ -1,79 +1,78 @@
-﻿namespace AngleSharp.StyleSystem.Storage;
-
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
 using AngleSharp.StyleSystem.Interfaces;
 using AngleSharp.StyleSystem.Models;
+using Microsoft.Extensions.Caching.Memory;
 
-/// <summary>
-/// Implements a cache for computed styles to improve performance by reusing style objects.
-/// </summary>
+namespace AngleSharp.StyleSystem.Storage;
+
 public class StyleCache : IStyleCache
 {
-    private readonly Dictionary<StyleCacheKey, IComputedStyle> _cache = new Dictionary<StyleCacheKey, IComputedStyle>();
-    private readonly int _maxSize = 10000;
+    private readonly IMemoryCache _memoryCache;
+    private readonly MemoryCacheEntryOptions _cacheOptions;
+    private readonly HashSet<StyleCacheKey> _keys = new HashSet<StyleCacheKey>();
 
-    /// <summary>
-    /// Tries to retrieve a cached style for the specified key.
-    /// </summary>
-    /// <param name="key">The cache key.</param>
-    /// <param name="style">The retrieved style if found.</param>
-    /// <returns>True if the style was found; otherwise, false.</returns>
+    public StyleCache(IMemoryCache? memoryCache = null)
+    {
+        // Use provided cache or create new one
+        _memoryCache = memoryCache ?? new MemoryCache(new MemoryCacheOptions
+        {
+            SizeLimit = 10000
+        });
+
+        // Set up default options for cache entries
+        _cacheOptions = new MemoryCacheEntryOptions()
+            .SetSize(1)  // Each entry counts as 1 unit for size limiting
+            .SetPriority(CacheItemPriority.Normal);
+    }
+
     public bool TryGetValue(StyleCacheKey key, out IComputedStyle style)
     {
-        return _cache.TryGetValue(key, out style);
+        if (_memoryCache.TryGetValue(key, out object? cachedStyle) && cachedStyle is IComputedStyle computedStyle)
+        {
+            style = computedStyle;
+            return true;
+        }
+        style = null!; // Using null! as required by out parameter
+        return false;
     }
 
-    /// <summary>
-    /// Stores a computed style in the cache.
-    /// </summary>
-    /// <param name="key">The cache key.</param>
-    /// <param name="style">The computed style to cache.</param>
     public void Store(StyleCacheKey key, IComputedStyle style)
     {
-        if (_cache.Count >= _maxSize)
-        {
-            _cache.Clear();
-        }
-        _cache[key] = style;
+        _memoryCache.Set(key, style, _cacheOptions);
+        _keys.Add(key);
     }
 
-    /// <summary>
-    /// Removes a specific entry from the cache.
-    /// </summary>
-    /// <param name="key">The cache key to remove.</param>
     public void Remove(StyleCacheKey key)
     {
-        _cache.Remove(key);
+        _memoryCache.Remove(key);
+        _keys.Remove(key);
     }
 
-    /// <summary>
-    /// Clears all entries from the cache.
-    /// </summary>
     public void Clear()
     {
-        _cache.Clear();
+        foreach (var key in _keys.ToList())
+        {
+            _memoryCache.Remove(key);
+        }
+        _keys.Clear();
     }
 
-    /// <summary>
-    /// Gets all computed styles currently in the cache.
-    /// </summary>
-    /// <returns>An enumerable of all cached styles.</returns>
     public IEnumerable<IComputedStyle> GetAllStyles()
     {
-        return _cache.Values;
+        var styles = new List<IComputedStyle>();
+        foreach (var key in _keys)
+        {
+            if (_memoryCache.TryGetValue(key, out object? cachedItem) &&
+                cachedItem is IComputedStyle style)
+            {
+                styles.Add(style);
+            }
+        }
+        return styles;
     }
 
-    /// <summary>
-    /// Gets the number of items in the cache.
-    /// </summary>
-    public int Count => _cache.Count;
+    public int Count => _keys.Count;
 
-    /// <summary>
-    /// Gets all keys currently in the cache.
-    /// </summary>
-    /// <returns>An enumerable of all cache keys.</returns>
-    public IEnumerable<StyleCacheKey> GetAllKeys()
-    {
-        return _cache.Keys;
-    }
+    public IEnumerable<StyleCacheKey> GetAllKeys() => _keys;
 }
