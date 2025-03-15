@@ -1,260 +1,162 @@
-# StyleComputationModule - Updated for LayoutNG Integration
+# StyleSystem Architecture Overview
 
-## 1. Introduction
+## Introduction
 
-This architecture document outlines how the StyleComputationModule will evolve to integrate with the LayoutNG-inspired architecture. It maintains the current functionality while establishing the architectural foundations needed to support constraint-based layout.
+The StyleSystem for AngleSharp.LayoutEngine provides a modern CSS styling implementation aligned with browser engines like Blink. The architecture has been enhanced with a dedicated dependency injection system that operates independently from AngleSharp's core services while maintaining full compatibility.
 
-## 2. Current Architecture Overview
+## Design Principles
 
-The StyleComputationModule currently follows a sequential pipeline architecture:
+1. **Clear Phase Separation**: Style computation is divided into distinct phases with well-defined inputs and outputs
+2. **Memory Efficiency**: Property trees and style sharing reduce memory consumption
+3. **Performance Optimization**: Multi-level caching and minimal recalculation improve speed
+4. **Layout Integration**: Clean interfaces between style and layout systems
+5. **Modularity**: Loosely coupled components with clear responsibilities
+6. **Threading Support**: Parallel computation of styles where possible
+7. **Lifecycle Integration**: Alignment with document lifecycle phases
+8. **Dependency Injection**: Independent DI system that integrates with existing AngleSharp services
 
-```
-StyleSheetManager → SelectorMatcher → CascadeResolver → InheritanceProcessor → ValueComputer
-```
+## Dependency Injection System
 
-Core components have well-defined responsibilities:
+The StyleSystem introduces a dedicated dependency injection framework that provides several key benefits:
 
-- **StyleComputationEngine**: Orchestration and API entry point
-- **StyleSheetManager**: Stylesheet organization and cascade ordering
-- **SelectorMatcher**: DOM element to style rule matching
-- **CascadeResolver**: Conflict resolution based on specificity
-- **InheritanceProcessor**: Property inheritance chain management
-- **ValueComputer**: Absolute value computation and normalization
+1. **Separation of Concerns**: Decouples the StyleSystem from AngleSharp's internal service management
+2. **Configurability**: Allows fine-grained configuration of StyleSystem components
+3. **Extensibility**: Makes it easy to replace or extend individual components
+4. **Integration**: Seamlessly bridges with AngleSharp's existing service architecture
+5. **Testing**: Facilitates unit testing by allowing mock implementations to be injected
 
-## 3. LayoutNG Architectural Requirements
+Key elements of the DI system include:
 
-The LayoutNG architecture introduces several new architectural requirements:
+- **StyleSystemServiceCollectionExtensions**: Registers all StyleSystem components
+- **AngleSharpServiceCollectionExtensions**: Adapts AngleSharp services for use with StyleSystem
+- **StyleSystemDependencyExtensions**: Connects StyleSystem with AngleSharp context
+- **StyleSystemService**: Acts as the central orchestrator for StyleSystem components
 
-1. **Logical vs. Physical Coordinates**: Support for writing-mode independent layout
-2. **Constraint-Based Computation**: Style values dependent on layout constraints
-3. **Immutable Fragment Model**: Support for fragment-based layout output
-4. **Optimized Property Access**: Efficient retrieval of layout-critical properties
-5. **Fine-Grained Dependency Tracking**: Granular style-to-layout dependencies
-6. **Layout Phases Separation**: Clear boundaries between different computation phases
+## Core Components Overview
 
-## 4. Architectural Evolution
+### 1. Document Integration Layer
 
-### 4.1 Separation of Concerns
+- **DocumentLifecycleCoordinator**: Coordinates style computation with document lifecycle
+- **DomMutationTracker**: Monitors DOM changes and triggers style invalidation
+- **StyleRecalcScheduler**: Schedules style computation based on priority and visibility
+- **DisplayLockManager**: Defers processing for non-visible content
+- **AnimationStyleEngine**: Optimizes style computation for animated elements
 
-The enhanced architecture will maintain clear boundaries between:
+### 2. StyleEngine Core
 
-1. **Style Computation**: Computing raw style declarations
-2. **Style Adaptation**: Transforming computed styles for layout consumption
-3. **Constraint Resolution**: Resolving styles in the context of layout constraints
-4. **Layout Calculation**: Computing positions and dimensions (performed by LayoutEngine)
+- **StyleEngine**: The main entry point that orchestrates the style computation process
+- **StyleTreeResolver**: Handles element tree traversal and style computation scheduling
+- **StyleInvalidationTracker**: Tracks element dependencies for minimal recalculation
+- **StyleCache**: Multi-level caching system for computed styles
+- **StyleSheetManager**: Manages stylesheets from different origins (user agent, author, etc.)
 
-This separation ensures that StyleComputationModule can evolve independently while supporting the needs of LayoutNG.
+### 3. Style Computation Pipeline
 
-### 4.2 Architectural Patterns
+- **RuleCollector**: Gathers and matches style rules
+- **CascadeResolver**: Resolves conflicting style declarations
+- **InheritanceProcessor**: Handles property inheritance
+- **ComputedStyleBuilder**: Creates optimized ComputedStyle objects
 
-New patterns to be introduced:
+### 4. Value Processing Components
 
-1. **Adapter Pattern**: Convert between style representation and layout representation
-2. **Strategy Pattern**: Pluggable algorithms for different layout models
-3. **Facade Pattern**: Simplified API for layout engine consumption
-4. **Observer Pattern**: Notify layout of relevant style changes
-5. **Bridge Pattern**: Decouple style abstraction from layout implementation
+- **VariableResolver**: Efficiently resolves CSS custom properties (variables) with handling for circular references and fallbacks
+- **ValueCalculator**: Performs unit conversion and computes values (independent of variable resolution)
+- **PropertyTreeManager**: Manages shared property storage through tree structures for memory efficiency
+- **StylePropertyMapper**: Handles logical-to-physical property mapping based on writing mode context
 
-### 4.3 Component Architecture
+### 5. Output Layer
 
-The evolved architecture introduces these new architectural components:
+- **ComputedStyle**: Layout-optimized representation of element styles
+    - SurrogateBitfields: Flags and enums stored efficiently
+    - BoxProperties: Dimensions, margins, borders, etc.
+    - TextProperties: Font, text alignment, etc.
+    - RareProperties: Less commonly used properties
+    - PropertyTreeNode: Efficient storage for property values with sharing capabilities
 
-1. **StyleAdaptation Layer**: Bridge between raw computed styles and layout-optimized format
-2. **LogicalPropertySystem**: Handle writing-mode dependent property calculations
-3. **ConstraintBasedResolver**: Compute style values in the context of layout constraints
-4. **LayoutStyleFacade**: Simplified API for layout engine consumption
+### 6. Threading Components
 
-### 4.4 System Boundaries
+- **MainThreadStyleWork**: Handles critical-path elements on the main thread
+- **WorkerThreadStylePool**: Manages worker threads for parallel style computation
+- **StyleTaskScheduler**: Schedules and executes style-related tasks
+- **StyleRecalcScheduler**: Coordinates style recalculation across threads
 
-Clear boundaries will be established:
+## Component Processing Flow
 
-1. **StyleComputationModule Boundary**: Computing style declarations
-2. **LayoutEngine Boundary**: Computing layout based on styles
-3. **StyleAdaptation Boundary**: Converting between the two domains
-
-## 5. Data Flow Architecture
-
-### 5.1 Style to Layout Flow
-
-The enhanced data flow will be:
-
-```
-DOM Element → StyleComputationEngine → ComputedStyle → StyleAdaptation → 
-LayoutStyleRepresentation → ConstraintSpaceCreation → LayoutEngine → LayoutFragment
-```
-
-### 5.2 Layout to Style Dependency
-
-Bi-directional flow for style/layout dependencies:
+The StyleSystem follows a specific processing sequence when computing styles:
 
 ```
-StyleProperty → StyleDependency → LayoutDependency → 
-LayoutInvalidation → StyleInvalidation → Recomputation
+DOM Mutation → Style Invalidation → Style Recalc → Rule Matching → Cascade → Inheritance → Computed Style
 ```
 
-### 5.3 Writing Mode Transformation Flow
+The StyleEngine orchestrates this process while the ComputedStyleBuilder acts as the coordinator:
 
-The logical-to-physical transformation flow:
+1. First, DOM mutations are tracked by the DomMutationTracker
+2. Affected elements are marked by the StyleInvalidationTracker
+3. Style recalculation is scheduled by the StyleRecalcScheduler based on priority
+4. The StyleEngine processes invalidated elements through the style computation pipeline
+5. ComputedStyle objects are created and cached for future use
 
-```
-ComputedStyle → LogicalPropertyExtraction → 
-WritingModeTransformation → PhysicalPropertyGeneration → LayoutProperties
-```
+## Key Architectural Enhancements
 
-## 6. Integration Architecture
+### Service Registration and Initialization
 
-### 6.1 StyleComputationEngine Integration Points
+The StyleSystem now supports standard dependency injection patterns:
 
-The StyleComputationEngine will provide these integration points:
+```csharp
+// Register StyleSystem with services collection
+services.AddStyleSystem(options => {
+    options.EnableOptimization = true;
+    options.MaxWorkerThreads = 4;
+    options.BatchSize = 100;
+});
 
-1. **Style Computation API**: Existing entry point for style computation
-2. **Layout Adaptation API**: New entry point for layout-optimized style access
-3. **Constraint Resolution API**: New entry point for constraint-based calculations
-4. **Logical Property API**: Entry point for writing-mode aware calculations
-
-### 6.2 Event-Based Integration
-
-The modules will communicate through an event-based system:
-
-1. **Style Invalidation Events**: Notify layout when styles change
-2. **Constraint Change Events**: Notify style when layout constraints change
-3. **Writing Mode Change Events**: Trigger logical-to-physical recalculation
-
-### 6.3 Cache Integration Architecture
-
-Enhanced caching architecture:
-
-1. **Computed Style Cache**: Cache raw computed styles
-2. **Layout Style Cache**: Cache layout-optimized style representations
-3. **Constraint-Based Cache**: Cache constraint-dependent calculations
-4. **Dependency Tracking**: Track dependencies between style and layout
-
-## 7. Component Responsibilities
-
-### 7.1 StyleComputationEngine
-
-- Remain the primary entry point for style computation
-- Coordinate between stylesheet management, matching, cascade, inheritance, and computation
-- Provide facade for LayoutEngine consumption
-- Manage caching and invalidation
-
-### 7.2 StyleAdaptation Layer (New)
-
-- Transform raw computed styles into layout-optimized format
-- Provide fast access to commonly used layout properties
-- Handle property type conversion and normalization
-- Cache frequently accessed properties
-
-### 7.3 LogicalPropertySystem (New)
-
-- Handle writing-mode dependent property calculations
-- Transform between logical and physical coordinates
-- Manage direction-sensitive property resolution
-- Support international text layout requirements
-
-### 7.4 ConstraintBasedResolver (New)
-
-- Resolve style values in context of layout constraints
-- Handle percentage-based calculations
-- Resolve intrinsic sizes
-- Process constraint-dependent properties
-
-### 7.5 ValueComputer (Enhanced)
-
-- Continue computing absolute values from relative values
-- Add support for constraint-based calculations
-- Enhance calc() expression evaluation for layout
-- Improve CSS variable resolution for layout context
-
-## 8. Migration Strategy
-
-### 8.1 Parallel Development
-
-The architectural evolution will follow a parallel development approach:
-
-1. **Maintain Current Functionality**: Ensure existing style computation continues to work
-2. **Introduce New Components**: Add new components without disrupting existing ones
-3. **Gradual Transition**: Move functionality to new architecture incrementally
-4. **Adapter Layer**: Use adapters to bridge old and new architectures
-
-### 8.2 Compatibility Considerations
-
-The architecture will maintain compatibility through:
-
-1. **Stable Existing APIs**: No breaking changes to public APIs
-2. **Progressive Enhancement**: Add new capabilities while preserving old ones
-3. **Adapter Pattern**: Use adapters to conform new components to existing interfaces
-4. **Feature Toggles**: Allow enabling/disabling LayoutNG integration
-
-## 9. Architecture Diagrams
-
-### 9.1 Component Diagram
-
-```
-┌───────────────────────────────────────────────────────────┐
-│                  StyleComputationEngine                   │
-└─────────────────────────────┬─────────────────────────────┘
-                              │
-    ┌───────────────┬─────────┴────────┬────────────────┐
-    │               │                  │                │
-┌─────────┐  ┌─────────────┐  ┌──────────────┐  ┌─────────────┐
-│StyleSheet│  │SelectorMatch│  │CascadeResolve│  │Inheritance  │
-│Manager   │  │er           │  │r             │  │Processor    │
-└─────────┘  └─────────────┘  └──────────────┘  └─────────────┘
-                                                       │
-┌──────────────────────────────────────────────────────┘
-│
-▼
-┌───────────────────────────┐         ┌───────────────────────┐
-│      ValueComputer        │◄───────►│ ConstraintBasedResolver│
-└───────────┬───────────────┘         └───────────────────────┘
-            │                                    ▲
-            ▼                                    │
-┌───────────────────────────┐         ┌───────────────────────┐
-│     ComputedStyle         │────────►│   StyleAdaptation     │
-└───────────────────────────┘         └─────────────┬─────────┘
-                                                   │
-                                                   ▼
-                                      ┌───────────────────────┐
-                                      │    LayoutStyleFacade  │
-                                      └───────────────────────┘
-                                                   │
-                                                   ▼
-                                      ┌───────────────────────┐
-                                      │      LayoutEngine     │
-                                      └───────────────────────┘
+// Register AngleSharp services for use with StyleSystem
+services.AddAngleSharpServices(context);
 ```
 
-### 9.2 Data Flow Diagram
+### Multi-Threading Support
 
-```
-┌─────────┐        ┌─────────────┐        ┌─────────────┐
-│DOM      │───────►│StyleComputer│───────►│ComputedStyle│
-│Element  │        │             │        │             │
-└─────────┘        └─────────────┘        └──────┬──────┘
-                                                 │
-                                                 ▼
-┌─────────────────┐       ┌───────────────┐      │
-│ConstraintSpace  │◄──────┤StyleAdaptation│◄─────┘
-│                 │       │               │
-└────────┬────────┘       └───────────────┘
-         │
-         ▼
-┌────────────────┐        ┌─────────────┐
-│LayoutAlgorithm │───────►│LayoutFragment│
-│                │        │             │
-└────────────────┘        └─────────────┘
-```
+The architecture supports parallel style computation across multiple threads:
 
-## 10. Conclusion
+- Critical-path elements processed on the main thread
+- Off-critical-path elements processed by worker threads
+- Thread-safe data structures for style sharing
 
-This architecture provides a clear path for evolving the StyleComputationModule to support the LayoutNG-inspired layout engine while maintaining all existing functionality. The architecture emphasizes clear boundaries, well-defined responsibilities, and a gradual migration path.
+### Display Locking
 
-Key architectural principles include:
+Performance is optimized by deferring work for non-visible content:
 
-- Separation of style computation from layout adaptation
-- Writing-mode independence through logical properties
-- Constraint-based property resolution
-- Clear integration points between style and layout
+- Viewport visibility tracking
+- Prioritization of visible element styling
+- Just-in-time computation as elements scroll into view
 
-By following this architecture, the StyleComputationModule will provide a solid foundation for implementing modern layout algorithms while ensuring backward compatibility and maintainable code.
+### Property Trees
+
+Memory efficiency is achieved through property sharing:
+
+- Similar elements share style data when possible
+- Common property values stored once and referenced
+- Optimized immutable data structures
+
+### Style Containment
+
+CSS containment is respected for improved performance:
+
+- **Style Containment**: Limits style invalidation scope to contained subtrees, preventing style changes from propagating beyond containment boundaries
+- **Layout Containment**: Creates independent layout contexts that don't affect parent layout calculations, allowing for more efficient layout updates
+- **Paint Containment**: Creates new stacking contexts and containing blocks, enabling optimizations like subtree skipping for off-screen content
+- **Size Containment**: Elements' size doesn't depend on their descendants, enabling early layout optimization
+- **Content Containment**: Combines layout, style, and paint containment for maximum optimization
+
+## Layout System Integration
+
+The StyleSystem provides optimized interfaces for layout consumption:
+
+- Fast property accessors for layout-critical values
+- Logical property resolution based on writing mode
+- Specialized layout-oriented property groups
+- Clear boundaries between style and layout responsibilities
+
+## Conclusion
+
+The enhanced architecture with dedicated dependency injection provides a solid foundation for a high-performance style system aligned with modern browser engines. It enables efficient processing of complex stylesheets while supporting modern CSS features and maintaining compatibility with AngleSharp's existing interfaces.
