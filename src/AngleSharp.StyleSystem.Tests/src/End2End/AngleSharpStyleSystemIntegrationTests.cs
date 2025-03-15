@@ -25,9 +25,11 @@ public class AngleSharpStyleSystemIntegrationTests
 
         var config = Configuration.Default
             .WithCss()
+            .WithRenderDevice()
             .WithDefaultLoader();
 
         _context = BrowsingContext.New(config);
+        serviceCollection.AddAngleSharpServices(_context);
 
         serviceCollection.AddStyleSystem(options => {
             options.EnableOptimization = true;
@@ -35,9 +37,11 @@ public class AngleSharpStyleSystemIntegrationTests
             options.UpdateStylesImmediately = true;
         });
 
-        serviceCollection.AddAngleSharpServices(_context);;
+        var list = serviceCollection.ToList();
+
         _serviceProvider = serviceCollection.BuildServiceProvider();
-        // _context.RegisterStyleSystemServices(_serviceProvider);
+
+        _context.RegisterStyleSystemServices(_serviceProvider);
         // Not like this
         // _context.UseStyleSystem(options => {
         //     options.EnableOptimization = true;

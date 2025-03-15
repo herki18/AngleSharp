@@ -33,6 +33,8 @@ namespace AngleSharp.StyleSystem.DependencyInjection
 
             services.AddSingleton(options);
 
+            // services.AddSingleton<IRenderDevice>(new DefaultRenderDevice());
+
             // Add the EventAggregator first as it's needed by many services
             services.AddSingleton<IEventAggregator, EventAggregator>();
 
@@ -54,7 +56,7 @@ namespace AngleSharp.StyleSystem.DependencyInjection
             // Services that use the EventAggregator
             services.AddSingleton<DocumentLifecycleCoordinator>();
             services.AddSingleton<DomMutationTracker>();
-            services.AddSingleton<IStyleEngine, StyleEngine>();
+
             services.AddSingleton<IStyleTreeResolver, StyleTreeResolver>();
 
             services.AddSingleton<IComputedStyleBuilder, ComputedStyleBuilder>();
@@ -87,9 +89,9 @@ namespace AngleSharp.StyleSystem.DependencyInjection
                     options.ThrottleIntervalMs,
                     options.BatchSize));
 
-            services.AddSingleton<IRenderDevice>(sp =>
-                sp.GetService<IRenderDevice>() ?? new DefaultRenderDevice());
-
+            // services.AddSingleton<IRenderDevice>(sp =>
+            //     sp.GetService<IRenderDevice>() ?? new DefaultRenderDevice());
+            services.AddSingleton<IStyleEngine, StyleEngine>();
             services.AddSingleton<StyleSystemService>();
 
             services.AddSingleton<IStyleApplicationStrategy, BasicStyleApplicationStrategy>();

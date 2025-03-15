@@ -20,7 +20,7 @@ using Interfaces;
 /// </remarks>
 public class WorkerThreadStylePool : IWorkerThreadStylePool
 {
-    private readonly StyleEngine _styleEngine;
+    private readonly IStyleEngine _styleEngine;
     private readonly ConcurrentDictionary<IElement, RecalcPriority> _pendingElements;
     private readonly object _poolLock = new object();
     private bool _isActive;
@@ -30,7 +30,7 @@ public class WorkerThreadStylePool : IWorkerThreadStylePool
     /// </summary>
     /// <param name="styleEngine">The style engine to use for style computation.</param>
     /// <param name="threadCount">The number of worker threads to use (unused in the current implementation).</param>
-    public WorkerThreadStylePool(StyleEngine styleEngine, int threadCount = 0)
+    public WorkerThreadStylePool(IStyleEngine styleEngine, int threadCount = 0)
     {
         _styleEngine = styleEngine ?? throw new ArgumentNullException(nameof(styleEngine));
         _pendingElements = new ConcurrentDictionary<IElement, RecalcPriority>();

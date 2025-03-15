@@ -36,7 +36,7 @@ public class StyleSystemTestFixture
     /// <summary>
     /// Gets the StyleEngine instance.
     /// </summary>
-    protected StyleEngine StyleEngine { get; private set; }
+    protected IStyleEngine StyleEngine { get; private set; }
 
     /// <summary>
     /// Gets the current document.

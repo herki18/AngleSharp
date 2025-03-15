@@ -15,7 +15,7 @@ using Interfaces;
 /// </summary>
 public class MainThreadStyleWork : IMainThreadStyleWork
 {
-    private readonly StyleEngine _styleEngine;
+    private readonly IStyleEngine _styleEngine;
     private readonly ConcurrentDictionary<IElement, RecalcPriority> _pendingElements;
     private readonly object _processingLock = new object();
     private bool _isProcessing;
@@ -24,7 +24,7 @@ public class MainThreadStyleWork : IMainThreadStyleWork
     /// Creates a new instance of the MainThreadStyleWork class.
     /// </summary>
     /// <param name="styleEngine">The style engine to use for style computation.</param>
-    public MainThreadStyleWork(StyleEngine styleEngine)
+    public MainThreadStyleWork(IStyleEngine styleEngine)
     {
         _styleEngine = styleEngine ?? throw new ArgumentNullException(nameof(styleEngine));
         _pendingElements = new ConcurrentDictionary<IElement, RecalcPriority>();
