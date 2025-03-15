@@ -3,38 +3,43 @@ using AngleSharp.Browser;
 using AngleSharp.Dom;
 using AngleSharp.Dom.Events;
 using AngleSharp.Css;
+using AngleSharp.StyleSystem.Events;
 using AngleSharp.StyleSystem.Integration;
 using AngleSharp.StyleSystem.Interfaces;
 using AngleSharp.StyleSystem.Storage;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AngleSharp.StyleSystem.Services;
-
 using Tasks;
 
-/// <summary>
-/// Central service that coordinates StyleSystem functionality.
-/// </summary>
 public sealed class StyleSystemService : IDisposable
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly StyleSystemOptions _options;
+    private readonly IEventAggregator _eventAggregator;
+    private readonly ISubscriptionToken[] _subscriptionTokens;
     private IBrowsingContext? _context;
     private IDocument? _currentDocument;
     private bool _isDisposed;
     private readonly object _initLock = new object();
 
-    /// <summary>
-    /// Creates a new StyleSystemService with the given service provider and options.
-    /// </summary>
-    /// <param name="serviceProvider">The service provider containing registered services.</param>
-    /// <param name="options">Style system configuration options.</param>
-    public StyleSystemService(IServiceProvider serviceProvider, StyleSystemOptions options)
+    public StyleSystemService(
+        IServiceProvider serviceProvider,
+        StyleSystemOptions options,
+        IEventAggregator eventAggregator)
     {
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _options = options ?? new StyleSystemOptions();
+        _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
 
-        // Important: Verify the service provider contains the required services
+        // Subscribe to document events
+        _subscriptionTokens = new[]
+        {
+            _eventAggregator.Subscribe<DocumentAttachedEvent>(OnDocumentAttached),
+            _eventAggregator.Subscribe<DocumentDetachedEvent>(OnDocumentDetached),
+            _eventAggregator.Subscribe<ReadyStateChangedEvent>(OnReadyStateChanged)
+        };
+
         try
         {
             var context = _serviceProvider.GetService<IBrowsingContext>();
@@ -46,13 +51,34 @@ public sealed class StyleSystemService : IDisposable
         catch (Exception ex)
         {
             Console.WriteLine($"Error during StyleSystem construction: {ex.Message}");
-            // Don't throw here, as the service might be initialized later
         }
     }
 
-    /// <summary>
-    /// Gets whether the service has been properly initialized with a browsing context.
-    /// </summary>
+    private void OnDocumentAttached(DocumentAttachedEvent eventData)
+    {
+        _currentDocument = eventData.Document;
+    }
+
+    private void OnDocumentDetached(DocumentDetachedEvent eventData)
+    {
+        if (_currentDocument == eventData.Document)
+        {
+            _currentDocument = null;
+        }
+    }
+
+    private void OnReadyStateChanged(ReadyStateChangedEvent eventData)
+    {
+        if (eventData.ReadyState == DocumentReadyState.Interactive ||
+            eventData.ReadyState == DocumentReadyState.Complete)
+        {
+            if (eventData.Document.DocumentElement != null && StyleEngine != null)
+            {
+                StyleEngine.UpdateStyles(eventData.Document.DocumentElement);
+            }
+        }
+    }
+
     public bool IsInitialized
     {
         get
@@ -68,31 +94,11 @@ public sealed class StyleSystemService : IDisposable
         }
     }
 
-    /// <summary>
-    /// Gets the StyleEngine instance.
-    /// </summary>
     public IStyleEngine? StyleEngine => GetService<IStyleEngine>();
-
-    /// <summary>
-    /// Gets the DocumentLifecycleCoordinator instance.
-    /// </summary>
     public IDocumentLifecycleCoordinator? LifecycleCoordinator => GetService<IDocumentLifecycleCoordinator>();
-
-    /// <summary>
-    /// Gets whether style optimization is enabled.
-    /// </summary>
     public bool OptimizationEnabled => StyleEngine?.OptimizationEnabled ?? false;
-
-    /// <summary>
-    /// Gets the associated browsing context.
-    /// </summary>
     public IBrowsingContext? Context => _context;
 
-    /// <summary>
-    /// Gets a service of the specified type.
-    /// </summary>
-    /// <typeparam name="T">The type of service to get.</typeparam>
-    /// <returns>The service instance or null if not registered.</returns>
     public T? GetService<T>() where T : class
     {
         try
@@ -101,16 +107,10 @@ public sealed class StyleSystemService : IDisposable
         }
         catch (InvalidOperationException)
         {
-            // Handle dependency resolution errors
             return null;
         }
     }
 
-    /// <summary>
-    /// Initializes the StyleSystem with the provided browsing context.
-    /// </summary>
-    /// <param name="context">The browsing context to associate with this StyleSystem.</param>
-    /// <exception cref="ArgumentNullException">Thrown if context is null.</exception>
     public void Initialize(IBrowsingContext context)
     {
         if (context == null)
@@ -130,10 +130,7 @@ public sealed class StyleSystemService : IDisposable
 
             try
             {
-                // Now initialize all components with the context
                 InitializeComponents();
-
-                // Check if there's already an active document
                 CheckCurrentDocument();
             }
             catch (Exception ex)
@@ -152,10 +149,6 @@ public sealed class StyleSystemService : IDisposable
         }
     }
 
-    /// <summary>
-    /// Cleans up any resources associated with the given context.
-    /// </summary>
-    /// <param name="context">The context to clean up.</param>
     public void CleanupContext(IBrowsingContext context)
     {
         if (context == null)
@@ -168,10 +161,6 @@ public sealed class StyleSystemService : IDisposable
         }
     }
 
-    /// <summary>
-    /// Forces a style update for all elements in the document.
-    /// </summary>
-    /// <param name="context">The browsing context to update.</param>
     public void ForceStyleUpdate(IBrowsingContext context)
     {
         if (context?.Active?.DocumentElement == null)
@@ -185,10 +174,6 @@ public sealed class StyleSystemService : IDisposable
         StyleEngine?.UpdateStyles(context.Active.DocumentElement);
     }
 
-    /// <summary>
-    /// Notifies the StyleSystem about a document change.
-    /// </summary>
-    /// <param name="document">The new active document.</param>
     public void NotifyDocumentChanged(IDocument document)
     {
         if (document == null || document == _currentDocument)
@@ -202,34 +187,21 @@ public sealed class StyleSystemService : IDisposable
         HookDocumentEvents(document);
     }
 
-    /// <summary>
-    /// Processes any pending style tasks immediately.
-    /// </summary>
     public void ProcessPendingStyleTasksImmediately()
     {
         GetService<IStyleRecalcScheduler>()?.ProcessImmediately();
     }
 
-    /// <summary>
-    /// Gets metrics about the style optimization.
-    /// </summary>
-    /// <returns>Optimization metrics or null if not available.</returns>
     public OptimizationMetrics? GetOptimizationMetrics()
     {
         return StyleEngine?.GetOptimizationMetrics();
     }
 
-    /// <summary>
-    /// Clears the style cache.
-    /// </summary>
     public void ClearStyleCache()
     {
         GetService<IStyleCache>()?.Clear();
     }
 
-    /// <summary>
-    /// Optimizes all computed styles.
-    /// </summary>
     public void OptimizeAllStyles()
     {
         StyleEngine?.OptimizeAllStyles();
@@ -246,29 +218,15 @@ public sealed class StyleSystemService : IDisposable
             var renderDevice = _context.GetService<IRenderDevice>() ??
                                _serviceProvider.GetService<IRenderDevice>() ??
                                new DefaultRenderDevice();
+
             styleEngine.RenderDevice = renderDevice;
             styleEngine.OptimizationEnabled = _options.EnableOptimization;
             styleEngine.CollectMetrics = _options.CollectMetrics;
         }
 
         var lifecycleCoordinator = GetService<DocumentLifecycleCoordinator>();
-        var invalidationTracker = GetService<IStyleInvalidationTracker>();
-        var recalcScheduler = GetService<IStyleRecalcScheduler>();
-
-        if (invalidationTracker != null && recalcScheduler != null)
-        {
-            if (recalcScheduler is Observers.IStyleInvalidationObserver observer)
-            {
-                invalidationTracker.AddObserver(observer);
-            }
-        }
-
-        if (lifecycleCoordinator != null && styleEngine != null)
-        {
-            lifecycleCoordinator.AddObserver(styleEngine);
-        }
-
         var stylesheetManager = GetService<IStyleSheetManager>();
+
         if (stylesheetManager != null && _options.UpdateStylesImmediately)
         {
             stylesheetManager.StylesheetChanged += StylesheetManager_StylesheetChanged;
@@ -362,9 +320,6 @@ public sealed class StyleSystemService : IDisposable
         }
     }
 
-    /// <summary>
-    /// Disposes the StyleSystemService and releases associated resources.
-    /// </summary>
     public void Dispose()
     {
         if (_isDisposed)
@@ -379,6 +334,12 @@ public sealed class StyleSystemService : IDisposable
         if (_currentDocument != null)
         {
             UnhookDocumentEvents(_currentDocument);
+        }
+
+        // Unsubscribe from all events
+        foreach (var token in _subscriptionTokens)
+        {
+            token.Dispose();
         }
 
         (StyleEngine as IDisposable)?.Dispose();

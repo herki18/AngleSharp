@@ -3,25 +3,12 @@
 using System.Collections.Generic;
 using AngleSharp.Dom;
 using AngleSharp.StyleSystem.Models;
-using AngleSharp.StyleSystem.Observers;
 
 /// <summary>
 /// Tracks which elements need style recalculation.
 /// </summary>
 public interface IStyleInvalidationTracker
 {
-    /// <summary>
-    /// Adds an observer to receive invalidation notifications.
-    /// </summary>
-    /// <param name="observer">The observer to add.</param>
-    void AddObserver(IStyleInvalidationObserver observer);
-
-    /// <summary>
-    /// Removes an observer from receiving invalidation notifications.
-    /// </summary>
-    /// <param name="observer">The observer to remove.</param>
-    void RemoveObserver(IStyleInvalidationObserver observer);
-
     /// <summary>
     /// Marks an element as needing style recalculation.
     /// </summary>

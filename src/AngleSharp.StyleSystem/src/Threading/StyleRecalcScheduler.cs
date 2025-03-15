@@ -7,16 +7,13 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp.Dom;
+using AngleSharp.StyleSystem.Events;
 using AngleSharp.StyleSystem.Integration;
 using AngleSharp.StyleSystem.Interfaces;
 using AngleSharp.StyleSystem.Models;
-using AngleSharp.StyleSystem.Observers;
 using AngleSharp.StyleSystem.Tasks;
 
-/// <summary>
-/// Schedules style recalculation based on invalidations, implementing the observer pattern.
-/// </summary>
-public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObserver, IDisposable
+public class StyleRecalcScheduler : IStyleRecalcScheduler, IDisposable
 {
     private readonly IBrowsingContext _context;
     private readonly IStyleEngine _styleEngine;
@@ -29,6 +26,7 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
     private readonly SemaphoreSlim _workSemaphore = new(1, 1);
     private readonly List<IElement> _deviceDependentElements = new();
     private readonly object _configLock = new();
+    private readonly ISubscriptionToken[] _subscriptionTokens;
 
     private int _throttleIntervalMs = 16;
     private int _maxBatchSize = 100;
@@ -39,22 +37,13 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
     private bool _isProcessing;
     private Action? _completionCallback;
     private bool _isDisposed;
-    private int _maxProcessingTime = 5; // milliseconds
+    private int _maxProcessingTime = 5;
 
-    /// <summary>
-    /// Creates a new StyleRecalcScheduler.
-    /// </summary>
-    /// <param name="styleEngine">The style engine to use for recalculation.</param>
-    /// <param name="context">The browsing context.</param>
-    /// <param name="taskScheduler">The task scheduler to use.</param>
-    /// <param name="mainThreadWork">Optional main thread work handler.</param>
-    /// <param name="workerThreadPool">Optional worker thread pool.</param>
-    /// <param name="throttleIntervalMs">The throttle interval in milliseconds.</param>
-    /// <param name="maxBatchSize">The maximum batch size for processing.</param>
     public StyleRecalcScheduler(
         IStyleEngine styleEngine,
         IBrowsingContext context,
         IStyleTaskScheduler taskScheduler,
+        IEventAggregator eventAggregator,
         IMainThreadStyleWork? mainThreadWork = null,
         IWorkerThreadStylePool? workerThreadPool = null,
         int throttleIntervalMs = 16,
@@ -68,11 +57,18 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
         _throttleIntervalMs = throttleIntervalMs;
         _maxBatchSize = maxBatchSize;
         _viewportDetector = new ViewportDetector(_styleEngine.RenderDevice);
+
+        // Subscribe to events
+        _subscriptionTokens = new ISubscriptionToken[]
+        {
+            eventAggregator.Subscribe<ElementInvalidatedEvent>(OnElementInvalidated),
+            eventAggregator.Subscribe<PropertiesInvalidatedEvent>(OnPropertiesInvalidated),
+            eventAggregator.Subscribe<SubtreeInvalidatedEvent>(OnSubtreeInvalidated),
+            eventAggregator.Subscribe<DeviceDependentElementsInvalidatedEvent>(OnDeviceDependentElementsInvalidated)
+        };
     }
 
     #region IStyleRecalcScheduler Implementation
-
-    /// <inheritdoc />
     public int ThrottleIntervalMs
     {
         get => _throttleIntervalMs;
@@ -85,7 +81,6 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
         }
     }
 
-    /// <inheritdoc />
     public int MaxBatchSize
     {
         get => _maxBatchSize;
@@ -98,7 +93,6 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
         }
     }
 
-    /// <inheritdoc />
     public bool UseWorkerThreads
     {
         get => _useWorkerThreads;
@@ -111,48 +105,39 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
         }
     }
 
-    /// <inheritdoc />
     public void ScheduleElementRecalc(IElement element, RecalcPriority priority = RecalcPriority.Normal)
     {
         if (element == null)
             throw new ArgumentNullException(nameof(element));
-
         var work = new StyleRecalcWork(element, priority, StyleWorkType.Element);
         _pendingWork.AddOrUpdate(element, work, (_, existing) =>
             new StyleRecalcWork(element,
                 (RecalcPriority)Math.Max((byte)existing.Priority, (byte)priority),
                 existing.WorkType == StyleWorkType.Subtree ? StyleWorkType.Subtree : StyleWorkType.Element));
-
         ScheduleProcessing();
     }
 
-    /// <inheritdoc />
     public void ScheduleSubtreeRecalc(IElement rootElement, RecalcPriority priority = RecalcPriority.Normal)
     {
         if (rootElement == null)
             throw new ArgumentNullException(nameof(rootElement));
-
         var work = new StyleRecalcWork(rootElement, priority, StyleWorkType.Subtree);
         _pendingWork.AddOrUpdate(rootElement, work, (_, existing) =>
             new StyleRecalcWork(rootElement,
                 (RecalcPriority)Math.Max((byte)existing.Priority, (byte)priority),
                 StyleWorkType.Subtree));
-
         ScheduleProcessing();
     }
 
-    /// <inheritdoc />
     public void ProcessImmediately()
     {
         lock (_processingLock)
         {
             if (_isProcessing)
                 return;
-
             _isProcessing = true;
             _processingCts = new CancellationTokenSource();
         }
-
         try
         {
             ProcessPendingWork(_processingCts.Token);
@@ -173,30 +158,24 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
         }
     }
 
-    /// <inheritdoc />
     public async Task ProcessAsync(CancellationToken cancellationToken = default)
     {
         await _workSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-
         try
         {
             CancellationTokenSource? linkedCts = null;
-
             lock (_processingLock)
             {
                 if (_isProcessing)
                     return;
-
                 _isProcessing = true;
                 _processingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 linkedCts = _processingCts;
             }
-
             try
             {
                 await Task.Run(() => ProcessPendingWork(linkedCts.Token), linkedCts.Token)
                     .ConfigureAwait(false);
-
                 _completionCallback?.Invoke();
             }
             catch (Exception ex)
@@ -222,26 +201,22 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
         }
     }
 
-    /// <inheritdoc />
     public void CancelPendingWork()
     {
         lock (_processingLock)
         {
             _processingCts?.Cancel();
         }
-
         _throttleTimer?.Change(Timeout.Infinite, Timeout.Infinite);
         _frameEndTimer?.Change(Timeout.Infinite, Timeout.Infinite);
     }
 
-    /// <inheritdoc />
     public bool HasPendingWork =>
         _pendingWork.Count > 0 ||
         (_mainThreadWork?.HasPendingWork ?? false) ||
         (_workerThreadPool?.HasPendingWork ?? false) ||
         _taskScheduler.HasPendingTasks;
 
-    /// <inheritdoc />
     public void FlushPendingStylesAtEndOfFrame()
     {
         if (_frameEndTimer == null)
@@ -258,112 +233,85 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
         }
     }
 
-    /// <inheritdoc />
     public void SetCompletionCallback(Action callback)
     {
         _completionCallback = callback ?? throw new ArgumentNullException(nameof(callback));
     }
-
     #endregion
 
-    #region IStyleInvalidationObserver Implementation
-
-    /// <inheritdoc />
-    public void OnElementInvalidated(IElement element)
+    #region Event Handlers
+    private void OnElementInvalidated(ElementInvalidatedEvent eventData)
     {
-        RecalcPriority priority = DeterminePriority(element);
-        ScheduleElementRecalc(element, priority);
+        RecalcPriority priority = DeterminePriority(eventData.Element);
+        ScheduleElementRecalc(eventData.Element, priority);
     }
 
-    /// <inheritdoc />
-    public void OnPropertiesInvalidated(IElement element, IEnumerable<string> properties)
+    private void OnPropertiesInvalidated(PropertiesInvalidatedEvent eventData)
     {
-        RecalcPriority priority = DeterminePriority(element);
-
-        // For property-specific invalidation, we could optimize further based on property types
-        // For now, we'll just recalculate the entire element
-        bool hasLayoutProperties = properties.Any(IsLayoutProperty);
-        bool hasVisualProperties = properties.Any(IsVisualProperty);
+        RecalcPriority priority = DeterminePriority(eventData.Element);
+        bool hasLayoutProperties = eventData.Properties.Any(IsLayoutProperty);
+        bool hasVisualProperties = eventData.Properties.Any(IsVisualProperty);
 
         if (hasLayoutProperties)
         {
-            // Layout properties might affect subtree layout, so higher priority
             priority = (RecalcPriority)Math.Max((byte)priority, (byte)RecalcPriority.High);
         }
 
-        ScheduleElementRecalc(element, priority);
+        ScheduleElementRecalc(eventData.Element, priority);
 
-        // If the element's children might be affected by these properties, schedule them too
-        if (hasLayoutProperties && CouldAffectChildren(element, properties))
+        if (hasLayoutProperties && CouldAffectChildren(eventData.Element, eventData.Properties))
         {
-            ScheduleSubtreeRecalc(element, priority);
+            ScheduleSubtreeRecalc(eventData.Element, priority);
         }
     }
 
-    /// <inheritdoc />
-    public void OnSubtreeInvalidated(IElement rootElement)
+    private void OnSubtreeInvalidated(SubtreeInvalidatedEvent eventData)
     {
-        RecalcPriority priority = DeterminePriority(rootElement);
-        ScheduleSubtreeRecalc(rootElement, priority);
+        RecalcPriority priority = DeterminePriority(eventData.RootElement);
+        ScheduleSubtreeRecalc(eventData.RootElement, priority);
     }
 
-    /// <inheritdoc />
-    public void OnDeviceDependentElementsInvalidated()
+    private void OnDeviceDependentElementsInvalidated(DeviceDependentElementsInvalidatedEvent eventData)
     {
         foreach (var element in _deviceDependentElements)
         {
             ScheduleElementRecalc(element, RecalcPriority.High);
         }
 
-        // Also recalculate the document element to ensure everything is up-to-date
         if (_context.Active?.DocumentElement != null)
         {
             ScheduleSubtreeRecalc(_context.Active.DocumentElement, RecalcPriority.High);
         }
     }
-
     #endregion
 
     #region Processing Logic
-
     private void ProcessPendingWork(CancellationToken cancellationToken)
     {
         var startTime = DateTime.UtcNow;
         var timeLimit = TimeSpan.FromMilliseconds(_maxProcessingTime);
-
         try
         {
-            // Process critical-priority elements first
             ProcessElementsByPriority(RecalcPriority.Critical, cancellationToken);
-
-            // Process high-priority elements
             if (!cancellationToken.IsCancellationRequested &&
                 DateTime.UtcNow - startTime < timeLimit)
             {
                 ProcessElementsByPriority(RecalcPriority.High, cancellationToken);
             }
-
-            // Process normal-priority elements if time allows
             if (!cancellationToken.IsCancellationRequested &&
                 DateTime.UtcNow - startTime < timeLimit)
             {
                 ProcessElementsByPriority(RecalcPriority.Normal, cancellationToken);
             }
-
-            // Process low-priority elements if time allows
             if (!cancellationToken.IsCancellationRequested &&
                 DateTime.UtcNow - startTime < timeLimit)
             {
                 ProcessElementsByPriority(RecalcPriority.Low, cancellationToken);
             }
-
-            // If we still have elements to process but ran out of time, reschedule
             if (_pendingWork.Count > 0 && !cancellationToken.IsCancellationRequested)
             {
                 ScheduleProcessing();
             }
-
-            // Synchronize with worker thread pool if needed
             if (_workerThreadPool != null && _workerThreadPool.HasPendingWork &&
                 !cancellationToken.IsCancellationRequested)
             {
@@ -373,7 +321,6 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
         }
         catch (OperationCanceledException)
         {
-            // Expected when cancellation is requested
         }
     }
 
@@ -384,17 +331,13 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
             .OrderBy(GetElementSortOrder)
             .Take(_maxBatchSize)
             .ToList();
-
         if (elements.Count == 0)
             return;
-
         foreach (var work in elements)
         {
             if (cancellationToken.IsCancellationRequested)
                 break;
-
             _pendingWork.TryRemove(work.Element, out _);
-
             if (work.WorkType == StyleWorkType.Subtree)
             {
                 ProcessSubtreeWork(work, cancellationToken);
@@ -455,14 +398,10 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
 
     private int GetElementSortOrder(StyleRecalcWork work)
     {
-        // Order elements by viewport visibility and document order
         if (_viewportDetector.IsInViewport(work.Element))
             return 0;
-
         if (_viewportDetector.IsNearViewport(work.Element))
             return 10;
-
-        // Approximate document order by depth
         var depth = 0;
         var element = work.Element;
         while (element.ParentElement != null)
@@ -470,7 +409,6 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
             depth++;
             element = element.ParentElement;
         }
-
         return 100 + depth;
     }
 
@@ -489,48 +427,36 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
             _throttleTimer.Change(_throttleIntervalMs, Timeout.Infinite);
         }
     }
-
     #endregion
 
     #region Helper Methods
-
     private RecalcPriority DeterminePriority(IElement element)
     {
-        // First check if element is directly visible
         if (_viewportDetector.IsInViewport(element))
         {
             _deviceDependentElements.Add(element);
             return RecalcPriority.Critical;
         }
-
-        // Then check if it's near the viewport
         if (_viewportDetector.IsNearViewport(element))
         {
             return RecalcPriority.High;
         }
-
-        // Check if element is likely to become visible soon (e.g., parent is visible)
         if (ElementIsLikelyToBeVisibleSoon(element))
         {
             return RecalcPriority.Normal;
         }
-
-        // Otherwise, low priority
         return RecalcPriority.Low;
     }
 
     private bool ElementIsLikelyToBeVisibleSoon(IElement element)
     {
-        // Check if any parent is in or near the viewport
         var parent = element.ParentElement;
         while (parent != null)
         {
             if (_viewportDetector.IsInViewport(parent) || _viewportDetector.IsNearViewport(parent))
                 return true;
-
             parent = parent.ParentElement;
         }
-
         return false;
     }
 
@@ -566,7 +492,6 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
 
     private bool CouldAffectChildren(IElement element, IEnumerable<string> properties)
     {
-        // Properties that typically affect children's styles
         return properties.Any(p =>
             p == "display" ||
             p == "position" ||
@@ -575,12 +500,9 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
             p.StartsWith("flex") ||
             p.StartsWith("grid"));
     }
-
     #endregion
 
     #region IDisposable Implementation
-
-    /// <inheritdoc />
     public void Dispose()
     {
         if (_isDisposed)
@@ -591,10 +513,15 @@ public class StyleRecalcScheduler : IStyleRecalcScheduler, IStyleInvalidationObs
         _frameEndTimer?.Dispose();
         _workSemaphore.Dispose();
         _processingCts?.Dispose();
-
         _completionCallback = null;
+
+        // Unsubscribe from events
+        foreach (var token in _subscriptionTokens)
+        {
+            token.Dispose();
+        }
+
         _isDisposed = true;
     }
-
     #endregion
 }

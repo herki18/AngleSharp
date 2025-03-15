@@ -2,7 +2,6 @@ namespace AngleSharp.StyleSystem.Interfaces;
 
 using System;
 using AngleSharp.Dom;
-using AngleSharp.StyleSystem.Observers;
 
 /// <summary>
 /// Coordinates document lifecycle with the style system.
@@ -13,18 +12,6 @@ public interface IDocumentLifecycleCoordinator : IDisposable
     /// Gets the current document being coordinated.
     /// </summary>
     IDocument? CurrentDocument { get; }
-
-    /// <summary>
-    /// Adds an observer for document lifecycle events.
-    /// </summary>
-    /// <param name="observer">The observer to add.</param>
-    void AddObserver(IDocumentLifecycleObserver observer);
-
-    /// <summary>
-    /// Removes an observer from receiving document lifecycle events.
-    /// </summary>
-    /// <param name="observer">The observer to remove.</param>
-    void RemoveObserver(IDocumentLifecycleObserver observer);
 
     /// <summary>
     /// Attaches the style system to a document.

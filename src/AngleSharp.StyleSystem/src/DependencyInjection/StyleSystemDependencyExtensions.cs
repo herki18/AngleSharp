@@ -14,49 +14,6 @@ using Microsoft.Extensions.DependencyInjection;
 public static class StyleSystemDependencyExtensions
 {
     /// <summary>
-    /// Applies StyleSystem to an existing BrowsingContext
-    /// </summary>
-    /// <param name="context">The browsing context to enhance with StyleSystem</param>
-    /// <param name="configure">Optional configuration for StyleSystem options</param>
-    /// <returns>The same browsing context with StyleSystem enabled</returns>
-    public static IBrowsingContext UseStyleSystem(
-        this IBrowsingContext context,
-        Action<StyleSystemOptions>? configure = null)
-    {
-        if (context == null)
-            throw new ArgumentNullException(nameof(context));
-
-        var options = new StyleSystemOptions();
-        configure?.Invoke(options);
-
-        // Create a service collection with the browsing context as the foundation
-        var services = new ServiceCollection();
-
-        // First register AngleSharp core services
-        services.AddSingleton(context);
-        services.AddAngleSharpServices(context);
-
-        // Then register StyleSystem services
-        services.AddStyleSystem(o =>
-        {
-            o.BatchSize = options.BatchSize;
-            o.CollectMetrics = options.CollectMetrics;
-            o.EnableOptimization = options.EnableOptimization;
-            o.LoadUserAgentStylesheets = options.LoadUserAgentStylesheets;
-            o.MaxWorkerThreads = options.MaxWorkerThreads;
-            o.ThrottleIntervalMs = options.ThrottleIntervalMs;
-            o.UpdateStylesImmediately = options.UpdateStylesImmediately;
-        });
-
-        // Build the service provider and initialize
-        var serviceProvider = services.BuildServiceProvider();
-        var styleSystemService = new StyleSystemService(serviceProvider, options);
-        styleSystemService.Initialize(context);
-
-        return context;
-    }
-
-    /// <summary>
     /// Registers StyleSystem services directly with AngleSharp's service collection for backward compatibility.
     /// </summary>
     /// <param name="context">The browsing context to register services with.</param>
@@ -163,24 +120,5 @@ public static class StyleSystemDependencyExtensions
         });
 
         return services;
-    }
-
-    /// <summary>
-    /// Creates a complete AngleSharp setup with StyleSystem enabled
-    /// </summary>
-    /// <param name="configure">Optional configuration action</param>
-    /// <returns>A fully configured browsing context</returns>
-    public static IBrowsingContext CreateStyleSystemContext(Action<StyleSystemOptions>? configure = null)
-    {
-        // Create default configuration
-        var config = Configuration.Default;
-
-        // Create the context
-        var context = BrowsingContext.New(config);
-
-        // Apply StyleSystem to the context
-        context.UseStyleSystem(configure);
-
-        return context;
     }
 }

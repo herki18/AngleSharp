@@ -1,10 +1,7 @@
 ﻿namespace AngleSharp.StyleSystem.Interfaces;
 
-using System;
 using AngleSharp.Css;
 using AngleSharp.Dom;
-using AngleSharp.StyleSystem.Computation;
-using AngleSharp.StyleSystem.Observers;
 using AngleSharp.StyleSystem.Storage;
 
 /// <summary>
@@ -103,18 +100,6 @@ public interface IStyleEngine
     /// <param name="width">The new viewport width.</param>
     /// <param name="height">The new viewport height.</param>
     void NotifyViewportChanged(int width, int height);
-
-    /// <summary>
-    /// Adds an observer for style computation events.
-    /// </summary>
-    /// <param name="observer">The observer to add.</param>
-    void AddComputationObserver(IStyleComputationObserver observer);
-
-    /// <summary>
-    /// Removes an observer from receiving style computation events.
-    /// </summary>
-    /// <param name="observer">The observer to remove.</param>
-    void RemoveComputationObserver(IStyleComputationObserver observer);
 
     /// <summary>
     /// Optimizes all computed styles in the system.
