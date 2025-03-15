@@ -8,156 +8,121 @@
     using AngleSharp.Css.Parser;
     using AngleSharp.Css.Values;
     using AngleSharp.Dom;
-    using Interfaces;
+    using AngleSharp.StyleSystem.Interfaces;
+    using AngleSharp.StyleSystem.Properties;
 
     /// <summary>
-    /// Calculates computed values for CSS properties based on element context and rendering device.
+    /// Calculates and resolves CSS property values by computing absolute values,
+    /// handling units, and evaluating expressions like calc().
     /// </summary>
     public class ValueCalculator : IValueCalculator
     {
-        private readonly IBrowsingContext _context;
+        #region Fields
+
+        private readonly IDeclarationFactory _declarationFactory;
+        private readonly ICssParser _cssParser;
         private readonly IRenderDevice _renderDevice;
         private readonly Dictionary<string, ICssValue> _computationCache = new Dictionary<string, ICssValue>();
-        private readonly HashSet<string> _percentageDependentProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "width", "height", "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
-            "padding", "padding-top", "padding-right", "padding-bottom", "padding-left",
-            "left", "right", "top", "bottom"
-        };
+        private readonly HashSet<string> _percentageDependentProperties;
 
-        public ValueCalculator(IBrowsingContext context, IRenderDevice renderDevice)
+        #endregion
+
+        #region Constructor
+
+        public ValueCalculator(IDeclarationFactory declarationFactory, ICssParser cssParser, IRenderDevice renderDevice)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _declarationFactory = declarationFactory;
+            _cssParser = cssParser;
             _renderDevice = renderDevice ?? throw new ArgumentNullException(nameof(renderDevice));
+
+            // Initialize percentage-dependent properties with PropertyNames constants
+            _percentageDependentProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                PropertyNames.Width, PropertyNames.Height,
+                PropertyNames.Margin, PropertyNames.MarginTop, PropertyNames.MarginRight, PropertyNames.MarginBottom, PropertyNames.MarginLeft,
+                PropertyNames.Padding, PropertyNames.PaddingTop, PropertyNames.PaddingRight, PropertyNames.PaddingBottom, PropertyNames.PaddingLeft,
+                PropertyNames.Top, PropertyNames.Right, PropertyNames.Bottom, PropertyNames.Left
+            };
         }
 
+        #endregion
+
+        #region Public Methods
+
         /// <summary>
-        /// Computes the actual value of a CSS property based on its specified value and context.
+        /// Computes the absolute value of a CSS property for an element.
         /// </summary>
         public ICssValue? Compute(ICssValue? value, IElement element, string propertyName)
         {
             if (value == null)
                 return GetDefaultValue(propertyName);
 
-            // Generate a stable cache key for this computation
             var cacheKey = $"{element.GetHashCode()}:{propertyName}:{value.CssText}";
             if (_computationCache.TryGetValue(cacheKey, out var cachedValue))
                 return cachedValue;
 
-            ICssValue? result;
             try
             {
-                // Handle different value types
-                if (value is CssLengthValue lengthValue)
+                ICssValue? result = value switch
                 {
-                    result = ComputeLength(lengthValue, element, propertyName);
-                }
-                else if (value is CssPercentageValue percentageValue)
-                {
-                    result = ComputePercentage(percentageValue, element, propertyName);
-                }
-                else if (value is CssCalcValue calcValue)
-                {
-                    result = EvaluateCalc(calcValue, element, propertyName);
-                }
-                else if (value is CssColorValue colorValue)
-                {
-                    // Colors don't need computation
-                    result = colorValue;
-                }
-                else if (IsGlobalKeyword(value))
-                {
-                    result = ComputeGlobalKeyword(value, element, propertyName);
-                }
-                else if (IsPropertySpecificKeyword(value, propertyName))
-                {
-                    result = ComputePropertyKeyword(value, element, propertyName);
-                }
-                else
-                {
-                    // For other value types, return as is
-                    result = value;
-                }
-            }
-            catch (Exception)
-            {
-                // In case of computational errors, return the initial value for the property
-                result = GetDefaultValue(propertyName);
-            }
+                    CssLengthValue lengthValue => ComputeLength(lengthValue, element, propertyName),
+                    CssPercentageValue percentageValue => ComputePercentage(percentageValue, element, propertyName),
+                    CssCalcValue calcValue => EvaluateCalc(calcValue, element, propertyName),
+                    CssColorValue colorValue => colorValue,
+                    _ => ProcessSpecialValue(value, element, propertyName)
+                };
 
-            // Cache the result for future use
-            if (result != null)
-            {
-                _computationCache[cacheKey] = result;
+                if (result != null)
+                {
+                    _computationCache[cacheKey] = result;
+                }
+                return result;
             }
-
-            return result;
+            catch (Exception ex)
+            {
+                // Log the exception
+                System.Diagnostics.Debug.WriteLine($"Error computing value for {propertyName}: {ex.Message}");
+                return GetDefaultValue(propertyName);
+            }
         }
 
         /// <summary>
-        /// Converts a CSS length value to pixels, taking into account the element context and property.
+        /// Converts a length value to pixels.
         /// </summary>
         public double ToPixels(CssLengthValue length, IElement element, string propertyName)
         {
-            // Check for special length values
             if (length.Equals(CssLengthValue.Auto) || length.CssText == CssKeywords.None)
                 return 0;
 
-            // Handle absolute units directly
             if (length.Type == CssLengthValue.Unit.Px)
                 return length.Value;
 
-            // Get the base reference dimensions we'll need for various unit types
             var elementFontSize = GetFontSizeInPixels(element);
             var rootFontSize = GetRootFontSizeInPixels(element);
-            var dpi = GetDpi();  // Default to 96dpi if not specified
+            var dpi = GetDpi();
 
-            switch (length.Type)
+            return length.Type switch
             {
-                // Absolute length units
-                case CssLengthValue.Unit.In:
-                    return length.Value * dpi; // 1in = 96px at 96dpi
-                case CssLengthValue.Unit.Cm:
-                    return length.Value * dpi / 2.54; // 1cm = 96px/2.54 ≈ 37.8px at 96dpi
-                case CssLengthValue.Unit.Mm:
-                    return length.Value * dpi / 25.4; // 1mm = 96px/25.4 ≈ 3.78px at 96dpi
-                case CssLengthValue.Unit.Pt:
-                    return length.Value * dpi / 72; // 1pt = 96px/72 ≈ 1.33px at 96dpi
-                case CssLengthValue.Unit.Pc:
-                    return length.Value * dpi / 6; // 1pc = 96px/6 = 16px at 96dpi
-
-                // Font-relative length units
-                case CssLengthValue.Unit.Em:
-                    return length.Value * elementFontSize;
-                case CssLengthValue.Unit.Rem:
-                    return length.Value * rootFontSize;
-                case CssLengthValue.Unit.Ex:
-                    // ex is approximated as 0.5em (half the font's x-height)
-                    return length.Value * elementFontSize * 0.5;
-                case CssLengthValue.Unit.Ch:
-                    // ch is approximated as 0.5em (width of the "0" glyph)
-                    return length.Value * elementFontSize * 0.5;
-
-                // Viewport-relative length units
-                case CssLengthValue.Unit.Vw:
-                    return length.Value * _renderDevice.ViewPortWidth / 100;
-                case CssLengthValue.Unit.Vh:
-                    return length.Value * _renderDevice.ViewPortHeight / 100;
-                case CssLengthValue.Unit.Vmin:
-                    return length.Value * Math.Min(_renderDevice.ViewPortWidth, _renderDevice.ViewPortHeight) / 100;
-                case CssLengthValue.Unit.Vmax:
-                    return length.Value * Math.Max(_renderDevice.ViewPortWidth, _renderDevice.ViewPortHeight) / 100;
-                case CssLengthValue.Unit.Percent:
-                    return ResolvePercentage(length.Value / 100, element, propertyName);
-
-                // For unknown units, return the value directly (not ideal but safer than 0)
-                default:
-                    return length.Value;
-            }
+                CssLengthValue.Unit.In => length.Value * dpi,
+                CssLengthValue.Unit.Cm => length.Value * dpi / 2.54,
+                CssLengthValue.Unit.Mm => length.Value * dpi / 25.4,
+                CssLengthValue.Unit.Pt => length.Value * dpi / 72,
+                CssLengthValue.Unit.Pc => length.Value * dpi / 6,
+                CssLengthValue.Unit.Em => length.Value * elementFontSize,
+                CssLengthValue.Unit.Rem => length.Value * rootFontSize,
+                CssLengthValue.Unit.Ex => length.Value * elementFontSize * 0.5,
+                CssLengthValue.Unit.Ch => length.Value * elementFontSize * 0.5,
+                CssLengthValue.Unit.Vw => length.Value * _renderDevice.ViewPortWidth / 100,
+                CssLengthValue.Unit.Vh => length.Value * _renderDevice.ViewPortHeight / 100,
+                CssLengthValue.Unit.Vmin => length.Value * Math.Min(_renderDevice.ViewPortWidth, _renderDevice.ViewPortHeight) / 100,
+                CssLengthValue.Unit.Vmax => length.Value * Math.Max(_renderDevice.ViewPortWidth, _renderDevice.ViewPortHeight) / 100,
+                CssLengthValue.Unit.Percent => ResolvePercentage(length.Value / 100, element, propertyName),
+                _ => length.Value
+            };
         }
 
         /// <summary>
-        /// Evaluates a calc() expression to produce a computed value.
+        /// Evaluates a calc() expression to determine its computed value.
         /// </summary>
         public ICssValue? EvaluateCalc(CssCalcValue? calc, IElement element, string propertyName)
         {
@@ -166,50 +131,13 @@
 
             try
             {
-                // For testing purposes, handle the mocked calc expressions
                 if (calc.Expression == null)
                 {
-                    // Simple parsing of calc expression (for tests)
-                    var cssText = calc.CssText;
-                    if (cssText.StartsWith("calc(") && cssText.EndsWith(")"))
-                    {
-                        var expression = cssText.Substring(5, cssText.Length - 6).Trim();
-
-                        // Basic operator detection - this is a simplified approach for tests
-                        if (expression.Contains("+"))
-                        {
-                            var parts = expression.Split('+');
-                            if (parts.Length == 2 &&
-                                TryParseLengthValue(parts[0].Trim(), out var left) &&
-                                TryParseLengthValue(parts[1].Trim(), out var right))
-                            {
-                                var leftPx = ToPixels(left, element, propertyName);
-                                var rightPx = ToPixels(right, element, propertyName);
-                                return new CssLengthValue(leftPx + rightPx, CssLengthValue.Unit.Px);
-                            }
-                        }
-                        else if (expression.Contains("-"))
-                        {
-                            var parts = expression.Split('-');
-                            if (parts.Length == 2 &&
-                                TryParseLengthValue(parts[0].Trim(), out var left) &&
-                                TryParseLengthValue(parts[1].Trim(), out var right))
-                            {
-                                var leftPx = ToPixels(left, element, propertyName);
-                                var rightPx = ToPixels(right, element, propertyName);
-                                return new CssLengthValue(leftPx - rightPx, CssLengthValue.Unit.Px);
-                            }
-                        }
-                    }
-
-                    // For tests with mocked calc, return a reasonable value
-                    return new CssLengthValue(100, CssLengthValue.Unit.Px);
+                    return HandleSimpleCalcExpression(calc, element, propertyName);
                 }
 
-                // Then resolve any nested expressions
                 var resolvedCalc = ResolveNestedCalcExpressions(calc, element, propertyName);
 
-                // If it's a simple length value or percentage now, convert to absolute
                 if (resolvedCalc is CssLengthValue length)
                 {
                     return ComputeLength(length, element, propertyName);
@@ -218,33 +146,31 @@
                 {
                     return ComputePercentage(percentage, element, propertyName);
                 }
-                else if (resolvedCalc is CssNumberValue number)
+                else if (resolvedCalc is CssNumberValue number && IsLengthProperty(propertyName))
                 {
-                    // For properties that expect lengths but get pure numbers, convert to px
-                    if (IsLengthProperty(propertyName))
-                    {
-                        return new CssLengthValue(number.Value, CssLengthValue.Unit.Px);
-                    }
-                    return number;
+                    return new CssLengthValue(number.Value, CssLengthValue.Unit.Px);
+                }
+                else if (resolvedCalc is CssNumberValue)
+                {
+                    return resolvedCalc;
                 }
 
-                // For complex expressions, evaluate numeric result in pixels
                 var pixelValue = EvaluateCalcToPixels(calc, element, propertyName);
                 return new CssLengthValue(pixelValue, CssLengthValue.Unit.Px);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // If calculation fails, use 0px
+                System.Diagnostics.Debug.WriteLine($"Error evaluating calc() expression: {ex.Message}");
                 return new CssLengthValue(0, CssLengthValue.Unit.Px);
             }
         }
 
         /// <summary>
-        /// Resolves relative values based on a reference value.
+        /// Resolves a relative value against a base value.
         /// </summary>
         public ICssValue ResolveRelative(ICssValue value, IElement element, ICssValue baseValue, string propertyName)
         {
-            // Handle percentage values relative to the base value
+            // Handle percentage-to-length conversion
             if (value is CssPercentageValue percentageValue && baseValue is CssLengthValue baseLengthValue)
             {
                 var basePixels = ToPixels(baseLengthValue, element, propertyName);
@@ -252,82 +178,84 @@
                 return new CssLengthValue(computedValue, CssLengthValue.Unit.Px);
             }
 
-            // Handle font-weight relative values
-            if (propertyName.Equals("font-weight", StringComparison.OrdinalIgnoreCase))
+            // Handle font-weight relative keywords
+            if (propertyName.Equals(PropertyNames.FontWeight, StringComparison.OrdinalIgnoreCase))
             {
                 var fontWeightValue = value.CssText.ToLowerInvariant();
-
                 if (fontWeightValue == "lighter" || fontWeightValue == "bolder")
                 {
-                    int parentWeight = 400; // Default
-                    if (baseValue is CssIntegerValue intValue)
-                    {
-                        parentWeight = intValue.IntValue;
-                    }
-                    else if (int.TryParse(baseValue.CssText, out var parsedWeight))
-                    {
-                        parentWeight = parsedWeight;
-                    }
+                    int parentWeight = GetParentFontWeight(baseValue);
 
-                    if (fontWeightValue == "lighter")
-                    {
-                        return new CssIntegerValue(GetLighterFontWeight(parentWeight));
-                    }
-                    else // bolder
-                    {
-                        return new CssIntegerValue(GetBolderFontWeight(parentWeight));
-                    }
+                    return new CssIntegerValue(
+                        fontWeightValue == "lighter"
+                            ? GetLighterFontWeight(parentWeight)
+                            : GetBolderFontWeight(parentWeight));
                 }
             }
 
-            // For other relative values (like em, % in font-size), they're already handled by Compute
             return value;
         }
 
-        #region Helper Methods
+        /// <summary>
+        /// Clears the computation cache to force recalculation of values.
+        /// </summary>
+        public void ClearCache()
+        {
+            _computationCache.Clear();
+        }
+
+        #endregion
+
+        #region Private Methods - Value Processing
+
+        private ICssValue? ProcessSpecialValue(ICssValue value, IElement element, string propertyName)
+        {
+            if (IsGlobalKeyword(value))
+            {
+                return ComputeGlobalKeyword(value, element, propertyName);
+            }
+            else if (IsPropertySpecificKeyword(value, propertyName))
+            {
+                return ComputePropertyKeyword(value, element, propertyName);
+            }
+
+            return value;
+        }
 
         private ICssValue? ComputeLength(CssLengthValue length, IElement element, string propertyName)
         {
-            // For absolute lengths or 'auto', return as is
             if (IsAbsoluteLength(length) || length.Equals(CssLengthValue.Auto))
                 return length;
 
-            // For font-relative lengths in font-size property, compute relative to parent's font size
-            if (propertyName.Equals("font-size", StringComparison.OrdinalIgnoreCase) &&
+            if (propertyName.Equals(PropertyNames.FontSize, StringComparison.OrdinalIgnoreCase) &&
                 (length.Type == CssLengthValue.Unit.Em || length.Type == CssLengthValue.Unit.Rem))
             {
                 var baseFontSize = length.Type == CssLengthValue.Unit.Rem
                     ? GetRootFontSizeInPixels(element)
                     : GetParentFontSizeInPixels(element);
-
                 var computed = baseFontSize * length.Value;
                 return new CssLengthValue(computed, CssLengthValue.Unit.Px);
             }
 
-            // For other relative lengths, convert to pixels
             var pixelValue = ToPixels(length, element, propertyName);
             return new CssLengthValue(pixelValue, CssLengthValue.Unit.Px);
         }
 
         private ICssValue? ComputePercentage(CssPercentageValue percentage, IElement element, string propertyName)
         {
-            // Handle percentages for different property contexts
-            // Width/height percentages are relative to containing block
             if (_percentageDependentProperties.Contains(propertyName))
             {
                 var pixelValue = ResolvePercentage(percentage.Value / 100, element, propertyName);
                 return new CssLengthValue(pixelValue, CssLengthValue.Unit.Px);
             }
 
-            // Font-size percentages are relative to parent font size
-            if (propertyName.Equals("font-size", StringComparison.OrdinalIgnoreCase))
+            if (propertyName.Equals(PropertyNames.FontSize, StringComparison.OrdinalIgnoreCase))
             {
                 var parentFontSize = GetParentFontSizeInPixels(element);
                 var computedSize = parentFontSize * (percentage.Value / 100);
                 return new CssLengthValue(computedSize, CssLengthValue.Unit.Px);
             }
 
-            // For properties where percentage doesn't convert to absolute, keep as percentage
             return percentage;
         }
 
@@ -335,104 +263,121 @@
         {
             var keyword = value.CssText.ToLowerInvariant();
 
-            // Handle global keywords according to CSS specifications
-            switch (keyword)
+            return keyword switch
             {
-                case "inherit":
-                    // 'inherit' takes the computed value from the parent element
-                    return GetInheritedValue(element, propertyName);
-
-                case "initial":
-                    // 'initial' uses the default value defined by the CSS specification
-                    return GetInitialValue(propertyName);
-
-                case "unset":
-                    // 'unset' behaves like 'inherit' for inherited properties and 'initial' for non-inherited properties
-                    return IsInherited(propertyName)
-                        ? GetInheritedValue(element, propertyName)
-                        : GetInitialValue(propertyName);
-
-                case "revert":
-                    // 'revert' rolls back the cascade to the user-agent level
-                    // This is a simplification as full implementation is complex
-                    return GetUserAgentValue(propertyName);
-
-                default:
-                    return value;
-            }
+                "inherit" => GetInheritedValue(element, propertyName),
+                "initial" => GetInitialValue(propertyName),
+                "unset" => IsInherited(propertyName)
+                    ? GetInheritedValue(element, propertyName)
+                    : GetInitialValue(propertyName),
+                "revert" => GetUserAgentValue(propertyName),
+                _ => value
+            };
         }
 
         private ICssValue? ComputePropertyKeyword(ICssValue value, IElement element, string propertyName)
         {
+            if (!propertyName.Equals(PropertyNames.FontSize, StringComparison.OrdinalIgnoreCase))
+                return value;
+
             var keyword = value.CssText.ToLowerInvariant();
 
-            // Handle property-specific keywords
-            if (propertyName.Equals("font-size", StringComparison.OrdinalIgnoreCase))
+            return keyword switch
             {
-                return keyword switch
+                "xx-small" => new CssLengthValue(9, CssLengthValue.Unit.Px),
+                "x-small" => new CssLengthValue(10, CssLengthValue.Unit.Px),
+                "small" => new CssLengthValue(13, CssLengthValue.Unit.Px),
+                "medium" => new CssLengthValue(16, CssLengthValue.Unit.Px),
+                "large" => new CssLengthValue(18, CssLengthValue.Unit.Px),
+                "x-large" => new CssLengthValue(24, CssLengthValue.Unit.Px),
+                "xx-large" => new CssLengthValue(32, CssLengthValue.Unit.Px),
+                "xxx-large" => new CssLengthValue(48, CssLengthValue.Unit.Px),
+                "smaller" => ComputeRelativeFontSize(element, 0.8),
+                "larger" => ComputeRelativeFontSize(element, 1.2),
+                _ => value
+            };
+        }
+
+        #endregion
+
+        #region Private Methods - Calc Expression Evaluation
+
+        private ICssValue? HandleSimpleCalcExpression(CssCalcValue calc, IElement element, string propertyName)
+        {
+            var cssText = calc.CssText;
+            if (cssText.StartsWith("calc(") && cssText.EndsWith(")"))
+            {
+                var expression = cssText.Substring(5, cssText.Length - 6).Trim();
+
+                // Try to handle simple addition
+                if (expression.Contains("+"))
                 {
-                    "xx-small" => new CssLengthValue(9, CssLengthValue.Unit.Px),
-                    "x-small" => new CssLengthValue(10, CssLengthValue.Unit.Px),
-                    "small" => new CssLengthValue(13, CssLengthValue.Unit.Px),
-                    "medium" => new CssLengthValue(16, CssLengthValue.Unit.Px),
-                    "large" => new CssLengthValue(18, CssLengthValue.Unit.Px),
-                    "x-large" => new CssLengthValue(24, CssLengthValue.Unit.Px),
-                    "xx-large" => new CssLengthValue(32, CssLengthValue.Unit.Px),
-                    "xxx-large" => new CssLengthValue(48, CssLengthValue.Unit.Px),
-                    "smaller" => ComputeRelativeFontSize(element, 0.8),
-                    "larger" => ComputeRelativeFontSize(element, 1.2),
-                    _ => value
-                };
+                    return HandleSimpleOperation(expression, '+', element, propertyName);
+                }
+                // Try to handle simple subtraction
+                else if (expression.Contains("-"))
+                {
+                    return HandleSimpleOperation(expression, '-', element, propertyName);
+                }
             }
 
-            return value;
+            // Default value for unparseable expressions
+            return new CssLengthValue(0, CssLengthValue.Unit.Px);
+        }
+
+        private ICssValue? HandleSimpleOperation(string expression, char operation, IElement element, string propertyName)
+        {
+            var parts = expression.Split(operation);
+            if (parts.Length == 2 &&
+                TryParseLengthValue(parts[0].Trim(), out var left) &&
+                TryParseLengthValue(parts[1].Trim(), out var right))
+            {
+                var leftPx = ToPixels(left, element, propertyName);
+                var rightPx = ToPixels(right, element, propertyName);
+
+                var result = operation == '+' ? leftPx + rightPx : leftPx - rightPx;
+                return new CssLengthValue(result, CssLengthValue.Unit.Px);
+            }
+
+            return null;
         }
 
         private ICssValue? ResolveNestedCalcExpressions(CssCalcValue calc, IElement element, string propertyName)
         {
-            // Recursively resolve the calc expression tree
             if (calc.Expression == null)
                 return calc;
 
-            ICssValue? resolvedExpression = null;
-
             if (calc.Expression is CssCalcAddExpression add)
             {
-                resolvedExpression = ResolveCalcOperation(add.Left, add.Right, true, element, propertyName);
+                return ResolveCalcOperation(add.Left, add.Right, true, element, propertyName);
             }
             else if (calc.Expression is CssCalcSubExpression sub)
             {
-                resolvedExpression = ResolveCalcOperation(sub.Left, sub.Right, false, element, propertyName);
+                return ResolveCalcOperation(sub.Left, sub.Right, false, element, propertyName);
             }
             else if (calc.Expression is CssCalcMulExpression mul)
             {
-                resolvedExpression = ResolveCalcMultiplication(mul.Left, mul.Right, element, propertyName);
+                return ResolveCalcMultiplication(mul.Left, mul.Right, element, propertyName);
             }
             else if (calc.Expression is CssCalcDivExpression div)
             {
-                resolvedExpression = ResolveCalcDivision(div.Left, div.Right, element, propertyName);
+                return ResolveCalcDivision(div.Left, div.Right, element, propertyName);
             }
             else if (calc.Expression is CssCalcBracketExpression bracket)
             {
-                // Handle bracketed expressions by recursively resolving the inner expression
                 var innerCalc = new CssCalcValue(bracket.Value);
-                resolvedExpression = ResolveNestedCalcExpressions(innerCalc, element, propertyName);
+                return ResolveNestedCalcExpressions(innerCalc, element, propertyName);
             }
             else if (calc.Expression is CssLengthValue length)
             {
-                resolvedExpression = ComputeLength(length, element, propertyName);
+                return ComputeLength(length, element, propertyName);
             }
             else if (calc.Expression is CssPercentageValue percentage)
             {
-                resolvedExpression = ComputePercentage(percentage, element, propertyName);
-            }
-            else
-            {
-                // For other expression types, leave as is
-                resolvedExpression = calc.Expression;
+                return ComputePercentage(percentage, element, propertyName);
             }
 
-            return resolvedExpression;
+            return calc.Expression;
         }
 
         private ICssValue? ResolveCalcOperation(ICssValue? left, ICssValue? right, bool isAddition, IElement element, string propertyName)
@@ -440,23 +385,18 @@
             if (left == null || right == null)
                 return null;
 
-            // Compute values for both sides
             var leftValue = ComputeCalcOperand(left, element, propertyName);
             var rightValue = ComputeCalcOperand(right, element, propertyName);
 
             if (leftValue is CssLengthValue leftLength && rightValue is CssLengthValue rightLength)
             {
-                // Convert both to pixels for calculation
                 var leftPx = ToPixels(leftLength, element, propertyName);
                 var rightPx = ToPixels(rightLength, element, propertyName);
-
-                // Perform the operation
                 var resultPx = isAddition ? leftPx + rightPx : leftPx - rightPx;
                 return new CssLengthValue(resultPx, CssLengthValue.Unit.Px);
             }
             else if (leftValue is CssPercentageValue leftPercentage && rightValue is CssPercentageValue rightPercentage)
             {
-                // For percentages, we can add/subtract the values directly
                 var resultPercentage = isAddition
                     ? leftPercentage.Value + rightPercentage.Value
                     : leftPercentage.Value - rightPercentage.Value;
@@ -464,7 +404,6 @@
             }
             else if (leftValue is CssPercentageValue percentage && rightValue is CssLengthValue length)
             {
-                // For mixed percentage and length, convert both to pixels based on context
                 var leftPx = ResolvePercentage(percentage.Value / 100, element, propertyName);
                 var rightPx = ToPixels(length, element, propertyName);
                 var resultPx = isAddition ? leftPx + rightPx : leftPx - rightPx;
@@ -472,14 +411,12 @@
             }
             else if (leftValue is CssLengthValue length2 && rightValue is CssPercentageValue percentage2)
             {
-                // For mixed length and percentage, convert both to pixels based on context
                 var leftPx = ToPixels(length2, element, propertyName);
                 var rightPx = ResolvePercentage(percentage2.Value / 100, element, propertyName);
                 var resultPx = isAddition ? leftPx + rightPx : leftPx - rightPx;
                 return new CssLengthValue(resultPx, CssLengthValue.Unit.Px);
             }
 
-            // If we couldn't resolve the operation, return a fallback value
             return new CssLengthValue(0, CssLengthValue.Unit.Px);
         }
 
@@ -488,11 +425,9 @@
             if (left == null || right == null)
                 return null;
 
-            // Compute values for both sides
             var leftValue = ComputeCalcOperand(left, element, propertyName);
             var rightValue = ComputeCalcOperand(right, element, propertyName);
 
-            // One operand must be a number, the other a length or percentage
             if (leftValue is CssNumberValue leftNumber && rightValue is CssLengthValue rightLength)
             {
                 var rightPx = ToPixels(rightLength, element, propertyName);
@@ -516,7 +451,6 @@
                 return new CssPercentageValue(resultPercentage);
             }
 
-            // If we couldn't resolve the multiplication, return a fallback value
             return new CssLengthValue(0, CssLengthValue.Unit.Px);
         }
 
@@ -525,14 +459,11 @@
             if (left == null || right == null)
                 return null;
 
-            // Compute values for both sides
             var leftValue = ComputeCalcOperand(left, element, propertyName);
             var rightValue = ComputeCalcOperand(right, element, propertyName);
 
-            // The right operand must be a number
             if (rightValue is CssNumberValue rightNumber)
             {
-                // Avoid division by zero
                 if (Math.Abs(rightNumber.Value) < 0.0001)
                     return new CssLengthValue(0, CssLengthValue.Unit.Px);
 
@@ -549,26 +480,21 @@
                 }
                 else if (leftValue is CssNumberValue leftNumber)
                 {
-                    // Number divided by number gives a number
                     var result = leftNumber.Value / rightNumber.Value;
                     return new CssNumberValue(result);
                 }
             }
 
-            // If we couldn't resolve the division, return a fallback value
             return new CssLengthValue(0, CssLengthValue.Unit.Px);
         }
 
         private ICssValue? ComputeCalcOperand(ICssValue operand, IElement element, string propertyName)
         {
-            // Handle nested calc expressions
             if (operand is CssCalcValue nestedCalc)
             {
                 return ResolveNestedCalcExpressions(nestedCalc, element, propertyName);
             }
-
-            // For simple values, compute them directly
-            if (operand is CssLengthValue length)
+            else if (operand is CssLengthValue length)
             {
                 return ComputeLength(length, element, propertyName);
             }
@@ -580,24 +506,15 @@
             {
                 return number;
             }
-
-            // For other calc expressions, handle recursively
-            if (operand is CssCalcAddExpression add)
-            {
+            // Handle specific calc expression types
+            else if (operand is CssCalcAddExpression add)
                 return ResolveCalcOperation(add.Left, add.Right, true, element, propertyName);
-            }
             else if (operand is CssCalcSubExpression sub)
-            {
                 return ResolveCalcOperation(sub.Left, sub.Right, false, element, propertyName);
-            }
             else if (operand is CssCalcMulExpression mul)
-            {
                 return ResolveCalcMultiplication(mul.Left, mul.Right, element, propertyName);
-            }
             else if (operand is CssCalcDivExpression div)
-            {
                 return ResolveCalcDivision(div.Left, div.Right, element, propertyName);
-            }
             else if (operand is CssCalcBracketExpression bracket)
             {
                 var innerCalc = new CssCalcValue(bracket.Value);
@@ -612,53 +529,60 @@
             var resolvedValue = ResolveNestedCalcExpressions(calc, element, propertyName);
 
             if (resolvedValue is CssLengthValue lengthValue)
-            {
                 return ToPixels(lengthValue, element, propertyName);
-            }
             else if (resolvedValue is CssPercentageValue percentageValue)
-            {
                 return ResolvePercentage(percentageValue.Value / 100, element, propertyName);
-            }
 
-            // If we couldn't evaluate to pixels, return 0
             return 0.0;
         }
 
+        #endregion
+
+        #region Private Methods - Helper Functions
+
         private double ResolvePercentage(double percentageValue, IElement element, string propertyName)
         {
-            // Get the element's containing block
             var containingBlock = GetContainingBlockElement(element);
             if (containingBlock == null)
                 return 0;
 
-            // Width percentages are relative to containing block's width
-            if (propertyName.Contains("width") ||
-                propertyName.Contains("left") ||
-                propertyName.Contains("right") ||
-                propertyName.Contains("margin-left") ||
-                propertyName.Contains("margin-right") ||
-                propertyName.Contains("padding-left") ||
-                propertyName.Contains("padding-right"))
+            // Horizontal properties depend on container width
+            if (IsHorizontalProperty(propertyName))
             {
                 var containerWidth = GetElementComputedWidth(containingBlock);
                 return containerWidth * percentageValue;
             }
-
-            // Height percentages are relative to containing block's height
-            if (propertyName.Contains("height") ||
-                propertyName.Contains("top") ||
-                propertyName.Contains("bottom") ||
-                propertyName.Contains("margin-top") ||
-                propertyName.Contains("margin-bottom") ||
-                propertyName.Contains("padding-top") ||
-                propertyName.Contains("padding-bottom"))
+            // Vertical properties depend on container height
+            else if (IsVerticalProperty(propertyName))
             {
                 var containerHeight = GetElementComputedHeight(containingBlock);
                 return containerHeight * percentageValue;
             }
 
-            // Default to viewport width if we can't determine the basis
+            // Default to viewport width for other percentage values
             return _renderDevice.ViewPortWidth * percentageValue;
+        }
+
+        private bool IsHorizontalProperty(string propertyName)
+        {
+            return propertyName.Contains("width") ||
+                   propertyName.Contains("left") ||
+                   propertyName.Contains("right") ||
+                   propertyName.Contains("margin-left") ||
+                   propertyName.Contains("margin-right") ||
+                   propertyName.Contains("padding-left") ||
+                   propertyName.Contains("padding-right");
+        }
+
+        private bool IsVerticalProperty(string propertyName)
+        {
+            return propertyName.Contains("height") ||
+                   propertyName.Contains("top") ||
+                   propertyName.Contains("bottom") ||
+                   propertyName.Contains("margin-top") ||
+                   propertyName.Contains("margin-bottom") ||
+                   propertyName.Contains("padding-top") ||
+                   propertyName.Contains("padding-bottom");
         }
 
         private ICssValue? GetInheritedValue(IElement element, string propertyName)
@@ -667,7 +591,6 @@
             if (parent == null)
                 return GetDefaultValue(propertyName);
 
-            // Get the parent element's computed style
             var computedStyle = GetElementComputedStyle(parent);
             if (computedStyle == null)
                 return GetDefaultValue(propertyName);
@@ -676,81 +599,67 @@
             if (string.IsNullOrEmpty(value))
                 return GetDefaultValue(propertyName);
 
-            // Try to parse the value or use default
             var cssValue = ParseCssValue(propertyName, value);
             return cssValue ?? GetDefaultValue(propertyName);
         }
 
         private ICssValue? GetInitialValue(string propertyName)
         {
-            // Try to get the initial value from AngleSharp's declaration factory
-            var factory = _context.GetFactory<IDeclarationFactory>();
-            var declaration = factory?.Create(propertyName);
-
-            if (declaration?.InitialValue != null)
-                return declaration.InitialValue;
-
-            // If not found, use our own defaults
-            return GetDefaultValue(propertyName);
+            var declaration = _declarationFactory?.Create(propertyName);
+            return declaration?.InitialValue ?? GetDefaultValue(propertyName);
         }
 
         private ICssValue? GetUserAgentValue(string propertyName)
         {
-            // In a real implementation, this would get the user agent's default style
-            // For now, simplify by returning the initial value
             return GetInitialValue(propertyName);
         }
 
         private ICssValue? GetDefaultValue(string propertyName)
         {
-            // Try to get from AngleSharp's declaration factory
-            var factory = _context.GetFactory<IDeclarationFactory>();
-            var declaration = factory?.Create(propertyName);
-
+            // First try to get initial value from declaration factory
+            var declaration = _declarationFactory?.Create(propertyName);
             if (declaration?.InitialValue != null)
                 return declaration.InitialValue;
 
-            // Fallback to common default values
-            return propertyName.ToLowerInvariant() switch
-            {
-                "font-size" => new CssLengthValue(16, CssLengthValue.Unit.Px),
-                "width" => CssLengthValue.Auto,
-                "height" => CssLengthValue.Auto,
-                "color" => CssColorValue.Black,
-                "background-color" => CssColorValue.Transparent,
-                "margin" or "margin-top" or "margin-right" or "margin-bottom" or "margin-left" => CssLengthValue.Zero,
-                "padding" or "padding-top" or "padding-right" or "padding-bottom" or "padding-left" => CssLengthValue.Zero,
-                "border-width" => new CssLengthValue(0, CssLengthValue.Unit.Px),
-                _ => null
-            };
+            // Fall back to common default values
+            if (propertyName.Equals(PropertyNames.FontSize, StringComparison.OrdinalIgnoreCase))
+                return new CssLengthValue(16, CssLengthValue.Unit.Px);
+            else if (propertyName.Equals(PropertyNames.Width, StringComparison.OrdinalIgnoreCase) ||
+                     propertyName.Equals(PropertyNames.Height, StringComparison.OrdinalIgnoreCase))
+                return CssLengthValue.Auto;
+            else if (propertyName.Equals(PropertyNames.Color, StringComparison.OrdinalIgnoreCase))
+                return CssColorValue.Black;
+            else if (propertyName.Equals(PropertyNames.BackgroundColor, StringComparison.OrdinalIgnoreCase))
+                return CssColorValue.Transparent;
+            else if (propertyName.StartsWith("margin", StringComparison.OrdinalIgnoreCase) ||
+                     propertyName.StartsWith("padding", StringComparison.OrdinalIgnoreCase))
+                return CssLengthValue.Zero;
+            else if (propertyName.Contains("border-width"))
+                return new CssLengthValue(0, CssLengthValue.Unit.Px);
+
+            return null;
         }
 
         private bool IsInherited(string propertyName)
         {
-            // Try to get from AngleSharp's declaration factory
-            var factory = _context.GetFactory<IDeclarationFactory>();
-            var declaration = factory?.Create(propertyName);
-
+            // First try to check property flags from declaration factory
+            var declaration = _declarationFactory?.Create(propertyName);
             if (declaration != null)
             {
-                // Check if the PropertyFlags.Inherited flag is set
                 return (declaration.Flags & PropertyFlags.Inherited) == PropertyFlags.Inherited;
             }
 
-            // Fallback for common inherited properties
-            return new[]
+            // Fall back to known inherited properties
+            var inheritedProperties = new[]
             {
-                "color", "font", "font-family", "font-size", "font-style", "font-variant",
-                "font-weight", "font-stretch", "line-height", "letter-spacing",
-                "text-align", "text-indent", "text-transform", "white-space", "word-spacing",
-                "visibility", "cursor"
-            }.Contains(propertyName.ToLowerInvariant());
-        }
+                PropertyNames.Color, PropertyNames.Font, PropertyNames.FontFamily, PropertyNames.FontSize,
+                PropertyNames.FontStyle, PropertyNames.FontVariant, PropertyNames.FontWeight, PropertyNames.FontStretch,
+                PropertyNames.LineHeight, PropertyNames.LetterSpacing, PropertyNames.TextAlign, PropertyNames.TextIndent,
+                PropertyNames.TextTransform, PropertyNames.WhiteSpace, PropertyNames.WordSpacing, PropertyNames.Visibility,
+                PropertyNames.Cursor
+            };
 
-        private bool IsPropertyInherited(ICssProperty property)
-        {
-            // Check if the property can be inherited
-            return IsInherited(property.Name);
+            return Array.Exists(inheritedProperties, p => p.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
         }
 
         private bool IsAbsoluteLength(CssLengthValue length)
@@ -769,11 +678,10 @@
             if (style == null)
                 return 16.0;
 
-            var fontSize = style.GetPropertyValue("font-size");
+            var fontSize = style.GetPropertyValue(PropertyNames.FontSize);
             if (string.IsNullOrEmpty(fontSize))
                 return 16.0;
 
-            // Parse the font size value
             if (double.TryParse(fontSize.Replace("px", "").Trim(), out var size))
                 return size;
 
@@ -795,6 +703,20 @@
             return GetFontSizeInPixels(document.DocumentElement);
         }
 
+        private int GetParentFontWeight(ICssValue baseValue)
+        {
+            if (baseValue is CssIntegerValue intValue)
+            {
+                return intValue.IntValue;
+            }
+            else if (int.TryParse(baseValue.CssText, out var parsedWeight))
+            {
+                return parsedWeight;
+            }
+
+            return 400; // Default font-weight if unparseable
+        }
+
         private ICssValue ComputeRelativeFontSize(IElement element, double factor)
         {
             var parentSize = GetParentFontSizeInPixels(element);
@@ -814,7 +736,7 @@
             if (style == null)
                 return _renderDevice.ViewPortWidth;
 
-            var width = style.GetPropertyValue("width");
+            var width = style.GetPropertyValue(PropertyNames.Width);
             if (string.IsNullOrEmpty(width) || width == "auto")
                 return _renderDevice.ViewPortWidth;
 
@@ -830,7 +752,7 @@
             if (style == null)
                 return _renderDevice.ViewPortHeight;
 
-            var height = style.GetPropertyValue("height");
+            var height = style.GetPropertyValue(PropertyNames.Height);
             if (string.IsNullOrEmpty(height) || height == "auto")
                 return _renderDevice.ViewPortHeight;
 
@@ -847,18 +769,15 @@
             var styleAttr = element.GetAttribute("style");
             if (!string.IsNullOrEmpty(styleAttr))
             {
-                var parser = _context.GetService<ICssParser>();
-                return parser?.ParseDeclaration(styleAttr);
+                return _cssParser?.ParseDeclaration(styleAttr);
             }
+
             return null;
         }
 
         private ICssValue? ParseCssValue(string propertyName, string cssText)
         {
-            // Try to parse the CSS value from text
-            var parser = _context.GetService<ICssParser>();
-            var declaration = parser?.ParseDeclaration($"{propertyName}: {cssText}");
-
+            var declaration = _cssParser?.ParseDeclaration($"{propertyName}: {cssText}");
             if (declaration != null && declaration.Any())
             {
                 var property = declaration.First();
@@ -894,13 +813,11 @@
 
         private bool TryParseLengthValue(string text, out CssLengthValue result)
         {
-            // Parse length values like "100px", "20em", etc.
             if (CssLengthValue.TryParse(text, out result))
             {
                 return true;
             }
 
-            // If it's just a number, assume px
             if (double.TryParse(text, out var number))
             {
                 result = new CssLengthValue(number, CssLengthValue.Unit.Px);
@@ -919,48 +836,40 @@
 
         private bool IsPropertySpecificKeyword(ICssValue value, string propertyName)
         {
+            if (!propertyName.Equals(PropertyNames.FontSize, StringComparison.OrdinalIgnoreCase))
+                return false;
+
             var keyword = value.CssText.ToLowerInvariant();
-
-            if (propertyName.Equals("font-size", StringComparison.OrdinalIgnoreCase))
-            {
-                return keyword == "xx-small" || keyword == "x-small" || keyword == "small" ||
-                       keyword == "medium" || keyword == "large" || keyword == "x-large" ||
-                       keyword == "xx-large" || keyword == "xxx-large" ||
-                       keyword == "smaller" || keyword == "larger";
-            }
-
-            return false;
+            return keyword == "xx-small" || keyword == "x-small" || keyword == "small" ||
+                   keyword == "medium" || keyword == "large" || keyword == "x-large" ||
+                   keyword == "xx-large" || keyword == "xxx-large" ||
+                   keyword == "smaller" || keyword == "larger";
         }
 
         private bool IsLengthProperty(string propertyName)
         {
-            // Common CSS properties that expect length values
-            return new[]
+            var lengthProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                "width", "height", "min-width", "min-height", "max-width", "max-height",
-                "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
-                "padding", "padding-top", "padding-right", "padding-bottom", "padding-left",
-                "top", "right", "bottom", "left",
-                "border-width", "border-top-width", "border-right-width", "border-bottom-width", "border-left-width",
-                "font-size", "line-height", "text-indent", "letter-spacing", "word-spacing",
-                "border-radius", "outline-width", "outline-offset",
-                "column-width", "column-gap"
-            }.Contains(propertyName.ToLowerInvariant());
+                PropertyNames.Width, PropertyNames.Height,
+                PropertyNames.MinWidth, PropertyNames.MinHeight,
+                PropertyNames.MaxWidth, PropertyNames.MaxHeight,
+                PropertyNames.Margin, PropertyNames.MarginTop, PropertyNames.MarginRight,
+                PropertyNames.MarginBottom, PropertyNames.MarginLeft,
+                PropertyNames.Padding, PropertyNames.PaddingTop, PropertyNames.PaddingRight,
+                PropertyNames.PaddingBottom, PropertyNames.PaddingLeft,
+                PropertyNames.Top, PropertyNames.Right, PropertyNames.Bottom, PropertyNames.Left,
+                PropertyNames.BorderWidth, PropertyNames.BorderTopWidth, PropertyNames.BorderRightWidth,
+                PropertyNames.BorderBottomWidth, PropertyNames.BorderLeftWidth,
+                PropertyNames.FontSize, PropertyNames.LineHeight,
+                PropertyNames.TextIndent, PropertyNames.LetterSpacing, PropertyNames.WordSpacing
+            };
+
+            return lengthProperties.Contains(propertyName);
         }
 
-        /// <summary>
-        /// Gets the current DPI (dots per inch) from the render device.
-        /// </summary>
         private double GetDpi()
         {
-            // Ideally, this would come from the render device
-            // Most browsers default to 96 DPI if not specified
             return _renderDevice.Resolution > 0 ? _renderDevice.Resolution : 96.0;
-        }
-
-        public void ClearCache()
-        {
-            _computationCache.Clear();
         }
 
         #endregion

@@ -9,6 +9,7 @@ using AngleSharp.StyleSystem.Integration;
 using AngleSharp.StyleSystem.Interfaces;
 using AngleSharp.StyleSystem.Models;
 using AngleSharp.StyleSystem.Storage;
+using Css.Parser;
 using Moq;
 
 [TestFixture]
@@ -727,10 +728,13 @@ public class ComputedStyleTests
         var mockRenderDevice = new Mock<IRenderDevice>();
         mockRenderDevice.Setup(r => r.FontSize).Returns(16);
 
-        var mockContext = new Mock<IBrowsingContext>();
+        var mockDeclarationFactory = new Mock<IDeclarationFactory>();
+
+        var mockCssParser = new Mock<ICssParser>();
+
         var mockElement = CreateMockElement();
 
-        var valueCalculator = new ValueCalculator(mockContext.Object, mockRenderDevice.Object);
+        var valueCalculator = new ValueCalculator(mockDeclarationFactory.Object, mockCssParser.Object, mockRenderDevice.Object);
         var mediumValue = new CssLengthValue(16);
 
         // Act

@@ -67,6 +67,9 @@ namespace AngleSharp.StyleSystem.DependencyInjection
             services.AddSingleton<IComputedStyleBuilder, ComputedStyleBuilder>();
             services.AddSingleton<IComputedStyleFactory, ComputedStyleFactory>();
 
+            services.AddSingleton<ICssStyleDeclarationFactory, CssStyleDeclarationFactory>();
+
+
             services.AddSingleton<IStyleTaskScheduler>(sp =>
                 new StyleTaskScheduler(
                     sp.GetRequiredService<IStyleEngine>(),
