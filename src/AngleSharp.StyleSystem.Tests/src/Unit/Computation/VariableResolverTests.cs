@@ -20,7 +20,7 @@ public class VariableResolverTests
     public void Setup()
     {
         _contextMock = new Mock<IBrowsingContext>();
-        _resolver = new VariableResolver(_contextMock.Object);
+        _resolver = new VariableResolver();
 
         // Setup element hierarchy
         _elementMock = new Mock<IElement>();

@@ -10,7 +10,9 @@ using AngleSharp.StyleSystem.Interfaces;
 using AngleSharp.StyleSystem.Models;
 using AngleSharp.StyleSystem.Storage;
 using Css.Parser;
-using Moq;
+using NSubstitute;
+using NUnit.Framework;
+using System.Collections.Generic;
 
 [TestFixture]
 public class ComputedStyleTests
@@ -23,18 +25,17 @@ public class ComputedStyleTests
         IComputedStyle? parentStyle = null,
         PropertyTreeNode? propertyTree = null)
     {
-        var mockRenderDevice = new Mock<IRenderDevice>();
-        mockRenderDevice.Setup(r => r.ViewPortWidth).Returns(1024);
-        mockRenderDevice.Setup(r => r.ViewPortHeight).Returns(768);
-        mockRenderDevice.Setup(r => r.FontSize).Returns(16);
+        var mockRenderDevice = Substitute.For<IRenderDevice>();
+        mockRenderDevice.ViewPortWidth.Returns(1024);
+        mockRenderDevice.ViewPortHeight.Returns(768);
+        mockRenderDevice.FontSize.Returns(16);
 
-        var mockDeclarationFactory = new Mock<IDeclarationFactory>();
+        var mockDeclarationFactory = Substitute.For<IDeclarationFactory>();
 
-        var mockContext = new Mock<IBrowsingContext>();
-        mockContext.Setup(c => c.GetServices<IDeclarationFactory>())
-            .Returns(new List<IDeclarationFactory> { mockDeclarationFactory.Object });
+        var mockContext = Substitute.For<IBrowsingContext>();
+        mockContext.GetServices<IDeclarationFactory>().Returns(new List<IDeclarationFactory> { mockDeclarationFactory });
 
-        var mockInvalidationTracker = new Mock<StyleInvalidationTracker>();
+        var mockInvalidationTracker = Substitute.For<IStyleInvalidationTracker>();
 
         propertyTree ??= new PropertyTreeNode(null);
 
@@ -43,45 +44,39 @@ public class ComputedStyleTests
             parentStyle,
             declaration,
             propertyTree,
-            mockRenderDevice.Object,
-            mockInvalidationTracker.Object,
-            mockContext.Object);
+            mockRenderDevice,
+            mockInvalidationTracker,
+            mockContext);
     }
 
     private ICssStyleDeclaration CreateDeclaration(Dictionary<string, ICssValue> properties)
     {
-        // Create a mock style declaration instead of using the actual CssStyleDeclaration
-        var mockDeclaration = new Mock<ICssStyleDeclaration>();
+        // Create a substitute style declaration
+        var mockDeclaration = Substitute.For<ICssStyleDeclaration>();
 
         // Setup basic properties
-        mockDeclaration.Setup(d => d.Length).Returns(properties.Count);
+        mockDeclaration.Length.Returns(properties.Count);
 
         // Setup GetPropertyValue method to return values from the dictionary
-        mockDeclaration.Setup(d => d.GetPropertyValue(It.IsAny<string>()))
-            .Returns<string>(key => properties.ContainsKey(key) ? properties[key].CssText : string.Empty);
+        mockDeclaration.GetPropertyValue(Arg.Any<string>())
+            .Returns(x => properties.ContainsKey(x[0].ToString()!) ? properties[x[0].ToString()!].CssText : string.Empty);
 
-        // Setup the indexer to return properties
+        // Setup the enumerator to iterate through properties
         var mockProperties = new List<ICssProperty>();
         foreach (var prop in properties)
         {
-            var mockProperty = new Mock<ICssProperty>();
-            mockProperty.Setup(p => p.Name).Returns(prop.Key);
-            mockProperty.Setup(p => p.Value).Returns(prop.Value.CssText);
+            var mockProperty = Substitute.For<ICssProperty>();
+            mockProperty.Name.Returns(prop.Key);
+            mockProperty.Value.Returns(prop.Value.CssText);
+            mockProperty.RawValue.Returns(prop.Value);
 
-            // Create a CSS value for the RawValue
-            var cssValue = prop.Value;
-            // cssValue.Setup(v => v.CssText).Returns(prop.Value.CssText);
-            mockProperty.Setup(p => p.RawValue).Returns(cssValue);
-
-            mockProperties.Add(mockProperty.Object);
+            mockProperties.Add(mockProperty);
         }
 
         // Setup enumerator to iterate through properties
-        mockDeclaration.Setup(d => d.GetEnumerator())
-            .Returns(() => mockProperties.GetEnumerator());
+        mockDeclaration.GetEnumerator().Returns(mockProperties.GetEnumerator());
 
-
-        return mockDeclaration.Object;
+        return mockDeclaration;
     }
 
     private ICssStyleDeclaration CreateEmptyDeclaration()
@@ -91,10 +86,10 @@ public class ComputedStyleTests
 
     private IElement CreateMockElement(string nodeName = "div", IElement? parent = null)
     {
-        var mockElement = new Mock<IElement>();
-        mockElement.Setup(e => e.NodeName).Returns(nodeName);
-        mockElement.Setup(e => e.ParentElement).Returns(parent);
-        return mockElement.Object;
+        var mockElement = Substitute.For<IElement>();
+        mockElement.NodeName.Returns(nodeName);
+        mockElement.ParentElement.Returns(parent);
+        return mockElement;
     }
 
     #endregion
@@ -124,7 +119,6 @@ public class ComputedStyleTests
         var declaration = CreateDeclaration(new Dictionary<string, ICssValue>
         {
             { "color", CssColorValue.Red },
-            // { "display", "block" }, // TODO: Fix this
             { "font-size", new CssLengthValue(16, CssLengthValue.Unit.Px) }
         });
         var propertyTree = new PropertyTreeNode(null);
@@ -448,8 +442,6 @@ public class ComputedStyleTests
         Assert.That(style.FontSize.CssText, Is.EqualTo("18px"));
     }
 
-    // [TestCase("400", 400)]
-    // [TestCase("700", 700)]
     [TestCase(CssKeywords.Bold, FontWeight.Bold, 700)]
     [TestCase(CssKeywords.Normal, FontWeight.Normal, 400)]
     public void Text_FontWeight_ShouldReturnCorrectValue(string cssKeyword, FontWeight fontWeightValue, int expectedWeight)
@@ -725,16 +717,18 @@ public class ComputedStyleTests
     public void ValueCalculator_ShouldConvertMediumToCorrectPixelValue()
     {
         // Arrange
-        var mockRenderDevice = new Mock<IRenderDevice>();
-        mockRenderDevice.Setup(r => r.FontSize).Returns(16);
+        var mockRenderDevice = Substitute.For<IRenderDevice>();
+        mockRenderDevice.FontSize.Returns(16);
+        mockRenderDevice.Resolution.Returns(96);
 
-        var mockDeclarationFactory = new Mock<IDeclarationFactory>();
+        var mockDeclarationFactory = Substitute.For<IDeclarationFactory>();
 
-        var mockCssParser = new Mock<ICssParser>();
+        var mockCssParser = Substitute.For<ICssParser>();
 
         var mockElement = CreateMockElement();
 
-        var valueCalculator = new ValueCalculator(mockDeclarationFactory.Object, mockCssParser.Object, mockRenderDevice.Object);
+        // Updated constructor call to match the current implementation
+        var valueCalculator = new ValueCalculator(mockDeclarationFactory, mockCssParser, mockRenderDevice);
         var mediumValue = new CssLengthValue(16);
 
         // Act
@@ -923,9 +917,9 @@ public class ComputedStyleTests
             { PropertyNames.Width, new CssLengthValue(50, CssLengthValue.Unit.Vw) }
         });
 
-        var mockRenderDevice = new Mock<IRenderDevice>();
-        mockRenderDevice.Setup(r => r.ViewPortWidth).Returns(1024);
-        mockRenderDevice.Setup(r => r.ViewPortHeight).Returns(768);
+        var mockRenderDevice = Substitute.For<IRenderDevice>();
+        mockRenderDevice.ViewPortWidth.Returns(1024);
+        mockRenderDevice.ViewPortHeight.Returns(768);
 
         // Act
         var style = CreateComputedStyle(element, declaration);
