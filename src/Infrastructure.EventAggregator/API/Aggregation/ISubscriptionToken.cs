@@ -1,4 +1,4 @@
-namespace Infrastructure.EventAggregator;
+namespace Infrastructure.EventAggregator.API.Aggregation;
 
 using System;
 

@@ -1,6 +1,7 @@
-namespace Infrastructure.EventAggregator;
+namespace Infrastructure.EventAggregator.Internal.Core;
 
 using System;
+using Infrastructure.EventAggregator.API.Aggregation;
 
 public class SubscriptionToken : ISubscriptionToken
 {

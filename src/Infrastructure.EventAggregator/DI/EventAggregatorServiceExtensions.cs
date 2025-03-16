@@ -1,6 +1,8 @@
-﻿namespace Infrastructure.EventAggregator;
+﻿namespace Infrastructure.EventAggregator.DI;
 
 using System;
+using API.Aggregation;
+using Internal.Core;
 using Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
