@@ -1,6 +1,7 @@
 namespace Infrastructure.EventAggregator.API.Aggregation;
 
 using System;
+using Events;
 
 public interface IEventAggregator
 {

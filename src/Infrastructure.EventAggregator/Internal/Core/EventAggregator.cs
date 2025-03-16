@@ -9,6 +9,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using API.Aggregation;
+using API.Events;
 
 public class EventAggregator : IEventAggregator, IDisposable
 {
