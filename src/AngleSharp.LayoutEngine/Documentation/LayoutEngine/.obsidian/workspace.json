@@ -41,12 +41,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
+                "file": "Revision Two/Layout Engine/AngleSharp.LayoutEngine Architecture Plan.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "StyleSystem Implementation Plan"
+              "title": "AngleSharp.LayoutEngine Architecture Plan"
             }
           }
         ],
@@ -200,11 +200,24 @@
   },
   "active": "fad918890771ffc5",
   "lastOpenFiles": [
-    "New Arhitecture/Rev 1/StyleSystem Testing Strategy.md",
+    "Revision Two/Layout Engine/Untitled 4.md",
+    "Revision Two/Layout Engine/Untitled 3.md",
+    "Revision Two/Layout Engine/Untitled 2.md",
+    "Revision Two/Layout Engine/Untitled 1.md",
+    "Revision Two/Layout Engine/Untitled.md",
+    "Revision Two/Layout Engine/Untitled",
+    "Revision Two/Layout Engine/Layout System Data Flow.md",
+    "Revision Two/Layout Engine/AngleSharp.LayoutEngine Architecture Plan.md",
+    "Revision Two/Layout Engine/Layout System Component Architecture.md",
+    "Revision Two/Layout Engine/Layout System Core Interfaces.md",
+    "Revision Two/Layout Engine/Integration with StyleSystem.md",
+    "New Arhitecture/AI Code Managment Tool/Idea list.md",
     "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
+    "New Arhitecture/AI Code Managment Tool",
+    "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
+    "New Arhitecture/Rev 1/StyleSystem Testing Strategy.md",
     "New Arhitecture/Rev 1/StyleSystem Data Flow Diagrams.md",
     "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
-    "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
     "Modules/Style System/Diagrams/CSS Variable Resolution Integration with LayoutSystem.md",
     "New Arhitecture/Rev 1/Development Guidelines.md",
     "New Arhitecture/Rev 1/Core Component Interfaces.md",
@@ -215,18 +228,7 @@
     "Modules/Style System/Instructions/Instructions.md",
     "Modules/Style System/Reference/StyleComputationEngine.md",
     "Modules/Style System/Reference/AngleSharp CSS Declaration Handling - Quick Reference.md",
-    "Modules/Style System/Future Plans/CSS Variable Implementation Plan for ValueComputer.md",
-    "Modules/Style System/Arhitecture/StyleSystem - Updated for LayoutNG Integration.md",
-    "Modules/Style System/Implementation/StyleComputationEngineImplementationStatus.md",
-    "Untitled 18.md",
-    "Untitled 17.md",
-    "Notes/System Threading Channel.md",
-    "Notes/Explore EXCSS Framework.md",
-    "Revision Two/Testing/ValueCalculator Unit Testing.md",
-    "Test.md",
     "Revision Two/Testing",
-    "Revision Two/Event Aggregator/EventAggregator Documentation.md",
-    "Revision Two/Event Aggregator/Recommendations and Analysis.md",
     "Revision Two/Event Aggregator",
     "Revision Two/Layout Engine",
     "Revision Two",
@@ -234,8 +236,6 @@
     "New Arhitecture/Rev 3/Computation/ComputedStyleFactory",
     "New Arhitecture/Rev 3/Computation/VariableResolver",
     "New Arhitecture/Rev 3/Computation/ValueCalculator",
-    "New Arhitecture/Rev 3/Computation/ComputedStyle",
-    "New Arhitecture/Rev 3/Computation/ComputedStyleBuilder",
     "Untitled.canvas"
   ]
 }
