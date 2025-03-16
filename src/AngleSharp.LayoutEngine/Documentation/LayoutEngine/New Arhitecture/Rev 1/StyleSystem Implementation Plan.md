@@ -24,7 +24,14 @@ This implementation plan divides the development of the new StyleSystem into dis
     - Handles document attachment/detachment
     - Tracks stylesheet changes
     - Loads user agent stylesheets
-    - **Note**: Enhanced beyond initial plan with MutationObserver integration and automatic handling of style element addition/removal
+    - **Enhanced**: MutationObserver integration and automatic handling of style element addition/removal
+- ✅ `DependencyInjection` system
+    
+    - Provides dedicated service registration separate from AngleSharp core
+    - Includes `StyleSystemServiceCollectionExtensions` for registering components
+    - Adds `AngleSharpServiceCollectionExtensions` for adapting AngleSharp services
+    - Implements `StyleSystemService` as a central orchestrator
+    - Supports configuration via `StyleSystemOptions`
 - ✅ Core component interaction architecture
     
     - Defined clear processing sequence for style computation
@@ -74,11 +81,40 @@ This implementation plan divides the development of the new StyleSystem into dis
     - Map mutations to style invalidation operations
     - Filter style-relevant mutations
     - Batch related mutations for efficiency
+- 🔄 `StyleSystemService` integration
+    
+    - Basic service orchestration implemented
+    - Component lifetime management added
+    - **Next**: Improve event handling and cross-component coordination
+    - **Next**: Add performance monitoring capabilities
+    - **Next**: Implement dynamic service resolution with fallbacks
+
+### Testing Progress
+
+- ✅ Unit tests for ValueCalculator
+    
+    - Length value conversion tests
+    - Viewport unit calculation tests
+    - Calc() expression evaluation tests
+    - Absolute/relative unit conversion tests
+- 🔄 Integration tests for style computation
+    
+    - Basic test framework established
+    - Additional test cases needed for complete coverage
+    - **Next**: Add specific tests for CSS variable resolution
+    - **Next**: Create tests for property tree optimizations
+    - **Next**: Implement integration tests for full style computation flow
+- 🔄 Dependency Injection tests
+    
+    - Service registration tests created
+    - Service resolution tests implemented
+    - **Next**: Add configuration option tests
+    - **Next**: Create integration tests for AngleSharp service adaptation
 
 ### Remaining Objectives
 
-- Establish foundation classes and interfaces
-- Complete the basic style computation pipeline
+- Complete dependency injection system integration with AngleSharp
+- Finish the basic style computation pipeline
 - Finalize property storage system
 - Expand testing framework coverage
 
@@ -88,6 +124,7 @@ This implementation plan divides the development of the new StyleSystem into dis
 - Integration tests for basic style computation
 - Comparison tests against current AngleSharp implementation
 - Style computation correctness verification
+- Dependency injection system verification
 
 ## Current Focus & Next Steps
 
@@ -122,6 +159,12 @@ This implementation plan divides the development of the new StyleSystem into dis
     - Implement efficient mutation handling
     - Add style invalidation triggering
     - Create optimized mutation batching
+6. **Finalize StyleSystemService integration**
+    
+    - Complete AngleSharp context integration
+    - Implement robust service resolution
+    - Add performance monitoring and diagnostics
+    - Create extension methods for easier usage
 
 ## Phase 2: Advanced Value Computation
 
@@ -346,6 +389,36 @@ This implementation plan divides the development of the new StyleSystem into dis
 - Documentation completeness check
 - Performance validation
 
+## Dependency Injection System Implementation
+
+The dependency injection system has been implemented with the following components:
+
+### 6.4 Service Registration
+
+- `StyleSystemServiceCollectionExtensions`: Registers all StyleSystem components
+- `AngleSharpServiceCollectionExtensions`: Adapts AngleSharp services for use with StyleSystem
+- `StyleSystemDependencyExtensions`: Connects StyleSystem with AngleSharp context
+
+### 6.5 Service Orchestration
+
+- `StyleSystemService`: Acts as the central orchestrator for StyleSystem components
+- `StyleSystemOptions`: Provides configuration options for the StyleSystem
+- Service lifespan management and disposal handling
+
+### 6.6 Bridge to AngleSharp
+
+- Context integration helpers
+- Service adaptation utilities
+- Extension methods for easier usage
+
+### Testing Criteria
+
+- Service registration tests
+- Configuration option validation
+- Service resolution correctness
+- Bridge functionality tests
+- Integration tests with AngleSharp context
+
 ## Risk Management
 
 ### Potential Risks and Mitigation Strategies
@@ -370,6 +443,10 @@ This implementation plan divides the development of the new StyleSystem into dis
     
     - **Mitigation**: Invest in automated testing infrastructure early
     - **Mitigation**: Use browser reference implementation tests
+6. **Dependency Injection Overhead**
+    
+    - **Mitigation**: Use efficient service resolution with caching
+    - **Mitigation**: Prefer singleton services for performance-critical components
 
 ## Dependencies and Prerequisites
 
@@ -377,61 +454,9 @@ This implementation plan divides the development of the new StyleSystem into dis
 - CSS parsing components
 - DOM implementation
 - Modern .NET runtime (for optimized data structures)
+- Microsoft.Extensions.DependencyInjection
 - Unit testing framework
 - Performance benchmarking tools
 
-## Success Criteria
 
-1. Style computation matches browser behavior for key CSS features
-2. Performance improvements meet targets:
-    - 30%+ reduction in style computation time
-    - 40%+ reduction in memory usage
-    - 50%+ improvement in style recalculation performance
-3. All key modern CSS features supported:
-    - CSS Variables
-    - Logical Properties
-    - Containment
-    - Animations
-4. Clean integration with LayoutEngine
-5. Comprehensive test coverage
-6. Clear, well-documented API surface
-
-## Timeline Adjustment
-
-Based on code review and current progress, we are on track with Phase 1 completion, with approximately 60% of the core infrastructure completed. The primary focus areas are now:
-
-1. Enhancing PropertyTreeManager's optimization capabilities for better memory usage
-2. Improving the CascadeResolver's specificity calculation for CSS spec compliance
-3. Extending the InheritanceProcessor to handle complex inheritance scenarios
-4. Completing the StylePropertyMapper implementation for all CSS logical properties
-5. Implementing the DomMutationTracker for DOM integration with AngleSharp
-
-We expect to complete Phase 1 within the next 2-3 weeks, allowing us to move to Phase 2: Advanced Value Computation on schedule.
-
-## Implementation Deviations & Enhancements
-
-Some components have been implemented differently than initially planned, often with additional features:
-
-1. **StyleSheetManager**:
-    
-    - Added MutationObserver integration for automatic stylesheet tracking
-    - Implemented dynamic loading/unloading of stylesheets
-    - Enhanced origin tracking for better cascade management
-    - Added recursive rule collection for container queries
-2. **StyleInvalidationTracker**:
-    
-    - Added device-dependent element tracking
-    - Implemented optimized invalidation propagation
-3. **ComputedStyle**:
-    
-    - Implemented with more optimized property grouping
-    - Added direct physical property access methods for layout system
-    - Enhanced caching strategy for computed values
-4. **DomMutationTracker**:
-    
-    - Being implemented with direct AngleSharp MutationObserver integration
-    - Adding efficient style-relevant change filtering
-    - Including batching for improved performance
-    - Incorporating dependency tracking for minimized invalidation scope
-
-These enhancements provide better performance and broader CSS support than initially scoped in the plan while maintaining compatibility with AngleSharp's infrastructure and aligning with Blink's architecture.
+These enhancements provide better performance, broader CSS support, and easier integration than initially scoped in the plan while maintaining compatibility with AngleSharp's infrastructure and aligning with Blink's architecture.
