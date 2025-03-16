@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This document outlines the redesigned StyleSystem architecture for AngleSharp.LayoutEngine, aligned with modern browser engines like Blink. The new architecture prioritizes performance, modularity, and modern CSS capabilities while maintaining compatibility with AngleSharp's core.
+The StyleSystem for AngleSharp.LayoutEngine provides a modern CSS styling implementation aligned with browser engines like Blink. The architecture has been enhanced with a dedicated dependency injection system that operates independently from AngleSharp's core services while maintaining full compatibility.
 
 ## Design Principles
 
@@ -13,6 +13,24 @@ This document outlines the redesigned StyleSystem architecture for AngleSharp.La
 5. **Modularity**: Loosely coupled components with clear responsibilities
 6. **Threading Support**: Parallel computation of styles where possible
 7. **Lifecycle Integration**: Alignment with document lifecycle phases
+8. **Dependency Injection**: Independent DI system that integrates with existing AngleSharp services
+
+## Dependency Injection System
+
+The StyleSystem introduces a dedicated dependency injection framework that provides several key benefits:
+
+1. **Separation of Concerns**: Decouples the StyleSystem from AngleSharp's internal service management
+2. **Configurability**: Allows fine-grained configuration of StyleSystem components
+3. **Extensibility**: Makes it easy to replace or extend individual components
+4. **Integration**: Seamlessly bridges with AngleSharp's existing service architecture
+5. **Testing**: Facilitates unit testing by allowing mock implementations to be injected
+
+Key elements of the DI system include:
+
+- **StyleSystemServiceCollectionExtensions**: Registers all StyleSystem components
+- **AngleSharpServiceCollectionExtensions**: Adapts AngleSharp services for use with StyleSystem
+- **StyleSystemDependencyExtensions**: Connects StyleSystem with AngleSharp context
+- **StyleSystemService**: Acts as the central orchestrator for StyleSystem components
 
 ## Core Components Overview
 
@@ -30,6 +48,7 @@ This document outlines the redesigned StyleSystem architecture for AngleSharp.La
 - **StyleTreeResolver**: Handles element tree traversal and style computation scheduling
 - **StyleInvalidationTracker**: Tracks element dependencies for minimal recalculation
 - **StyleCache**: Multi-level caching system for computed styles
+- **StyleSheetManager**: Manages stylesheets from different origins (user agent, author, etc.)
 
 ### 3. Style Computation Pipeline
 
@@ -45,39 +64,6 @@ This document outlines the redesigned StyleSystem architecture for AngleSharp.La
 - **PropertyTreeManager**: Manages shared property storage through tree structures for memory efficiency
 - **StylePropertyMapper**: Handles logical-to-physical property mapping based on writing mode context
 
-These components operate independently and do not directly depend on each other. Instead, they are orchestrated by the ComputedStyleBuilder, which coordinates the processing sequence following the Blink model:
-
-1. First, DOM mutations are tracked by the DomMutationTracker
-2. Affected elements are marked by the StyleInvalidationTracker
-3. Style recalculation is scheduled by the StyleRecalcScheduler
-4. The StyleEngine processes invalidated elements through the style computation pipeline
-5. ComputedStyle objects are created and cached for future use
-
-### Component Processing Flow
-
-The StyleSystem follows a specific processing sequence when computing styles:
-
-```
-DOM Mutation → Style Invalidation → Style Recalc → Rule Matching → Cascade → Inheritance → Computed Style
-```
-
-The ComputedStyleBuilder acts as the coordinator for this process:
-
-1. For each property in a declaration:
-    - First resolves any CSS variables in the property value
-    - Then computes absolute values through unit conversion and calculation
-    - For logical properties, maps them to their physical equivalents based on writing mode
-    - Finally stores the computed values in the property tree for efficient storage
-
-This clearly defined flow ensures that:
-
-- Variables are always resolved before calculations are performed
-- Unit conversion happens after variable resolution
-- Logical properties are correctly mapped based on writing mode
-- The property tree efficiently stores and shares values between similar elements
-
-The flow ensures proper isolation between components while maintaining the correct processing order required for CSS.
-
 ### 5. Output Layer
 
 - **ComputedStyle**: Layout-optimized representation of element styles
@@ -85,9 +71,48 @@ The flow ensures proper isolation between components while maintaining the corre
     - BoxProperties: Dimensions, margins, borders, etc.
     - TextProperties: Font, text alignment, etc.
     - RareProperties: Less commonly used properties
-    - NonInheritedProperties: Properties that don't inherit
+    - PropertyTreeNode: Efficient storage for property values with sharing capabilities
+
+### 6. Threading Components
+
+- **MainThreadStyleWork**: Handles critical-path elements on the main thread
+- **WorkerThreadStylePool**: Manages worker threads for parallel style computation
+- **StyleTaskScheduler**: Schedules and executes style-related tasks
+- **StyleRecalcScheduler**: Coordinates style recalculation across threads
+
+## Component Processing Flow
+
+The StyleSystem follows a specific processing sequence when computing styles:
+
+```
+DOM Mutation → Style Invalidation → Style Recalc → Rule Matching → Cascade → Inheritance → Computed Style
+```
+
+The StyleEngine orchestrates this process while the ComputedStyleBuilder acts as the coordinator:
+
+1. First, DOM mutations are tracked by the DomMutationTracker
+2. Affected elements are marked by the StyleInvalidationTracker
+3. Style recalculation is scheduled by the StyleRecalcScheduler based on priority
+4. The StyleEngine processes invalidated elements through the style computation pipeline
+5. ComputedStyle objects are created and cached for future use
 
 ## Key Architectural Enhancements
+
+### Service Registration and Initialization
+
+The StyleSystem now supports standard dependency injection patterns:
+
+```csharp
+// Register StyleSystem with services collection
+services.AddStyleSystem(options => {
+    options.EnableOptimization = true;
+    options.MaxWorkerThreads = 4;
+    options.BatchSize = 100;
+});
+
+// Register AngleSharp services for use with StyleSystem
+services.AddAngleSharpServices(context);
+```
 
 ### Multi-Threading Support
 
@@ -104,14 +129,6 @@ Performance is optimized by deferring work for non-visible content:
 - Viewport visibility tracking
 - Prioritization of visible element styling
 - Just-in-time computation as elements scroll into view
-
-### Animation Optimization
-
-Animated styles receive special handling:
-
-- Compositor-friendly property storage
-- Minimal recalculation for animated properties
-- Separation of compositor-only animations from main thread animations
 
 ### Property Trees
 
@@ -131,41 +148,6 @@ CSS containment is respected for improved performance:
 - **Size Containment**: Elements' size doesn't depend on their descendants, enabling early layout optimization
 - **Content Containment**: Combines layout, style, and paint containment for maximum optimization
 
-**Implementation Strategy:**
-
-- Track containment boundaries during style tree construction
-- Respect containment during style recalculation
-- Use containment information for optimization
-
-### Style Memory Management
-
-Memory usage is optimized through several advanced techniques:
-
-- **Property Trees**: Instead of storing every style property for every element, property trees share common values in a tree structure
-    
-    - Properties are stored in a hierarchical structure with inheritance
-    - Identical property values are stored once and referenced by multiple elements
-    - Changes result in minimal tree modifications rather than full recomputation
-    - Highly efficient for similar elements (e.g., list items, table cells)
-- **Style Sharing**: Elements with identical styles share the same ComputedStyle object
-    
-    - Style sharing candidacy is determined by a set of quick-to-check criteria (tag name, class, id, etc.)
-    - Similar elements can reuse style calculations instead of computing styles from scratch
-    - A style sharing cache maintains recently computed styles for fast lookup
-- **Style Reuse**: Style calculations can be reused across similar elements
-    
-    - Intermediate calculation results are cached and reused
-    - Historical style information is maintained when beneficial
-    - Style dependencies are tracked for minimal recalculation
-
-### Containment Awareness
-
-CSS containment is respected for style calculations:
-
-- Style containment boundaries limit invalidation scope
-- Subtree isolation for independent style calculation
-- Improved performance through reduced recalculation scope
-
 ## Layout System Integration
 
 The StyleSystem provides optimized interfaces for layout consumption:
@@ -175,15 +157,6 @@ The StyleSystem provides optimized interfaces for layout consumption:
 - Specialized layout-oriented property groups
 - Clear boundaries between style and layout responsibilities
 
-## Caching Strategy
-
-Multi-level caching improves performance:
-
-- Element-level style caching
-- Property-level caching for custom properties
-- Intelligent invalidation based on dependencies
-- Hash-based identity for style sharing opportunities
-
 ## Conclusion
 
-This architecture provides a solid foundation for a high-performance style system aligned with modern browser engines. It enables efficient processing of complex stylesheets while supporting modern CSS features and maintaining compatibility with AngleSharp's existing interfaces.
+The enhanced architecture with dedicated dependency injection provides a solid foundation for a high-performance style system aligned with modern browser engines. It enables efficient processing of complex stylesheets while supporting modern CSS features and maintaining compatibility with AngleSharp's existing interfaces.
