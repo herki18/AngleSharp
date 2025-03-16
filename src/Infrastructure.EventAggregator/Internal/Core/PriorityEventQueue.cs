@@ -63,16 +63,13 @@ internal class PriorityEventQueue
     /// Dequeues the highest priority event available.
     /// </summary>
     /// <returns>The highest priority event, or null if the queue is empty.</returns>
-    public PrioritizedEventWrapper Dequeue()
+    public PrioritizedEventWrapper? Dequeue()
     {
         lock (_lockObject)
         {
-            // Check queues from highest to lowest priority
             foreach (EventPriority priority in System.Enum.GetValues(typeof(EventPriority)))
             {
-                // Check in reverse order (highest to lowest)
-                EventPriority currentPriority = (EventPriority)((int)System.Enum.GetValues(typeof(EventPriority)).Length - 1 - (int)priority);
-
+                EventPriority currentPriority = (EventPriority)(System.Enum.GetValues(typeof(EventPriority)).Length - 1 - (int)priority);
                 if (_queues[currentPriority].Count > 0)
                 {
                     return _queues[currentPriority].Dequeue();
@@ -86,16 +83,13 @@ internal class PriorityEventQueue
     /// Peeks at the highest priority event without removing it.
     /// </summary>
     /// <returns>The highest priority event, or null if the queue is empty.</returns>
-    public PrioritizedEventWrapper Peek()
+    public PrioritizedEventWrapper? Peek()
     {
         lock (_lockObject)
         {
-            // Check queues from highest to lowest priority
             foreach (EventPriority priority in System.Enum.GetValues(typeof(EventPriority)))
             {
-                // Check in reverse order (highest to lowest)
-                EventPriority currentPriority = (EventPriority)((int)System.Enum.GetValues(typeof(EventPriority)).Length - 1 - (int)priority);
-
+                EventPriority currentPriority = (EventPriority)(System.Enum.GetValues(typeof(EventPriority)).Length - 1 - (int)priority);
                 if (_queues[currentPriority].Count > 0)
                 {
                     return _queues[currentPriority].Peek();

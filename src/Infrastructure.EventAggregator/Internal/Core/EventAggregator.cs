@@ -370,9 +370,7 @@ public class EventAggregator : IEventAggregator, IDisposable
     {
         while (!_cancellationTokenSource.Token.IsCancellationRequested)
         {
-            PrioritizedEventWrapper wrapper = null;
-
-            // Only dequeue if we have an event
+            PrioritizedEventWrapper? wrapper = null;
             if (!_eventQueue.IsEmpty)
             {
                 wrapper = _eventQueue.Dequeue();
