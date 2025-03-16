@@ -75,22 +75,6 @@ This implementation plan divides the development of the new StyleSystem into dis
     - Filter style-relevant mutations
     - Batch related mutations for efficiency
 
-### Testing Progress
-
-- ✅ Unit tests for ValueCalculator
-    
-    - Length value conversion tests
-    - Viewport unit calculation tests
-    - Calc() expression evaluation tests
-    - Absolute/relative unit conversion tests
-- 🔄 Integration tests for style computation
-    
-    - Basic test framework established
-    - Additional test cases needed for complete coverage
-    - **Next**: Add specific tests for CSS variable resolution
-    - **Next**: Create tests for property tree optimizations
-    - **Next**: Implement integration tests for full style computation flow
-
 ### Remaining Objectives
 
 - Establish foundation classes and interfaces

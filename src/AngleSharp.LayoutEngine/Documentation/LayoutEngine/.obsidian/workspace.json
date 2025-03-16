@@ -41,12 +41,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Modules/Style System/Reference/AngleSharp CSS Declaration Handling - Quick Reference.md",
-                "mode": "preview",
+                "file": "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
+                "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "AngleSharp CSS Declaration Handling - Quick Reference"
+              "title": "StyleSystem Implementation Plan"
             }
           }
         ],
@@ -198,12 +198,22 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "c5c1852e895c4c99",
+  "active": "fad918890771ffc5",
   "lastOpenFiles": [
+    "New Arhitecture/Rev 1/StyleSystem Data Flow Diagrams.md",
+    "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
+    "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
+    "Modules/Style System/Diagrams/CSS Variable Resolution Integration with LayoutSystem.md",
+    "New Arhitecture/Rev 1/Development Guidelines.md",
+    "New Arhitecture/Rev 1/Core Component Interfaces.md",
+    "New Arhitecture/Rev 1/AngleSharp.StyleSystem Testing Reference.md",
+    "New Arhitecture/Rev 1/AngleSharp.StyleSystem Development Guide.md",
+    "New Arhitecture/Rev 1/AngleSharp CSS Reference.md",
+    "Modules/Style System/Integration/StyleComputationModule - Updated for LayoutNG Integration.md",
+    "Modules/Style System/Instructions/Instructions.md",
+    "Modules/Style System/Reference/StyleComputationEngine.md",
     "Modules/Style System/Reference/AngleSharp CSS Declaration Handling - Quick Reference.md",
     "Modules/Style System/Future Plans/CSS Variable Implementation Plan for ValueComputer.md",
-    "Modules/Style System/Instructions/Instructions.md",
-    "Modules/Style System/Diagrams/CSS Variable Resolution Integration with LayoutSystem.md",
     "Modules/Style System/Arhitecture/StyleSystem - Updated for LayoutNG Integration.md",
     "Modules/Style System/Implementation/StyleComputationEngineImplementationStatus.md",
     "Untitled 18.md",
@@ -217,17 +227,7 @@
     "Revision Two/Event Aggregator/Recommendations and Analysis.md",
     "Revision Two/Event Aggregator/Performance Monitoring Implementation.md",
     "Revision Two/Event Aggregator/Integration Example.md",
-    "Revision Two/Event Aggregator/EventAggregator Unit Tests.md",
-    "Revision Two/Event Aggregator/EventAggregator Implementation.md",
-    "Revision Two/Event Aggregator/EventAggregator Implementation Plan.md",
-    "Untitled 16.md",
     "Revision Two/Event Aggregator",
-    "Untitled 15.md",
-    "Untitled 13.md",
-    "Untitled 14.md",
-    "New Arhitecture/Rev 4/Untitled.md",
-    "Untitled.md",
-    "Untitled 9.md",
     "Revision Two/Layout Engine",
     "Revision Two",
     "New Arhitecture/Rev 4",
