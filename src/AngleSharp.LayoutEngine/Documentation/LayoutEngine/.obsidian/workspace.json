@@ -4,53 +4,20 @@
     "type": "split",
     "children": [
       {
-        "id": "a1371137fd1d7644",
+        "id": "5d48cad7afb659f4",
         "type": "tabs",
         "children": [
           {
-            "id": "8a97c254eff15c68",
+            "id": "4b079dcd2c089027",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Modules/Layout System/Layout System Architecture Document.md",
-                "mode": "preview",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "Layout System Architecture Document"
-            }
-          },
-          {
-            "id": "93b419e72e94a610",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "StyleSystem Implementation Plan"
-            }
-          },
-          {
-            "id": "fad918890771ffc5",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Revision Two/Layout Engine/AngleSharp.LayoutEngine Architecture Plan.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "AngleSharp.LayoutEngine Architecture Plan"
+              "title": "New tab"
             }
           }
-        ],
-        "currentTab": 2
+        ]
       }
     ],
     "direction": "vertical"
@@ -82,7 +49,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "browser",
+                "query": "",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -107,7 +74,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 344.50909423828125
+    "width": 443.5
   },
   "right": {
     "id": "8989d77b04c133bb",
@@ -123,7 +90,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -133,7 +99,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for StyleSystem Implementation Plan"
+              "title": "Backlinks"
             }
           },
           {
@@ -142,12 +108,11 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from StyleSystem Implementation Plan"
+              "title": "Outgoing links"
             }
           },
           {
@@ -171,17 +136,15 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of StyleSystem Implementation Plan"
+              "title": "Outline"
             }
           }
-        ],
-        "currentTab": 3
+        ]
       }
     ],
     "direction": "horizontal",
@@ -198,44 +161,43 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "fad918890771ffc5",
+  "active": "4b079dcd2c089027",
   "lastOpenFiles": [
+    "Untitled 14.md",
+    "Untitled 18.md",
+    "Untitled 17.md",
+    "Revision Two/Testing/ValueCalculator Unit Testing.md",
+    "Revision Two/Testing",
+    "Revision Two/Layout Engine/Untitled.md",
     "Revision Two/Layout Engine/Untitled 4.md",
     "Revision Two/Layout Engine/Untitled 3.md",
     "Revision Two/Layout Engine/Untitled 2.md",
     "Revision Two/Layout Engine/Untitled 1.md",
-    "Revision Two/Layout Engine/Untitled.md",
-    "Revision Two/Layout Engine/Untitled",
-    "Revision Two/Layout Engine/Layout System Data Flow.md",
-    "Revision Two/Layout Engine/AngleSharp.LayoutEngine Architecture Plan.md",
-    "Revision Two/Layout Engine/Layout System Component Architecture.md",
-    "Revision Two/Layout Engine/Layout System Core Interfaces.md",
-    "Revision Two/Layout Engine/Integration with StyleSystem.md",
+    "Notes/System Threading Channel.md",
+    "Notes/Explore EXCSS Framework.md",
     "New Arhitecture/AI Code Managment Tool/Idea list.md",
-    "New Arhitecture/Rev 1/StyleSystem Implementation Plan.md",
     "New Arhitecture/AI Code Managment Tool",
-    "New Arhitecture/Rev 1/StyleSystem Architecture Overview.md",
-    "New Arhitecture/Rev 1/StyleSystem Testing Strategy.md",
-    "New Arhitecture/Rev 1/StyleSystem Data Flow Diagrams.md",
-    "New Arhitecture/Rev 1/StyleSystem Component Architecture.md",
-    "Modules/Style System/Diagrams/CSS Variable Resolution Integration with LayoutSystem.md",
-    "New Arhitecture/Rev 1/Development Guidelines.md",
-    "New Arhitecture/Rev 1/Core Component Interfaces.md",
-    "New Arhitecture/Rev 1/AngleSharp.StyleSystem Testing Reference.md",
-    "New Arhitecture/Rev 1/AngleSharp.StyleSystem Development Guide.md",
-    "New Arhitecture/Rev 1/AngleSharp CSS Reference.md",
-    "Modules/Style System/Integration/StyleComputationModule - Updated for LayoutNG Integration.md",
-    "Modules/Style System/Instructions/Instructions.md",
-    "Modules/Style System/Reference/StyleComputationEngine.md",
-    "Modules/Style System/Reference/AngleSharp CSS Declaration Handling - Quick Reference.md",
-    "Revision Two/Testing",
+    "Untitled 16.md",
+    "Untitled 15.md",
+    "Revision Two/Event Aggregator/Recommendations and Analysis.md",
+    "Revision Two/Event Aggregator/Performance Monitoring Implementation.md",
+    "Revision Two/Event Aggregator/Integration Example.md",
+    "Revision Two/Event Aggregator/EventAggregator Unit Tests.md",
+    "Revision Two/Event Aggregator/EventAggregator Implementation.md",
+    "Revision Two/Event Aggregator/EventAggregator Implementation Plan.md",
+    "Revision Two/Event Aggregator/EventAggregator Documentation.md",
     "Revision Two/Event Aggregator",
+    "Untitled 13.md",
+    "Untitled 12.md",
+    "Untitled 11.md",
+    "Untitled 7.md",
+    "Untitled 8.md",
     "Revision Two/Layout Engine",
     "Revision Two",
+    "Revision One",
     "New Arhitecture/Rev 4",
-    "New Arhitecture/Rev 3/Computation/ComputedStyleFactory",
-    "New Arhitecture/Rev 3/Computation/VariableResolver",
-    "New Arhitecture/Rev 3/Computation/ValueCalculator",
-    "Untitled.canvas"
+    "New Arhitecture/Rev 3",
+    "New Arhitecture/Rev 2",
+    "Notes"
   ]
 }
