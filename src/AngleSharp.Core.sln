@@ -67,6 +67,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{548FC074
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LayoutEngine", "LayoutEngine\LayoutEngine.csproj", "{BB14A796-AEC7-454B-9F34-263216953EF1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.Cache", "Infrastructure.Cache\Infrastructure.Cache.csproj", "{FBC80D39-C3E9-4CD2-8BE5-DD6FD2354149}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -163,6 +165,10 @@ Global
 		{BB14A796-AEC7-454B-9F34-263216953EF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BB14A796-AEC7-454B-9F34-263216953EF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BB14A796-AEC7-454B-9F34-263216953EF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FBC80D39-C3E9-4CD2-8BE5-DD6FD2354149}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FBC80D39-C3E9-4CD2-8BE5-DD6FD2354149}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FBC80D39-C3E9-4CD2-8BE5-DD6FD2354149}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FBC80D39-C3E9-4CD2-8BE5-DD6FD2354149}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -188,5 +194,6 @@ Global
 		{941F32C2-78EF-448A-9081-520315DC0193} = {8141EB56-BB5B-4B13-9F5C-A05A58A0E228}
 		{548FC074-1D04-45A2-8725-5D908A5075A9} = {8141EB56-BB5B-4B13-9F5C-A05A58A0E228}
 		{BB14A796-AEC7-454B-9F34-263216953EF1} = {8141EB56-BB5B-4B13-9F5C-A05A58A0E228}
+		{FBC80D39-C3E9-4CD2-8BE5-DD6FD2354149} = {8141EB56-BB5B-4B13-9F5C-A05A58A0E228}
 	EndGlobalSection
 EndGlobal
