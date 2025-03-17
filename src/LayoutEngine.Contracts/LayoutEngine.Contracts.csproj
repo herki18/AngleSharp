@@ -5,4 +5,10 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <Folder Include="Events\" />
+      <Folder Include="Lifecycle\" />
+      <Folder Include="Rendering\" />
+    </ItemGroup>
+
 </Project>

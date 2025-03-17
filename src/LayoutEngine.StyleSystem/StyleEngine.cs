@@ -2,7 +2,7 @@
 
 namespace LayoutEngine.StyleSystem
 {
-    public class Class1
+    public class StyleEngine
     {
     }
 }
