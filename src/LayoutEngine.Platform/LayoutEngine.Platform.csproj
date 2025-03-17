@@ -9,4 +9,10 @@
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0-preview.1.25080.5" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="API\" />
+      <Folder Include="DI\" />
+      <Folder Include="Internal\" />
+    </ItemGroup>
+
 </Project>

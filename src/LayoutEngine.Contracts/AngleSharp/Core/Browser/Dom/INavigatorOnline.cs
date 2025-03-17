@@ -1,0 +1,18 @@
+namespace AngleSharp.Browser.Dom;
+
+using System;
+using Attributes;
+
+/// <summary>
+///     Connectivity information regarding the navigator.
+/// </summary>
+[DomName("NavigatorOnLine")]
+[DomNoInterfaceObject]
+public interface INavigatorOnline
+{
+    /// <summary>
+    ///     Gets if the connection is established.
+    /// </summary>
+    [DomName("onLine")]
+    Boolean IsOnline { get; }
+}
