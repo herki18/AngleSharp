@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.1</TargetFramework>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Folder Include="DI\" />
+      <Folder Include="Integration\" />
+      <Folder Include="Internal\Caches\" />
+      <Folder Include="Internal\Invalidation\" />
+      <Folder Include="Internal\Monitoring\" />
+      <Folder Include="Internal\Utilities\" />
+    </ItemGroup>
+
+</Project>
