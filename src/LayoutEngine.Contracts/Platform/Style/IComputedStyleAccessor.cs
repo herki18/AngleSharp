@@ -12,5 +12,5 @@ public interface IComputedStyleAccessor
     /// </summary>
     /// <param name="element">The element.</param>
     /// <returns>The computed style.</returns>
-    IComputedStyle GetComputedStyle(IElement element);
+    // IComputedStyle GetComputedStyle(IElement element);
 }

@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <Folder Include="AngleSharp\Css\" />
       <Folder Include="LayoutSystem\" />
       <Folder Include="StyleSystem\Cascade\" />
       <Folder Include="StyleSystem\Properties\" />
