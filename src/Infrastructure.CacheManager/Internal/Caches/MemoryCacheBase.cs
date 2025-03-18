@@ -17,7 +17,7 @@ namespace Infrastructure.CacheManager.Internal.Caches
     /// </summary>
     internal class MemoryCacheBase<TKey, TValue> : ICache<TKey, TValue>, ITrimableCache, IDisposable
     {
-        private readonly MemoryCache _memoryCache;
+        private MemoryCache _memoryCache;
         private readonly ConcurrentDictionary<TKey, CacheEntryMetadata> _entryMetadata;
         private readonly Timer _cleanupTimer;
         private readonly TimeSpan _cleanupInterval;
@@ -315,7 +315,7 @@ namespace Infrastructure.CacheManager.Internal.Caches
             // This method is kept for monitoring or future enhancements
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             if (_isDisposed)
                 return;

@@ -8,7 +8,6 @@
     <ItemGroup>
       <Folder Include="DI\" />
       <Folder Include="Integration\" />
-      <Folder Include="Internal\Caches\" />
       <Folder Include="Internal\Invalidation\" />
       <Folder Include="Internal\Monitoring\" />
       <Folder Include="Internal\Utilities\" />
