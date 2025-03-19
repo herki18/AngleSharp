@@ -231,15 +231,17 @@ namespace Infrastructure.CacheManager.Internal.Monitoring
 
             _isDisposed = true;
 
-            // Stop monitoring
-            StopMonitoring();
+            // Only call StopMonitoring if we're currently monitoring
+            if (_isMonitoring)
+            {
+                _monitorTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                _isMonitoring = false;
+            }
 
-            // Cancel the GC notification task
-            _cancellationTokenSource.Cancel();
-
-            // Dispose of resources
+            _cancellationTokenSource?.Cancel();
             _monitorTimer?.Dispose();
             _cancellationTokenSource?.Dispose();
         }
+
     }
 }

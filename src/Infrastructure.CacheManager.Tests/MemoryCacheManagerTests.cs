@@ -1,14 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using AutoFixture;
 using Infrastructure.CacheManager.API.Management;
 using Infrastructure.CacheManager.API.Monitoring;
 using Infrastructure.CacheManager.Internal.Caches;
 using Infrastructure.CacheManager.Internal.Core;
 using NSubstitute;
-using Xunit;
 
 namespace Infrastructure.CacheManager.Tests;
 

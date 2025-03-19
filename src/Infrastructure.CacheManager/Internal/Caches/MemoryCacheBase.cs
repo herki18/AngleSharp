@@ -193,8 +193,9 @@ namespace Infrastructure.CacheManager.Internal.Caches
 
             if (percentage >= 100)
             {
+                int count = _count;
                 Clear();
-                return _count; // Previous count before clearing
+                return count;
             }
 
             lock (_trimLock)
@@ -205,17 +206,18 @@ namespace Infrastructure.CacheManager.Internal.Caches
                 if (removeCount <= 0)
                     return 0;
 
-                // Get entries to remove ordered by last access time
+                // Fix: Make sure we're getting a snapshot of the keys to avoid collection
+                // modification issues during iteration
                 var entriesToRemove = _entryMetadata
                     .OrderBy(e => e.Value.LastAccessTime)
                     .Take(removeCount)
+                    .Select(e => e.Key)
                     .ToList();
 
                 int removedCount = 0;
-
-                foreach (var entry in entriesToRemove)
+                foreach (var key in entriesToRemove)
                 {
-                    if (Remove(entry.Key))
+                    if (Remove(key))
                     {
                         removedCount++;
                     }
