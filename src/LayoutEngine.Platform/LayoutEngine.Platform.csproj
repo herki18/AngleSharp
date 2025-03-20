@@ -7,12 +7,13 @@
 
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0-preview.1.25080.5" />
+      <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.0-preview.2.25163.2" />
+      <PackageReference Include="System.Threading.Channels" Version="10.0.0-preview.2.25163.2" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="API\" />
-      <Folder Include="DI\" />
-      <Folder Include="Internal\" />
+      <ProjectReference Include="..\Infrastructure.CacheManager\Infrastructure.CacheManager.csproj" />
+      <ProjectReference Include="..\LayoutEngine.Contracts\LayoutEngine.Contracts.csproj" />
     </ItemGroup>
 
 </Project>
