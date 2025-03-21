@@ -359,17 +359,17 @@ public class BeginFrameEvent : EventBase
     /// <summary>
     /// Gets the frame timestamp.
     /// </summary>
-    public double Timestamp { get; }
+    public double FrameTimestamp { get; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BeginFrameEvent"/> class.
     /// </summary>
     /// <param name="frameNumber">The frame number.</param>
     /// <param name="timestamp">The frame timestamp.</param>
-    public BeginFrameEvent(long frameNumber, double timestamp)
+    public BeginFrameEvent(long frameNumber, double frameTimestamp)
     {
         FrameNumber = frameNumber;
-        Timestamp = timestamp;
+        FrameTimestamp = frameTimestamp;
     }
 }
 
@@ -386,17 +386,17 @@ public class EndFrameEvent : EventBase
     /// <summary>
     /// Gets the frame timestamp.
     /// </summary>
-    public double Timestamp { get; }
+    public double FrameTimestamp { get; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EndFrameEvent"/> class.
     /// </summary>
     /// <param name="frameNumber">The frame number.</param>
     /// <param name="timestamp">The frame timestamp.</param>
-    public EndFrameEvent(long frameNumber, double timestamp)
+    public EndFrameEvent(long frameNumber, double frameTimestamp)
     {
         FrameNumber = frameNumber;
-        Timestamp = timestamp;
+        FrameTimestamp = frameTimestamp;
     }
 }
 

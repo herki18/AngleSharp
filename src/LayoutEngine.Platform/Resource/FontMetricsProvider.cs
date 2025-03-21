@@ -49,24 +49,16 @@ public sealed class FontMetricsProvider : IFontMetricsProvider, IDisposable
         _resourceLoader = resourceLoader ?? throw new ArgumentNullException(nameof(resourceLoader));
 
         // Create caches
-        _fontMetricsCache = _cacheManager.GetOrCreateCache<ICache<string, IFontMetrics>>(
-            "FontMetricsCache",
-            new CacheOptions { Priority = CachePriority.Normal });
-
-        _textMetricsCache = _cacheManager.GetOrCreateCache<ICache<string, ITextMetrics>>(
-            "TextMetricsCache",
-            new CacheOptions { Priority = CachePriority.Low });
-
-        _glyphMetricsCache = _cacheManager.GetOrCreateCache<ICache<string, IGlyphMetrics>>(
-            "GlyphMetricsCache",
-            new CacheOptions { Priority = CachePriority.Normal });
+        _fontMetricsCache = _cacheManager.GetCache<ICache<string, IFontMetrics>>("FontMetricsCache");
+        _textMetricsCache = _cacheManager.GetCache<ICache<string, ITextMetrics>>("TextMetricsCache");
+        _glyphMetricsCache = _cacheManager.GetCache<ICache<string, IGlyphMetrics>>("GlyphMetricsCache");
 
         // Subscribe to events
         _subscriptions.Add(_eventAggregator.Subscribe<MemoryPressureEvent>(OnMemoryPressure));
         _subscriptions.Add(_eventAggregator.Subscribe<ResourceLoadedEvent>(OnResourceLoaded));
 
         // Initialize system fonts asynchronously
-        InitializeAsync();
+        _ = InitializeAsync();
     }
 
     /// <inheritdoc />
@@ -84,7 +76,7 @@ public sealed class FontMetricsProvider : IFontMetricsProvider, IDisposable
         var cacheKey = CreateFontMetricsCacheKey(fontFamily, fontSize, fontWeight, fontStyle);
 
         // Try to get from cache
-        if (_fontMetricsCache.TryGetValue(cacheKey, out var metrics))
+        if (_fontMetricsCache.TryGetValue(cacheKey, out var metrics) && metrics != null)
         {
             return metrics;
         }
@@ -127,7 +119,7 @@ public sealed class FontMetricsProvider : IFontMetricsProvider, IDisposable
         var cacheKey = CreateTextMetricsCacheKey(text, fontFamily, fontSize, fontWeight, fontStyle);
 
         // Try to get from cache
-        if (_textMetricsCache.TryGetValue(cacheKey, out var metrics))
+        if (_textMetricsCache.TryGetValue(cacheKey, out var metrics) && metrics != null)
         {
             return metrics;
         }
@@ -197,7 +189,7 @@ public sealed class FontMetricsProvider : IFontMetricsProvider, IDisposable
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<string>> GetFallbackFontsAsync(string fontFamily)
+    public Task<IReadOnlyList<string>> GetFallbackFontsAsync(string fontFamily)
     {
         ThrowIfDisposed();
 
@@ -206,7 +198,7 @@ public sealed class FontMetricsProvider : IFontMetricsProvider, IDisposable
 
         // For simplicity, return a fixed list of fallback fonts
         // In a real implementation, this would depend on the font family and platform
-        return new List<string>
+        var fallbackFonts = new List<string>
         {
             "Arial",
             "Helvetica",
@@ -214,6 +206,8 @@ public sealed class FontMetricsProvider : IFontMetricsProvider, IDisposable
             "Courier New",
             "Georgia"
         };
+        return Task.FromResult<IReadOnlyList<string>>(fallbackFonts);
+
     }
 
     /// <inheritdoc />
@@ -231,7 +225,7 @@ public sealed class FontMetricsProvider : IFontMetricsProvider, IDisposable
         var cacheKey = CreateGlyphMetricsCacheKey(character, fontFamily, fontSize, fontWeight, fontStyle);
 
         // Try to get from cache
-        if (_glyphMetricsCache.TryGetValue(cacheKey, out var metrics))
+        if (_glyphMetricsCache.TryGetValue(cacheKey, out var metrics) && metrics != null)
         {
             return metrics;
         }
@@ -248,10 +242,10 @@ public sealed class FontMetricsProvider : IFontMetricsProvider, IDisposable
         return metrics;
     }
 
-    private async Task InitializeAsync()
+    private Task InitializeAsync()
     {
         if (_isInitialized || _isDisposed)
-            return;
+            return Task.CompletedTask;
 
         try
         {
@@ -282,6 +276,8 @@ public sealed class FontMetricsProvider : IFontMetricsProvider, IDisposable
             // Initialization failed, but we can still operate with limited capabilities
             _isInitialized = true;
         }
+
+        return Task.CompletedTask;
     }
 
     private void OnMemoryPressure(MemoryPressureEvent e)

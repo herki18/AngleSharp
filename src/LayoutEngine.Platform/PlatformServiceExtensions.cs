@@ -1,10 +1,7 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using LayoutEngine.Contracts.DOM;
-using LayoutEngine.Contracts.Lifecycle;
 using LayoutEngine.Contracts.Threading;
-using LayoutEngine.Contracts.Update;
 using LayoutEngine.Contracts.Resource;
 using LayoutEngine.Platform.DOM;
 using LayoutEngine.Platform.Lifecycle;
@@ -13,6 +10,10 @@ using LayoutEngine.Platform.Update;
 using LayoutEngine.Platform.Resource;
 
 namespace LayoutEngine.Platform;
+
+using Contracts.Platform.Dom;
+using Contracts.Platform.Lifecycle;
+using Contracts.Platform.Updates;
 
 /// <summary>
 /// Extension methods for registering Platform services with the dependency injection container.

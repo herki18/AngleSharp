@@ -11,6 +11,7 @@ namespace LayoutEngine.Platform.Resource;
 using Contracts.Platform.Events;
 using Infrastructure.CacheManager.API.Caching.CacheTypes;
 using Infrastructure.CacheManager.API.Management;
+using Infrastructure.CacheManager.API.Models;
 using Infrastructure.EventAggregator.API.Aggregation;
 
 /// <summary>
@@ -48,9 +49,7 @@ public sealed class ResourceLoader : IResourceLoader, IDisposable
         _errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
 
         // Get or create resource cache
-        _resourceCache = _cacheManager.GetOrCreateCache<IPrioritizedCache<string, IResource>>(
-            "ResourceCache",
-            new CacheOptions { Priority = CachePriority.Normal });
+        _resourceCache = _cacheManager.GetCache<IPrioritizedCache<string, IResource>>("ResourceCache");
 
         // Subscribe to memory pressure events
         _subscriptions.Add(_eventAggregator.Subscribe<MemoryPressureEvent>(OnMemoryPressure));
@@ -79,8 +78,9 @@ public sealed class ResourceLoader : IResourceLoader, IDisposable
         if (string.IsNullOrEmpty(url))
             throw new ArgumentException("URL cannot be null or empty", nameof(url));
 
+        IResource? cachedResource = null;
         // Check cache first
-        if (_resourceCache.TryGetValue(url, out var cachedResource))
+        if (_resourceCache.TryGetValue(url, out cachedResource) && cachedResource != null)
         {
             return cachedResource;
         }
@@ -102,7 +102,7 @@ public sealed class ResourceLoader : IResourceLoader, IDisposable
             try
             {
                 // Check cache again after acquiring lock
-                if (_resourceCache.TryGetValue(url, out cachedResource))
+                if (_resourceCache.TryGetValue(url, out cachedResource) && cachedResource != null)
                 {
                     return cachedResource;
                 }
@@ -130,7 +130,8 @@ public sealed class ResourceLoader : IResourceLoader, IDisposable
 
                     // Add to cache
                     var priority = DetermineCachePriority(resource);
-                    _resourceCache.Set(url, resource, priority);
+                    var entryPriority = (CacheEntryPriority)(int)priority;
+                    _resourceCache.Set(url, resource, entryPriority);
 
                     // Complete task
                     tcs.SetResult(resource);
@@ -203,9 +204,16 @@ public sealed class ResourceLoader : IResourceLoader, IDisposable
             {
                 if (t.IsFaulted)
                 {
-                    // Handle error but don't throw
                     var ex = t.Exception?.InnerException ?? t.Exception;
-                    _errorHandler.HandleError(url, ex);
+                    if (ex != null)
+                    {
+                        _errorHandler.HandleError(url, ex);
+                    }
+                    else
+                    {
+                        // Fallback with a default exception
+                        _errorHandler.HandleError(url, new Exception("Unknown error occurred during resource loading"));
+                    }
                 }
             });
         });
@@ -266,13 +274,13 @@ public sealed class ResourceLoader : IResourceLoader, IDisposable
 
         if (trimPercentage > 0)
         {
-            // Trim low priority resources first
-            _resourceCache.TrimByPriority(CachePriority.Low, trimPercentage);
+            // Trim low priority resources first - swapped argument order and using CacheEntryPriority
+            _resourceCache.TrimByPriority(trimPercentage, (CacheEntryPriority)(int)CacheEntryPriority.Low);
 
             // If critical, also trim normal priority
             if (severity >= MemoryPressureSeverity.High)
             {
-                _resourceCache.TrimByPriority(CachePriority.Normal, trimPercentage);
+                _resourceCache.TrimByPriority(trimPercentage, (CacheEntryPriority)(int)CacheEntryPriority.Normal);
             }
         }
     }

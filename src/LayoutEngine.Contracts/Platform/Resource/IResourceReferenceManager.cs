@@ -5,6 +5,8 @@ using LayoutEngine.Contracts.Resource;
 
 namespace LayoutEngine.Contracts.Platform.Resource;
 
+using Infrastructure.EventAggregator.API.Events;
+
 /// <summary>
 /// Manages references to external resources.
 /// </summary>

@@ -73,6 +73,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.CacheManager
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.EventAggregator.Tests", "Infrastructure.EventAggregator.Tests\Infrastructure.EventAggregator.Tests.csproj", "{E8387FE6-874D-4B13-AE0F-6D1FD4459099}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LayoutEngine.Platform.Tests", "LayoutEngine.Platform.Tests\LayoutEngine.Platform.Tests.csproj", "{DA2A7EFD-E858-4CF3-9F4B-1BD6D0A10029}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -181,6 +183,10 @@ Global
 		{E8387FE6-874D-4B13-AE0F-6D1FD4459099}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E8387FE6-874D-4B13-AE0F-6D1FD4459099}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E8387FE6-874D-4B13-AE0F-6D1FD4459099}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DA2A7EFD-E858-4CF3-9F4B-1BD6D0A10029}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA2A7EFD-E858-4CF3-9F4B-1BD6D0A10029}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA2A7EFD-E858-4CF3-9F4B-1BD6D0A10029}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA2A7EFD-E858-4CF3-9F4B-1BD6D0A10029}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -209,5 +215,6 @@ Global
 		{FBC80D39-C3E9-4CD2-8BE5-DD6FD2354149} = {8141EB56-BB5B-4B13-9F5C-A05A58A0E228}
 		{B9222ED7-A0C8-4482-8987-3B67782BFA7F} = {548FC074-1D04-45A2-8725-5D908A5075A9}
 		{E8387FE6-874D-4B13-AE0F-6D1FD4459099} = {548FC074-1D04-45A2-8725-5D908A5075A9}
+		{DA2A7EFD-E858-4CF3-9F4B-1BD6D0A10029} = {548FC074-1D04-45A2-8725-5D908A5075A9}
 	EndGlobalSection
 EndGlobal
