@@ -1,14 +1,13 @@
+namespace LayoutEngine.Platform.Tests.Unit.DOM;
+
 using System;
-using Xunit;
-using NSubstitute;
 using AutoFixture;
-using LayoutEngine.Platform.DOM;
-using LayoutEngine.Platform.Tests.Helpers;
+using Helpers;
+using Infrastructure.EventAggregator.API.Aggregation;
 using LayoutEngine.Contracts.Platform.Dom;
 using LayoutEngine.Contracts.Platform.Events;
-using Infrastructure.EventAggregator.API.Aggregation;
-
-namespace LayoutEngine.Platform.Tests.DOM;
+using LayoutEngine.Platform.DOM;
+using Xunit;
 
 public class DomMutationTrackerTests : IDisposable
 {

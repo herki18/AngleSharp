@@ -1,7 +1,7 @@
-namespace LayoutEngine.Platform.Tests.Helpers;
+namespace LayoutEngine.Platform.Tests.Unit.Helpers;
 
-using Contracts.Platform.Dom;
-using Contracts.Platform.Dom.Abstractions;
+using LayoutEngine.Contracts.Platform.Dom;
+using LayoutEngine.Contracts.Platform.Dom.Abstractions;
 
 /// <summary>
 /// Test resize observer for testing

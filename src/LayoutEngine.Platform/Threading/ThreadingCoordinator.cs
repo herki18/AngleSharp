@@ -177,7 +177,7 @@ public class ThreadingCoordinator : IThreadingCoordinator, IDisposable
     }
 
     // Updated Worker class to support synchronous mode
-    private class Worker : IWorker
+    internal class Worker : IWorker
     {
         private readonly WorkerType _workerType;
         private readonly ThreadingCoordinator _coordinator;

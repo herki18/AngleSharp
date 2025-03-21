@@ -1,19 +1,19 @@
-namespace LayoutEngine.Platform.Tests.Helpers;
+namespace LayoutEngine.Platform.Tests.Unit.Helpers;
 
 using System;
-using Contracts.Platform.Threading;
 using Infrastructure.EventAggregator.API.Aggregation;
 using LayoutEngine.Contracts.Platform.Abstractions;
 using LayoutEngine.Contracts.Platform.Dom;
 using LayoutEngine.Contracts.Platform.Dom.Abstractions;
 using LayoutEngine.Contracts.Platform.Resource.Abstractions;
+using LayoutEngine.Contracts.Platform.Threading;
 using LayoutEngine.Contracts.Platform.Updates;
 using LayoutEngine.Contracts.Resource;
 using LayoutEngine.Platform;
 using LayoutEngine.Platform.Abstractions;
+using LayoutEngine.Platform.Threading;
+using LayoutEngine.Platform.Update;
 using Microsoft.Extensions.DependencyInjection;
-using Threading;
-using Update;
 
 /// <summary>
 /// Helper class to set up a testable environment for LayoutEngine platform components

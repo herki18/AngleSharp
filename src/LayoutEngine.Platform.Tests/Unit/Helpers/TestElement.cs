@@ -1,6 +1,6 @@
-namespace LayoutEngine.Platform.Tests.Helpers;
+namespace LayoutEngine.Platform.Tests.Unit.Helpers;
 
-using Contracts.Platform.Dom;
+using LayoutEngine.Contracts.Platform.Dom;
 
 /// <summary>
 /// Test element for testing

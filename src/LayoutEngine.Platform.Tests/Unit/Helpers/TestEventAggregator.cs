@@ -1,4 +1,4 @@
-namespace LayoutEngine.Platform.Tests.Helpers;
+namespace LayoutEngine.Platform.Tests.Unit.Helpers;
 
 using System;
 using System.Collections.Generic;

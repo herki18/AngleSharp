@@ -1,7 +1,7 @@
-namespace LayoutEngine.Platform.Tests.Helpers;
+namespace LayoutEngine.Platform.Tests.Unit.Helpers;
 
-using Contracts.Platform.Resource.Abstractions;
-using Contracts.Resource;
+using LayoutEngine.Contracts.Platform.Resource.Abstractions;
+using LayoutEngine.Contracts.Resource;
 
 /// <summary>
 /// Test resource loading strategy for testing

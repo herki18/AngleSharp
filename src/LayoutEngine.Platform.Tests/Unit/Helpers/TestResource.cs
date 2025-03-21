@@ -1,6 +1,6 @@
-namespace LayoutEngine.Platform.Tests.Helpers;
+namespace LayoutEngine.Platform.Tests.Unit.Helpers;
 
-using Contracts.Resource;
+using LayoutEngine.Contracts.Resource;
 
 /// <summary>
 /// Test resource for testing

@@ -1,18 +1,17 @@
-﻿using System;
+﻿namespace LayoutEngine.Platform.Tests.Unit.Resource;
+
+using System;
 using System.Threading.Tasks;
-using Xunit;
-using NSubstitute;
 using AutoFixture;
-using LayoutEngine.Platform.Resource;
-using LayoutEngine.Platform.Tests.Helpers;
-using LayoutEngine.Contracts.Resource;
+using Infrastructure.CacheManager.API.Caching.CacheTypes;
+using Infrastructure.CacheManager.API.Management;
 using LayoutEngine.Contracts.Platform.Events;
 using LayoutEngine.Contracts.Platform.Threading;
-using Infrastructure.EventAggregator.API.Aggregation;
-using Infrastructure.CacheManager.API.Management;
-using Infrastructure.CacheManager.API.Caching.CacheTypes;
-
-namespace LayoutEngine.Platform.Tests.Resource;
+using LayoutEngine.Contracts.Resource;
+using LayoutEngine.Platform.Resource;
+using LayoutEngine.Platform.Tests.Unit.Helpers;
+using NSubstitute;
+using Xunit;
 
 public class ResourceLoaderTests : IDisposable
 {

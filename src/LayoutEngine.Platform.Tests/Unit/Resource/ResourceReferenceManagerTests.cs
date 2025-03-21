@@ -1,20 +1,18 @@
-﻿using System;
+﻿namespace LayoutEngine.Platform.Tests.Unit.Resource;
+
+using System;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using Xunit;
-using NSubstitute;
 using AutoFixture;
-using LayoutEngine.Platform.Resource;
-using LayoutEngine.Platform.Tests.Helpers;
-using LayoutEngine.Contracts.Resource;
-using LayoutEngine.Contracts.Platform.Resource;
+using Infrastructure.CacheManager.API.Management;
 using LayoutEngine.Contracts.Platform.Events;
+using LayoutEngine.Contracts.Platform.Resource;
 using LayoutEngine.Contracts.Platform.Threading;
 using LayoutEngine.Contracts.Platform.Updates;
-using Infrastructure.EventAggregator.API.Aggregation;
-using Infrastructure.CacheManager.API.Management;
-
-namespace LayoutEngine.Platform.Tests.Resource;
+using LayoutEngine.Contracts.Resource;
+using LayoutEngine.Platform.Resource;
+using LayoutEngine.Platform.Tests.Unit.Helpers;
+using NSubstitute;
+using Xunit;
 
 public class ResourceReferenceManagerTests : IDisposable
 {

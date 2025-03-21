@@ -1,9 +1,8 @@
-﻿using LayoutEngine.Platform.DOM;
-using LayoutEngine.Platform.Tests.Helpers;
-using LayoutEngine.Contracts.Platform.Dom;
-using LayoutEngine.Contracts.Platform.Events;
+﻿namespace LayoutEngine.Platform.Tests.Unit.DOM;
 
-namespace LayoutEngine.Platform.Tests.DOM;
+using Helpers;
+using LayoutEngine.Contracts.Platform.Events;
+using LayoutEngine.Platform.DOM;
 
 public class ViewportDetectorTests : IDisposable
 {
