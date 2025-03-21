@@ -253,15 +253,23 @@ public sealed class DomMutationTracker : IDomMutationTracker, IDisposable
         if (_isDisposed)
             return;
 
+        // First stop tracking before setting disposed flag
+        if (_isTracking)
+        {
+            _observer?.Disconnect();
+            _observer = null;
+            _document = null;
+            _isTracking = false;
+        }
+
+        // Now set the disposed flag
         _isDisposed = true;
 
-        StopTracking();
-
+        // Clean up subscriptions
         foreach (var subscription in _subscriptions)
         {
             _eventAggregator.Unsubscribe(subscription);
         }
-
         _subscriptions.Clear();
     }
 }

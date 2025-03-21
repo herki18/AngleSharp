@@ -17,4 +17,8 @@
       <ProjectReference Include="..\LayoutEngine.Contracts\LayoutEngine.Contracts.csproj" />
     </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="LayoutEngine.Platform.Tests" />
+  </ItemGroup>
+
 </Project>

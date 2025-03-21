@@ -26,4 +26,8 @@
       </PackageReference>
     </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="LayoutEngine.Platform.Tests" />
+  </ItemGroup>
+
 </Project>

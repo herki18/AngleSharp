@@ -163,7 +163,11 @@ public class ViewportDetector : IViewportDetector, IDisposable
     {
         if (_isDisposed)
             return;
-        _isDisposed = true;
+
+        // Call StopTracking before setting _isDisposed to true
         StopTracking();
+
+        // Now mark as disposed
+        _isDisposed = true;
     }
 }
