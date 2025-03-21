@@ -128,9 +128,9 @@ public class TestEventAggregator : IEventAggregator
     /// <summary>
     /// Gets all published events of a specific type
     /// </summary>
-    public IEnumerable<TEvent> GetPublishedEvents<TEvent>() where TEvent : class, IEvent
+    public List<TEvent> GetPublishedEvents<TEvent>() where TEvent : class, IEvent
     {
-        return PublishedEvents.OfType<TEvent>();
+        return PublishedEvents.OfType<TEvent>().ToList();
     }
 
     /// <summary>
