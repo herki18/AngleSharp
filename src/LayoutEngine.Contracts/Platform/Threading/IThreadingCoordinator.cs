@@ -1,8 +1,8 @@
+namespace LayoutEngine.Contracts.Platform.Threading;
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-
-namespace LayoutEngine.Contracts.Threading;
 
 /// <summary>
 /// Manages thread assignments and synchronization.

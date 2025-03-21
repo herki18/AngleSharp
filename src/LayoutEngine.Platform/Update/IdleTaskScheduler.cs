@@ -5,11 +5,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using LayoutEngine.Contracts.Platform.Events;
 using LayoutEngine.Contracts.Platform.Updates;
-using LayoutEngine.Contracts.Threading;
 using Infrastructure.EventAggregator.API.Aggregation;
 namespace LayoutEngine.Platform.Update;
 
 using System.Linq;
+using Contracts.Platform.Threading;
 using Contracts.Resource;
 
 public sealed class IdleTaskScheduler : IIdleTaskScheduler, IDisposable

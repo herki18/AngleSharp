@@ -4,11 +4,11 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using LayoutEngine.Contracts.Resource;
-using LayoutEngine.Contracts.Threading;
 
 namespace LayoutEngine.Platform.Resource;
 
 using Contracts.Platform.Events;
+using Contracts.Platform.Threading;
 using Infrastructure.CacheManager.API.Caching.CacheTypes;
 using Infrastructure.CacheManager.API.Management;
 using Infrastructure.CacheManager.API.Models;

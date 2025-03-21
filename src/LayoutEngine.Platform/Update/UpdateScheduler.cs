@@ -2,11 +2,11 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
-using LayoutEngine.Contracts.Threading;
 
 namespace LayoutEngine.Platform.Update;
 
 using Contracts.Platform.Events;
+using Contracts.Platform.Threading;
 using Contracts.Platform.Updates;
 using Contracts.Resource;
 using Infrastructure.EventAggregator.API.Aggregation;

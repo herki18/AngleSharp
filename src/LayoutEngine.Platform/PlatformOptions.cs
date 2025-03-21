@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using LayoutEngine.Contracts.Resource;
-using LayoutEngine.Contracts.Threading;
 
 namespace LayoutEngine.Platform;
 

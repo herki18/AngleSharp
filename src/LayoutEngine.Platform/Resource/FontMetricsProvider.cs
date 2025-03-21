@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using LayoutEngine.Contracts.Platform.Resource;
 using LayoutEngine.Contracts.Resource;
-using LayoutEngine.Contracts.Threading;
 using Infrastructure.CacheManager.API.Caching.CacheTypes;
 using Infrastructure.CacheManager.API.Management;
 using Infrastructure.EventAggregator.API.Aggregation;
@@ -13,6 +12,7 @@ using Infrastructure.EventAggregator.API.Aggregation;
 namespace LayoutEngine.Platform.Resource;
 
 using Contracts.Platform.Events;
+using Contracts.Platform.Threading;
 using Infrastructure.CacheManager.API.Caching;
 
 /// <summary>

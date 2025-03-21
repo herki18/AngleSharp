@@ -1,81 +1,101 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using LayoutEngine.Contracts.Threading;
 using LayoutEngine.Contracts.Resource;
 using LayoutEngine.Platform.DOM;
 using LayoutEngine.Platform.Lifecycle;
 using LayoutEngine.Platform.Threading;
 using LayoutEngine.Platform.Update;
 using LayoutEngine.Platform.Resource;
-
 namespace LayoutEngine.Platform;
 
+using Contracts.Platform.Abstractions;
 using Contracts.Platform.Dom;
+using Contracts.Platform.Dom.Abstractions;
 using Contracts.Platform.Lifecycle;
+using Contracts.Platform.Resource.Abstractions;
+using Contracts.Platform.Threading;
 using Contracts.Platform.Updates;
+using LayoutEngine.Platform.DOM.Abstractions;
+using LayoutEngine.Platform.Resource.Abstractions;
+using LayoutEngine.Platform.Abstractions;
 
-/// <summary>
-/// Extension methods for registering Platform services with the dependency injection container.
-/// </summary>
 public static class PlatformServiceExtensions
 {
-    /// <summary>
-    /// Adds Platform services to the service collection.
-    /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddPlatformServices(this IServiceCollection services)
     {
         if (services == null)
             throw new ArgumentNullException(nameof(services));
 
-        // Lifecycle services
+        // Register abstraction interfaces
+        services.TryAddSingleton<IMutationObserverFactory, MutationObserverFactory>();
+        services.TryAddSingleton<IResizeObserverFactory, ResizeObserverFactory>();
+        services.TryAddSingleton<IWindowProvider, DefaultWindowProvider>();
+        services.TryAddSingleton<ITimeProvider, SystemTimeProvider>();
+        services.TryAddSingleton<IResourceLoadingStrategy, DefaultResourceLoadingStrategy>();
+        services.TryAddSingleton<IResourceTypeResolver, DefaultResourceTypeResolver>();
+
+        // Register platform services
         services.TryAddSingleton<ILifecycleStateValidator, LifecycleStateValidator>();
         services.TryAddSingleton<IDocumentLifecycleCoordinator, DocumentLifecycleCoordinator>();
-
-        // DOM services
         services.TryAddSingleton<IElementAdapter, ElementAdapter>();
         services.TryAddSingleton<IDomMutationTracker, DomMutationTracker>();
         services.TryAddSingleton<IViewportDetector, ViewportDetector>();
-
-        // Threading services
         services.TryAddSingleton<IThreadPool, ThreadPool>();
         services.TryAddSingleton<IThreadingCoordinator, ThreadingCoordinator>();
-
-        // Update scheduling services
         services.TryAddSingleton<IUpdateScheduler, UpdateScheduler>();
         services.TryAddSingleton<IFrameScheduler, FrameScheduler>();
         services.TryAddSingleton<IIdleTaskScheduler, IdleTaskScheduler>();
-
-        // Resource management services
         services.TryAddSingleton<IResourceLoader, ResourceLoader>();
         services.TryAddSingleton<IResourceErrorHandler, ResourceErrorHandler>();
 
         return services;
     }
 
-    /// <summary>
-    /// Adds Platform services with custom configuration to the service collection.
-    /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="configureOptions">The action to configure platform options.</param>
-    /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddPlatformServices(
         this IServiceCollection services,
         Action<PlatformOptions> configureOptions)
     {
         if (services == null)
             throw new ArgumentNullException(nameof(services));
-
         if (configureOptions == null)
             throw new ArgumentNullException(nameof(configureOptions));
 
-        // Configure options
         services.Configure(configureOptions);
-
-        // Add standard services
         services.AddPlatformServices();
+        return services;
+    }
+
+    // New method for adding testable platform services
+    public static IServiceCollection AddTestPlatformServices(this IServiceCollection services)
+    {
+        if (services == null)
+            throw new ArgumentNullException(nameof(services));
+
+        // Register test abstractions
+        services.TryAddSingleton<ITimeProvider, TestTimeProvider>();
+
+        // Register platform service implementations
+        // but still use real implementations for most services
+        services.TryAddSingleton<ILifecycleStateValidator, LifecycleStateValidator>();
+        services.TryAddSingleton<IDocumentLifecycleCoordinator, DocumentLifecycleCoordinator>();
+        services.TryAddSingleton<IElementAdapter, ElementAdapter>();
+        services.TryAddSingleton<IDomMutationTracker, DomMutationTracker>();
+        services.TryAddSingleton<IViewportDetector, ViewportDetector>();
+        services.TryAddSingleton<IThreadPool, ThreadPool>();
+        services.TryAddSingleton<IThreadingCoordinator, ThreadingCoordinator>();
+        services.TryAddSingleton<IUpdateScheduler, UpdateScheduler>();
+        services.TryAddSingleton<IFrameScheduler, FrameScheduler>();
+        services.TryAddSingleton<IIdleTaskScheduler, IdleTaskScheduler>();
+        services.TryAddSingleton<IResourceLoader, ResourceLoader>();
+        services.TryAddSingleton<IResourceErrorHandler, ResourceErrorHandler>();
+
+        // Configure services for test mode
+        services.PostConfigure<PlatformOptions>(options =>
+        {
+            options.ThreadPool.MaxThreads = 1;
+            options.MaxConcurrentResourceLoads = 1;
+        });
 
         return services;
     }

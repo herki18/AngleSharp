@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 using LayoutEngine.Contracts.Platform.Events;
 using LayoutEngine.Contracts.Platform.Resource;
 using LayoutEngine.Contracts.Resource;
-using LayoutEngine.Contracts.Threading;
 using Infrastructure.CacheManager.API.Management;
 using Infrastructure.EventAggregator.API.Aggregation;
 
 namespace LayoutEngine.Platform.Resource;
 
 using System.Threading;
+using Contracts.Platform.Threading;
 using Contracts.Platform.Updates;
 using Infrastructure.EventAggregator.API.Events;
 

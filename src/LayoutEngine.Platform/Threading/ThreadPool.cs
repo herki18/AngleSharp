@@ -4,9 +4,10 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
-using LayoutEngine.Contracts.Threading;
 
 namespace LayoutEngine.Platform.Threading;
+
+using Contracts.Platform.Threading;
 
 /// <summary>
 /// Manages a pool of worker threads for background processing.

@@ -29,6 +29,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\LayoutEngine.Contracts\LayoutEngine.Contracts.csproj" />
+      <ProjectReference Include="..\LayoutEngine.Platform\LayoutEngine.Platform.csproj" />
     </ItemGroup>
 
 </Project>
