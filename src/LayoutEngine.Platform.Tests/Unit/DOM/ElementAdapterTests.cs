@@ -267,7 +267,7 @@ public class ElementAdapterTests
         string id = "test-id";
         var idElement = _document.CreateElement("span");
         idElement.SetAttribute("id", id);
-        _document.DocumentElement.AppendChild(idElement);
+        ((TestElement)_document.DocumentElement).AppendChild(idElement);
 
         // Act
         var foundElement = _elementAdapter.GetElementById(_document, id);

@@ -46,8 +46,7 @@ public class IdleTaskSchedulerTests : IDisposable
     public void ScheduleIdleTask_ShouldReturnValidTask()
     {
         // Arrange
-        bool taskExecuted = false;
-        Action action = () => { taskExecuted = true; };
+        Action action = () => { _ = true; };
 
         // Act
         IIdleTask task = _idleTaskScheduler.ScheduleIdleTask(action);
@@ -63,8 +62,7 @@ public class IdleTaskSchedulerTests : IDisposable
     public void ScheduleIdleTask_WithCancellationToken_ShouldReturnValidTask()
     {
         // Arrange
-        bool taskExecuted = false;
-        Action<CancellationToken> action = (token) => { taskExecuted = true; };
+        Action<CancellationToken> action = (token) => { _ = true; };
 
         // Act
         IIdleTask task = _idleTaskScheduler.ScheduleIdleTask(action);
@@ -114,8 +112,7 @@ public class IdleTaskSchedulerTests : IDisposable
     public void CancelTask_ShouldCancelTask()
     {
         // Arrange
-        bool taskExecuted = false;
-        Action action = () => { taskExecuted = true; };
+        Action action = () => { _ = true; };
         IIdleTask task = _idleTaskScheduler.ScheduleIdleTask(action);
 
         // Act

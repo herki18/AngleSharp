@@ -41,8 +41,7 @@ public class MutationObserverTests
 
         // Arrange
         var factory = new MutationObserverFactory();
-        bool callbackExecuted = false;
-        Action<MutationRecord[]> callback = records => { callbackExecuted = true; };
+        Action<MutationRecord[]> callback = records => { _ = true; };
         var observer = factory.Create(callback);
 
         var document = new TestDocument();

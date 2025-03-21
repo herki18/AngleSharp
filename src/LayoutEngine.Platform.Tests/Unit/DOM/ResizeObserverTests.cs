@@ -41,8 +41,7 @@ public class ResizeObserverTests
 
         // Arrange
         var factory = new ResizeObserverFactory();
-        bool callbackExecuted = false;
-        Action<ResizeObserverEntry[]> callback = entries => { callbackExecuted = true; };
+        Action<ResizeObserverEntry[]> callback = entries => { };
         var observer = factory.Create(callback);
 
         var document = new TestDocument();
@@ -106,10 +105,10 @@ public class ResizeObserverTests
     {
         // Arrange
         var entriesReceived = Array.Empty<ResizeObserverEntry>();
-        var callbackExecuted = false;
+        var callbackInvoked = false;
         var callback = new Action<ResizeObserverEntry[]>(entries => {
             entriesReceived = entries;
-            callbackExecuted = true;
+            callbackInvoked = true;
         });
         var observer = new TestResizeObserver(callback);
 
@@ -123,7 +122,7 @@ public class ResizeObserverTests
         observer.SimulateResize(contentRect);
 
         // Assert
-        Assert.True(callbackExecuted);
+        Assert.True(callbackInvoked);
         Assert.Single(entriesReceived);
         Assert.Same(element, entriesReceived[0].Target);
         Assert.Equal(contentRect, entriesReceived[0].ContentRect);
@@ -133,8 +132,8 @@ public class ResizeObserverTests
     public void TestResizeObserver_SimulateResize_ShouldNotInvokeCallbackWhenDisconnected()
     {
         // Arrange
-        var callbackExecuted = false;
-        var callback = new Action<ResizeObserverEntry[]>(entries => { callbackExecuted = true; });
+        var callbackInvoked = false;
+        var callback = new Action<ResizeObserverEntry[]>(entries => { callbackInvoked = true; });
         var observer = new TestResizeObserver(callback);
 
         // Observer not connected
@@ -144,15 +143,15 @@ public class ResizeObserverTests
         observer.SimulateResize(contentRect);
 
         // Assert
-        Assert.False(callbackExecuted);
+        Assert.False(callbackInvoked);
     }
 
     [Fact]
     public void TestResizeObserver_SimulateResize_ShouldNotInvokeCallbackAfterDisconnect()
     {
         // Arrange
-        var callbackExecuted = false;
-        var callback = new Action<ResizeObserverEntry[]>(entries => { callbackExecuted = true; });
+        var callbackInvoked = false;
+        var callback = new Action<ResizeObserverEntry[]>(entries => { callbackInvoked = true; });
         var observer = new TestResizeObserver(callback);
 
         var document = new TestDocument();
@@ -168,15 +167,15 @@ public class ResizeObserverTests
         observer.SimulateResize(contentRect);
 
         // Assert
-        Assert.False(callbackExecuted);
+        Assert.False(callbackInvoked);
     }
 
     [Fact]
     public void TestResizeObserver_SimulateResize_WithNullTarget_ShouldNotInvokeCallback()
     {
         // Arrange
-        var callbackExecuted = false;
-        var callback = new Action<ResizeObserverEntry[]>(entries => { callbackExecuted = true; });
+        var callbackInvoked = false;
+        var callback = new Action<ResizeObserverEntry[]>(entries => { callbackInvoked = true; });
         var observer = new TestResizeObserver(callback);
 
         // IsConnected = true but Target = null (unusual state)
@@ -190,7 +189,7 @@ public class ResizeObserverTests
         observer.SimulateResize(contentRect);
 
         // Assert
-        Assert.False(callbackExecuted);
+        Assert.False(callbackInvoked);
     }
 
     [Fact]
