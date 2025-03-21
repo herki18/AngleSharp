@@ -1,4 +1,6 @@
-﻿namespace LayoutEngine.Platform.Tests.Unit.Resource;
+﻿#nullable enable
+
+namespace LayoutEngine.Platform.Tests.Unit.Resource;
 
 using System;
 using System.Collections.Generic;
@@ -115,7 +117,7 @@ public class FontMetricsProviderTests : IDisposable
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public async Task GetFontMetricsAsync_WithInvalidFontFamily_ShouldThrow(string fontFamily)
+    public async Task GetFontMetricsAsync_WithInvalidFontFamily_ShouldThrow(string? fontFamily)
     {
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() =>
@@ -312,7 +314,10 @@ public class FontMetricsProviderTests : IDisposable
         _glyphMetricsCache.DidNotReceive().Clear();
         _fontMetricsCache.DidNotReceive().Clear();
 
-        Substitute.ClearReceivedCalls();
+        // Reset the mocks by creating new instances
+        _textMetricsCache.ClearReceivedCalls();
+        _glyphMetricsCache.ClearReceivedCalls();
+        _fontMetricsCache.ClearReceivedCalls();
 
         // High - Should clear text and glyph metrics caches
         _eventAggregator.Publish(new MemoryPressureEvent(
@@ -321,7 +326,10 @@ public class FontMetricsProviderTests : IDisposable
         _glyphMetricsCache.Received(1).Clear();
         _fontMetricsCache.DidNotReceive().Clear();
 
-        Substitute.ClearReceivedCalls();
+        // Reset the mocks again
+        _textMetricsCache.ClearReceivedCalls();
+        _glyphMetricsCache.ClearReceivedCalls();
+        _fontMetricsCache.ClearReceivedCalls();
 
         // Critical - Should clear all caches
         _eventAggregator.Publish(new MemoryPressureEvent(
