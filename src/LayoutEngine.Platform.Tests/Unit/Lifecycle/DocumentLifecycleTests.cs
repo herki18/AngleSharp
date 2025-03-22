@@ -136,7 +136,8 @@ public class DocumentLifecycleTests : IDisposable
     [Fact]
     public void IsOperationAllowed_WithDisallowedOperation_ShouldReturnFalse()
     {
-        // Arrange
+        // Arrange - Use a valid transition path to get to InStyleRecalc
+        _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.StyleClean);
         _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InStyleRecalc);
 
         // Act

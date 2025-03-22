@@ -1,15 +1,20 @@
 ﻿namespace LayoutEngine.Platform.Tests.Unit.Threading;
 
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using AutoFixture;
 using LayoutEngine.Contracts.Platform.Threading;
 using LayoutEngine.Platform.Threading;
 using NSubstitute;
+using Xunit;
 
 public class ThreadingCoordinatorTests : IDisposable
 {
     private readonly Fixture _fixture;
     private readonly IThreadPool _threadPool;
     private readonly ThreadingCoordinator _threadingCoordinator;
+    private readonly List<IWorker> _testWorkers = new();
 
     public ThreadingCoordinatorTests()
     {
@@ -140,6 +145,7 @@ public class ThreadingCoordinatorTests : IDisposable
 
         // Act
         var worker = _threadingCoordinator.CreateWorker(workerType);
+        _testWorkers.Add(worker);
 
         // Assert
         Assert.NotNull(worker);
@@ -153,9 +159,10 @@ public class ThreadingCoordinatorTests : IDisposable
         // Arrange
         _threadingCoordinator.EnableSynchronousMode(true);
         var worker = _threadingCoordinator.CreateWorker(WorkerType.General);
+        _testWorkers.Add(worker);
         var actionExecuted = false;
-        Action action = () => { actionExecuted = false; };
-        Action<bool> callback = (success) => { actionExecuted = success; };
+        Action action = () => { actionExecuted = true; };
+        Action<bool>? callback = (success) => { };
 
         // Act
         worker.PostWork(action, callback);
@@ -189,22 +196,56 @@ public class ThreadingCoordinatorTests : IDisposable
         // Arrange
         _threadingCoordinator.EnableSynchronousMode(true);
         var worker = _threadingCoordinator.CreateWorker(WorkerType.General);
-        var callbackExecuted = false;
+        _testWorkers.Add(worker);
+        var callbackCalled = false;
+        var callbackSuccess = true;
         Action action = () => { };
-        Action<bool> callback = (success) => { callbackExecuted = true; };
+        Action<bool> callback = (success) => {
+            callbackCalled = true;
+            callbackSuccess = success;
+        };
 
         // Act
         worker.PostWork(action, callback);
+
+        // Verify work was queued
+        Assert.Equal(1, ((ThreadingCoordinator.Worker)worker).PendingWorkItemCount);
+
+        // Cancel the pending work
         worker.CancelPendingWork();
-        ((ThreadingCoordinator.Worker)worker).ProcessWorkSynchronously();
 
         // Assert
-        Assert.True(callbackExecuted);
+        Assert.True(callbackCalled, "Callback should be called when work is canceled");
+        Assert.False(callbackSuccess, "Callback should receive 'false' when work is canceled");
         Assert.Equal(0, ((ThreadingCoordinator.Worker)worker).PendingWorkItemCount);
+
+        // Do not call ProcessWorkSynchronously after canceling - there's nothing to process
     }
 
     public void Dispose()
     {
-        _threadingCoordinator.Dispose();
+        // Dispose workers first to avoid race conditions
+        foreach (var worker in _testWorkers)
+        {
+            try
+            {
+                worker.Dispose();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Worker may already be disposed, which is fine
+            }
+        }
+        _testWorkers.Clear();
+
+        // Then dispose the coordinator
+        try
+        {
+            _threadingCoordinator.Dispose();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Coordinator may already be disposed, which is fine
+        }
     }
 }

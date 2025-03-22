@@ -1,15 +1,17 @@
-namespace LayoutEngine.Platform.Tests.Unit.Helpers;
+namespace LayoutEngine.Platform.Tests.Helpers;
 
-using LayoutEngine.Contracts.Platform.Dom;
-using LayoutEngine.Contracts.Platform.Dom.Abstractions;
+using System;
+using Contracts.Platform.Dom;
+using Contracts.Platform.Dom.Abstractions;
+using Unit.Helpers;
 
-/// <summary>
-/// Test mutation observer factory for testing
-/// </summary>
 public class TestMutationObserverFactory : IMutationObserverFactory
 {
     public IMutationObserver Create(Action<MutationRecord[]> callback)
     {
+        if (callback == null)
+            throw new ArgumentNullException(nameof(callback));
+
         return new TestMutationObserver(callback);
     }
 }

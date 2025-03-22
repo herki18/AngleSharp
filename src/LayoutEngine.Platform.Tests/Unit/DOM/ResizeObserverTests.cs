@@ -28,9 +28,10 @@ public class ResizeObserverTests
     {
         // Arrange
         var factory = new ResizeObserverFactory();
+        Action<ResizeObserverEntry[]>? nullCallback = null;
 
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => factory.Create(null!));
+        Assert.Throws<ArgumentNullException>(() => factory.Create(nullCallback!));
     }
 
     [Fact]

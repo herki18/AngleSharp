@@ -71,16 +71,19 @@ public class TestElement : IElement
         var elements = new List<IElement>();
         var lowerTagName = tagName.ToLowerInvariant();
 
-        if (lowerTagName == "*" || TagName.ToLowerInvariant() == lowerTagName)
-        {
-            elements.Add(this);
-        }
-
+        // For DIRECT children ONLY:
+        // If their tag matches or if using wildcard, add them
         foreach (var child in _childNodes)
         {
-            if (child is TestElement element)
+            if (child is TestElement childElement)
             {
-                elements.AddRange(element.GetElementsByTagName(tagName));
+                if (lowerTagName == "*" || childElement.TagName.ToLowerInvariant() == lowerTagName)
+                {
+                    elements.Add(childElement);
+                }
+
+                // Also add any matching elements from this child's descendants
+                elements.AddRange(childElement.GetElementsByTagName(tagName));
             }
         }
 

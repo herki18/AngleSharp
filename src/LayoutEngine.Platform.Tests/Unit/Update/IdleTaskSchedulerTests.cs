@@ -1,6 +1,7 @@
 ﻿namespace LayoutEngine.Platform.Tests.Unit.Update;
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
@@ -81,9 +82,24 @@ public class IdleTaskSchedulerTests : IDisposable
         int result = 0;
         Func<int> function = () => { result = 42; return result; };
 
-        // Act - simulate a frame event to trigger task execution
+        // Act - schedule the task and add a safety timeout
         var task = _idleTaskScheduler.ScheduleIdleTaskAsync(function);
-        SimulateIdleTime(20);
+
+        // Use direct frame values that are known to work
+        _frameScheduler.LastFrameTime.Returns(950.0);
+        var endFrameEvent = new EndFrameEvent(1, 1000.0);
+        _eventAggregator.Publish(endFrameEvent);
+
+        // Add a timeout to prevent hanging
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        var completedTask = await Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(1), cts.Token));
+
+        if (completedTask != task)
+        {
+            Assert.Fail($"Task did not complete within timeout. PendingTaskCount: {_idleTaskScheduler.PendingTaskCount}");
+        }
+
+        // Get the result after confirming the task completed
         int returnedResult = await task;
 
         // Assert
@@ -247,22 +263,24 @@ public class IdleTaskSchedulerTests : IDisposable
         Action action = () => { taskExecuted = true; };
         var task = _idleTaskScheduler.ScheduleIdleTask(action);
 
-        // Act
-        SimulateIdleTime(20);
+        // Act - Use the same pattern as other successful tests with more idle time
+        _frameScheduler.LastFrameTime.Returns(950.0);
+        var endFrameEvent = new EndFrameEvent(1, 1000.0);
+        _eventAggregator.Publish(endFrameEvent);
 
         // Assert
-        Assert.True(taskExecuted);
+        Assert.True(taskExecuted, "Task should have been executed");
 
         var completionEvents = _eventAggregator.GetPublishedEvents<IdleTaskCompletedEvent>();
-        Assert.Single(completionEvents);
+        Assert.Single(completionEvents, "Should have published exactly one completion event");
         Assert.Equal(task.Id, completionEvents[0].TaskId);
     }
 
     private void SimulateIdleTime(double milliseconds)
     {
-        // Simulate end frame event with idle time
-        _frameScheduler.LastFrameTime.Returns(1000.0);
-        var endFrameEvent = new EndFrameEvent(1, 1000.0 + milliseconds);
+        // Use the same pattern as in the OnEndFrame_WithIdleTime_ShouldProcessTasks test
+        _frameScheduler.LastFrameTime.Returns(1000.0 - milliseconds);
+        var endFrameEvent = new EndFrameEvent(1, 1000.0);
         _eventAggregator.Publish(endFrameEvent);
     }
 

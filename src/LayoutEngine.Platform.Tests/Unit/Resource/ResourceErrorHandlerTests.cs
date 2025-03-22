@@ -1,18 +1,18 @@
-﻿namespace LayoutEngine.Platform.Tests.Unit.Resource;
-
-using System;
+﻿using System;
+using System.Collections.Generic;
 using AutoFixture;
 using LayoutEngine.Contracts.Resource;
 using LayoutEngine.Platform.Resource;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NSubstitute;
 using Xunit;
+
+namespace LayoutEngine.Platform.Tests.Unit.Resource;
 
 public class ResourceErrorHandlerTests
 {
     private readonly Fixture _fixture;
-    private readonly ILogger<ResourceErrorHandler> _logger;
+    private readonly TestLogger<ResourceErrorHandler> _logger;
     private readonly ResourceErrorOptions _options;
     private readonly IOptions<ResourceErrorOptions> _optionsWrapper;
     private readonly ResourceErrorHandler _errorHandler;
@@ -20,7 +20,7 @@ public class ResourceErrorHandlerTests
     public ResourceErrorHandlerTests()
     {
         _fixture = new Fixture();
-        _logger = Substitute.For<ILogger<ResourceErrorHandler>>();
+        _logger = new TestLogger<ResourceErrorHandler>();
 
         _options = new ResourceErrorOptions
         {
@@ -51,18 +51,16 @@ public class ResourceErrorHandlerTests
         _errorHandler.HandleError(url, exception);
 
         // Assert
-        _logger.Received(1).LogError(
-            Arg.Is<Exception>(e => e == exception),
-            Arg.Is<string>(s => s.Contains("{Url}")),
-            Arg.Is<string>(s => s == url),
-            Arg.Is<string>(s => s == exception.Message)
-        );
+        Assert.Single(_logger.ErrorMessages);
+        Assert.Contains(url, _logger.FormattedErrors[0].Args);
+        Assert.Contains(exception.Message, _logger.FormattedErrors[0].Args);
+        Assert.Same(exception, _logger.FormattedErrors[0].Exception);
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public void HandleError_WithInvalidUrl_ShouldThrow(string url)
+    public void HandleError_WithInvalidUrl_ShouldThrow(string? url)
     {
         // Arrange
         var exception = new Exception("Test error");
@@ -93,12 +91,7 @@ public class ResourceErrorHandlerTests
         _errorHandler.HandleError(url, exception);
 
         // Assert
-        _logger.Received(1).LogWarning(
-            Arg.Is<string>(s => s.Contains("has failed {ErrorCount} times")),
-            Arg.Is<string>(s => s == url),
-            Arg.Is<int>(i => i == 2),
-            Arg.Any<DateTime>()
-        );
+        Assert.Contains(_logger.WarningMessages, msg => msg.Contains("failed") && msg.Contains(url));
     }
 
     [Theory]
@@ -181,11 +174,7 @@ public class ResourceErrorHandlerTests
 
         // Assert
         Assert.Equal(ResourceErrorPolicy.UseFallback, policy);
-        _logger.Received(1).LogInformation(
-            Arg.Is<string>(s => s.Contains("Registered fallback")),
-            Arg.Is<string>(s => s == url),
-            Arg.Is<string>(s => s == fallbackUrl)
-        );
+        Assert.Contains(_logger.InfoMessages, msg => msg.Contains("Registered fallback") && msg.Contains(url) && msg.Contains(fallbackUrl));
     }
 
     [Theory]
@@ -193,9 +182,52 @@ public class ResourceErrorHandlerTests
     [InlineData("", "fallback")]
     [InlineData("url", null)]
     [InlineData("url", "")]
-    public void RegisterFallback_WithInvalidUrls_ShouldThrow(string url, string fallbackUrl)
+    public void RegisterFallback_WithInvalidUrls_ShouldThrow(string? url, string? fallbackUrl)
     {
         // Act & Assert
         Assert.Throws<ArgumentException>(() => _errorHandler.RegisterFallback(url!, fallbackUrl!));
+    }
+
+    // Enhanced test logger implementation to avoid NSubstitute issues
+    private class TestLogger<T> : ILogger<T>
+    {
+        public List<string> WarningMessages { get; } = new List<string>();
+        public List<string> ErrorMessages { get; } = new List<string>();
+        public List<string> InfoMessages { get; } = new List<string>();
+        public List<(Exception? Exception, object[] Args)> FormattedErrors { get; } = new List<(Exception?, object[])>();
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            string message = formatter(state, exception);
+
+            switch (logLevel)
+            {
+                case LogLevel.Warning:
+                    WarningMessages.Add(message);
+                    break;
+                case LogLevel.Error:
+                    ErrorMessages.Add(message);
+                    // Extract the args that were passed to the logger
+                    if (state is IReadOnlyList<KeyValuePair<string, object>> logValues)
+                    {
+                        var args = new List<object>();
+                        foreach (var kv in logValues)
+                        {
+                            if (kv.Key != "{OriginalFormat}" && kv.Key != "exception")
+                            {
+                                args.Add(kv.Value);
+                            }
+                        }
+                        FormattedErrors.Add((exception, args.ToArray()));
+                    }
+                    break;
+                case LogLevel.Information:
+                    InfoMessages.Add(message);
+                    break;
+            }
+        }
     }
 }

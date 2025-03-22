@@ -304,12 +304,15 @@ public class ElementAdapterTests
         var all = _elementAdapter.GetElementsByTagName(_element, "*");
 
         // Assert
+        // In standard browser behavior:
+        // - spans should have 2 elements: span1 and span2 (descendants only)
         Assert.Equal(2, spans.Count);
+
+        // - divs should have 1 element: the child div (not including _element itself)
         Assert.Single(divs);
 
-        // Should include the element itself when '*' is used or it matches the tag name
-        Assert.Equal(4, all.Count); // _element + span1 + div + span2
-        Assert.Equal(2, divs.Count); // _element (which is a div) + div
+        // - all should have 3 elements: span1, div, and span2 (all descendants, not including _element)
+        Assert.Equal(3, all.Count);
     }
 
     [Fact]

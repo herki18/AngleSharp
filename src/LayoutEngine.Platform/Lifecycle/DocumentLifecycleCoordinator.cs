@@ -195,6 +195,10 @@ public sealed class DocumentLifecycleCoordinator : IDocumentLifecycleCoordinator
     {
         return currentPhase switch
         {
+            DocumentLifecyclePhase.StyleClean => DocumentLifecyclePhase.InStyleRecalc,
+            DocumentLifecyclePhase.LayoutClean => DocumentLifecyclePhase.InLayout,
+            DocumentLifecyclePhase.RenderReady => DocumentLifecyclePhase.InRender,
+
             DocumentLifecyclePhase.InStyleRecalc => DocumentLifecyclePhase.StyleDirty,
             DocumentLifecyclePhase.StyleDirty => DocumentLifecyclePhase.StyleClean,
             DocumentLifecyclePhase.InLayout => DocumentLifecyclePhase.LayoutDirty,

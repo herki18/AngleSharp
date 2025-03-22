@@ -14,6 +14,7 @@ using LayoutEngine.Platform.Abstractions;
 using LayoutEngine.Platform.Threading;
 using LayoutEngine.Platform.Update;
 using Microsoft.Extensions.DependencyInjection;
+using Tests.Helpers;
 
 /// <summary>
 /// Helper class to set up a testable environment for LayoutEngine platform components
