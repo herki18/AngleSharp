@@ -87,7 +87,7 @@ namespace AngleSharp.Css.Dom
 
         public String BaseUri => _host.BaseUri;
 
-        public Url BaseUrl => _host.BaseUrl;
+        public IUrl BaseUrl => _host.BaseUrl;
 
         public String NodeName => _host.NodeName;
 
@@ -288,12 +288,12 @@ namespace AngleSharp.Css.Dom
             _host.RemoveEventListener(type, callback, capture);
         }
 
-        public void InvokeEventListener(Event ev)
+        public void InvokeEventListener(IEvent ev)
         {
             _host.InvokeEventListener(ev);
         }
 
-        public Boolean Dispatch(Event ev)
+        public Boolean Dispatch(IEvent ev)
         {
             return _host.Dispatch(ev);
         }

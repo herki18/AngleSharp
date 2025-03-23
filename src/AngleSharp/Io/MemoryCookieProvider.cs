@@ -31,9 +31,9 @@ namespace AngleSharp.Io
         /// </summary>
         /// <param name="url">The origin of the cookie.</param>
         /// <returns>The value of the cookie.</returns>
-        public String GetCookie(Url url)
+        public String GetCookie(IUrl url)
         {
-            return _container.GetCookieHeader(url);
+            return _container.GetCookieHeader(url.ToUri());
         }
 
         /// <summary>
@@ -41,13 +41,13 @@ namespace AngleSharp.Io
         /// </summary>
         /// <param name="url">The origin of the cookie.</param>
         /// <param name="value">The value of the cookie.</param>
-        public void SetCookie(Url url, String value)
+        public void SetCookie(IUrl url, String value)
         {
             var cookies = Sanatize(url.HostName, value);
 
             try
             {
-                _container.SetCookies(url, cookies);
+                _container.SetCookies(url.ToUri(), cookies);
             }
             catch (CookieException ex)
             {

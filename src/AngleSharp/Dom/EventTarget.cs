@@ -98,7 +98,7 @@ namespace AngleSharp.Dom
         /// Calls the listener registered for the given event.
         /// </summary>
         /// <param name="ev">The event that asks for the listeners.</param>
-        public void InvokeEventListener(Event ev)
+        public void InvokeEventListener(IEvent ev)
         {
             if (_listeners != null)
             {
@@ -158,7 +158,7 @@ namespace AngleSharp.Dom
         /// False if at least one of the event handlers, which handled this
         /// event called preventDefault(). Otherwise true.
         /// </returns>
-        public Boolean Dispatch(Event ev)
+        public Boolean Dispatch(IEvent ev)
         {
             if (ev is null || ((ev.Flags & EventFlags.Dispatch) == EventFlags.Dispatch) || ((ev.Flags & EventFlags.Initialized) != EventFlags.Initialized))
             {

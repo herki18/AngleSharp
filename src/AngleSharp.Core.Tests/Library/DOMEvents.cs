@@ -112,7 +112,7 @@ namespace AngleSharp.Core.Tests.Library
             var beforeOther = true;
             args.Init(evName, true, true);
 
-            void listener1(object s, Event ev)
+            void listener1(object s, IEvent ev)
             {
                 Assert.AreEqual(evName, ev.Type);
                 Assert.AreEqual(EventPhase.AtTarget, ev.Phase);
@@ -121,7 +121,7 @@ namespace AngleSharp.Core.Tests.Library
                 Assert.IsTrue(beforeOther);
             }
 
-            void listener2(object s, Event ev)
+            void listener2(object s, IEvent ev)
             {
                 Assert.AreEqual(evName, ev.Type);
                 Assert.AreEqual(EventPhase.Bubbling, ev.Phase);

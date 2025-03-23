@@ -9,7 +9,7 @@ namespace AngleSharp.Io
     /// <summary>
     /// Represents the arguments to load a document.
     /// </summary>
-    public class DocumentRequest
+    public class DocumentRequest : IDocumentRequest
     {
         #region ctor
 
@@ -17,7 +17,7 @@ namespace AngleSharp.Io
         /// Creates a new document request for the given url.
         /// </summary>
         /// <param name="target">The resource's url.</param>
-        public DocumentRequest(Url target)
+        public DocumentRequest(IUrl target)
         {
             Target = target ?? throw new ArgumentNullException(nameof(target));
             Headers = new Dictionary<String, String>(StringComparer.OrdinalIgnoreCase)
@@ -40,7 +40,7 @@ namespace AngleSharp.Io
         /// <param name="source">The optional source of the request.</param>
         /// <param name="referer">The optional referrer string.</param>
         /// <returns>The new document request.</returns>
-        public static DocumentRequest Get(Url target, INode? source = null, String? referer = null) => new(target)
+        public static DocumentRequest Get(IUrl target, INode? source = null, String? referer = null) => new(target)
         {
             Method = HttpMethod.Get,
             Referer = referer,
@@ -152,7 +152,7 @@ namespace AngleSharp.Io
         /// <summary>
         /// Gets the target of the request.
         /// </summary>
-        public Url Target
+        public IUrl Target
         {
             get;
         }

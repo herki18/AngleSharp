@@ -43,7 +43,7 @@ namespace AngleSharp.Dom
         }
 
         /// <summary>
-        /// Firing an event means dispatching the initialized (and trusted) 
+        /// Firing an event means dispatching the initialized (and trusted)
         /// event at the specified event target.
         /// </summary>
         /// <param name="target">
@@ -71,7 +71,7 @@ namespace AngleSharp.Dom
         /// <param name="node">The node that fires the event.</param>
         /// <param name="eventName">The name of the event to be awaited.</param>
         /// <returns>The awaitable task returning the event arguments.</returns>
-        public static async Task<Event> AwaitEventAsync<TEventTarget>(this TEventTarget node, String eventName)
+        public static async Task<IEvent> AwaitEventAsync<TEventTarget>(this TEventTarget node, String eventName)
             where TEventTarget : IEventTarget
         {
             if (node is null)
@@ -84,8 +84,8 @@ namespace AngleSharp.Dom
                 throw new ArgumentNullException(nameof(eventName));
             }
 
-            var completion = new TaskCompletionSource<Event>();
-            void handler(Object s, Event ev) => completion.TrySetResult(ev);
+            var completion = new TaskCompletionSource<IEvent>();
+            void handler(Object s, IEvent ev) => completion.TrySetResult(ev);
             node.AddEventListener(eventName, handler);
 
             try

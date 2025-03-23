@@ -12,7 +12,7 @@ namespace AngleSharp.Browser
     {
         private readonly IBrowsingContext _context = context;
 
-        public async Task<IDocument> NavigateAsync(DocumentRequest request, CancellationToken cancel)
+        public async Task<IDocument> NavigateAsync(IDocumentRequest request, CancellationToken cancel)
         {
             var target = request.Source is HtmlUrlBaseElement urlBase ? urlBase.Target : null;
             var context = _context.ResolveTargetContext(target);

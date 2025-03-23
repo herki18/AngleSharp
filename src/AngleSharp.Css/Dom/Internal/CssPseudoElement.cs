@@ -23,7 +23,7 @@ namespace AngleSharp.Css.Dom
 
         void IEventTarget.AddEventListener(string type, DomEventHandler callback, bool capture) => _host.AddEventListener(type, callback, capture);
 
-        bool IEventTarget.Dispatch(Event ev) => _host.Dispatch(ev);
+        bool IEventTarget.Dispatch(IEvent ev) => _host.Dispatch(ev);
         event EventHandler<EventSyncedArgs> IEventTarget.EventSynced
         {
             add { throw new NotImplementedException(); }
@@ -36,7 +36,7 @@ namespace AngleSharp.Css.Dom
             remove { throw new NotImplementedException(); }
         }
 
-        void IEventTarget.InvokeEventListener(Event ev) => _host.InvokeEventListener(ev);
+        void IEventTarget.InvokeEventListener(IEvent ev) => _host.InvokeEventListener(ev);
 
         void IEventTarget.RemoveEventListener(string type, DomEventHandler callback, bool capture) => _host.RemoveEventListener(type, callback, capture);
     }

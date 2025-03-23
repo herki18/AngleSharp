@@ -16,11 +16,11 @@ namespace AngleSharp.Io
     public abstract class BaseLoader : ILoader
     {
         #region Fields
-        
+
         private readonly IBrowsingContext _context;
         private readonly Predicate<Request> _filter;
         private readonly List<IDownload> _downloads;
-        
+
         #endregion
 
         #region ctor
@@ -84,7 +84,7 @@ namespace AngleSharp.Io
         /// </summary>
         /// <param name="url">The requested URL.</param>
         /// <returns>The associated cookie string, if any.</returns>
-        protected virtual String GetCookie(Url url) =>
+        protected virtual String GetCookie(IUrl url) =>
             _context.GetCookie(url);
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace AngleSharp.Io
         /// </summary>
         /// <param name="url">The requested URL.</param>
         /// <param name="value">The value of the cookie.</param>
-        protected virtual void SetCookie(Url url, String value) =>
+        protected virtual void SetCookie(IUrl url, String value) =>
             _context.SetCookie(url, value);
 
         /// <summary>

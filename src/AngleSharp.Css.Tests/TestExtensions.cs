@@ -30,15 +30,15 @@ namespace AngleSharp.Css.Tests
                 .WithDefaultLoader(new LoaderOptions { IsResourceLoadingEnabled = true });
         }
 
-        public static IConfiguration WithPageRequester(this IConfiguration config, Boolean enableNavigation = true, Boolean enableResourceLoading = false)
-        {
-            return config
-                .With(new PageRequester())
-                .WithDefaultLoader(new LoaderOptions {
-                    IsNavigationDisabled = !enableNavigation,
-                    IsResourceLoadingEnabled = enableResourceLoading,
-                });
-        }
+        // public static IConfiguration WithPageRequester(this IConfiguration config, Boolean enableNavigation = true, Boolean enableResourceLoading = false)
+        // {
+        //     return config
+        //         .With(new PageRequester())
+        //         .WithDefaultLoader(new LoaderOptions {
+        //             IsNavigationDisabled = !enableNavigation,
+        //             IsResourceLoadingEnabled = enableResourceLoading,
+        //         });
+        // }
 
         public static IDocument ToHtmlDocument(this String sourceCode, IConfiguration configuration = null)
         {

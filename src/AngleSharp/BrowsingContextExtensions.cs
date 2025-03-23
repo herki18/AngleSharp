@@ -123,7 +123,7 @@ namespace AngleSharp
         /// <param name="request">The request to issue.</param>
         /// <param name="cancel"></param>
         /// <returns>A task that will eventually result in a new document.</returns>
-        internal static Task<IDocument> NavigateToAsync(this IBrowsingContext context, DocumentRequest request, CancellationToken cancel = default)
+        internal static Task<IDocument> NavigateToAsync(this IBrowsingContext context, IDocumentRequest request, CancellationToken cancel = default)
         {
             var handler = context.GetNavigationHandler(request.Target);
             return handler?.NavigateAsync(request, cancel) ?? Task.FromResult<IDocument>(null!);
@@ -147,7 +147,7 @@ namespace AngleSharp
         /// <param name="context">The browsing context to use.</param>
         /// <param name="url">The URL to navigate to.</param>
         /// <returns>The found navigation handler, if any.</returns>
-        public static INavigationHandler? GetNavigationHandler(this IBrowsingContext context, Url url) =>
+        public static INavigationHandler? GetNavigationHandler(this IBrowsingContext context, IUrl url) =>
             context.GetServices<INavigationHandler>().FirstOrDefault(m => m.SupportsProtocol(url.Scheme));
 
         #endregion
@@ -261,7 +261,7 @@ namespace AngleSharp
         /// <param name="context">The current context.</param>
         /// <param name="url">The URL of the cookie.</param>
         /// <returns>The cookie or the empty string.</returns>
-        public static String GetCookie(this IBrowsingContext context, Url url)
+        public static String GetCookie(this IBrowsingContext context, IUrl url)
         {
             var provider = context.GetProvider<ICookieProvider>();
             return provider?.GetCookie(url) ?? String.Empty;
@@ -273,7 +273,7 @@ namespace AngleSharp
         /// <param name="context">The current context.</param>
         /// <param name="url">The URL of the cookie.</param>
         /// <param name="value">The cookie value to set.</param>
-        public static void SetCookie(this IBrowsingContext context, Url url, String value)
+        public static void SetCookie(this IBrowsingContext context, IUrl url, String value)
         {
             var provider = context.GetProvider<ICookieProvider>();
             provider?.SetCookie(url, value);

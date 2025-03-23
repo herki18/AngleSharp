@@ -76,7 +76,7 @@ namespace AngleSharp.Html.Parser
         /// </summary>
         /// <param name="source">The source code manager.</param>
         /// <param name="resolver">The entity resolver to use.</param>
-        public HtmlTokenizer(TextSource source, IEntityProvider resolver)
+        public HtmlTokenizer(ITextSource source, IEntityProvider resolver)
             : base(source)
         {
             State = HtmlParseMode.PCData;
@@ -89,7 +89,7 @@ namespace AngleSharp.Html.Parser
         /// </summary>
         /// <param name="source">The source code manager.</param>
         /// <param name="resolver">The entity resolver to use.</param>
-        public HtmlTokenizer(TextSource source, IEntityProviderExtended resolver)
+        public HtmlTokenizer(ITextSource source, IEntityProviderExtended resolver)
             : base(source)
         {
             State = HtmlParseMode.PCData;
@@ -2806,7 +2806,7 @@ namespace AngleSharp.Html.Parser
         #endregion
 
         #region Tokens
-		
+
 		private ref StructHtmlToken GetNextStructToken()
         {
             var current = GetNext();

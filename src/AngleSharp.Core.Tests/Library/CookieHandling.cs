@@ -288,7 +288,7 @@ namespace AngleSharp.Core.Tests.Library
                 VirtualResponse.Create(m => m.Content(content).Address("http://www.local.com").Cookie(cookieValue));
             await LoadDocumentWithFakeRequesterAndCookie(initial, req =>
             {
-                var res = VirtualResponse.Create(m => m.Content(String.Empty).Address(req.Address));
+                var res = VirtualResponse.Create(m => m.Content(String.Empty).Address(req.Address.ToUri()));
                 imgCookie = req.Headers.GetOrDefault(HeaderNames.Cookie, String.Empty);
                 requestCount++;
                 return res;
@@ -309,7 +309,7 @@ namespace AngleSharp.Core.Tests.Library
                 VirtualResponse.Create(m => m.Content(content).Address("http://www.local.com").Cookie(cookieValue));
             await LoadDocumentWithFakeRequesterAndCookie(initial, req =>
             {
-                var res = VirtualResponse.Create(m => m.Content(String.Empty).Address(req.Address));
+                var res = VirtualResponse.Create(m => m.Content(String.Empty).Address(req.Address.ToUri()));
                 imgCookie = req.Headers.GetOrDefault(HeaderNames.Cookie, String.Empty);
                 requestCount++;
                 return res;
@@ -330,7 +330,7 @@ namespace AngleSharp.Core.Tests.Library
                 m.Content(content).Address("http://www.twitter.com").Header(HeaderNames.SetCookie, cookieValue));
             var document = await LoadDocumentWithFakeRequesterAndCookie(initial, req =>
             {
-                var res = VirtualResponse.Create(m => m.Content(String.Empty).Address(req.Address));
+                var res = VirtualResponse.Create(m => m.Content(String.Empty).Address(req.Address.ToUri()));
                 requestCount++;
                 return res;
             });
@@ -349,7 +349,7 @@ namespace AngleSharp.Core.Tests.Library
                 m.Content(content).Address("http://www.twitter.com").Header(HeaderNames.SetCookie, cookieValue));
             var document = await LoadDocumentWithFakeRequesterAndCookie(initial, req =>
             {
-                var res = VirtualResponse.Create(m => m.Content(String.Empty).Address(req.Address));
+                var res = VirtualResponse.Create(m => m.Content(String.Empty).Address(req.Address.ToUri()));
                 requestCount++;
                 return res;
             });
@@ -368,7 +368,7 @@ namespace AngleSharp.Core.Tests.Library
                 VirtualResponse.Create(m => m.Content(content).Address("http://www.local.com").Cookie(cookieValue));
             await LoadDocumentWithFakeRequesterAndCookie(initial, req =>
             {
-                var res = VirtualResponse.Create(m => m.Content(String.Empty).Address(req.Address));
+                var res = VirtualResponse.Create(m => m.Content(String.Empty).Address(req.Address.ToUri()));
                 imgCookie = req.Headers.GetOrDefault(HeaderNames.Cookie, String.Empty);
                 requestCount++;
                 return res;

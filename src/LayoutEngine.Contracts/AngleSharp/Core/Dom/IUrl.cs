@@ -131,4 +131,10 @@ public interface IUrl : IEquatable<IUrl>
     /// <returns>The currently stored url.</returns>
     [DomName("toJSON")]
     String ToJson();
+
+    /// <summary>
+    /// Converts this URL to a System.Uri instance.
+    /// </summary>
+    /// <returns>A System.Uri representation of this URL.</returns>
+    Uri ToUri();
 }

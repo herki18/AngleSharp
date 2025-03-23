@@ -12,7 +12,7 @@ namespace AngleSharp.Dom
     [DomName("URLSearchParams")]
     [DomExposed("Window")]
     [DomExposed("Worker")]
-    public class UrlSearchParams
+    public class UrlSearchParams : IUrlSearchParams
     {
         #region Fields
 

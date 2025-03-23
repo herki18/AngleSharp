@@ -37,7 +37,7 @@ namespace AngleSharp.Common
         /// Creates a new instance of the base tokenizer.
         /// </summary>
         /// <param name="source">The source to tokenize.</param>
-        public BaseTokenizer(TextSource source)
+        public BaseTokenizer(ITextSource source)
         {
             _stringBuilder = StringBuilderPool.Obtain();
 
@@ -50,7 +50,8 @@ namespace AngleSharp.Common
                 _charBuffer = _sbb = new StringBuilderBuffer();
             }
 
-            _source = source.GetUnderlyingTextSource();
+            // TODO: This is a workaround for the fact that the TextSource is not always a WritableTextSource, and interface does not implement GetUnderlyingTextSource
+            _source = ((TextSource)source).GetUnderlyingTextSource();
 
             if (_source is WritableTextSource wts)
             {

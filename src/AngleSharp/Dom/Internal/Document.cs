@@ -35,7 +35,7 @@ namespace AngleSharp.Dom
         private readonly Window _view;
         private readonly IResourceLoader? _loader;
         private readonly Location _location;
-        private readonly TextSource _source;
+        private readonly ITextSource _source;
         private readonly Object _importedUrisLock = new();
 
         private QuirksMode _quirksMode;
@@ -483,7 +483,7 @@ namespace AngleSharp.Dom
         #region ctor
 
         /// <inheritdoc />
-        public Document(IBrowsingContext context, TextSource source)
+        public Document(IBrowsingContext context, ITextSource source)
             : base(null, "#document", Dom.NodeType.Document)
         {
             Referrer = String.Empty;
@@ -520,7 +520,7 @@ namespace AngleSharp.Dom
         #region Properties
 
         /// <inheritdoc />
-        public TextSource Source => (_source ?? _source as TextSource)!;
+        public ITextSource Source => (_source ?? _source as TextSource)!;
 
         /// <inheritdoc />
         public abstract IEntityProvider Entities
@@ -662,7 +662,7 @@ namespace AngleSharp.Dom
         }
 
         /// <inheritdoc />
-        public Url DocumentUrl => _location.Original;
+        public IUrl DocumentUrl => _location.Original;
 
         /// <inheritdoc />
         public IWindow DefaultView => _view;
@@ -1058,7 +1058,7 @@ namespace AngleSharp.Dom
         }
 
         /// <inheritdoc />
-        public Event CreateEvent(String type)
+        public IEvent CreateEvent(String type)
         {
             var factory = _context.GetFactory<IEventFactory>();
             var ev = factory.Create(type) ?? throw new DomException(DomError.NotSupported);
@@ -1623,7 +1623,7 @@ namespace AngleSharp.Dom
 
         #region Construction
 
-        TextSource IConstructableDocument.Source => _source;
+        ITextSource IConstructableDocument.Source => _source;
 
         IDisposable? IConstructableDocument.Builder { get; set; }
 

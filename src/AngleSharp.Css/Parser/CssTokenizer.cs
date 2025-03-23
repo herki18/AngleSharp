@@ -35,7 +35,7 @@ namespace AngleSharp.Css.Parser
         /// CSS Tokenization
         /// </summary>
         /// <param name="source">The source code manager.</param>
-        public CssTokenizer(TextSource source)
+        public CssTokenizer(ITextSource source)
             : base(source)
         {
         }
@@ -95,7 +95,7 @@ namespace AngleSharp.Css.Parser
                         current = GetNext();
                     }
                 }
-                
+
                 position = Position;
             }
 
@@ -726,7 +726,7 @@ namespace AngleSharp.Css.Parser
                     {
                         return UrlStart();
                     }
-                    
+
                     return NewFunction(name);
                 }
                 else
@@ -768,7 +768,7 @@ namespace AngleSharp.Css.Parser
         {
             while (true)
             {
-                if (current is Symbols.Plus or Symbols.Minus) 
+                if (current is Symbols.Plus or Symbols.Minus)
                 {
                     StringBuffer.Append(current);
                     current = GetNext();
@@ -1432,7 +1432,7 @@ namespace AngleSharp.Css.Parser
 
                 Back();
             }
-            
+
             Back();
             return Dimension();
         }
@@ -1501,7 +1501,7 @@ namespace AngleSharp.Css.Parser
 
                 return current != Symbols.EndOfFile && !current.IsLineBreak();
             }
-                
+
             return false;
         }
 

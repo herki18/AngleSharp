@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
     <AssemblyName>AngleSharp</AssemblyName>
     <RootNamespace>AngleSharp</RootNamespace>
-    <TargetFrameworks>netstandard2.0;net6.0;net7.0;net8.0</TargetFrameworks>
-    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">net6.0;net7.0;net8.0;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.1;</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Nullable>enable</Nullable>
     <RepositoryUrl>https://github.com/AngleSharp/AngleSharp</RepositoryUrl>
@@ -26,7 +26,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Css\Temp\" />
+    <ProjectReference Include="..\LayoutEngine.Contracts\LayoutEngine.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="LayoutEngine.Platform.Tests" />
+    <InternalsVisibleTo Include="AngleSharp.Core.Tests" />
+    <InternalsVisibleTo Include="AngleSharp.Css.Tests" />
   </ItemGroup>
 
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">

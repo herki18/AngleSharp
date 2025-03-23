@@ -115,7 +115,7 @@ namespace AngleSharp.Core.Tests.Css
 
         public IBrowsingContext Context => _options.Document.Context;
 
-        public TextSource Source { get; } = null;
+        public ITextSource Source { get; } = null;
 
         public void SetOwner(IElement element)
         {

@@ -13,5 +13,5 @@ public interface IValueConverter
     /// </summary>
     /// <param name="source">The source to convert.</param>
     /// <returns>The value if valid, otherwise null.</returns>
-    ICssValue Convert(IStringSource source);
+    ICssValue Convert(StringSource source);
 }

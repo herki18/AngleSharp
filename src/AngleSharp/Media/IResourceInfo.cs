@@ -10,6 +10,6 @@ namespace AngleSharp.Media
         /// <summary>
         /// Gets the source of the resource.
         /// </summary>
-        Url Source { get; set; }
+        IUrl Source { get; set; }
     }
 }

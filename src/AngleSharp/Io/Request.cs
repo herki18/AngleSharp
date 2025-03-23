@@ -38,7 +38,7 @@ namespace AngleSharp.Io
         /// <summary>
         /// Gets or sets the address should be requested.
         /// </summary>
-        public Url Address
+        public IUrl Address
         {
             get;
             set;

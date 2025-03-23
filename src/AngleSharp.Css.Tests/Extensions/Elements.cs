@@ -27,7 +27,7 @@ namespace AngleSharp.Css.Tests.Extensions
         [Test]
         public async Task DownloadResources()
         {
-            var urls = new List<Url>();
+            var urls = new List<IUrl>();
             var loaderOptions = new LoaderOptions
             {
                 IsResourceLoadingEnabled = true,

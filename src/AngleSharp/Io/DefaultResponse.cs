@@ -40,7 +40,7 @@ namespace AngleSharp.Io
         /// <summary>
         /// Gets or sets the url of the response.
         /// </summary>
-        public Url Address
+        public IUrl Address
         {
             get;
             set;

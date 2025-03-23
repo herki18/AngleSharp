@@ -20,7 +20,7 @@ namespace AngleSharp.Dom
         private readonly String _name;
         private readonly NodeFlags _flags;
 
-        private Url? _baseUri;
+        private IUrl? _baseUri;
         private Node? _parent;
         private NodeList _children;
         private Document? _owner;
@@ -60,7 +60,7 @@ namespace AngleSharp.Dom
         public String BaseUri => BaseUrl?.Href ?? String.Empty;
 
         /// <inheritdoc />
-        public Url? BaseUrl
+        public IUrl? BaseUrl
         {
             get
             {

@@ -27,6 +27,6 @@ namespace AngleSharp.Browser
         /// <returns>
         /// The task yielding a document representing the navigation result.
         /// </returns>
-        Task<IDocument> NavigateAsync(DocumentRequest request, CancellationToken token);
+        Task<IDocument> NavigateAsync(IDocumentRequest request, CancellationToken token);
     }
 }

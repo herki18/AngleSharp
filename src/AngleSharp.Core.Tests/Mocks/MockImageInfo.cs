@@ -10,7 +10,7 @@ namespace AngleSharp.Core.Tests.Mocks
 
         public Int32 Height => 0;
 
-        public Url Source
+        public IUrl Source
         {
             get;
             set;

@@ -18,7 +18,7 @@ namespace AngleSharp.Dom
     [DomName("URL")]
     [DomExposed("Window")]
     [DomExposed("Worker")]
-    public sealed class Url : IEquatable<Url>
+    public sealed class Url : IEquatable<Url>, IUrl
     {
         #region Fields
 
@@ -106,6 +106,27 @@ namespace AngleSharp.Dom
             _error = ParseUrl(relativeAddress, baseAddress);
         }
 
+        /// <summary>
+        /// Creates a new absolute Url from the relative Url with the given
+        /// base address as an IUrl interface.
+        /// </summary>
+        /// <param name="baseAddress">The base address to use as an IUrl.</param>
+        /// <param name="relativeAddress">
+        /// The relative address to represent.
+        /// </param>
+        public Url(IUrl baseAddress, String relativeAddress)
+        {
+            if (baseAddress == null)
+            {
+                throw new ArgumentNullException(nameof(baseAddress));
+            }
+
+            // If the baseAddress is already a Url instance, use it directly
+            // Otherwise create a new Url from its string representation
+            var baseUrl = baseAddress as Url ?? new Url(baseAddress.ToString());
+            _error = ParseUrl(relativeAddress, baseUrl);
+        }
+
 #nullable enable
 
         /// <summary>
@@ -124,6 +145,46 @@ namespace AngleSharp.Dom
             _password = address._password;
              _relative = address._relative;
             _schemeData = address._schemeData;;
+        }
+
+        /// <summary>
+        /// Creates a new Url by copying the other Url from an IUrl interface.
+        /// </summary>
+        /// <param name="address">The address to copy.</param>
+        public Url(IUrl address)
+        {
+            if (address == null)
+            {
+                throw new ArgumentNullException(nameof(address));
+            }
+
+            // Initialize non-nullable fields to empty strings
+            _path = String.Empty;
+            _scheme = String.Empty;
+            _port = String.Empty;
+            _host = String.Empty;
+            _schemeData = String.Empty;
+            _relative = false;
+
+            // If the address is already a Url instance, use its fields directly
+            if (address is Url concreteUrl)
+            {
+                _fragment = concreteUrl._fragment;
+                _query = concreteUrl._query;
+                _path = concreteUrl._path;
+                _scheme = concreteUrl._scheme;
+                _port = concreteUrl._port;
+                _host = concreteUrl._host;
+                _username = concreteUrl._username;
+                _password = concreteUrl._password;
+                _relative = concreteUrl._relative;
+                _schemeData = concreteUrl._schemeData;
+            }
+            else
+            {
+                // Otherwise parse the URL from its string representation
+                _error = ParseUrl(address.Href);
+            }
         }
 
         #endregion
@@ -427,7 +488,7 @@ namespace AngleSharp.Dom
         /// Obtains an advanced view on the provided query parameter.
         /// </summary>
         [DomName("searchParams")]
-        public UrlSearchParams SearchParams => _params ??= new UrlSearchParams(this);
+        public IUrlSearchParams SearchParams => _params ??= new UrlSearchParams(this);
 
         #endregion
 
@@ -488,6 +549,21 @@ namespace AngleSharp.Dom
                    _schemeData.Is(other._schemeData);
         }
 
+        /// <summary>
+        /// Determines whether the specified url is equal to the current
+        /// object.
+        /// </summary>
+        /// <param name="other">
+        /// The url to compare with the current one.
+        /// </param>
+        /// <returns>
+        /// True if the given url is equal to the current url, otherwise false.
+        /// </returns>
+        public Boolean Equals(IUrl? other)
+        {
+            return other is Url url && Equals(url);
+        }
+
         #endregion
 
         #region Conversion
@@ -500,6 +576,15 @@ namespace AngleSharp.Dom
         public static implicit operator Uri(Url value)
         {
             return new Uri(value.Serialize(), value.IsRelative ? UriKind.Relative : UriKind.Absolute);
+        }
+
+        /// <summary>
+        /// Converts this URL to a System.Uri instance.
+        /// </summary>
+        /// <returns>A System.Uri representation of this URL.</returns>
+        public Uri ToUri()
+        {
+            return new Uri(this.Serialize(), this.IsRelative ? UriKind.Relative : UriKind.Absolute);
         }
 
         #endregion

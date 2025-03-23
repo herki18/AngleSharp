@@ -10,5 +10,5 @@ public interface ISourceReference
     /// <summary>
     /// Gets the position in the original source code.
     /// </summary>
-    ITextPosition Position { get; }
+    TextPosition Position { get; }
 }

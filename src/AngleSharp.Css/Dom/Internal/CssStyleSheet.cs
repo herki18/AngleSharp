@@ -49,7 +49,7 @@ namespace AngleSharp.Css.Dom
 
         public IBrowsingContext Context => _context;
 
-        public TextSource Source => _source;
+        public ITextSource Source => _source;
 
         public Boolean IsDisabled
         {
@@ -102,7 +102,7 @@ namespace AngleSharp.Css.Dom
             var rule = parser.ParseRule(this, ruleText);
             _rules.Insert(index, rule);
             rule.SetOwner(this);
-            return index;            
+            return index;
         }
 
         public void SetOwner(ICssRule rule)

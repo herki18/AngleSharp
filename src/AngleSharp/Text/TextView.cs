@@ -9,7 +9,7 @@ namespace AngleSharp.Text
     {
         #region Fields
 
-        private readonly TextSource _source;
+        private readonly ITextSource _source;
         private readonly TextRange _range;
 
         #endregion
@@ -19,7 +19,7 @@ namespace AngleSharp.Text
         /// <summary>
         /// Creates a new text view for the given range.
         /// </summary>
-        public TextView(TextSource source, TextRange range)
+        public TextView(ITextSource source, TextRange range)
         {
             _source = source;
             _range = range;
@@ -39,7 +39,7 @@ namespace AngleSharp.Text
         /// </summary>
         public String Text
         {
-            get 
+            get
             {
                 var start = Math.Max(_range.Start.Position - 1, 0);
                 var length = _range.End.Position + 1 - _range.Start.Position;

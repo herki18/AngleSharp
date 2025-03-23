@@ -11,6 +11,6 @@ namespace AngleSharp.Io
         /// </summary>
         /// <param name="request">The options to consider.</param>
         /// <returns>The download instance to track.</returns>
-        IDownload FetchAsync(DocumentRequest request);
+        IDownload FetchAsync(IDocumentRequest request);
     }
 }

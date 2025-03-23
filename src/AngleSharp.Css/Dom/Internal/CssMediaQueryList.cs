@@ -53,7 +53,7 @@ namespace AngleSharp.Css.Dom
         //TODO use Validate with RenderDevice
         private Boolean ComputeMatched(IWindow window) => false;
 
-        private void Resized(Object sender, Event ev)
+        private void Resized(Object sender, IEvent ev)
         {
             var window = (IWindow)sender;
             var matched = ComputeMatched(window);

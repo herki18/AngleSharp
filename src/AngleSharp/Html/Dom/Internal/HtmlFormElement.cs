@@ -123,9 +123,9 @@ namespace AngleSharp.Html.Dom
             return context.NavigateToAsync(request);
         }
 
-        public DocumentRequest GetSubmission() => SubmitForm(this, true)!;
+        public IDocumentRequest GetSubmission() => SubmitForm(this, true)!;
 
-        public DocumentRequest GetSubmission(IHtmlElement sourceElement) => SubmitForm(sourceElement ?? this, false)!;
+        public IDocumentRequest GetSubmission(IHtmlElement sourceElement) => SubmitForm(sourceElement ?? this, false)!;
 
         public void Reset()
         {

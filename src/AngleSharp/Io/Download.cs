@@ -14,14 +14,14 @@ namespace AngleSharp.Io
 
         private readonly CancellationTokenSource _cts;
         private readonly Task<IResponse> _task;
-        private readonly Url _target;
+        private readonly IUrl _target;
         private readonly Object? _source;
 
         #endregion
 
         #region ctor
 
-        public Download(Task<IResponse> task, CancellationTokenSource cts, Url target, Object? source)
+        public Download(Task<IResponse> task, CancellationTokenSource cts, IUrl target, Object? source)
         {
             _task = task;
             _cts = cts;
@@ -35,7 +35,7 @@ namespace AngleSharp.Io
 
         public Object? Source => _source;
 
-        public Url Target => _target;
+        public IUrl Target => _target;
 
         public Task<IResponse> Task => _task;
 

@@ -42,7 +42,7 @@ public interface IReadOnlyTextSource : IDisposable
     /// <summary>
     /// Reads characters as string or memory reference
     /// </summary>
-    IStringOrMemory ReadMemory(Int32 characters);
+    StringOrMemory ReadMemory(Int32 characters);
 
     /// <summary>
     /// Prefetches specified bytes into buffer

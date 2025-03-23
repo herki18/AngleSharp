@@ -16,7 +16,7 @@ namespace AngleSharp.Html.Dom
         #endregion
 
         #region ctor
-        
+
         public HtmlUrlBaseElement(Document owner, String name, String? prefix, NodeFlags flags)
             : base(owner, name, prefix, flags)
         {

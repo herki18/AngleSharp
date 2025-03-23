@@ -1,123 +1,129 @@
-namespace AngleSharp.Text;
-
-using System;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Common;
-
-/// <summary>
-/// Char array based immutable text source
-/// </summary>
-public sealed class StringTextSource : IReadOnlyTextSource
+namespace AngleSharp.Text
 {
-    private readonly String _string;
-    private readonly ReadOnlyMemory<Char> _memory;
-    private readonly Int32 _length;
-
-    private Int32 _index;
+    using System;
+    using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Common;
 
     /// <summary>
-    /// Creates a new text source from a string
+    /// String-based immutable text source
     /// </summary>
-    public StringTextSource(String source)
+    public sealed class StringTextSource : IReadOnlyTextSource
     {
-        _string = source;
-        _length = source.Length;
-        _memory = source.AsMemory();
-    }
+        private readonly String _string;
+        private readonly ReadOnlyMemory<Char> _memory;
+        private readonly Int32 _length;
 
-    #region Properties
+        private Int32 _index;
 
-    /// <ihneritdoc />
-    public String Text => _string;
-
-    /// <ihneritdoc />
-    public Char this[Int32 index] => _string[index];
-
-    /// <ihneritdoc />
-    public Int32 Length => _length;
-
-    /// <ihneritdoc />
-    public Encoding CurrentEncoding
-    {
-        get => TextEncoding.Utf8;
-        set { }
-    }
-
-    /// <ihneritdoc />
-    public Int32 Index
-    {
-        get => _index;
-        set => _index = value;
-    }
-
-    #endregion
-
-    #region Disposable
-
-    /// <ihneritdoc />
-    public void Dispose()
-    {
-    }
-
-    #endregion
-
-    #region Text Methods
-
-    /// <ihneritdoc />
-    public Char ReadCharacter()
-    {
-        if (_index < _length)
+        /// <summary>
+        /// Creates a new text source from a string
+        /// </summary>
+        /// <param name="source">The string to use as source</param>
+        public StringTextSource(String source)
         {
-            return _string[_index++];
+            _string = source;
+            _length = source.Length;
+            _memory = source.AsMemory();
         }
 
-        _index += 1;
-        return Symbols.EndOfFile;
-    }
+        #region Properties
 
-    /// <ihneritdoc />
-    public String ReadCharacters(Int32 characters)
-    {
-        return ReadMemory(characters).ToString();
-    }
+        /// <inheritdoc />
+        public String Text => _string;
 
-    /// <ihneritdoc />
-    public StringOrMemory ReadMemory(Int32 characters)
-    {
-        var start = _index;
-        var end = start + characters;
+        /// <inheritdoc />
+        public Char this[Int32 index] => _string[index];
 
-        if (end <= _length)
+        /// <inheritdoc />
+        public Int32 Length => _length;
+
+        /// <inheritdoc />
+        public Encoding CurrentEncoding
         {
+            get => TextEncoding.Utf8;
+            set { }
+        }
+
+        /// <inheritdoc />
+        public Int32 Index
+        {
+            get => _index;
+            set => _index = value;
+        }
+
+        #endregion
+
+        #region Disposable
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+        }
+
+        #endregion
+
+        #region Text Methods
+
+        /// <inheritdoc />
+        public Char ReadCharacter()
+        {
+            if (_index < _length)
+            {
+                return _string[_index++];
+            }
+
+            _index += 1;
+            return Symbols.EndOfFile;
+        }
+
+        /// <inheritdoc />
+        public String ReadCharacters(Int32 characters)
+        {
+            return ReadMemory(characters).ToString();
+        }
+
+        /// <summary>
+        /// Reads characters as StringOrMemory
+        /// </summary>
+        /// <param name="characters">The number of characters to read</param>
+        /// <returns>The StringOrMemory representation of the characters</returns>
+        public StringOrMemory ReadMemory(Int32 characters)
+        {
+            var start = _index;
+            var end = start + characters;
+
+            if (end <= _length)
+            {
+                _index += characters;
+                return _memory.Slice(start, characters);
+            }
+
             _index += characters;
+            characters = Math.Min(characters, _length - start);
             return _memory.Slice(start, characters);
         }
 
-        _index += characters;
-        characters = Math.Min(characters, _length - start);
-        return _memory.Slice(start, characters);
-    }
+        /// <inheritdoc />
+        public Task PrefetchAsync(Int32 length, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
 
-    /// <ihneritdoc />
-    public Task PrefetchAsync(Int32 length, CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+        /// <inheritdoc />
+        public Task PrefetchAllAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
 
-    /// <ihneritdoc />
-    public Task PrefetchAllAsync(CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+        /// <inheritdoc />
+        public Boolean TryGetContentLength(out Int32 length)
+        {
+            length = _length;
+            return true;
+        }
 
-    /// <ihneritdoc />
-    public Boolean TryGetContentLength(out Int32 length)
-    {
-        length = _length;
-        return true;
+        #endregion
     }
-
-    #endregion
 }

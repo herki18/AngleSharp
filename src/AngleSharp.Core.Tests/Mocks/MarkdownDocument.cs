@@ -7,7 +7,7 @@ namespace AngleSharp.Core.Tests.Mocks
 
     sealed class MarkdownDocument : Document
     {
-        public MarkdownDocument(IBrowsingContext context, TextSource source)
+        public MarkdownDocument(IBrowsingContext context, ITextSource source)
             : base(context, source)
         {
         }

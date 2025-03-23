@@ -127,7 +127,11 @@ namespace AngleSharp.Text
         /// <returns>The string with the next characters.</returns>
         public String ReadCharacters(Int32 characters) => _readOnlyTextSource.ReadCharacters(characters);
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Reads characters as StringOrMemory
+        /// </summary>
+        /// <param name="characters">The number of characters to read</param>
+        /// <returns>The StringOrMemory representation of the characters</returns>
         public StringOrMemory ReadMemory(Int32 characters) => _readOnlyTextSource.ReadMemory(characters);
 
         /// <summary>

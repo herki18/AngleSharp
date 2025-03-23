@@ -128,7 +128,7 @@ namespace AngleSharp.Io
                 _cookies = new CookieContainer();
                 _headers = headers;
                 _request = request;
-                _http = (HttpWebRequest)WebRequest.Create(request.Address);
+                _http = (HttpWebRequest)WebRequest.Create(request.Address.ToUri());
                 _http.CookieContainer = _cookies;
                 _http.Method = request.Method.ToString().ToUpperInvariant();
                 _buffer = new Byte[BufferSize];
@@ -186,7 +186,7 @@ namespace AngleSharp.Io
             {
                 if (response is not null)
                 {
-                    var originalCookies = _cookies.GetCookies(_request.Address!);
+                    var originalCookies = _cookies.GetCookies(_request.Address.ToUri());
                     var newCookies = _cookies.GetCookies(response.ResponseUri);
                     var cookies = newCookies.OfType<Cookie>().Except(originalCookies.OfType<Cookie>()).ToArray();
                     var headers = response.Headers.AllKeys.Select(m => new { Key = m, Value = response.Headers[m] });
@@ -320,7 +320,7 @@ namespace AngleSharp.Io
             {
                 _http.AllowAutoRedirect = false;
             }
-        }   
+        }
 
         private static void RaiseConnectionLimit(HttpWebRequest http)
         {

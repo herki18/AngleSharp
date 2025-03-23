@@ -137,7 +137,7 @@ namespace AngleSharp.Dom
 
         String INode.BaseUri => OwnerElement!.BaseUri;
 
-        Url? INode.BaseUrl => OwnerElement?.BaseUrl;
+        IUrl? INode.BaseUrl => OwnerElement?.BaseUrl;
 
         String INode.NodeName => Name;
 
@@ -157,7 +157,6 @@ namespace AngleSharp.Dom
         INode? INode.NextSibling => null;
 
         INode? INode.PreviousSibling => null;
-        IViewSynchronizer? INode.ViewSync => throw new NotImplementedException();
 
         Int32 INode.NodeType => (Int32)NodeType.Attribute;
 
@@ -237,9 +236,9 @@ namespace AngleSharp.Dom
 
         void IEventTarget.RemoveEventListener(String type, DomEventHandler? callback, Boolean capture) => throw new DomException(DomError.NotSupported);
 
-        void IEventTarget.InvokeEventListener(Event ev) => throw new DomException(DomError.NotSupported);
+        void IEventTarget.InvokeEventListener(IEvent ev) => throw new DomException(DomError.NotSupported);
 
-        Boolean IEventTarget.Dispatch(Event ev) => throw new DomException(DomError.NotSupported);
+        Boolean IEventTarget.Dispatch(IEvent ev) => throw new DomException(DomError.NotSupported);
         event EventHandler<EventSyncedArgs>? IEventTarget.EventSynced
         {
             add { throw new NotImplementedException(); }

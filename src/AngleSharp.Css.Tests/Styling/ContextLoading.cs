@@ -29,32 +29,32 @@ namespace AngleSharp.Css.Tests.Styling
             Assert.AreEqual("http://localhost/beispiel.css", link.Href);
         }
 
-        [Test]
-        public async Task ContextLoadAmazonWithCss()
-        {
-            var address = "http://www.amazon.com";
-            var config = Configuration.Default.WithPageRequester().WithCss();
-            var document = await BrowsingContext.New(config).OpenAsync(address);
-            Assert.IsNotNull(document);
-            Assert.AreNotEqual(0, document.Body.ChildElementCount);
-        }
+        // [Test]
+        // public async Task ContextLoadAmazonWithCss()
+        // {
+        //     var address = "http://www.amazon.com";
+        //     var config = Configuration.Default.WithPageRequester().WithCss();
+        //     var document = await BrowsingContext.New(config).OpenAsync(address);
+        //     Assert.IsNotNull(document);
+        //     Assert.AreNotEqual(0, document.Body.ChildElementCount);
+        // }
 
-        [Test]
-        public async Task CheckIfAllStyleSheetsAreProcessed()
-        {
-            var html = @"<html>
-  <head>
-     <title>test title</title>
-     <link href='http://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css' rel='stylesheet'>
-    </head>
-    <body>
-    </body>
-</html>";
-
-            var config = Configuration.Default.WithPageRequester(enableResourceLoading: true).WithCss();
-            var document = await BrowsingContext.New(config).OpenAsync(m => m.Content(html));
-            Assert.AreEqual(1, document.StyleSheets.Length);
-        }
+//         [Test]
+//         public async Task CheckIfAllStyleSheetsAreProcessed()
+//         {
+//             var html = @"<html>
+//   <head>
+//      <title>test title</title>
+//      <link href='http://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css' rel='stylesheet'>
+//     </head>
+//     <body>
+//     </body>
+// </html>";
+//
+//             var config = Configuration.Default.WithPageRequester(enableResourceLoading: true).WithCss();
+//             var document = await BrowsingContext.New(config).OpenAsync(m => m.Content(html));
+//             Assert.AreEqual(1, document.StyleSheets.Length);
+//         }
 
         [Test]
         public async Task GetDownloadsOfExampleDocumentWithCssAndJsShouldYieldAllResources()

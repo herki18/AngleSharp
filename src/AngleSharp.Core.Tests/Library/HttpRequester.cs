@@ -364,7 +364,7 @@ namespace AngleSharp.Core.Tests.Library
             {
             }
 
-            public Boolean Dispatch(Event ev)
+            public Boolean Dispatch(IEvent ev)
             {
                 return true;
             }
@@ -381,7 +381,7 @@ namespace AngleSharp.Core.Tests.Library
                 remove { throw new NotImplementedException(); }
             }
 
-            public void InvokeEventListener(Event ev)
+            public void InvokeEventListener(IEvent ev)
             {
             }
 
@@ -396,7 +396,7 @@ namespace AngleSharp.Core.Tests.Library
 
                 return Task.FromResult<IResponse>(new DefaultResponse
                 {
-                    Address = Url.Convert(request.Address),
+                    Address = Url.Convert(request.Address.ToUri()),
                     StatusCode = 0
                 });
             }

@@ -52,7 +52,7 @@ namespace AngleSharp.Io
 
         #region Properties
 
-        Url IResponse.Address => _address;
+        IUrl IResponse.Address => _address;
 
         Stream IResponse.Content => _content;
 
@@ -139,7 +139,7 @@ namespace AngleSharp.Io
         }
 
         /// <summary>
-        /// Sets the headers with the name of the properties and their 
+        /// Sets the headers with the name of the properties and their
         /// assigned values.
         /// </summary>
         /// <param name="obj">The object to decompose.</param>

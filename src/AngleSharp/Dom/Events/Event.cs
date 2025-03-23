@@ -10,7 +10,7 @@ namespace AngleSharp.Dom.Events
     /// Represents an event argument.
     /// </summary>
     [DomName("Event")]
-    public class Event : EventArgs
+    public class Event : EventArgs, IEvent
     {
         #region Fields
 
@@ -80,72 +80,50 @@ namespace AngleSharp.Dom.Events
 
         #region Properties
 
-        /// <summary>
-        /// Gets the associated flags.
-        /// </summary>
-        internal EventFlags Flags => _flags;
+        /// <inheritdoc/>
+        public EventFlags Flags => _flags;
 
-        /// <summary>
-        /// Gets the type of event.
-        /// </summary>
+        /// <inheritdoc/>
         [DomName("type")]
         public String Type => _type!;
 
-        /// <summary>
-        /// Gets the original target of the event.
-        /// </summary>
+        /// <inheritdoc/>
         [DomName("target")]
         public IEventTarget? OriginalTarget => _target;
 
-        /// <summary>
-        /// Gets the current target (if bubbled).
-        /// </summary>
+        /// <inheritdoc/>
         [DomName("currentTarget")]
         public IEventTarget? CurrentTarget => _current;
 
-        /// <summary>
-        /// Gets the phase of the event.
-        /// </summary>
+        /// <inheritdoc/>
         [DomName("eventPhase")]
         public EventPhase Phase => _phase;
 
-        /// <summary>
-        /// Gets if the event is propagating across the shadow DOM boundary into the standard DOM.
-        /// </summary>
+        /// <inheritdoc/>
         [DomName("composed")]
         public Boolean IsComposed => _composed;
 
-        /// <summary>
-        /// Gets if the event is actually bubbling.
-        /// </summary>
+        /// <inheritdoc/>
         [DomName("bubbles")]
         public Boolean IsBubbling => _bubbles;
 
-        /// <summary>
-        /// Gets if the event is cancelable.
-        /// </summary>
+        /// <inheritdoc/>
         [DomName("cancelable")]
         public Boolean IsCancelable => _cancelable;
 
-        /// <summary>
-        /// Gets if the default behavior has been prevented.
-        /// </summary>
+        /// <inheritdoc/>
         [DomName("defaultPrevented")]
         public Boolean IsDefaultPrevented => (_flags & EventFlags.Canceled) == EventFlags.Canceled;
 
-        /// <summary>
-        /// Gets if the event is trusted.
-        /// </summary>
+        /// <inheritdoc/>
         [DomName("isTrusted")]
         public Boolean IsTrusted
         {
             get;
-            internal set;
+            set;
         }
 
-        /// <summary>
-        /// Gets the originating timestamp.
-        /// </summary>
+        /// <inheritdoc/>
         [DomName("timeStamp")]
         public DateTime Time => _time;
 
@@ -153,10 +131,7 @@ namespace AngleSharp.Dom.Events
 
         #region Methods
 
-        /// <summary>
-        /// Returns the event's path which is an array of the objects on which listeners will be invoked.
-        /// See https://dom.spec.whatwg.org/#dom-event-composedpath.
-        /// </summary>
+        /// <inheritdoc/>
         [DomName("composedPath")]
         public IEnumerable<IEventTarget> GetComposedPath()
         {
@@ -207,7 +182,7 @@ namespace AngleSharp.Dom.Events
                     {
                         composedPath.Insert(0, c.InvocationTarget);
                     }
-                    
+
                     if (c.IsSlotInClosedTree)
                     {
                         currentHiddenLevel--;
@@ -218,14 +193,14 @@ namespace AngleSharp.Dom.Events
                         }
                     }
                 }
-                
+
                 currentHiddenLevel = currentTargetHiddenSubtreeLevel;
                 maxHiddenLevel = currentTargetHiddenSubtreeLevel;
 
                 for (var index = currentTargetIndex + 1; index < pathSize; index++)
                 {
                     var c = _currentPath[index];
-                    
+
                     if (c.IsRootOfClosedTree)
                     {
                         currentHiddenLevel++;
@@ -235,7 +210,7 @@ namespace AngleSharp.Dom.Events
                     {
                         composedPath.Add(c.InvocationTarget);
                     }
-                    
+
                     if (c.IsSlotInClosedTree)
                     {
                         currentHiddenLevel--;
@@ -251,27 +226,21 @@ namespace AngleSharp.Dom.Events
             return composedPath;
         }
 
-        /// <summary>
-        /// Prevents further propagation of the event.
-        /// </summary>
+        /// <inheritdoc/>
         [DomName("stopPropagation")]
         public void Stop()
         {
             _flags |= EventFlags.StopPropagation;
         }
 
-        /// <summary>
-        /// Stops the immediate propagation.
-        /// </summary>
+        /// <inheritdoc/>
         [DomName("stopImmediatePropagation")]
         public void StopImmediately()
         {
             _flags |= EventFlags.StopImmediatePropagation;
         }
 
-        /// <summary>
-        /// Prevents the default behavior.
-        /// </summary>
+        /// <inheritdoc/>
         [DomName("preventDefault")]
         public void Cancel()
         {
@@ -281,12 +250,7 @@ namespace AngleSharp.Dom.Events
             }
         }
 
-        /// <summary>
-        /// Initializes the event.
-        /// </summary>
-        /// <param name="type">The type of the event.</param>
-        /// <param name="bubbles">If the event is bubbling.</param>
-        /// <param name="cancelable">If the event is cancelable.</param>
+        /// <inheritdoc/>
         [DomName("initEvent")]
         public void Init(String type, Boolean bubbles, Boolean cancelable)
         {
@@ -303,13 +267,8 @@ namespace AngleSharp.Dom.Events
             }
         }
 
-        /// <summary>
-        /// Dispatch the event as described in the specification.
-        /// https://dom.spec.whatwg.org/#dispatching-events
-        /// </summary>
-        /// <param name="target">The target of the event.</param>
-        /// <returns>A boolean if the event has been cancelled.</returns>
-        internal Boolean Dispatch(IEventTarget target)
+        /// <inheritdoc/>
+        public Boolean Dispatch(IEventTarget target)
         {
             _flags |= EventFlags.Dispatch;
             _target = target;
@@ -333,7 +292,7 @@ namespace AngleSharp.Dom.Events
                             slotInClosedTree = true;
                         }
                     }
-                    
+
                     if (parent is IShadowRoot root && root.Mode == ShadowRootMode.Closed)
                     {
                         rootInClosedTree = true;

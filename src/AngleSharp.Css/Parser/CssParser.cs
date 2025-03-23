@@ -304,7 +304,7 @@ namespace AngleSharp.Css.Parser
             return CreateTokenizer(source);
         }
 
-        private CssTokenizer CreateTokenizer(TextSource source)
+        private CssTokenizer CreateTokenizer(ITextSource source)
         {
             var tokenizer = new CssTokenizer(source);
 

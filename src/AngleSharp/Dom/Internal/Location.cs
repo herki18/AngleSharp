@@ -11,7 +11,7 @@ namespace AngleSharp.Dom
     {
         #region Fields
 
-        private readonly Url _url;
+        private readonly IUrl _url;
 
         #endregion
 
@@ -28,7 +28,7 @@ namespace AngleSharp.Dom
         {
         }
 
-        internal Location(Url url)
+        internal Location(IUrl url)
         {
             _url = url ?? new Url(String.Empty);
         }
@@ -37,7 +37,7 @@ namespace AngleSharp.Dom
 
         #region Properties
 
-        public Url Original => _url;
+        public IUrl Original => _url;
 
         public String? Origin => _url.Origin;
 

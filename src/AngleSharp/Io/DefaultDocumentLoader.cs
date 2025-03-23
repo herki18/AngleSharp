@@ -28,7 +28,7 @@ namespace AngleSharp.Io
         /// </summary>
         /// <param name="request">The issued request.</param>
         /// <returns>The active download.</returns>
-        public virtual IDownload FetchAsync(DocumentRequest request)
+        public virtual IDownload FetchAsync(IDocumentRequest request)
         {
             var data = new Request
             {
