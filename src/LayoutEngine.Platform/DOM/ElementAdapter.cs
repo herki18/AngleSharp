@@ -1,34 +1,25 @@
 using System;
 using System.Collections.Generic;
+using AngleSharp.Dom;
+using LayoutEngine.Contracts.Platform.Dom;
 
 namespace LayoutEngine.Platform.DOM;
 
-using Contracts.Platform.Dom;
-
 /// <summary>
-/// Adapts DOM elements for the rendering pipeline.
-/// Provides a unified interface for element operations.
+/// Implementation of IElementAdapter that works with AngleSharp DOM elements.
 /// </summary>
 public sealed class ElementAdapter : IElementAdapter
 {
-    /// <summary>
-    /// Gets the element ID.
-    /// </summary>
-    /// <param name="element">The element.</param>
-    /// <returns>The element ID.</returns>
+    /// <inheritdoc />
     public string GetId(IElement element)
     {
         if (element == null)
             throw new ArgumentNullException(nameof(element));
 
-        return element.Id;
+        return element.Id ?? string.Empty;
     }
 
-    /// <summary>
-    /// Gets the element tag name.
-    /// </summary>
-    /// <param name="element">The element.</param>
-    /// <returns>The element tag name in lowercase.</returns>
+    /// <inheritdoc />
     public string GetTagName(IElement element)
     {
         if (element == null)
@@ -37,45 +28,36 @@ public sealed class ElementAdapter : IElementAdapter
         return element.TagName.ToLowerInvariant();
     }
 
-    /// <summary>
-    /// Gets the value of an attribute.
-    /// </summary>
-    /// <param name="element">The element.</param>
-    /// <param name="name">The attribute name.</param>
-    /// <returns>The attribute value, or null if the attribute doesn't exist.</returns>
+    /// <inheritdoc />
     public string? GetAttribute(IElement element, string name)
     {
         if (element == null)
             throw new ArgumentNullException(nameof(element));
-
         if (string.IsNullOrEmpty(name))
             throw new ArgumentException("Attribute name cannot be null or empty", nameof(name));
 
         return element.GetAttribute(name);
     }
 
-    /// <summary>
-    /// Sets the value of an attribute.
-    /// </summary>
-    /// <param name="element">The element.</param>
-    /// <param name="name">The attribute name.</param>
-    /// <param name="value">The attribute value.</param>
+    /// <inheritdoc />
     public void SetAttribute(IElement element, string name, string? value)
     {
         if (element == null)
             throw new ArgumentNullException(nameof(element));
-
         if (string.IsNullOrEmpty(name))
             throw new ArgumentException("Attribute name cannot be null or empty", nameof(name));
 
-        element.SetAttribute(name, value);
+        if (value == null)
+        {
+            element.RemoveAttribute(name);
+        }
+        else
+        {
+            element.SetAttribute(name, value);
+        }
     }
 
-    /// <summary>
-    /// Gets the children of an element.
-    /// </summary>
-    /// <param name="element">The element.</param>
-    /// <returns>The element children.</returns>
+    /// <inheritdoc />
     public IReadOnlyList<IElement> GetChildren(IElement element)
     {
         if (element == null)
@@ -83,23 +65,15 @@ public sealed class ElementAdapter : IElementAdapter
 
         var children = new List<IElement>();
 
-        for (var i = 0; i < element.ChildNodes.Length; i++)
+        foreach (var child in element.Children)
         {
-            var child = element.ChildNodes[i];
-            if (child is IElement childElement)
-            {
-                children.Add(childElement);
-            }
+            children.Add(child);
         }
 
         return children;
     }
 
-    /// <summary>
-    /// Gets the parent of an element.
-    /// </summary>
-    /// <param name="element">The element.</param>
-    /// <returns>The parent element, or null if the element has no parent.</returns>
+    /// <inheritdoc />
     public IElement? GetParent(IElement element)
     {
         if (element == null)
@@ -108,76 +82,59 @@ public sealed class ElementAdapter : IElementAdapter
         return element.ParentElement;
     }
 
-    /// <summary>
-    /// Checks if an element has the specified attribute.
-    /// </summary>
-    /// <param name="element">The element.</param>
-    /// <param name="name">The attribute name.</param>
-    /// <returns>True if the element has the attribute, otherwise false.</returns>
+    /// <inheritdoc />
     public bool HasAttribute(IElement element, string name)
     {
         if (element == null)
             throw new ArgumentNullException(nameof(element));
-
         if (string.IsNullOrEmpty(name))
             throw new ArgumentException("Attribute name cannot be null or empty", nameof(name));
 
         return element.HasAttribute(name);
     }
 
-    /// <summary>
-    /// Removes an attribute from an element.
-    /// </summary>
-    /// <param name="element">The element.</param>
-    /// <param name="name">The attribute name.</param>
-    public void RemoveAttribute(IElement element, string name)
+    /// <inheritdoc />
+    public bool RemoveAttribute(IElement element, string name)
     {
         if (element == null)
             throw new ArgumentNullException(nameof(element));
-
         if (string.IsNullOrEmpty(name))
             throw new ArgumentException("Attribute name cannot be null or empty", nameof(name));
 
-        element.RemoveAttribute(name);
+        if (element.HasAttribute(name))
+        {
+            element.RemoveAttribute(name);
+            return true;
+        }
+
+        return false;
     }
 
-    /// <summary>
-    /// Finds an element by ID.
-    /// </summary>
-    /// <param name="document">The document.</param>
-    /// <param name="id">The element ID.</param>
-    /// <returns>The element with the specified ID, or null if no such element exists.</returns>
+    /// <inheritdoc />
     public IElement? GetElementById(IDocument document, string id)
     {
         if (document == null)
             throw new ArgumentNullException(nameof(document));
-
         if (string.IsNullOrEmpty(id))
             throw new ArgumentException("ID cannot be null or empty", nameof(id));
 
         return document.GetElementById(id);
     }
 
-    /// <summary>
-    /// Gets elements by tag name.
-    /// </summary>
-    /// <param name="element">The root element to search from.</param>
-    /// <param name="tagName">The tag name to search for.</param>
-    /// <returns>A collection of elements with the specified tag name.</returns>
+    /// <inheritdoc />
     public IReadOnlyList<IElement> GetElementsByTagName(IElement element, string tagName)
     {
         if (element == null)
             throw new ArgumentNullException(nameof(element));
-
         if (string.IsNullOrEmpty(tagName))
             throw new ArgumentException("Tag name cannot be null or empty", nameof(tagName));
 
         var elements = element.GetElementsByTagName(tagName.ToLowerInvariant());
         var result = new List<IElement>(elements.Length);
 
-        for (var i = 0; i < elements.Length; i++)
+        foreach (var el in elements)
         {
-            result.Add(elements[i]);
+            result.Add(el);
         }
 
         return result;

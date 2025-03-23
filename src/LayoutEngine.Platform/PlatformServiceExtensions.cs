@@ -28,8 +28,8 @@ public static class PlatformServiceExtensions
             throw new ArgumentNullException(nameof(services));
 
         // Register abstraction interfaces
-        services.TryAddSingleton<IMutationObserverFactory, MutationObserverFactory>();
-        services.TryAddSingleton<IResizeObserverFactory, ResizeObserverFactory>();
+        // services.TryAddSingleton<IMutationObserverFactory, MutationObserverFactory>();
+        // services.TryAddSingleton<IResizeObserverFactory, ResizeObserverFactory>();
         services.TryAddSingleton<IWindowProvider, DefaultWindowProvider>();
         services.TryAddSingleton<ITimeProvider, SystemTimeProvider>();
         services.TryAddSingleton<IResourceLoadingStrategy, DefaultResourceLoadingStrategy>();
@@ -38,8 +38,8 @@ public static class PlatformServiceExtensions
         // Register platform services
         services.TryAddSingleton<IDocumentLifecycleCoordinator, DocumentLifecycleCoordinator>();
         services.TryAddSingleton<IElementAdapter, ElementAdapter>();
-        services.TryAddSingleton<IDomMutationTracker, DomMutationTracker>();
-        services.TryAddSingleton<IViewportDetector, ViewportDetector>();
+        // services.TryAddSingleton<IDomMutationTracker, DomMutationTracker>();
+        // services.TryAddSingleton<IViewportDetector, ViewportDetector>();
         services.TryAddSingleton<IThreadPool, ThreadPool>();
         services.TryAddSingleton<IThreadingCoordinator, ThreadingCoordinator>();
         services.TryAddSingleton<IUpdateScheduler, UpdateScheduler>();
@@ -78,8 +78,8 @@ public static class PlatformServiceExtensions
         // but still use real implementations for most services
         services.TryAddSingleton<IDocumentLifecycleCoordinator, DocumentLifecycleCoordinator>();
         services.TryAddSingleton<IElementAdapter, ElementAdapter>();
-        services.TryAddSingleton<IDomMutationTracker, DomMutationTracker>();
-        services.TryAddSingleton<IViewportDetector, ViewportDetector>();
+        // services.TryAddSingleton<IDomMutationTracker, DomMutationTracker>();
+        // services.TryAddSingleton<IViewportDetector, ViewportDetector>();
         services.TryAddSingleton<IThreadPool, ThreadPool>();
         services.TryAddSingleton<IThreadingCoordinator, ThreadingCoordinator>();
         services.TryAddSingleton<IUpdateScheduler, UpdateScheduler>();

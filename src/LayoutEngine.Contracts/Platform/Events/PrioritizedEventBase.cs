@@ -2,6 +2,7 @@ namespace LayoutEngine.Contracts.Platform.Events;
 
 using System;
 using System.Collections.Generic;
+using AngleSharp.Dom;
 using Dom;
 using Infrastructure.EventAggregator.API.Events;
 using LayoutEngine.Contracts.Resource;
@@ -33,135 +34,6 @@ public class PhaseChangedEvent : PrioritizedEventBase
     {
         Phase = phase;
         ChangeType = changeType;
-    }
-}
-
-/// <summary>
-/// Event raised when an element attribute changes.
-/// </summary>
-public class DomAttributeChangedEvent : EventBase
-{
-    /// <summary>
-    /// Gets the DOM node that changed.
-    /// </summary>
-    public IDomNode Node { get; }
-
-    /// <summary>
-    /// Gets the name of the attribute that changed.
-    /// </summary>
-    public string AttributeName { get; }
-
-    /// <summary>
-    /// Gets the old value of the attribute.
-    /// </summary>
-    public string? OldValue { get; }
-
-    /// <summary>
-    /// Gets the new value of the attribute.
-    /// </summary>
-    public string? NewValue { get; }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="DomAttributeChangedEvent"/> class.
-    /// </summary>
-    /// <param name="node">The DOM node that changed.</param>
-    /// <param name="attributeName">The name of the attribute that changed.</param>
-    /// <param name="oldValue">The old value of the attribute.</param>
-    /// <param name="newValue">The new value of the attribute.</param>
-    public DomAttributeChangedEvent(IDomNode node, string attributeName, string? oldValue, string? newValue)
-    {
-        Node = node ?? throw new ArgumentNullException(nameof(node));
-        AttributeName = attributeName ?? throw new ArgumentNullException(nameof(attributeName));
-        OldValue = oldValue;
-        NewValue = newValue;
-    }
-}
-
-/// <summary>
-/// Event raised when a node is added to the DOM.
-/// </summary>
-public class DomNodeAddedEvent : EventBase
-{
-    /// <summary>
-    /// Gets the node that was added.
-    /// </summary>
-    public IDomNode Node { get; }
-
-    /// <summary>
-    /// Gets the parent node.
-    /// </summary>
-    public IDomNode Parent { get; }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="DomNodeAddedEvent"/> class.
-    /// </summary>
-    /// <param name="node">The node that was added.</param>
-    /// <param name="parent">The parent node.</param>
-    public DomNodeAddedEvent(IDomNode node, IDomNode parent)
-    {
-        Node = node ?? throw new ArgumentNullException(nameof(node));
-        Parent = parent ?? throw new ArgumentNullException(nameof(parent));
-    }
-}
-
-/// <summary>
-/// Event raised when a node is removed from the DOM.
-/// </summary>
-public class DomNodeRemovedEvent : EventBase
-{
-    /// <summary>
-    /// Gets the node that was removed.
-    /// </summary>
-    public IDomNode Node { get; }
-
-    /// <summary>
-    /// Gets the parent node.
-    /// </summary>
-    public IDomNode Parent { get; }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="DomNodeRemovedEvent"/> class.
-    /// </summary>
-    /// <param name="node">The node that was removed.</param>
-    /// <param name="parent">The parent node.</param>
-    public DomNodeRemovedEvent(IDomNode node, IDomNode parent)
-    {
-        Node = node ?? throw new ArgumentNullException(nameof(node));
-        Parent = parent ?? throw new ArgumentNullException(nameof(parent));
-    }
-}
-
-/// <summary>
-/// Event raised when a text node changes.
-/// </summary>
-public class DomTextChangedEvent : EventBase
-{
-    /// <summary>
-    /// Gets the text node that changed.
-    /// </summary>
-    public IText TextNode { get; }
-
-    /// <summary>
-    /// Gets the old value of the text.
-    /// </summary>
-    public string? OldValue { get; }
-
-    /// <summary>
-    /// Gets the new value of the text.
-    /// </summary>
-    public string? NewValue { get; }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="DomTextChangedEvent"/> class.
-    /// </summary>
-    /// <param name="textNode">The text node that changed.</param>
-    /// <param name="oldValue">The old value of the text.</param>
-    /// <param name="newValue">The new value of the text.</param>
-    public DomTextChangedEvent(IText textNode, string? oldValue, string? newValue)
-    {
-        TextNode = textNode ?? throw new ArgumentNullException(nameof(textNode));
-        OldValue = oldValue;
-        NewValue = newValue;
     }
 }
 

@@ -1,6 +1,7 @@
 namespace LayoutEngine.Contracts.LayoutSystem;
 
 using System.Collections.Generic;
+using AngleSharp.Dom;
 using Platform.Dom;
 using StyleSystem;
 

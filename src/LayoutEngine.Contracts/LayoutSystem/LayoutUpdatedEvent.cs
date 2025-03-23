@@ -2,6 +2,7 @@ namespace LayoutEngine.Contracts.LayoutSystem;
 
 using System;
 using System.Collections.Generic;
+using AngleSharp.Dom;
 using Infrastructure.EventAggregator.API.Events;
 using Platform.Dom;
 
@@ -14,17 +15,17 @@ public class LayoutUpdatedEvent : EventBase
     /// Gets the updated elements.
     /// </summary>
     public IReadOnlyList<IElement> UpdatedElements { get; }
-        
+
     /// <summary>
     /// Gets the root of the layout tree.
     /// </summary>
     public ILayoutBox RootBox { get; }
-        
+
     /// <summary>
     /// Gets the updated boxes for each element.
     /// </summary>
     public IReadOnlyDictionary<IElement, ILayoutBox> UpdatedBoxes { get; }
-        
+
     /// <summary>
     /// Initializes a new instance of the LayoutUpdatedEvent class.
     /// </summary>

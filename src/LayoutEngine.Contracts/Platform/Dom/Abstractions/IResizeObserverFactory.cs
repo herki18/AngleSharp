@@ -1,6 +1,7 @@
 namespace LayoutEngine.Contracts.Platform.Dom.Abstractions;
 
 using System;
+using AngleSharp.Dom;
 using LayoutEngine.Contracts.Platform.Dom;
 
 /// <summary>

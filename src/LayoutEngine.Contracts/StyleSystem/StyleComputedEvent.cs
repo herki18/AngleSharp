@@ -2,6 +2,7 @@ namespace LayoutEngine.Contracts.StyleSystem;
 
 using System;
 using System.Collections.Generic;
+using AngleSharp.Dom;
 using Infrastructure.EventAggregator.API.Events;
 using Platform.Dom;
 

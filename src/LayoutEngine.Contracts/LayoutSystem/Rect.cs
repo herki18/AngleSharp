@@ -3,6 +3,7 @@ namespace LayoutEngine.Contracts.LayoutSystem;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AngleSharp.Dom;
 using LayoutEngine.Contracts.Platform.Dom;
 using LayoutEngine.Contracts.Platform.Lifecycle;
 

@@ -1,5 +1,7 @@
 namespace LayoutEngine.Contracts.Platform.Dom.Abstractions;
 
+using AngleSharp.Dom;
+
 /// <summary>
 /// Interface for resize observer to make testing easier
 /// </summary>

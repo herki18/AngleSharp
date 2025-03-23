@@ -2,6 +2,7 @@ namespace LayoutEngine.Contracts.Platform.Updates;
 
 using System;
 using System.Collections.Generic;
+using AngleSharp.Dom;
 using LayoutEngine.Contracts.Platform.Dom;
 
 /// <summary>
