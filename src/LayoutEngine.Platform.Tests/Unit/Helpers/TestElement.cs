@@ -1,6 +1,8 @@
 namespace LayoutEngine.Platform.Tests.Unit.Helpers;
 
+using AngleSharp.Dom;
 using LayoutEngine.Contracts.Platform.Dom;
+using IElement = Contracts.Platform.Dom.IElement;
 
 /// <summary>
 /// Test element for testing

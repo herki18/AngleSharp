@@ -1,5 +1,7 @@
 namespace LayoutEngine.Contracts.Platform.Dom.Abstractions;
 
+using AngleSharp.Dom;
+
 /// <summary>
 /// Default implementation of window provider
 /// </summary>

@@ -2,6 +2,7 @@ namespace LayoutEngine.Contracts.Platform.Dom;
 
 using System;
 using System.Collections.Generic;
+using AngleSharp.Dom;
 
 /// <summary>
 /// Tracks DOM mutations and generates events for DOM changes.
@@ -33,14 +34,14 @@ public interface IDomMutationTracker
     /// </summary>
     /// <param name="node">The node that was added.</param>
     /// <param name="parent">The parent node.</param>
-    void SignalNodeAdded(IDomNode node, IDomNode parent);
+    void SignalNodeAdded(INode node, INode parent);
 
     /// <summary>
     /// Manually signals a node was removed.
     /// </summary>
     /// <param name="node">The node that was removed.</param>
     /// <param name="parent">The parent node.</param>
-    void SignalNodeRemoved(IDomNode node, IDomNode parent);
+    void SignalNodeRemoved(INode node, INode parent);
 }
 
 /// <summary>
@@ -126,156 +127,6 @@ public interface IViewportDetector
 }
 
 /// <summary>
-/// Represents a DOM node.
-/// </summary>
-public interface IDomNode
-{
-    /// <summary>
-    /// Gets the node type.
-    /// </summary>
-    NodeType NodeType { get; }
-
-    /// <summary>
-    /// Gets the node name.
-    /// </summary>
-    string NodeName { get; }
-
-    /// <summary>
-    /// Gets the parent node.
-    /// </summary>
-    IDomNode? ParentNode { get; }
-}
-
-/// <summary>
-/// Represents an HTML element.
-/// </summary>
-public interface IElement : IDomNode
-{
-    /// <summary>
-    /// Gets the element ID.
-    /// </summary>
-    string Id { get; }
-
-    /// <summary>
-    /// Gets the element tag name.
-    /// </summary>
-    string TagName { get; }
-
-    /// <summary>
-    /// Gets the parent element.
-    /// </summary>
-    IElement? ParentElement { get; }
-
-    /// <summary>
-    /// Gets the child nodes.
-    /// </summary>
-    IDomNode[] ChildNodes { get; }
-
-    /// <summary>
-    /// Gets the value of an attribute.
-    /// </summary>
-    /// <param name="name">The attribute name.</param>
-    /// <returns>The attribute value, or null if the attribute doesn't exist.</returns>
-    string? GetAttribute(string name);
-
-    /// <summary>
-    /// Sets the value of an attribute.
-    /// </summary>
-    /// <param name="name">The attribute name.</param>
-    /// <param name="value">The attribute value.</param>
-    void SetAttribute(string name, string? value);
-
-    /// <summary>
-    /// Checks if an element has the specified attribute.
-    /// </summary>
-    /// <param name="name">The attribute name.</param>
-    /// <returns>True if the element has the attribute, otherwise false.</returns>
-    bool HasAttribute(string name);
-
-    /// <summary>
-    /// Removes an attribute from an element.
-    /// </summary>
-    /// <param name="name">The attribute name.</param>
-    void RemoveAttribute(string name);
-
-    /// <summary>
-    /// Gets elements by tag name.
-    /// </summary>
-    /// <param name="tagName">The tag name to search for.</param>
-    /// <returns>A collection of elements with the specified tag name.</returns>
-    IElement[] GetElementsByTagName(string tagName);
-}
-
-/// <summary>
-/// Represents a text node.
-/// </summary>
-public interface IText : IDomNode
-{
-    /// <summary>
-    /// Gets or sets the text data.
-    /// </summary>
-    string Data { get; set; }
-}
-
-/// <summary>
-/// Represents an HTML document.
-/// </summary>
-public interface IDocument : IDomNode
-{
-    /// <summary>
-    /// Gets the document element (root element).
-    /// </summary>
-    IElement DocumentElement { get; }
-
-    /// <summary>
-    /// Finds an element by ID.
-    /// </summary>
-    /// <param name="id">The element ID.</param>
-    /// <returns>The element with the specified ID, or null if no such element exists.</returns>
-    IElement? GetElementById(string id);
-}
-
-/// <summary>
-/// Represents a browser window.
-/// </summary>
-public interface IWindow
-{
-    /// <summary>
-    /// Gets the document associated with the window.
-    /// </summary>
-    IDocument Document { get; }
-
-    /// <summary>
-    /// Gets the inner width of the window.
-    /// </summary>
-    int InnerWidth { get; }
-
-    /// <summary>
-    /// Gets the inner height of the window.
-    /// </summary>
-    int InnerHeight { get; }
-
-    /// <summary>
-    /// Gets the device pixel ratio.
-    /// </summary>
-    double DevicePixelRatio { get; }
-
-    /// <summary>
-    /// Adds an event listener to the window.
-    /// </summary>
-    /// <param name="eventType">The event type.</param>
-    /// <param name="listener">The event listener.</param>
-    void AddEventListener(string eventType, Action<Event> listener);
-
-    /// <summary>
-    /// Removes an event listener from the window.
-    /// </summary>
-    /// <param name="eventType">The event type.</param>
-    /// <param name="listener">The event listener.</param>
-    void RemoveEventListener(string eventType, Action<Event> listener);
-}
-
-/// <summary>
 /// Represents a size with width and height.
 /// </summary>
 public struct Size : IEquatable<Size>
@@ -324,170 +175,6 @@ public struct Size : IEquatable<Size>
     public static bool operator !=(Size left, Size right)
     {
         return !left.Equals(right);
-    }
-}
-
-/// <summary>
-/// Represents a DOM event.
-/// </summary>
-public class Event
-{
-    /// <summary>
-    /// Gets the event type.
-    /// </summary>
-    public string Type { get; }
-
-    /// <summary>
-    /// Gets the event target.
-    /// </summary>
-    public IDomNode Target { get; }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Event"/> class.
-    /// </summary>
-    /// <param name="type">The event type.</param>
-    /// <param name="target">The event target.</param>
-    public Event(string type, IDomNode target)
-    {
-        Type = type;
-        Target = target;
-    }
-}
-
-/// <summary>
-/// Defines the type of a DOM node.
-/// </summary>
-public enum NodeType
-{
-    /// <summary>
-    /// Element node (e.g., &lt;div&gt;).
-    /// </summary>
-    Element = 1,
-
-    /// <summary>
-    /// Text node.
-    /// </summary>
-    Text = 3,
-
-    /// <summary>
-    /// Comment node.
-    /// </summary>
-    Comment = 8,
-
-    /// <summary>
-    /// Document node.
-    /// </summary>
-    Document = 9
-}
-
-/// <summary>
-/// Represents a mutation record from MutationObserver.
-/// </summary>
-public class MutationRecord
-{
-    /// <summary>
-    /// Gets the type of mutation.
-    /// </summary>
-    public string Type { get; }
-
-    /// <summary>
-    /// Gets the target of the mutation.
-    /// </summary>
-    public IDomNode Target { get; }
-
-    /// <summary>
-    /// Gets the added nodes.
-    /// </summary>
-    public IDomNode[]? AddedNodes { get; }
-
-    /// <summary>
-    /// Gets the removed nodes.
-    /// </summary>
-    public IDomNode[]? RemovedNodes { get; }
-
-    /// <summary>
-    /// Gets the previous sibling.
-    /// </summary>
-    public IDomNode? PreviousSibling { get; }
-
-    /// <summary>
-    /// Gets the next sibling.
-    /// </summary>
-    public IDomNode? NextSibling { get; }
-
-    /// <summary>
-    /// Gets the attribute name for attribute mutations.
-    /// </summary>
-    public string AttributeName { get; }
-
-    /// <summary>
-    /// Gets the attribute namespace for attribute mutations.
-    /// </summary>
-    public string? AttributeNamespace { get; }
-
-    /// <summary>
-    /// Gets the old value for attribute or character data mutations.
-    /// </summary>
-    public string? OldValue { get; }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MutationRecord"/> class.
-    /// </summary>
-    public MutationRecord(
-        string type,
-        IDomNode target,
-        string attributeName = "",
-        string? attributeNamespace = null,
-        string? oldValue = null,
-        IDomNode[]? addedNodes = null,
-        IDomNode[]? removedNodes = null,
-        IDomNode? previousSibling = null,
-        IDomNode? nextSibling = null)
-    {
-        Type = type;
-        Target = target;
-        AttributeName = attributeName;
-        AttributeNamespace = attributeNamespace;
-        OldValue = oldValue;
-        AddedNodes = addedNodes;
-        RemovedNodes = removedNodes;
-        PreviousSibling = previousSibling;
-        NextSibling = nextSibling;
-    }
-}
-
-/// <summary>
-/// Represents a mutation observer.
-/// </summary>
-public class MutationObserver
-{
-    private readonly Action<MutationRecord[]> _callback;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MutationObserver"/> class.
-    /// </summary>
-    /// <param name="callback">The callback to invoke when mutations occur.</param>
-    public MutationObserver(Action<MutationRecord[]> callback)
-    {
-        _callback = callback;
-    }
-
-    /// <summary>
-    /// Starts observing mutations on the specified target.
-    /// </summary>
-    /// <param name="target">The target to observe.</param>
-    /// <param name="options">The options for observation.</param>
-    public void Observe(IDomNode target, MutationObserverInit options)
-    {
-        // This would be implemented by platform-specific code
-    }
-
-    /// <summary>
-    /// Stops observing mutations.
-    /// </summary>
-    public void Disconnect()
-    {
-        // This would be implemented by platform-specific code
     }
 }
 
