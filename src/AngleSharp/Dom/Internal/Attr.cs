@@ -6,7 +6,6 @@ namespace AngleSharp.Dom
     using System.IO;
     using Common;
     using Html.Construction;
-    using ViewSync;
 
     /// <summary>
     /// Represents a generic node attribute.

@@ -7,7 +7,6 @@ namespace AngleSharp.Dom
     using Html.Construction;
     using Html.Parser.Tokens;
     using Html.Parser.Tokens.Struct;
-    using ViewSync;
 
     /// <summary>
     /// Represents a node in the generated tree.
@@ -25,33 +24,23 @@ namespace AngleSharp.Dom
         private NodeList _children;
         private Document? _owner;
 
-        private IViewSynchronizer? _viewSync;
-
         #endregion
 
         #region ctor
 
         /// <inheritdoc />
-        public Node(Document? owner, String name, NodeType type = AngleSharp.Dom.NodeType.Element, NodeFlags flags = NodeFlags.None, IViewSynchronizer? view = null)
+        public Node(Document? owner, String name, NodeType type = AngleSharp.Dom.NodeType.Element, NodeFlags flags = NodeFlags.None)
         {
             _owner = owner;
             _name = name ?? String.Empty;
             _type = type;
             _children = this.IsEndPoint() ? NodeList.Empty : [];
             _flags = flags;
-            ViewSync = view;
         }
 
         #endregion
 
         #region Public Properties
-
-        /// <inheritdoc />
-        public IViewSynchronizer? ViewSync
-        {
-            get { return _viewSync; }
-            protected set { _viewSync = value; }
-        }
 
         /// <inheritdoc />
         public Boolean HasChildNodes => _children.Length != 0;
@@ -518,7 +507,6 @@ namespace AngleSharp.Dom
         {
             node.Parent = this;
             _children.Insert(index, node);
-            ViewSync?.InsertNode(index, this, node);
         }
 
         /// <inheritdoc />
@@ -526,7 +514,6 @@ namespace AngleSharp.Dom
         {
             node.Parent = this;
             _children.Add(node);
-            ViewSync?.AddNode(this, node);
         }
 
         /// <inheritdoc />
@@ -534,7 +521,6 @@ namespace AngleSharp.Dom
         {
             node.Parent = null;
             _children.RemoveAt(index);
-            ViewSync?.RemoveNode(node);
         }
 
         /// <inheritdoc />

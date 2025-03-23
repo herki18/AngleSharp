@@ -8,7 +8,6 @@ namespace AngleSharp.Html.Dom
     using System.Threading.Tasks;
     using Attributes;
     using Css.Dom;
-    using ViewSync;
 
     /// <summary>
     /// Represents a standard HTML element in the node tree.
@@ -437,8 +436,8 @@ namespace AngleSharp.Html.Dom
         #region ctor
 
         /// <inheritdoc />
-        public HtmlElement(Document owner, String localName, String? prefix = null, NodeFlags flags = NodeFlags.None, IViewSynchronizer? view = null)
-            : base(owner, Combine(prefix, localName), localName, prefix, NamespaceNames.HtmlUri, flags | NodeFlags.HtmlMember, view)
+        public HtmlElement(Document owner, String localName, String? prefix = null, NodeFlags flags = NodeFlags.None)
+            : base(owner, Combine(prefix, localName), localName, prefix, NamespaceNames.HtmlUri, flags | NodeFlags.HtmlMember)
         {
             _cssService = owner.Context.GetService<ICssInlineStyleService>();
         }

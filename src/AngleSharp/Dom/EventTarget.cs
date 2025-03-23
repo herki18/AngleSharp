@@ -5,7 +5,6 @@ namespace AngleSharp.Dom
     using AngleSharp.Text;
     using System;
     using System.Collections.Generic;
-    using ViewSync;
 
     /// <summary>
     /// Event target base of all DOM nodes.

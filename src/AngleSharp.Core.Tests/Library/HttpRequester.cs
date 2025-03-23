@@ -11,7 +11,6 @@ namespace AngleSharp.Core.Tests.Library
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using ViewSync;
 
     [TestFixture]
     public class HttpRequesterTests
@@ -357,8 +356,6 @@ namespace AngleSharp.Core.Tests.Library
         {
             public event DomEventHandler Requesting;
             public event DomEventHandler Requested;
-
-            public IViewSynchronizer ViewSync { get; }
 
             public void AddEventListener(String type, DomEventHandler callback = null, Boolean capture = false)
             {

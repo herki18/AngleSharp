@@ -9,7 +9,6 @@ namespace AngleSharp.Dom
     using Html.Construction;
     using Html.Parser;
     using Html.Parser.Tokens.Struct;
-    using ViewSync;
 
     /// <summary>
     /// Represents an element node.
@@ -31,25 +30,19 @@ namespace AngleSharp.Dom
         #region ctor
 
         /// <inheritdoc />
-        public Element(Document owner, String localName, String? prefix, String? namespaceUri, NodeFlags flags = NodeFlags.None, IViewSynchronizer? view = null)
-            : this(owner, prefix != null ? String.Concat(prefix, ":", localName) : localName, localName, prefix, namespaceUri!, flags, view)
+        public Element(Document owner, String localName, String? prefix, String? namespaceUri, NodeFlags flags = NodeFlags.None)
+            : this(owner, prefix != null ? String.Concat(prefix, ":", localName) : localName, localName, prefix, namespaceUri!, flags)
         {
         }
 
         /// <inheritdoc />
-        public Element(Document owner, String name, String localName, String? prefix, String namespaceUri, NodeFlags flags = NodeFlags.None, IViewSynchronizer? view = null)
-            : base(owner, name, Dom.NodeType.Element, flags, view)
+        public Element(Document owner, String name, String localName, String? prefix, String namespaceUri, NodeFlags flags = NodeFlags.None)
+            : base(owner, name, Dom.NodeType.Element, flags)
         {
             _localName = localName;
             _prefix = prefix;
             _namespace = namespaceUri;
             _attributes = new NamedNodeMap(this);
-
-            var viewFactory = owner?.Context.GetService<IViewFactory>();
-            if (viewFactory != null && ViewSync == null)
-            {
-                ViewSync = viewFactory.Create(localName, this);
-            }
         }
 
         #endregion
@@ -524,7 +517,6 @@ namespace AngleSharp.Dom
                 return false;
             }
 
-            ViewSync?.RemoveAttribute(name, this);
             return true;
 
         }

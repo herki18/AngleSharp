@@ -1528,7 +1528,6 @@ namespace AngleSharp.Dom
         internal static void SetOwnAttribute(this Element element, String name, String? value, Boolean suppressCallbacks = false)
         {
             element.Attributes.SetNamedItemWithNamespaceUri(new Attr(name, value!), suppressCallbacks);
-            element.ViewSync?.UpdateAttribute(name, element);
         }
 
         private static IDocumentFragment CreateFragment(this IElement context, String html)

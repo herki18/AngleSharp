@@ -208,8 +208,6 @@ namespace AngleSharp.Dom
                     m.EndWith(this, m.End + data.Length - count);
                 }
             }
-
-            ViewSync?.UpdateText(this);
         }
 
         /// <inheritdoc />
