@@ -1,233 +1,269 @@
+namespace LayoutEngine.Contracts.Platform.Resource;
+
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using LayoutEngine.Contracts.Resource;
-
-namespace LayoutEngine.Contracts.Platform.Resource;
 
 /// <summary>
-/// Provides font metrics information for text layout calculations.
+/// Provides font metrics and text measurement capabilities.
+/// This interface is platform-agnostic and can be implemented for different rendering systems.
 /// </summary>
 public interface IFontMetricsProvider
 {
     /// <summary>
-    /// Gets metrics for a specified font.
+    /// Gets the metrics for a specified font asynchronously.
     /// </summary>
     /// <param name="fontFamily">The font family name.</param>
-    /// <param name="fontSize">The font size in pixels.</param>
+    /// <param name="fontSize">The font size in points or pixels.</param>
     /// <param name="fontWeight">The font weight (400 is normal, 700 is bold).</param>
-    /// <param name="fontStyle">The font style (normal, italic, etc.).</param>
-    /// <returns>The font metrics.</returns>
+    /// <param name="fontStyle">The font style (e.g., "normal", "italic").</param>
+    /// <returns>A task that resolves to the font metrics.</returns>
     Task<IFontMetrics> GetFontMetricsAsync(string fontFamily, float fontSize, int fontWeight = 400, string fontStyle = "normal");
 
     /// <summary>
-    /// Measures text using the specified font.
+    /// Measures text dimensions with the specified font settings asynchronously.
     /// </summary>
     /// <param name="text">The text to measure.</param>
     /// <param name="fontFamily">The font family name.</param>
-    /// <param name="fontSize">The font size in pixels.</param>
+    /// <param name="fontSize">The font size in points or pixels.</param>
     /// <param name="fontWeight">The font weight (400 is normal, 700 is bold).</param>
-    /// <param name="fontStyle">The font style (normal, italic, etc.).</param>
-    /// <returns>The text metrics.</returns>
+    /// <param name="fontStyle">The font style (e.g., "normal", "italic").</param>
+    /// <returns>A task that resolves to the text metrics.</returns>
     Task<ITextMetrics> MeasureTextAsync(string text, string fontFamily, float fontSize, int fontWeight = 400, string fontStyle = "normal");
 
     /// <summary>
-    /// Checks if a font is available.
+    /// Checks if a font is available in the system asynchronously.
     /// </summary>
-    /// <param name="fontFamily">The font family name.</param>
-    /// <returns>True if the font is available, false otherwise.</returns>
+    /// <param name="fontFamily">The font family name to check.</param>
+    /// <returns>A task that resolves to true if the font is available, false otherwise.</returns>
     Task<bool> IsFontAvailableAsync(string fontFamily);
 
     /// <summary>
-    /// Gets a list of fallback fonts for a specified font.
+    /// Gets a list of fallback fonts for a specified font family asynchronously.
     /// </summary>
     /// <param name="fontFamily">The font family name.</param>
-    /// <returns>A list of fallback font family names.</returns>
+    /// <returns>A task that resolves to a list of fallback font family names.</returns>
     Task<IReadOnlyList<string>> GetFallbackFontsAsync(string fontFamily);
 
     /// <summary>
-    /// Attempts to get glyph metrics for a character.
+    /// Gets metrics for a specific character (glyph) asynchronously.
     /// </summary>
-    /// <param name="character">The character.</param>
+    /// <param name="character">The character to get metrics for.</param>
     /// <param name="fontFamily">The font family name.</param>
-    /// <param name="fontSize">The font size in pixels.</param>
+    /// <param name="fontSize">The font size in points or pixels.</param>
     /// <param name="fontWeight">The font weight (400 is normal, 700 is bold).</param>
-    /// <param name="fontStyle">The font style (normal, italic, etc.).</param>
-    /// <returns>The glyph metrics.</returns>
+    /// <param name="fontStyle">The font style (e.g., "normal", "italic").</param>
+    /// <returns>A task that resolves to the glyph metrics.</returns>
     Task<IGlyphMetrics> GetGlyphMetricsAsync(char character, string fontFamily, float fontSize, int fontWeight = 400, string fontStyle = "normal");
+
+    /// <summary>
+    /// Gets the metrics for a specified font (synchronous version).
+    /// </summary>
+    /// <param name="fontFamily">The font family name.</param>
+    /// <param name="fontSize">The font size in points or pixels.</param>
+    /// <param name="fontWeight">The font weight (400 is normal, 700 is bold).</param>
+    /// <param name="fontStyle">The font style (e.g., "normal", "italic").</param>
+    /// <returns>The font metrics.</returns>
+    IFontMetrics GetFontMetrics(string fontFamily, float fontSize, int fontWeight = 400, string fontStyle = "normal");
+
+    /// <summary>
+    /// Measures text dimensions with the specified font settings (synchronous version).
+    /// </summary>
+    /// <param name="text">The text to measure.</param>
+    /// <param name="fontFamily">The font family name.</param>
+    /// <param name="fontSize">The font size in points or pixels.</param>
+    /// <param name="fontWeight">The font weight (400 is normal, 700 is bold).</param>
+    /// <param name="fontStyle">The font style (e.g., "normal", "italic").</param>
+    /// <returns>The text metrics.</returns>
+    ITextMetrics MeasureText(string text, string fontFamily, float fontSize, int fontWeight = 400, string fontStyle = "normal");
+
+    /// <summary>
+    /// Checks if a font is available in the system (synchronous version).
+    /// </summary>
+    /// <param name="fontFamily">The font family name to check.</param>
+    /// <returns>True if the font is available, false otherwise.</returns>
+    bool IsFontAvailable(string fontFamily);
+
+    /// <summary>
+    /// Gets a list of fallback fonts for a specified font family (synchronous version).
+    /// </summary>
+    /// <param name="fontFamily">The font family name.</param>
+    /// <returns>A list of fallback font family names.</returns>
+    IReadOnlyList<string> GetFallbackFonts(string fontFamily);
+
+    /// <summary>
+    /// Gets metrics for a specific character (glyph) (synchronous version).
+    /// </summary>
+    /// <param name="character">The character to get metrics for.</param>
+    /// <param name="fontFamily">The font family name.</param>
+    /// <param name="fontSize">The font size in points or pixels.</param>
+    /// <param name="fontWeight">The font weight (400 is normal, 700 is bold).</param>
+    /// <param name="fontStyle">The font style (e.g., "normal", "italic").</param>
+    /// <returns>The glyph metrics.</returns>
+    IGlyphMetrics GetGlyphMetrics(char character, string fontFamily, float fontSize, int fontWeight = 400, string fontStyle = "normal");
+
+    /// <summary>
+    /// Registers a font resource by its path.
+    /// This allows specifying a font by a resource path specific to the platform.
+    /// </summary>
+    /// <param name="fontFamily">The font family name to use for this font.</param>
+    /// <param name="resourcePath">The platform-specific resource path to the font.</param>
+    void RegisterFontResource(string fontFamily, string resourcePath);
 }
 
 /// <summary>
-/// Represents metrics for a font.
+/// Extended font metrics provider with additional platform capabilities.
+/// </summary>
+public interface IExtendedFontMetricsProvider : IFontMetricsProvider
+{
+    /// <summary>
+    /// Measures text with a platform-native font asset.
+    /// </summary>
+    /// <param name="text">The text to measure.</param>
+    /// <param name="nativeFontAsset">The platform-native font asset (cast to appropriate type in implementation).</param>
+    /// <param name="fontSize">The font size in points or pixels.</param>
+    /// <returns>The text metrics.</returns>
+    ITextMetrics MeasureTextWithNativeAsset(string text, object nativeFontAsset, float fontSize);
+
+    /// <summary>
+    /// Registers custom font data as a font family.
+    /// </summary>
+    /// <param name="fontData">The raw font data (e.g., TTF or OTF file content).</param>
+    /// <param name="fontFamily">The font family name to use.</param>
+    /// <returns>True if registration succeeded, false otherwise.</returns>
+    bool RegisterCustomFont(byte[] fontData, string fontFamily);
+
+    /// <summary>
+    /// Registers a fallback chain for a primary font.
+    /// </summary>
+    /// <param name="primaryFontFamily">The primary font family.</param>
+    /// <param name="fallbackFontFamilies">A list of fallback font families in priority order.</param>
+    void RegisterFallbackChain(string primaryFontFamily, IEnumerable<string> fallbackFontFamilies);
+
+    /// <summary>
+    /// Checks if a specific platform is supported by this provider.
+    /// </summary>
+    /// <param name="platformName">The platform name (e.g., "Unity", "Browser").</param>
+    /// <returns>True if the platform is supported, false otherwise.</returns>
+    bool IsPlatformSupported(string platformName);
+}
+
+/// <summary>
+/// Represents metrics for a font at a specific size.
 /// </summary>
 public interface IFontMetrics
 {
-    /// <summary>
-    /// Gets the font family name.
-    /// </summary>
+    /// <summary>The font family name.</summary>
     string FontFamily { get; }
 
-    /// <summary>
-    /// Gets the font size in pixels.
-    /// </summary>
+    /// <summary>The font size in points or pixels.</summary>
     float FontSize { get; }
 
-    /// <summary>
-    /// Gets the font weight.
-    /// </summary>
+    /// <summary>The font weight (400 is normal, 700 is bold).</summary>
     int FontWeight { get; }
 
-    /// <summary>
-    /// Gets the font style.
-    /// </summary>
+    /// <summary>The font style (e.g., "normal", "italic").</summary>
     string FontStyle { get; }
 
-    /// <summary>
-    /// Gets the ascent of the font in pixels.
-    /// </summary>
+    /// <summary>The distance from the baseline to the top of capital letters.</summary>
     float Ascent { get; }
 
-    /// <summary>
-    /// Gets the descent of the font in pixels.
-    /// </summary>
+    /// <summary>The distance from the baseline to the bottom of descending letters (positive value).</summary>
     float Descent { get; }
 
-    /// <summary>
-    /// Gets the line gap of the font in pixels.
-    /// </summary>
+    /// <summary>The recommended spacing between lines of text.</summary>
     float LineGap { get; }
 
-    /// <summary>
-    /// Gets the em square size of the font in pixels.
-    /// </summary>
+    /// <summary>The em square size of the font.</summary>
     float EmSquare { get; }
 
-    /// <summary>
-    /// Gets the cap height of the font in pixels.
-    /// </summary>
+    /// <summary>The height of capital letters from the baseline.</summary>
     float CapHeight { get; }
 
-    /// <summary>
-    /// Gets the x-height of the font in pixels.
-    /// </summary>
+    /// <summary>The height of lowercase 'x' from the baseline.</summary>
     float XHeight { get; }
 
-    /// <summary>
-    /// Gets a value indicating whether the font is a monospace font.
-    /// </summary>
+    /// <summary>Whether the font is monospace (all characters have the same width).</summary>
     bool IsMonospace { get; }
 
-    /// <summary>
-    /// Gets the average character width of the font in pixels.
-    /// </summary>
+    /// <summary>The average width of characters in the font.</summary>
     float AverageCharWidth { get; }
 
-    /// <summary>
-    /// Gets the maximum character width of the font in pixels.
-    /// </summary>
+    /// <summary>The maximum width of characters in the font.</summary>
     float MaxCharWidth { get; }
 }
 
 /// <summary>
-/// Represents metrics for measured text.
+/// Represents metrics for a text string at a specific font and size.
 /// </summary>
 public interface ITextMetrics
 {
-    /// <summary>
-    /// Gets the width of the text in pixels.
-    /// </summary>
+    /// <summary>The width of the text.</summary>
     float Width { get; }
 
-    /// <summary>
-    /// Gets the height of the text in pixels.
-    /// </summary>
+    /// <summary>The height of the text.</summary>
     float Height { get; }
 
-    /// <summary>
-    /// Gets the baseline of the text in pixels.
-    /// </summary>
+    /// <summary>The baseline position relative to the top of the text.</summary>
     float Baseline { get; }
 
-    /// <summary>
-    /// Gets the bounding box of the text.
-    /// </summary>
+    /// <summary>The bounding box of the text.</summary>
     Rectangle BoundingBox { get; }
 
-    /// <summary>
-    /// Gets the actual text that was measured.
-    /// </summary>
+    /// <summary>The text string that was measured.</summary>
     string Text { get; }
 
-    /// <summary>
-    /// Gets character positions within the text.
-    /// </summary>
+    /// <summary>Position information for each character in the text.</summary>
     IReadOnlyList<CharacterPosition> CharacterPositions { get; }
 }
 
 /// <summary>
-/// Represents metrics for a glyph.
+/// Represents metrics for a single character (glyph).
 /// </summary>
 public interface IGlyphMetrics
 {
-    /// <summary>
-    /// Gets the character the glyph represents.
-    /// </summary>
+    /// <summary>The character.</summary>
     char Character { get; }
 
-    /// <summary>
-    /// Gets the width of the glyph in pixels.
-    /// </summary>
+    /// <summary>The width of the character.</summary>
     float Width { get; }
 
-    /// <summary>
-    /// Gets the height of the glyph in pixels.
-    /// </summary>
+    /// <summary>The height of the character.</summary>
     float Height { get; }
 
-    /// <summary>
-    /// Gets the horizontal bearing X of the glyph in pixels.
-    /// </summary>
+    /// <summary>The horizontal bearing (offset from origin to left edge).</summary>
     float BearingX { get; }
 
-    /// <summary>
-    /// Gets the horizontal bearing Y of the glyph in pixels.
-    /// </summary>
+    /// <summary>The vertical bearing (offset from baseline to top edge).</summary>
     float BearingY { get; }
 
-    /// <summary>
-    /// Gets the horizontal advance of the glyph in pixels.
-    /// </summary>
+    /// <summary>The horizontal advance (distance to move for next character).</summary>
     float Advance { get; }
 
-    /// <summary>
-    /// Gets the bounding box of the glyph.
-    /// </summary>
+    /// <summary>The bounding box of the character.</summary>
     Rectangle BoundingBox { get; }
 }
 
 /// <summary>
-/// Represents a position of a character in text.
+/// Represents the position of a character within text.
 /// </summary>
 public struct CharacterPosition
 {
-    /// <summary>
-    /// Gets the character.
-    /// </summary>
+    /// <summary>The character.</summary>
     public char Character { get; }
 
-    /// <summary>
-    /// Gets the X position of the character in pixels.
-    /// </summary>
+    /// <summary>The X position of the character.</summary>
     public float X { get; }
 
-    /// <summary>
-    /// Gets the width of the character in pixels.
-    /// </summary>
+    /// <summary>The width of the character.</summary>
     public float Width { get; }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CharacterPosition"/> struct.
+    /// Creates a new CharacterPosition.
     /// </summary>
+    /// <param name="character">The character.</param>
+    /// <param name="x">The X position of the character.</param>
+    /// <param name="width">The width of the character.</param>
     public CharacterPosition(char character, float x, float width)
     {
         Character = character;
@@ -241,29 +277,25 @@ public struct CharacterPosition
 /// </summary>
 public struct Rectangle
 {
-    /// <summary>
-    /// Gets the X coordinate of the rectangle.
-    /// </summary>
+    /// <summary>The X coordinate of the rectangle.</summary>
     public float X { get; }
 
-    /// <summary>
-    /// Gets the Y coordinate of the rectangle.
-    /// </summary>
+    /// <summary>The Y coordinate of the rectangle.</summary>
     public float Y { get; }
 
-    /// <summary>
-    /// Gets the width of the rectangle.
-    /// </summary>
+    /// <summary>The width of the rectangle.</summary>
     public float Width { get; }
 
-    /// <summary>
-    /// Gets the height of the rectangle.
-    /// </summary>
+    /// <summary>The height of the rectangle.</summary>
     public float Height { get; }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Rectangle"/> struct.
+    /// Creates a new Rectangle.
     /// </summary>
+    /// <param name="x">The X coordinate.</param>
+    /// <param name="y">The Y coordinate.</param>
+    /// <param name="width">The width.</param>
+    /// <param name="height">The height.</param>
     public Rectangle(float x, float y, float width, float height)
     {
         X = x;

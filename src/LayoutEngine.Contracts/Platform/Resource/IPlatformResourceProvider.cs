@@ -73,27 +73,6 @@ public interface IResourceErrorHandler
 }
 
 /// <summary>
-/// Extended font metrics provider interface for platform-specific implementations
-/// </summary>
-public interface IExtendedFontMetricsProvider : IFontMetricsProvider
-{
-    /// <summary>
-    /// Gets the list of available font families on the current platform
-    /// </summary>
-    Task<IReadOnlyList<string>> GetAvailableFontFamiliesAsync();
-
-    /// <summary>
-    /// Gets the default font family for the specified generic family
-    /// </summary>
-    Task<string> GetDefaultFontFamilyAsync(string genericFamily);
-
-    /// <summary>
-    /// Registers a custom font from a resource
-    /// </summary>
-    Task<bool> RegisterCustomFontAsync(IResource fontResource);
-}
-
-/// <summary>
 /// Extended resource loader interface for platform-specific implementations
 /// </summary>
 public interface IExtendedResourceLoader : IResourceLoader
