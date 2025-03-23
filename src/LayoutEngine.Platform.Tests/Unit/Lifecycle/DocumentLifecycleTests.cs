@@ -12,14 +12,12 @@ public class DocumentLifecycleTests : IDisposable
 {
     private readonly Fixture _fixture;
     private readonly TestEventAggregator _eventAggregator;
-    private readonly ILifecycleStateValidator _stateValidator;
     private readonly DocumentLifecycleCoordinator _lifecycleCoordinator;
 
     public DocumentLifecycleTests()
     {
         _fixture = new Fixture();
         _eventAggregator = new TestEventAggregator();
-        _stateValidator = new LifecycleStateValidator();
         _lifecycleCoordinator = new DocumentLifecycleCoordinator(_eventAggregator);
     }
 

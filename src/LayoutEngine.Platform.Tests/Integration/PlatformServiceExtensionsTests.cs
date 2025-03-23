@@ -45,7 +45,6 @@ public class PlatformServiceExtensionsTests
         AssertServiceIsRegistered<IResizeObserverFactory>(provider, typeof(ResizeObserverFactory));
         AssertServiceIsRegistered<IWindowProvider>(provider, typeof(DefaultWindowProvider));
         AssertServiceIsRegistered<ITimeProvider>(provider, typeof(SystemTimeProvider));
-        AssertServiceIsRegistered<ILifecycleStateValidator>(provider, typeof(LifecycleStateValidator));
         AssertServiceIsRegistered<IDocumentLifecycleCoordinator>(provider, typeof(DocumentLifecycleCoordinator));
 
         // Assert - Check DOM services
@@ -121,7 +120,6 @@ public class PlatformServiceExtensionsTests
 
         // Assert - Check key test services
         AssertServiceIsRegistered<ITimeProvider>(provider, typeof(TestTimeProvider));
-        AssertServiceIsRegistered<ILifecycleStateValidator>(provider, typeof(LifecycleStateValidator));
         AssertServiceIsRegistered<IDocumentLifecycleCoordinator>(provider, typeof(DocumentLifecycleCoordinator));
         AssertServiceIsRegistered<IThreadPool>(provider, typeof(ThreadPool));
     }
