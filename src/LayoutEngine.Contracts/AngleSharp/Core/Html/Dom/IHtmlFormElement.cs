@@ -2,7 +2,7 @@ namespace AngleSharp.Html.Dom;
 
 using AngleSharp.Attributes;
 using AngleSharp.Dom;
-using Io;
+using AngleSharp.Io;
 using System;
 using System.Threading.Tasks;
 

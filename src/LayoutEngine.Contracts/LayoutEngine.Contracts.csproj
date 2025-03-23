@@ -7,10 +7,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="AngleSharp\Css\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\Infrastructure.CacheManager\Infrastructure.CacheManager.csproj" />
       <ProjectReference Include="..\Infrastructure.EventAggregator\Infrastructure.EventAggregator.csproj" />
     </ItemGroup>

@@ -1,24 +1,20 @@
 namespace AngleSharp.Dom;
 
-using System;
-
 /// <summary>
-///     An enumeration of possible values for position comparisons in a range object.
+/// An enumeration of possible values for position comparisons in a range object.
 /// </summary>
-public enum RangePosition : Int16
+public enum RangePosition : System.Int16
 {
     /// <summary>
-    ///     The position of the given point to the other point is before.
+    /// The position of the given point to the other point is before.
     /// </summary>
     Before = -1,
-
     /// <summary>
-    ///     The position of the given point to the other point is equal.
+    /// The position of the given point to the other point is equal.
     /// </summary>
     Equal = 0,
-
     /// <summary>
-    ///     The position of the given point to the other point is after.
+    /// The position of the given point to the other point is after.
     /// </summary>
     After = 1
 }

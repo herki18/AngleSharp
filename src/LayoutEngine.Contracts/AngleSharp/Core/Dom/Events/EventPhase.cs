@@ -1,13 +1,36 @@
 namespace AngleSharp.Dom.Events;
 
-using System;
-using Attributes;
+using AngleSharp.Attributes;
 
+/// <summary>
+/// Represents the different phases of an event.
+/// </summary>
 [DomName("Event")]
-public enum EventPhase : Byte
+public enum EventPhase : System.Byte
 {
-    [DomName("NONE")] None = 0,
-    [DomName("CAPTURING_PHASE")] Capturing = 1,
-    [DomName("AT_TARGET")] AtTarget = 2,
-    [DomName("BUBBLING_PHASE")] Bubbling = 3
+    /// <summary>
+    /// Events not currently dispatched are in this phase.
+    /// </summary>
+    [DomName("NONE")]
+    None = 0,
+    /// <summary>
+    /// When an event is dispatched to an object that
+    /// participates in a tree it will be in this phase
+    /// before it reaches its target attribute value.
+    /// </summary>
+    [DomName("CAPTURING_PHASE")]
+    Capturing = 1,
+    /// <summary>
+    /// When an event is dispatched it will be in this
+    /// phase on its target attribute value.
+    /// </summary>
+    [DomName("AT_TARGET")]
+    AtTarget = 2,
+    /// <summary>
+    /// When an event is dispatched to an object that
+    /// participates in a tree it will be in this phase
+    /// after it reaches its target attribute value.
+    /// </summary>
+    [DomName("BUBBLING_PHASE")]
+    Bubbling = 3
 }

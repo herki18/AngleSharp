@@ -1,17 +1,17 @@
 namespace AngleSharp.Dom;
 
+using AngleSharp.Attributes;
 using System;
 using System.Collections.Generic;
-using Attributes;
 
 /// <summary>
-///     The DOMStringMap interface represents a set of name-value pairs.
+/// The DOMStringMap interface represents a set of name-value pairs.
 /// </summary>
 [DomName("DOMStringMap")]
 public interface IStringMap : IEnumerable<KeyValuePair<String, String>>
 {
     /// <summary>
-    ///     Gets or sets an item in the dictionary.
+    /// Gets or sets an item in the dictionary.
     /// </summary>
     /// <param name="name">The name of the item to get or set.</param>
     /// <returns>The item with the associated name.</returns>
@@ -19,7 +19,7 @@ public interface IStringMap : IEnumerable<KeyValuePair<String, String>>
     String? this[String name] { get; set; }
 
     /// <summary>
-    ///     Deletes the string with the given name from the map.
+    /// Deletes the string with the given name from the map.
     /// </summary>
     /// <param name="name">The name of the string to remove.</param>
     [DomAccessor(Accessors.Deleter)]

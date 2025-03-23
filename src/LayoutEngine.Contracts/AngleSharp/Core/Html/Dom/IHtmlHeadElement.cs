@@ -1,9 +1,9 @@
 namespace AngleSharp.Html.Dom;
 
-using Attributes;
+using AngleSharp.Attributes;
 
 /// <summary>
-///     Represents the head HTML element.
+/// Represents the head HTML element.
 /// </summary>
 [DomName("HTMLHeadElement")]
 public interface IHtmlHeadElement : IHtmlElement

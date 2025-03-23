@@ -1,17 +1,17 @@
 namespace AngleSharp.Browser.Dom;
 
+using AngleSharp.Attributes;
 using System;
-using Attributes;
 
 /// <summary>
-///     A set of utilities to modify the navigator's behavior.
+/// A set of utilities to modify the navigator's behavior.
 /// </summary>
 [DomName("NavigatorContentUtils")]
 [DomNoInterfaceObject]
 public interface INavigatorContentUtilities
 {
     /// <summary>
-    ///     Allows web sites to register themselves as possible handlers for particular protocols.
+    /// Allows web sites to register themselves as possible handlers for particular protocols.
     /// </summary>
     /// <param name="scheme">The protocol the site wishes to handle, specified as a string.</param>
     /// <param name="url">The URI to the handler as a string.</param>
@@ -20,7 +20,7 @@ public interface INavigatorContentUtilities
     void RegisterProtocolHandler(String scheme, String url, String title);
 
     /// <summary>
-    ///     Allows web sites to register themselves as possible handlers for content of a particular MIME type.
+    /// Allows web sites to register themselves as possible handlers for content of a particular MIME type.
     /// </summary>
     /// <param name="mimeType">The desired MIME type as a string.</param>
     /// <param name="url">The URI to the handler as a string.</param>
@@ -29,7 +29,7 @@ public interface INavigatorContentUtilities
     void RegisterContentHandler(String mimeType, String url, String title);
 
     /// <summary>
-    ///     Checks if any handler is registered at the given URI for the specified scheme.
+    /// Checks if any handler is registered at the given URI for the specified scheme.
     /// </summary>
     /// <param name="scheme">The scheme to check for.</param>
     /// <param name="url">The URI to the handler.</param>
@@ -38,7 +38,7 @@ public interface INavigatorContentUtilities
     Boolean IsProtocolHandlerRegistered(String scheme, String url);
 
     /// <summary>
-    ///     Checks if any handler is registered at the given URI for the specified mime-type.
+    /// Checks if any handler is registered at the given URI for the specified mime-type.
     /// </summary>
     /// <param name="mimeType">The mime-type to check for.</param>
     /// <param name="url">The URI to the handler.</param>
@@ -47,7 +47,7 @@ public interface INavigatorContentUtilities
     Boolean IsContentHandlerRegistered(String mimeType, String url);
 
     /// <summary>
-    ///     Removes the specified protocol handler, if any.
+    /// Removes the specified protocol handler, if any.
     /// </summary>
     /// <param name="scheme">The name of the handled scheme to remove.</param>
     /// <param name="url">The URI to the handler of the scheme.</param>
@@ -55,7 +55,7 @@ public interface INavigatorContentUtilities
     void UnregisterProtocolHandler(String scheme, String url);
 
     /// <summary>
-    ///     Removes the specified content handler, if any.
+    /// Removes the specified content handler, if any.
     /// </summary>
     /// <param name="mimeType">The name of the handled mime-type to remove.</param>
     /// <param name="url">The URI to the handler of the mime-type.</param>

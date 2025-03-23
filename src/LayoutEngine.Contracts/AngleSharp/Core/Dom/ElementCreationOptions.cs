@@ -2,7 +2,13 @@ namespace AngleSharp.Dom;
 
 using System;
 
+/// <summary>
+///
+/// </summary>
 public class ElementCreationOptions
 {
-    public String? Is { get; set; }
+    /// <summary>
+    ///
+    /// </summary>
+    public String? Is { get; set; } // Specifies the type of custom element
 }
