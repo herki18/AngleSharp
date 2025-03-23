@@ -16,7 +16,7 @@ namespace AngleSharp.Css.Dom
         #region Fields
 
         private readonly IBrowsingContext _context;
-        private readonly TextSource _source;
+        private readonly ITextSource _source;
         private readonly MediaList _media;
         private readonly CssRuleList _rules;
         private ICssStyleSheet _parent;
@@ -27,7 +27,7 @@ namespace AngleSharp.Css.Dom
 
         #region ctor
 
-        internal CssStyleSheet(IBrowsingContext context, TextSource source)
+        internal CssStyleSheet(IBrowsingContext context, ITextSource source)
         {
             _context = context;
             _source = source;

@@ -62,7 +62,7 @@ namespace AngleSharp.Io.Processors
             return _context.GetResourceService<TResource>(type.Content);
         }
 
-        private Boolean IsDifferentToCurrentResourceUrl(Url target)
+        private Boolean IsDifferentToCurrentResourceUrl(IUrl target)
         {
             var resource = Resource;
             return resource is null || !target.Equals(resource.Source);

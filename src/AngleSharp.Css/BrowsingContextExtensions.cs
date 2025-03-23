@@ -21,7 +21,7 @@ namespace AngleSharp.Css
         /// <param name="address">The address of the resource.</param>
         /// <param name="element">The hosting element.</param>
         /// <returns>The async task.</returns>
-        public static Task<IStyleSheet> OpenStyleSheetAsync(this IBrowsingContext context, Url address, IElement element) =>
+        public static Task<IStyleSheet> OpenStyleSheetAsync(this IBrowsingContext context, IUrl address, IElement element) =>
             context.OpenStyleSheetAsync(address, element, CancellationToken.None);
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace AngleSharp.Css
         /// <param name="element">The hosting element.</param>
         /// <param name="cancel">The cancellation token.</param>
         /// <returns>The async task.</returns>
-        public static async Task<IStyleSheet> OpenStyleSheetAsync(this IBrowsingContext context, Url address, IElement element, CancellationToken cancel)
+        public static async Task<IStyleSheet> OpenStyleSheetAsync(this IBrowsingContext context, IUrl address, IElement element, CancellationToken cancel)
         {
             var loader = context.GetService<IResourceLoader>();
             var service = context.GetCssStyling();

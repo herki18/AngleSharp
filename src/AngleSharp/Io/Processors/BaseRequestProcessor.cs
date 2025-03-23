@@ -133,7 +133,7 @@ namespace AngleSharp.Io.Processors
         /// <summary>
         /// Checks if the given target is different than the current download.
         /// </summary>
-        protected Boolean IsDifferentToCurrentDownloadUrl(Url target)
+        protected Boolean IsDifferentToCurrentDownloadUrl(IUrl target)
         {
             var download = Download;
             return download is null || !target.Equals(download.Target);

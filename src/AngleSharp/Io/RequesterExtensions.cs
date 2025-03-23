@@ -65,7 +65,7 @@ namespace AngleSharp.Io
 
         #region Fetching
 
-        private static IDownload FetchFromSameOriginAsync(this IResourceLoader loader, Url url, CorsRequest cors)
+        private static IDownload FetchFromSameOriginAsync(this IResourceLoader loader, IUrl url, CorsRequest cors)
         {
             var request = cors.Request;
             var download = loader.FetchAsync(new ResourceRequest(request.Source, url)
@@ -147,7 +147,7 @@ namespace AngleSharp.Io
         private static Boolean IsRedirected(this IResponse response) =>
             (response?.StatusCode ?? HttpStatusCode.NotFound).IsRedirected();
 
-        private static CorsRequest RedirectTo(this CorsRequest cors, Url url)
+        private static CorsRequest RedirectTo(this CorsRequest cors, IUrl url)
         {
             var oldRequest = cors.Request;
             var newRequest = new ResourceRequest(oldRequest.Source, url)

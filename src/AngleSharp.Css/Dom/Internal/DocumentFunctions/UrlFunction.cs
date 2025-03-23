@@ -27,7 +27,7 @@
 
         #region Methods
 
-        public override Boolean Matches(Url actual)
+        public override Boolean Matches(IUrl actual)
         {
             return !_expected.IsInvalid && _expected.Equals(actual);
         }

@@ -20,7 +20,7 @@
 
         #region Methods
 
-        public override Boolean Matches(Url url)
+        public override Boolean Matches(IUrl url)
         {
             return url.Href.StartsWith(Data, StringComparison.OrdinalIgnoreCase);
         }

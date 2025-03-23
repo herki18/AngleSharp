@@ -37,7 +37,7 @@ namespace AngleSharp.Css.Dom
 
         #region Methods
 
-        public abstract Boolean Matches(Url url);
+        public abstract Boolean Matches(IUrl url);
 
         #endregion
 

@@ -28,7 +28,7 @@
 
         #region Methods
 
-        public override Boolean Matches(Url url)
+        public override Boolean Matches(IUrl url)
         {
             var domain = url.HostName;
             return domain.Isi(Data) || domain.EndsWith(_subdomain, StringComparison.OrdinalIgnoreCase);

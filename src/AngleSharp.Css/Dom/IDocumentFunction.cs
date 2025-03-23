@@ -23,6 +23,6 @@
         /// </summary>
         /// <param name="url">The URL to evaluate.</param>
         /// <returns>True if the URL is matched, otherwise false.</returns>
-        Boolean Matches(Url url);
+        Boolean Matches(IUrl url);
     }
 }

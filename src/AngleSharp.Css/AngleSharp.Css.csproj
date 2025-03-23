@@ -21,7 +21,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AngleSharp\AngleSharp.Core.csproj" />
+        <ProjectReference Include="..\AngleSharp\AngleSharp.Core.csproj" />
+    <ProjectReference Include="..\LayoutEngine.Contracts\LayoutEngine.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

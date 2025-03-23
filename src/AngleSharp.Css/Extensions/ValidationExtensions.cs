@@ -31,6 +31,6 @@ namespace AngleSharp.Css.Dom
         /// <param name="rule">The rule to extend.</param>
         /// <param name="url">The URL to check for conformance.</param>
         /// <returns>True if the URL is matching, otherwise false.</returns>
-        public static Boolean IsValid(this ICssDocumentRule rule, Url url) => rule.Conditions.Any(m => m.Matches(url));
+        public static Boolean IsValid(this ICssDocumentRule rule, IUrl url) => rule.Conditions.Any(m => m.Matches(url));
     }
 }

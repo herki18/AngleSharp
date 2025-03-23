@@ -28,7 +28,7 @@
 
         #region Methods
 
-        public override Boolean Matches(Url url)
+        public override Boolean Matches(IUrl url)
         {
             return _regex.IsMatch(url.Href);
         }
