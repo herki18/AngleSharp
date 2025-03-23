@@ -9,6 +9,7 @@
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0-preview.1.25080.5" />
       <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.0-preview.2.25163.2" />
+      <PackageReference Include="Stateless" Version="5.17.0" />
       <PackageReference Include="System.Threading.Channels" Version="10.0.0-preview.2.25163.2" />
     </ItemGroup>
 

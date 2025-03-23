@@ -20,7 +20,7 @@ public class DocumentLifecycleTests : IDisposable
         _fixture = new Fixture();
         _eventAggregator = new TestEventAggregator();
         _stateValidator = new LifecycleStateValidator();
-        _lifecycleCoordinator = new DocumentLifecycleCoordinator(_eventAggregator, _stateValidator);
+        _lifecycleCoordinator = new DocumentLifecycleCoordinator(_eventAggregator);
     }
 
     [Fact]

@@ -36,7 +36,6 @@ public static class PlatformServiceExtensions
         services.TryAddSingleton<IResourceTypeResolver, DefaultResourceTypeResolver>();
 
         // Register platform services
-        services.TryAddSingleton<ILifecycleStateValidator, LifecycleStateValidator>();
         services.TryAddSingleton<IDocumentLifecycleCoordinator, DocumentLifecycleCoordinator>();
         services.TryAddSingleton<IElementAdapter, ElementAdapter>();
         services.TryAddSingleton<IDomMutationTracker, DomMutationTracker>();
@@ -77,7 +76,6 @@ public static class PlatformServiceExtensions
 
         // Register platform service implementations
         // but still use real implementations for most services
-        services.TryAddSingleton<ILifecycleStateValidator, LifecycleStateValidator>();
         services.TryAddSingleton<IDocumentLifecycleCoordinator, DocumentLifecycleCoordinator>();
         services.TryAddSingleton<IElementAdapter, ElementAdapter>();
         services.TryAddSingleton<IDomMutationTracker, DomMutationTracker>();
