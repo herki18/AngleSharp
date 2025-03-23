@@ -11,7 +11,7 @@
     {
         #region Fields
 
-        private readonly Url _expected;
+        private readonly IUrl _expected;
 
         #endregion
 

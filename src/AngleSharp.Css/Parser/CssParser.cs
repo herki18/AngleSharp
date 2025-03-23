@@ -316,7 +316,7 @@ namespace AngleSharp.Css.Parser
             return tokenizer;
         }
 
-        private static Boolean IsRecursion(ICssStyleSheet sheet, Url url)
+        private static Boolean IsRecursion(ICssStyleSheet sheet, IUrl url)
         {
             var href = url.Href;
 
