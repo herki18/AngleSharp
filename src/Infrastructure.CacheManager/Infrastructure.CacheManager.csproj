@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-      <SignAssembly>true</SignAssembly>
-      <AssemblyOriginatorKeyFile>..\LayoutEngine.snk</AssemblyOriginatorKeyFile>
+      <SignAssembly>false</SignAssembly>
+<!--      <AssemblyOriginatorKeyFile>..\LayoutEngine.snk</AssemblyOriginatorKeyFile>-->
         <TargetFramework>netstandard2.1</TargetFramework>
         <Nullable>enable</Nullable>
     </PropertyGroup>
@@ -21,6 +21,10 @@
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0-preview.1.25080.5" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0-preview.1.25080.5" />
     </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Infrastructure.CacheManager.Tests" />
+  </ItemGroup>
 
 <!--  <ItemGroup>-->
 <!--    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">-->
