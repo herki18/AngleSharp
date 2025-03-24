@@ -4,6 +4,8 @@ using System;
 
 namespace LayoutEngine;
 
+using StyleSystem;
+
 /// <summary>
 /// Extension methods for setting up the LayoutEngine in a dependency injection container.
 /// </summary>
@@ -39,7 +41,7 @@ public static class ServiceCollectionExtensions
         // services.AddLayoutEnginePlatform(options);
         //
         // // Register system services
-        // services.AddStyleSystem();
+        services.AddStyleSystem();
         // services.AddLayoutSystem();
         // services.AddRenderSystem();
 

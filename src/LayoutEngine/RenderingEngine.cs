@@ -576,7 +576,7 @@ public class LayoutEngineMain : ILayoutEngine
             _subscriptions.Clear();
 
             // Dispose browsing context
-            _browsingContext.Dispose();
+            _browsingContext?.Dispose();
         }
         catch (Exception ex)
         {
