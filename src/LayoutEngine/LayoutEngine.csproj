@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\AngleSharp.Css\AngleSharp.Css.csproj" />
       <ProjectReference Include="..\AngleSharp\AngleSharp.Core.csproj" />
     </ItemGroup>
 

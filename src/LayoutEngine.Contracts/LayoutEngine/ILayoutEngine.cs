@@ -7,6 +7,8 @@ using LayoutEngine.Contracts.StyleSystem;
 
 namespace LayoutEngine;
 
+using AngleSharp;
+
 /// <summary>
 /// Defines the main interface for the LayoutEngine rendering system.
 /// </summary>
@@ -15,7 +17,7 @@ public interface ILayoutEngine : IDisposable
     /// <summary>
     /// Gets the AngleSharp browsing context.
     /// </summary>
-    // IBrowsingContext BrowsingContext { get; }
+    IBrowsingContext BrowsingContext { get; }
 
     /// <summary>
     /// Gets the active document.
@@ -51,13 +53,6 @@ public interface ILayoutEngine : IDisposable
     /// <param name="filePath">The path to the HTML file.</param>
     /// <returns>A task representing the asynchronous open operation.</returns>
     Task<IDocument> OpenFileAsync(string filePath);
-
-    /// <summary>
-    /// Opens a document from a URL.
-    /// </summary>
-    /// <param name="url">The URL to load.</param>
-    /// <returns>A task representing the asynchronous open operation.</returns>
-    Task<IDocument> OpenUrlAsync(string url);
 
     /// <summary>
     /// Initializes the LayoutEngine with the specified document.
