@@ -28,7 +28,7 @@ namespace AngleSharp.Dom
 
         private readonly List<WeakReference> _attachedReferences;
         private readonly Queue<HtmlScriptElement> _loadingScripts;
-        private readonly MutationHost _mutations;
+        private readonly IMutationHost _mutations;
         private readonly IBrowsingContext _context;
         private readonly IEventLoop? _loop;
         private readonly Window _view;
@@ -852,7 +852,7 @@ namespace AngleSharp.Dom
 
         #region Internal Properties
 
-        internal MutationHost Mutations => _mutations;
+        internal IMutationHost Mutations => _mutations;
 
         internal QuirksMode QuirksMode
         {

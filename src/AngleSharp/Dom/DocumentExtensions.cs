@@ -139,7 +139,7 @@ namespace AngleSharp.Dom
 
                     foreach (var node in nodes)
                     {
-                        var options = observer.ResolveOptions(node);
+                        var options = ((MutationObserver)observer).ResolveOptions(node);
 
                         if (options.IsInvalid ||
                            (node != record.Target && !options.IsObservingSubtree) ||
@@ -160,7 +160,7 @@ namespace AngleSharp.Dom
 
                     if (clearPreviousValue is not null)
                     {
-                        observer.Enqueue(record.Copy(clearPreviousValue.Value));
+                        ((MutationObserver)observer).Enqueue(record.Copy(clearPreviousValue.Value));
                     }
                 }
 
@@ -182,7 +182,7 @@ namespace AngleSharp.Dom
             {
                 foreach (var observer in observers)
                 {
-                    observer.AddTransient(ancestor, node);
+                    ((MutationObserver)observer).AddTransient(ancestor, node);
                 }
             }
         }

@@ -7,11 +7,11 @@ namespace AngleSharp.Dom
     /// <summary>
     /// Couples the mutation events to mutation observers and the event loop.
     /// </summary>
-    sealed class MutationHost
+    sealed class MutationHost : IMutationHost
     {
         #region Fields
 
-        private readonly List<MutationObserver> _observers;
+        private readonly List<IMutationObserver> _observers;
         private readonly IEventLoop _loop;
         private Boolean _queued;
 
@@ -30,13 +30,13 @@ namespace AngleSharp.Dom
 
         #region Properties
 
-        public IEnumerable<MutationObserver> Observers => _observers;
+        public IEnumerable<IMutationObserver> Observers => _observers;
 
         #endregion
 
         #region Methods
 
-        public void Register(MutationObserver observer)
+        public void Register(IMutationObserver observer)
         {
             if (!_observers.Contains(observer))
             {
@@ -44,7 +44,7 @@ namespace AngleSharp.Dom
             }
         }
 
-        public void Unregister(MutationObserver observer)
+        public void Unregister(IMutationObserver observer)
         {
             if (_observers.Contains(observer))
             {
@@ -68,7 +68,7 @@ namespace AngleSharp.Dom
 
             foreach (var observer in observers)
             {
-                _loop.Enqueue(observer.Trigger, TaskPriority.Microtask);
+                _loop.Enqueue(((MutationObserver)observer).Trigger, TaskPriority.Microtask);
             }
         }
 

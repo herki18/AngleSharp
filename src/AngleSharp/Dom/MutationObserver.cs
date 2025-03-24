@@ -9,7 +9,7 @@ namespace AngleSharp.Dom
     /// DOM.
     /// </summary>
     [DomName("MutationObserver")]
-    public sealed class MutationObserver
+    public sealed class MutationObserver : IMutationObserver
     {
         #region Fields
 
