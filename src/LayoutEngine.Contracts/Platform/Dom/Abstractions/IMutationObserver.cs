@@ -4,73 +4,117 @@ using AngleSharp.Dom;
 namespace LayoutEngine.Contracts.Platform.Dom.Abstractions;
 
 /// <summary>
-/// Interface for an adapter around AngleSharp's MutationObserver.
-/// </summary>
-public interface IMutationObserver
-{
-    /// <summary>
-    /// Registers the observer to receive notifications of DOM mutations on the specified node.
-    /// </summary>
-    /// <param name="target">The node to observe.</param>
-    /// <param name="options">The options for the observation.</param>
-    void Observe(INode target, MutationObserverInit options);
-
-    /// <summary>
-    /// Stops the observer from receiving notifications.
-    /// </summary>
-    void Disconnect();
-}
-
-/// <summary>
-/// Interface for a factory that creates mutation observers.
+/// A factory interface for creating AngleSharp MutationObserver instances.
+/// Uses AngleSharp's native callback signature.
 /// </summary>
 public interface IMutationObserverFactory
 {
     /// <summary>
-    /// Creates a mutation observer with the specified callback.
+    /// Creates a new AngleSharp MutationObserver.
     /// </summary>
-    /// <param name="callback">The callback to invoke when mutations occur.</param>
-    /// <returns>A new mutation observer.</returns>
-    IMutationObserver Create(Action<IMutationRecord[]> callback);
+    /// <param name="callback">The callback to invoke when mutations occur, passing both the mutation records and the observer itself.</param>
+    /// <returns>A new MutationObserver instance.</returns>
+    IMutationObserver Create(Action<IMutationRecord[], IMutationObserver> callback);
 }
 
 /// <summary>
-/// Configuration options for a mutation observer.
+/// Configuration options for DOM mutation tracking.
 /// </summary>
-public class MutationObserverInit
+public class MutationTrackerOptions
 {
     /// <summary>
-    /// Gets or sets a value indicating whether to observe attribute changes.
+    /// Whether to observe attributes. Default is true.
     /// </summary>
-    public bool Attributes { get; set; }
+    public bool TrackAttributes { get; set; } = true;
 
     /// <summary>
-    /// Gets or sets a value indicating whether to observe character data changes.
+    /// Whether to observe character data. Default is true.
     /// </summary>
-    public bool CharacterData { get; set; }
+    public bool TrackCharacterData { get; set; } = true;
 
     /// <summary>
-    /// Gets or sets a value indicating whether to observe child list changes.
+    /// Whether to observe child nodes. Default is true.
     /// </summary>
-    public bool ChildList { get; set; }
+    public bool TrackChildList { get; set; } = true;
 
     /// <summary>
-    /// Gets or sets a value indicating whether to observe the subtree.
+    /// Whether to observe the subtree. Default is true.
     /// </summary>
-    public bool Subtree { get; set; }
+    public bool TrackSubtree { get; set; } = true;
 
     /// <summary>
-    /// Gets or sets a value indicating whether to record the old value for attributes.
+    /// Whether to record old attribute values. Default is true.
     /// </summary>
-    public bool AttributeOldValue { get; set; }
+    public bool RecordAttributeOldValue { get; set; } = true;
 
     /// <summary>
-    /// Gets or sets a value indicating whether to record the old value for character data.
+    /// Whether to record old character data values. Default is true.
     /// </summary>
-    public bool CharacterDataOldValue { get; set; }
+    public bool RecordCharacterDataOldValue { get; set; } = true;
 
     /// <summary>
-    /// Gets or sets the filter for which attributes to observe.
+    /// Which attributes to track. If null, all attributes are tracked.
     /// </summary>
     public string[]? AttributeFilter { get; set; }
+}
+
+/// <summary>
+/// Interface for tracking DOM mutations.
+/// This interface is simplified to focus on tracking elements with configuration options.
+/// </summary>
+public interface IDomMutationTracker : IDisposable
+{
+    /// <summary>
+    /// Starts tracking mutations for the specified element with default options.
+    /// </summary>
+    /// <param name="element">The element to track.</param>
+    /// <returns>A tracking ID that can be used to stop tracking.</returns>
+    Guid TrackElement(IElement element);
+
+    /// <summary>
+    /// Starts tracking mutations for the specified element with custom options.
+    /// </summary>
+    /// <param name="element">The element to track.</param>
+    /// <param name="options">Configuration options for tracking.</param>
+    /// <returns>A tracking ID that can be used to stop tracking.</returns>
+    Guid TrackElement(IElement element, MutationTrackerOptions options);
+
+    /// <summary>
+    /// Starts tracking mutations for the document's document element with default options.
+    /// </summary>
+    /// <param name="document">The document to track.</param>
+    /// <returns>A tracking ID that can be used to stop tracking.</returns>
+    Guid TrackDocument(IDocument document);
+
+    /// <summary>
+    /// Starts tracking mutations for the document's document element with custom options.
+    /// </summary>
+    /// <param name="document">The document to track.</param>
+    /// <param name="options">Configuration options for tracking.</param>
+    /// <returns>A tracking ID that can be used to stop tracking.</returns>
+    Guid TrackDocument(IDocument document, MutationTrackerOptions options);
+
+    /// <summary>
+    /// Stops tracking the specified element.
+    /// </summary>
+    /// <param name="element">The element to stop tracking.</param>
+    void StopTracking(IElement element);
+
+    /// <summary>
+    /// Stops tracking by tracking ID.
+    /// </summary>
+    /// <param name="trackingId">The tracking ID returned from a Track method.</param>
+    void StopTracking(Guid trackingId);
+
+    /// <summary>
+    /// Stops all tracking.
+    /// </summary>
+    void StopAllTracking();
+
+    /// <summary>
+    /// Processes mutations manually if needed.
+    /// </summary>
+    /// <param name="mutations">The mutation records to process.</param>
+    /// <param name="observer"></param>
+    void ProcessMutations(IMutationRecord[] mutations, IMutationObserver? observer = null);
 }

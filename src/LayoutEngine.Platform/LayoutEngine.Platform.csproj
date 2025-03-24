@@ -15,6 +15,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\AngleSharp\AngleSharp.Core.csproj" />
       <ProjectReference Include="..\Infrastructure.CacheManager\Infrastructure.CacheManager.csproj" />
       <ProjectReference Include="..\LayoutEngine.Contracts\LayoutEngine.Contracts.csproj" />
     </ItemGroup>
