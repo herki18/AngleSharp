@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddStyleSystem(this IServiceCollection services)
+    public static IServiceCollection AddLayoutSystem(this IServiceCollection services)
     {
         services.AddSingleton<ILayoutEngine, LayoutEngine>();
         return services;

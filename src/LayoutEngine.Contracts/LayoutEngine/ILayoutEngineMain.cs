@@ -12,7 +12,7 @@ using AngleSharp;
 /// <summary>
 /// Defines the main interface for the LayoutEngine rendering system.
 /// </summary>
-public interface ILayoutEngine : IDisposable
+public interface ILayoutEngineMain : IDisposable
 {
     /// <summary>
     /// Gets the AngleSharp browsing context.

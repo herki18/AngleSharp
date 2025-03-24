@@ -4,6 +4,10 @@ using System;
 
 namespace LayoutEngine;
 
+using Infrastructure.CacheManager.DI;
+using Infrastructure.EventAggregator.DI;
+using LayoutSystem;
+using Platform;
 using StyleSystem;
 
 /// <summary>
@@ -34,15 +38,19 @@ public static class ServiceCollectionExtensions
             return config;
         });
 
+        services.AddEventAggregatorModule();
+        services.AddCacheManagerModule();
+
         // // Register core services
-        // services.AddSingleton<RenderingEngine>();
+        services.AddSingleton<ILayoutEngineMain, LayoutEngineMain>();
         //
         // // Register platform services
         // services.AddLayoutEnginePlatform(options);
         //
         // // Register system services
+        services.AddPlatformServices();
         services.AddStyleSystem();
-        // services.AddLayoutSystem();
+        services.AddLayoutSystem();
         // services.AddRenderSystem();
 
         return services;

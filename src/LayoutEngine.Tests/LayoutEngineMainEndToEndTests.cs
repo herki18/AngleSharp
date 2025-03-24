@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 public class LayoutEngineMainEndToEndTests : IDisposable
 {
     private ServiceProvider _serviceProvider;
-    private ILayoutEngine _layoutEngine;
+    private ILayoutEngineMain _layoutEngine;
 
     // Test HTML content
     private const string SimpleHtml = @"
@@ -53,7 +53,7 @@ public class LayoutEngineMainEndToEndTests : IDisposable
         _serviceProvider = services.BuildServiceProvider();
 
         // Resolve the layout engine
-        _layoutEngine = _serviceProvider.GetRequiredService<ILayoutEngine>();
+        _layoutEngine = _serviceProvider.GetRequiredService<ILayoutEngineMain>();
     }
 
     public void Dispose()

@@ -10,6 +10,8 @@
     <ItemGroup>
       <ProjectReference Include="..\AngleSharp.Css\AngleSharp.Css.csproj" />
       <ProjectReference Include="..\AngleSharp\AngleSharp.Core.csproj" />
+      <ProjectReference Include="..\LayoutEngine.LayoutSystem\LayoutEngine.LayoutSystem.csproj" />
+      <ProjectReference Include="..\LayoutEngine.Platform\LayoutEngine.Platform.csproj" />
       <ProjectReference Include="..\LayoutEngine.StyleSystem\LayoutEngine.StyleSystem.csproj" />
     </ItemGroup>
 

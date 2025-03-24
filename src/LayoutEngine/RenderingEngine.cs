@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
-using AngleSharp.Io;
 
 namespace LayoutEngine;
 
@@ -15,6 +14,7 @@ using Contracts.Platform.Events;
 using Contracts.Platform.Lifecycle;
 using Contracts.Platform.Threading;
 using Contracts.Platform.Updates;
+using Contracts.Resource;
 using Contracts.StyleSystem;
 using Infrastructure.CacheManager.API.Management;
 using Infrastructure.EventAggregator.API.Aggregation;
@@ -25,7 +25,7 @@ using StyleComputedEvent = Contracts.StyleSystem.StyleComputedEvent;
 /// Manages document contexts and coordinates the rendering pipeline.
 /// Integrates with AngleSharp for HTML/CSS parsing.
 /// </summary>
-public class LayoutEngineMain : ILayoutEngine
+public class LayoutEngineMain : ILayoutEngineMain
 {
     private readonly IEventAggregator _eventAggregator;
     private readonly ICacheManager _cacheManager;
