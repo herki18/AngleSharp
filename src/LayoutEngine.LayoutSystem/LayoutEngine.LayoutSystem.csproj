@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+      <SignAssembly>true</SignAssembly>
+      <AssemblyOriginatorKeyFile>..\LayoutEngine.snk</AssemblyOriginatorKeyFile>
         <TargetFramework>netstandard2.1</TargetFramework>
         <Nullable>enable</Nullable>
     </PropertyGroup>
