@@ -1,5 +1,6 @@
 namespace Infrastructure.CacheManager.API.Management;
 
+using System;
 using System.Collections.Generic;
 
 /// <summary>

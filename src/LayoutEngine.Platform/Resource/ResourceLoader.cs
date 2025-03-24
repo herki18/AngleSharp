@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using LayoutEngine.Contracts.Resource;
+#pragma warning disable CS8618, CS9264
 
 namespace LayoutEngine.Platform.Resource;
 
@@ -26,7 +27,9 @@ public sealed class ResourceLoader : IResourceLoader, IDisposable
     private readonly IResourceErrorHandler _errorHandler;
     private readonly ConcurrentDictionary<string, Task<IResource>> _loadingTasks = new();
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _loadLocks = new();
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
     private readonly IPrioritizedCache<string, IResource> _resourceCache;
+#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
     private readonly List<ISubscriptionToken> _subscriptions = new();
     private bool _isDisposed;
 
@@ -48,8 +51,14 @@ public sealed class ResourceLoader : IResourceLoader, IDisposable
         _threadingCoordinator = threadingCoordinator ?? throw new ArgumentNullException(nameof(threadingCoordinator));
         _errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
 
-        // Get or create resource cache
-        _resourceCache = _cacheManager.GetCache<IPrioritizedCache<string, IResource>>("ResourceCache");
+        // // Get or create resource cache
+        // var styleCache = cacheManager.GetOrCreateCache<IDependencyTrackingCache<string, StyleData>>(
+        //     "StyleCache",
+        //     name => MemoryCacheFactory.CreateDependencyTrackingCache<string, StyleData>(
+        //         name,
+        //         CachePriority.High)
+        // );
+        // _resourceCache = _cacheManager.GetOrCreateCache<IPrioritizedCache<string, IResource>>("ResourceCache");
 
         // Subscribe to memory pressure events
         _subscriptions.Add(_eventAggregator.Subscribe<MemoryPressureEvent>(OnMemoryPressure));

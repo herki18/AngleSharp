@@ -57,6 +57,7 @@ namespace Infrastructure.CacheManager.Internal.Core
             }
         }
 
+
         public T GetCache<T>(string cacheName) where T : ITrimableCache
         {
             if (string.IsNullOrWhiteSpace(cacheName))

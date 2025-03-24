@@ -58,7 +58,7 @@ public class LayoutEngineMain : ILayoutEngineMain
         IFrameScheduler frameScheduler,
         IResourceLoader resourceLoader,
         IStyleEngine styleEngine,
-        Contracts.LayoutSystem.ILayoutEngine layoutEngine,
+        ILayoutEngine layoutEngine,
         LayoutEngineConfiguration? configuration = null,
         ILogger<LayoutEngineMain>? logger = null)
     {
