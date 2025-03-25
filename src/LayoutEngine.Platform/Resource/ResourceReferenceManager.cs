@@ -1,5 +1,4 @@
 namespace LayoutEngine.Platform.Resource;
-
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -14,7 +13,6 @@ using LayoutEngine.Contracts.Platform.Resource;
 using LayoutEngine.Contracts.Platform.Threading;
 using LayoutEngine.Contracts.Platform.Updates;
 using LayoutEngine.Contracts.Resource;
-
 public sealed class ResourceReferenceManager : IResourceReferenceManager, IDisposable
 {
     private readonly IEventAggregator _eventAggregator;
@@ -28,7 +26,6 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
     private readonly ConcurrentDictionary<ResourceType, HashSet<IResourceReference>> _referencesByType = new();
     private readonly List<ISubscriptionToken> _subscriptions = new();
     private bool _isDisposed;
-
     public ResourceReferenceManager(
         IEventAggregator eventAggregator,
         ICacheManager cacheManager,
@@ -43,13 +40,11 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
         _idleTaskScheduler = idleTaskScheduler ?? throw new ArgumentNullException(nameof(idleTaskScheduler));
         _subscriptions.Add(_eventAggregator.Subscribe<ResourceLoadedEvent>(OnResourceLoaded));
         _subscriptions.Add(_eventAggregator.Subscribe<ResourceErrorEvent>(OnResourceError));
-        _subscriptions.Add(_eventAggregator.Subscribe<MemoryPressureEvent>(OnMemoryPressure));
         foreach (ResourceType resourceType in Enum.GetValues(typeof(ResourceType)))
         {
             _referencesByType[resourceType] = new HashSet<IResourceReference>();
         }
     }
-
     public IResourceReference CreateReference(string url, ResourceType resourceType, ResourcePriority priority = ResourcePriority.Normal)
     {
         ThrowIfDisposed();
@@ -80,7 +75,6 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
         }
         throw new InvalidOperationException($"Failed to create or retrieve resource reference for URL: {url}");
     }
-
     public IResourceReference? GetReference(string url)
     {
         ThrowIfDisposed();
@@ -93,7 +87,6 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
         }
         return null;
     }
-
     public async Task<IResource> ResolveReferenceAsync(IResourceReference reference)
     {
         ThrowIfDisposed();
@@ -123,7 +116,6 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
             throw;
         }
     }
-
     public void UpdatePriority(IResourceReference reference, ResourcePriority priority)
     {
         ThrowIfDisposed();
@@ -139,7 +131,6 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
             PreloadResourceByPriority(resourceReference);
         }
     }
-
     public IReadOnlyCollection<IResourceReference> GetReferences(ResourceType resourceType)
     {
         ThrowIfDisposed();
@@ -152,7 +143,6 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
         }
         return Array.Empty<IResourceReference>();
     }
-
     public void ReleaseReference(IResourceReference reference)
     {
         ThrowIfDisposed();
@@ -176,7 +166,6 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
         }
         _eventAggregator.Publish(new ResourceReferenceReleasedEvent(reference));
     }
-
     public void TrackDependency(string ownerId, IResourceReference reference)
     {
         ThrowIfDisposed();
@@ -194,7 +183,6 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
             resourceReference.IncrementReferenceCount();
         }
     }
-
     public int InvalidateResources(string ownerId)
     {
         ThrowIfDisposed();
@@ -221,7 +209,6 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
         }
         return count;
     }
-
     private void PreloadResourceByPriority(ResourceReference reference)
     {
         switch (reference.Priority)
@@ -248,8 +235,6 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
                 break;
             case ResourcePriority.Normal:
                 _resourceLoader.PreloadResource(reference.Url);
-                // Don't update state to Loading immediately for Normal priority
-                // Let resource loading events handle state changes
                 break;
             case ResourcePriority.Low:
                 _idleTaskScheduler.ScheduleIdleTask(ct =>
@@ -263,7 +248,6 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
                 break;
         }
     }
-
     private void UpdateReferenceState(ResourceReference reference, ResourceState newState)
     {
         var previousState = reference.State;
@@ -273,7 +257,6 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
         _eventAggregator.Publish(new ResourceReferenceStateChangedEvent(
             reference, previousState, newState));
     }
-
     private void OnResourceLoaded(ResourceLoadedEvent e)
     {
         if (_referencesByUrl.TryGetValue(e.Url, out var reference) &&
@@ -282,7 +265,6 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
             UpdateReferenceState(reference, ResourceState.Loaded);
         }
     }
-
     private void OnResourceError(ResourceErrorEvent e)
     {
         if (_referencesByUrl.TryGetValue(e.Url, out var reference) &&
@@ -291,43 +273,6 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
             UpdateReferenceState(reference, ResourceState.Error);
         }
     }
-
-    private void OnMemoryPressure(MemoryPressureEvent e)
-    {
-        if (e.Severity >= MemoryPressureSeverity.High)
-        {
-            var lowPriorityReferences = new List<ResourceReference>();
-            foreach (var reference in _referencesById.Values)
-            {
-                if (reference.Priority == ResourcePriority.Low &&
-                    reference.State == ResourceState.Loaded)
-                {
-                    lowPriorityReferences.Add(reference);
-                }
-            }
-            foreach (var reference in lowPriorityReferences)
-            {
-                UpdateReferenceState(reference, ResourceState.Created);
-            }
-            if (e.Severity >= MemoryPressureSeverity.Critical)
-            {
-                var normalPriorityReferences = new List<ResourceReference>();
-                foreach (var reference in _referencesById.Values)
-                {
-                    if (reference.Priority == ResourcePriority.Normal &&
-                        reference.State == ResourceState.Loaded)
-                    {
-                        normalPriorityReferences.Add(reference);
-                    }
-                }
-                foreach (var reference in normalPriorityReferences)
-                {
-                    UpdateReferenceState(reference, ResourceState.Created);
-                }
-            }
-        }
-    }
-
     private void ThrowIfDisposed()
     {
         if (_isDisposed)
@@ -335,7 +280,6 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
             throw new ObjectDisposedException(nameof(ResourceReferenceManager));
         }
     }
-
     public void Dispose()
     {
         if (_isDisposed)
@@ -355,13 +299,11 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
         }
         _referencesByType.Clear();
     }
-
     private sealed class ResourceReference : IResourceReference
     {
         private volatile ResourceState _state;
         private volatile ResourcePriority _priority;
         private volatile int _referenceCount;
-
         public Guid Id { get; }
         public string Url { get; }
         public ResourceType ResourceType { get; }
@@ -370,7 +312,6 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
         public DateTime CreatedTime { get; }
         public DateTime LastAccessedTime { get; private set; }
         public int ReferenceCount => _referenceCount;
-
         public ResourceReference(string url, ResourceType resourceType, ResourcePriority priority)
         {
             Id = Guid.NewGuid();
@@ -382,42 +323,34 @@ public sealed class ResourceReferenceManager : IResourceReferenceManager, IDispo
             CreatedTime = DateTime.UtcNow;
             LastAccessedTime = CreatedTime;
         }
-
         public void UpdateState(ResourceState newState)
         {
             _state = newState;
         }
-
         public void UpdatePriority(ResourcePriority newPriority)
         {
             _priority = newPriority;
         }
-
         public void UpdateAccessTime()
         {
             LastAccessedTime = DateTime.UtcNow;
         }
-
         public void IncrementReferenceCount()
         {
             Interlocked.Increment(ref _referenceCount);
         }
-
         public void DecrementReferenceCount()
         {
             Interlocked.Decrement(ref _referenceCount);
         }
-
         public void Dispose()
         {
         }
     }
 }
-
 public class ResourceReferenceReleasedEvent : EventBase
 {
     public IResourceReference Reference { get; }
-
     public ResourceReferenceReleasedEvent(IResourceReference reference)
     {
         Reference = reference ?? throw new ArgumentNullException(nameof(reference));
