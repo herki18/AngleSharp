@@ -9,6 +9,8 @@ using Infrastructure.CacheManager.API.Models;
 
 namespace Infrastructure.CacheManager.Internal.Caches
 {
+    using System.Linq;
+
     /// <summary>
     /// MemoryCache implementation that tracks dependencies between cache entries,
     /// allowing for cascading invalidation when a dependency changes.
@@ -134,15 +136,10 @@ namespace Infrastructure.CacheManager.Internal.Caches
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            var keysToInvalidate = new HashSet<TKey>();
-            keysToInvalidate.Add(key);
-
-            // Collect all dependent keys recursively
-            CollectDependentKeys(key, keysToInvalidate);
+            // Use the non-recursive collection method
+            var keysToInvalidate = CollectAllDependentKeys(key);
 
             int invalidatedCount = 0;
-
-            // Invalidate all collected keys
             foreach (var k in keysToInvalidate)
             {
                 if (base.Remove(k))
@@ -151,7 +148,6 @@ namespace Infrastructure.CacheManager.Internal.Caches
                 }
             }
 
-            // Clean up dependency tracking for all invalidated keys
             _dependencyLock.EnterWriteLock();
             try
             {
@@ -173,21 +169,15 @@ namespace Infrastructure.CacheManager.Internal.Caches
             if (keys == null)
                 throw new ArgumentNullException(nameof(keys));
 
+            // Collect all dependent keys for all specified keys
             var keysToInvalidate = new HashSet<TKey>();
-
-            // Collect all keys and their dependents
-            foreach (var key in keys)
+            foreach (var key in keys.Where(k => k != null))
             {
-                if (key != null)
-                {
-                    keysToInvalidate.Add(key);
-                    CollectDependentKeys(key, keysToInvalidate);
-                }
+                var dependentKeys = CollectAllDependentKeys(key);
+                keysToInvalidate.UnionWith(dependentKeys);
             }
 
             int invalidatedCount = 0;
-
-            // Invalidate all collected keys
             foreach (var k in keysToInvalidate)
             {
                 if (base.Remove(k))
@@ -196,7 +186,6 @@ namespace Infrastructure.CacheManager.Internal.Caches
                 }
             }
 
-            // Clean up dependency tracking for all invalidated keys
             _dependencyLock.EnterWriteLock();
             try
             {
@@ -276,6 +265,39 @@ namespace Infrastructure.CacheManager.Internal.Caches
             {
                 _dependencyLock.ExitReadLock();
             }
+        }
+
+        private HashSet<TKey> CollectAllDependentKeys(TKey rootKey)
+        {
+            var result = new HashSet<TKey> { rootKey };
+            var toProcess = new Queue<TKey>();
+            toProcess.Enqueue(rootKey);
+
+            _dependencyLock.EnterReadLock();
+            try
+            {
+                while (toProcess.Count > 0)
+                {
+                    var currentKey = toProcess.Dequeue();
+
+                    if (_dependentIndex.TryGetValue(currentKey, out var dependents))
+                    {
+                        foreach (var dependent in dependents)
+                        {
+                            if (result.Add(dependent))
+                            {
+                                toProcess.Enqueue(dependent);
+                            }
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                _dependencyLock.ExitReadLock();
+            }
+
+            return result;
         }
 
         private void CleanupDependencies(TKey key)

@@ -104,7 +104,6 @@ namespace Infrastructure.CacheManager.Internal.Caches
             var effectiveOptions = options?.Clone() ?? new CacheEntryOptions();
             var existingSize = 0L;
 
-            // Remove existing item if present
             if (_entryMetadata.TryGetValue(key, out var existingMetadata))
             {
                 existingSize = existingMetadata.Size;
@@ -115,34 +114,31 @@ namespace Infrastructure.CacheManager.Internal.Caches
                 Interlocked.Increment(ref _count);
             }
 
-            // Estimate size if not provided
             long size = effectiveOptions.Size ?? EstimateSize(value);
-
-            // Update size tracking
             Interlocked.Add(ref _estimatedSize, -existingSize);
             Interlocked.Add(ref _estimatedSize, size);
 
-            // Create entry metadata
             var metadata = new CacheEntryMetadata(size, effectiveOptions);
             _entryMetadata[key] = metadata;
 
-            // Set cache options
             var cacheEntryOptions = new MemoryCacheEntryOptions();
+
+            // Set size on the MemoryCacheEntryOptions - THIS IS THE MISSING PART
+            if (effectiveOptions.Size.HasValue || _cacheOptions.SizeLimit.HasValue)
+            {
+                cacheEntryOptions.Size = size;
+            }
 
             if (effectiveOptions.AbsoluteExpiration.HasValue)
             {
                 cacheEntryOptions.SetAbsoluteExpiration(effectiveOptions.AbsoluteExpiration.Value);
             }
-
             if (effectiveOptions.SlidingExpiration.HasValue)
             {
                 cacheEntryOptions.SetSlidingExpiration(effectiveOptions.SlidingExpiration.Value);
             }
-
-            // Add post-eviction callback
             cacheEntryOptions.RegisterPostEvictionCallback(OnEntryEvicted, key);
 
-            // Set the value in the cache
             _memoryCache.Set(cacheKey, value, cacheEntryOptions);
         }
 
