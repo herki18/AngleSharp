@@ -8,9 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="DI\" />
       <Folder Include="Internal\Invalidation\" />
-      <Folder Include="Internal\Monitoring\" />
       <Folder Include="Internal\Utilities\" />
     </ItemGroup>
 

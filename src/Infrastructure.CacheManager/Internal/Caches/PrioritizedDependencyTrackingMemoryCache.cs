@@ -17,7 +17,7 @@ namespace Infrastructure.CacheManager.Internal.Caches
     /// </summary>
     internal class PrioritizedDependencyTrackingMemoryCache<TKey, TValue> :
         DependencyTrackingMemoryCache<TKey, TValue>,
-        IPrioritizedCache<TKey, TValue>
+        IAdvancedCache<TKey, TValue>
     {
         // Priority indexes for fast retrieval by priority level
         private readonly ConcurrentDictionary<CacheEntryPriority, ConcurrentHashSet<TKey>> _priorityIndex;

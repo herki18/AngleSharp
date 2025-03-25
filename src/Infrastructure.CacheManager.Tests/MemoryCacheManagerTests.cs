@@ -1,23 +1,35 @@
+using System;
+using System.Collections.Generic;
 using AutoFixture;
 using Infrastructure.CacheManager.API.Management;
-using Infrastructure.CacheManager.API.Monitoring;
 using Infrastructure.CacheManager.Internal.Caches;
 using Infrastructure.CacheManager.Internal.Core;
 using NSubstitute;
+using Xunit;
 
 namespace Infrastructure.CacheManager.Tests;
 
-public class MemoryCacheManagerTests
+public class MemoryCacheManagerTests : IDisposable
 {
     private readonly Fixture _fixture;
-    private readonly IMemoryPressureMonitor _mockMemoryPressureMonitor;
     private readonly MemoryCacheManager _sut;
 
     public MemoryCacheManagerTests()
     {
         _fixture = new Fixture();
-        _mockMemoryPressureMonitor = Substitute.For<IMemoryPressureMonitor>();
-        _sut = new MemoryCacheManager(_mockMemoryPressureMonitor, TimeSpan.FromMinutes(30));
+
+        // Updated constructor call - no memory pressure monitor
+        _sut = new MemoryCacheManager(TimeSpan.FromMinutes(30));
+    }
+
+    [Fact]
+    public void Constructor_WithDefaultParameters_ShouldNotThrow()
+    {
+        // Act - instantiate with no parameters
+        var manager = new MemoryCacheManager();
+
+        // Assert
+        Assert.NotNull(manager);
     }
 
     [Fact]
@@ -49,6 +61,51 @@ public class MemoryCacheManagerTests
 
         // Act & Assert
         Assert.Throws<ArgumentException>(() => _sut.RegisterCache(cacheName, cache2));
+    }
+
+    [Fact]
+    public void RegisterCache_WithNullName_ShouldThrowArgumentException()
+    {
+        // Arrange
+        var cache = Substitute.For<ITrimableCache>();
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => _sut.RegisterCache(null!, cache));
+    }
+
+    [Fact]
+    public void RegisterCache_WithEmptyName_ShouldThrowArgumentException()
+    {
+        // Arrange
+        var cache = Substitute.For<ITrimableCache>();
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => _sut.RegisterCache(string.Empty, cache));
+    }
+
+    [Fact]
+    public void RegisterCache_WithNullCache_ShouldThrowArgumentNullException()
+    {
+        // Arrange
+        var cacheName = _fixture.Create<string>();
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => _sut.RegisterCache(cacheName, null!));
+    }
+
+    [Fact]
+    public void GetCache_WithValidTypeAndName_ShouldReturnCache()
+    {
+        // Arrange
+        var cacheName = _fixture.Create<string>();
+        var cache = new MemoryCacheBase<string, string>(cacheName);
+        _sut.RegisterCache(cacheName, cache);
+
+        // Act
+        var result = _sut.GetCache<MemoryCacheBase<string, string>>(cacheName);
+
+        // Assert
+        Assert.Same(cache, result);
     }
 
     [Fact]
@@ -264,35 +321,7 @@ public class MemoryCacheManagerTests
     }
 
     [Fact]
-    public void OnMemoryPressureDetected_WithLowPressure_ShouldTrimLowPriorityCaches()
-    {
-        // Arrange
-        var lowCache = Substitute.For<ITrimableCache>();
-        var normalCache = Substitute.For<ITrimableCache>();
-
-        lowCache.Priority.Returns(CachePriority.Low);
-        normalCache.Priority.Returns(CachePriority.Normal);
-
-        _sut.RegisterCache("lowCache", lowCache);
-        _sut.RegisterCache("normalCache", normalCache);
-
-        // Act
-        var eventArgs = new MemoryPressureEventArgs(
-            PressureSeverity.Low,
-            100L,
-            200L,
-            50.0);
-
-        _mockMemoryPressureMonitor.MemoryPressureDetected += Raise.Event<EventHandler<MemoryPressureEventArgs>>(
-            _mockMemoryPressureMonitor, eventArgs);
-
-        // Assert
-        lowCache.Received(1).Trim(50);
-        normalCache.DidNotReceive().Trim(Arg.Any<double>());
-    }
-
-    [Fact]
-    public void Dispose_ShouldDisposeAllCachesAndMemoryPressureMonitor()
+    public void Dispose_ShouldDisposeAllCaches()
     {
         // Arrange
         var disposableCache = Substitute.For<ITrimableCache, IDisposable>();
@@ -303,6 +332,38 @@ public class MemoryCacheManagerTests
 
         // Assert
         ((IDisposable)disposableCache).Received(1).Dispose();
-        _mockMemoryPressureMonitor.Received(1).Dispose();
+    }
+
+    [Fact]
+    public void CollectStatistics_ShouldNotThrowExceptions()
+    {
+        // This is testing the internal statistics collection timer callback
+        // We're just making sure it doesn't throw with various cache configurations
+
+        // Arrange
+        var cache = new MemoryCacheBase<string, string>("TestCache");
+        _sut.RegisterCache("TestCache", cache);
+
+        // Add some items to the cache
+        for (int i = 0; i < 10; i++)
+        {
+            cache.Set($"key{i}", $"value{i}");
+        }
+
+        // Act - force statistics collection via reflection
+        var method = typeof(MemoryCacheManager).GetMethod("CollectStatistics",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+        // Assert - should not throw
+        if (method != null)
+        {
+            // No assertion needed - we're just making sure it doesn't throw
+            method.Invoke(_sut, new object[] { null! });
+        }
+    }
+
+    public void Dispose()
+    {
+        _sut.Dispose();
     }
 }
