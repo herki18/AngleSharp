@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using Contracts.Platform.Events;
 using Contracts.Platform.Lifecycle;
+using Contracts.StyleSystem;
 using Infrastructure.EventAggregator.API.Aggregation;
 
 /// <summary>

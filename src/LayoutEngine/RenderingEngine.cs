@@ -20,7 +20,7 @@ public class LayoutEngineConfiguration
     /// <summary>
     /// Gets or sets the AngleSharp configuration.
     /// </summary>
-    public IConfiguration AngleSharpConfiguration { get; set; } = Configuration.Default;
+    public IConfiguration AngleSharpConfiguration { get; set; } = Configuration.Default.WithDefaultLoader().WithCss();
 
     /// <summary>
     /// Gets or sets the target frames per second.
