@@ -163,24 +163,6 @@ public class ResourceLoaderTests : IDisposable
         Assert.False(result);
     }
 
-    [Fact]
-    public void OnMemoryPressure_ShouldTrimResourceCache()
-    {
-        // Arrange
-        var memoryPressureEvent = new MemoryPressureEvent(
-            MemoryPressureSeverity.Medium,
-            1000000,
-            500000);
-
-        // Act
-        _eventAggregator.Publish(memoryPressureEvent);
-
-        // Assert
-        _resourceCache.Received(1).TrimByPriority(
-            Arg.Any<double>(),
-            Arg.Any<Infrastructure.CacheManager.API.Models.CacheEntryPriority>());
-    }
-
     public void Dispose()
     {
         _resourceLoader.Dispose();

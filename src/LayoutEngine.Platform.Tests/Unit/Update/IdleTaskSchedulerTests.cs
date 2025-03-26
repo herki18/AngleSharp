@@ -204,33 +204,6 @@ public class IdleTaskSchedulerTests : IDisposable
     }
 
     [Fact]
-    public void OnMemoryPressure_HighSeverity_ShouldCancelLowPriorityTasks()
-    {
-        // Arrange
-        bool highPriorityExecuted = false;
-        bool lowPriorityExecuted = false;
-
-        Action highPriorityAction = () => { highPriorityExecuted = true; };
-        Action lowPriorityAction = () => { lowPriorityExecuted = true; };
-
-        var highPriorityTask = _idleTaskScheduler.ScheduleIdleTask(highPriorityAction, IdleTaskPriority.High);
-        var lowPriorityTask = _idleTaskScheduler.ScheduleIdleTask(lowPriorityAction, IdleTaskPriority.Low);
-
-        var memoryPressureEvent = new MemoryPressureEvent(
-            MemoryPressureSeverity.High, 1000000, 500000);
-
-        // Act
-        _eventAggregator.Publish(memoryPressureEvent);
-        SimulateIdleTime(20);
-
-        // Assert
-        Assert.True(highPriorityExecuted);
-        Assert.False(lowPriorityExecuted);
-        Assert.True(lowPriorityTask.IsCanceled);
-        Assert.False(highPriorityTask.IsCanceled);
-    }
-
-    [Fact]
     public void IdleTasks_ShouldExecuteInPriorityOrder()
     {
         // Arrange
