@@ -1200,181 +1200,181 @@ nav h1, nav h2, nav h3, nav h4, nav h5, nav h6";
             Assert.AreEqual("#-\\31 ", selector);
         }
 
-        // [Test]
-        // public void SelectorText_EscapeCssSpecialCharacters_ClassSelector()
-        // {
-        //     var selectorText = @".\@\$\!\.\%";
-        //     var parser = new CssSelectorParser();
-        //
-        //     var selector = parser.ParseSelector(selectorText);
-        //
-        //     Assert.IsInstanceOf<ClassSelector>(selector);
-        //     Assert.NotNull(selector);
-        //     Assert.AreEqual(selectorText, selector.Text);
-        // }
-        //
-        // [Test]
-        // public void SelectorText_EscapeCssSpecialCharacters_IdSelector()
-        // {
-        //     var selectorText = @"#\@\$\!\.\%";
-        //     var parser = new CssSelectorParser();
-        //
-        //     var selector = parser.ParseSelector(selectorText);
-        //
-        //     Assert.IsInstanceOf<IdSelector>(selector);
-        //     Assert.NotNull(selector);
-        //     Assert.AreEqual(selectorText, selector.Text);
-        // }
-        //
-        // [Test]
-        // public void SelectorText_EscapeCssSpecialCharacters_AttrAvailableSelector()
-        // {
-        //     var selectorText = @"[\@\$\!\.\%]";
-        //     var parser = new CssSelectorParser();
-        //
-        //     var selector = parser.ParseSelector(selectorText);
-        //
-        //     Assert.IsInstanceOf<AttrAvailableSelector>(selector);
-        //     Assert.NotNull(selector);
-        //     Assert.AreEqual(selectorText, selector.Text);
-        // }
-        //
-        // [Test]
-        // public void SelectorText_EscapeCssSpecialCharacters_AttrMatchSelector()
-        // {
-        //     var selectorText = @"[\@\$\!\.\%=""some text""]";
-        //     var parser = new CssSelectorParser();
-        //
-        //     var selector = parser.ParseSelector(selectorText);
-        //
-        //     Assert.IsInstanceOf<AttrMatchSelector>(selector);
-        //     Assert.NotNull(selector);
-        //     Assert.AreEqual(selectorText, selector.Text);
-        // }
-        //
-        // [Test]
-        // public void SelectorText_EscapeCssSpecialCharacters_AttrContainsSelector()
-        // {
-        //     var selectorText = @"[\@\$\!\.\%*=""some text""]";
-        //     var parser = new CssSelectorParser();
-        //
-        //     var selector = parser.ParseSelector(selectorText);
-        //
-        //     Assert.IsInstanceOf<AttrContainsSelector>(selector);
-        //     Assert.NotNull(selector);
-        //     Assert.AreEqual(selectorText, selector.Text);
-        // }
-        //
-        // [Test]
-        // public void SelectorText_EscapeCssSpecialCharacters_AttrInListSelector()
-        // {
-        //     var selectorText = @"[\@\$\!\.\%~=""some text""]";
-        //     var parser = new CssSelectorParser();
-        //
-        //     var selector = parser.ParseSelector(selectorText);
-        //
-        //     Assert.IsInstanceOf<AttrInListSelector>(selector);
-        //     Assert.NotNull(selector);
-        //     Assert.AreEqual(selectorText, selector.Text);
-        // }
-        //
-        // [Test]
-        // public void SelectorText_EscapeCssSpecialCharacters_NamespaceSelector()
-        // {
-        //     var selectorText = @"\@\$\!\.\%|node";
-        //     var parser = new CssSelectorParser();
-        //
-        //     var selector = parser.ParseSelector(selectorText);
-        //
-        //     Assert.IsInstanceOf<ComplexSelector>(selector);
-        //     Assert.NotNull(selector);
-        //     Assert.AreEqual(selectorText, selector.Text);
-        // }
-        //
-        // [TestCase("nth-child")]
-        // [TestCase("nth-last-child")]
-        // public void PseudoClassSpecificityExceptions_NthChild_ContributesSpecificity(String pseudoClass)
-        // {
-        //     var selectorText = $@"foo:{pseudoClass}(even of .bar, #bar)";
-        //     var parser = new CssSelectorParser();
-        //
-        //     var selector = parser.ParseSelector(selectorText);
-        //
-        //     var expected = new Priority(0, 1, 1, 1);
-        //
-        //     Assert.AreEqual(expected, selector.Specificity);
-        // }
-        //
-        // [TestCase("nth-child")]
-        // [TestCase("nth-last-child")]
-        // public void PseudoClassSpecificityExceptions_EmptyNthChild_ContributesSingleClassSpecificity(String pseudoClass)
-        // {
-        //     var selectorText = $@"foo:{pseudoClass}(even)";
-        //     var parser = new CssSelectorParser();
-        //
-        //     var selector = parser.ParseSelector(selectorText);
-        //
-        //     var expected = new Priority(0, 0, 1, 1);
-        //
-        //     Assert.AreEqual(expected, selector.Specificity);
-        // }
-        //
-        // [TestCase("has")]
-        // [TestCase("matches")]
-        // [TestCase("is")]
-        // [TestCase("not")]
-        // public void PseudoClassSpecificityExceptions_Matchers_ContributesSpecificity(String pseudoClass)
-        // {
-        //     var selectorText = $@"foo:{pseudoClass}(.bar, #bar)";
-        //     var parser = new CssSelectorParser();
-        //
-        //     var selector = parser.ParseSelector(selectorText);
-        //
-        //     var expected = new Priority(0, 1, 0, 1);
-        //
-        //     Assert.AreEqual(expected, selector.Specificity);
-        // }
-        //
-        // [Test]
-        // public void PseudoClassSpecificityExceptions_Where_DoesNotContributeSpecificity()
-        // {
-        //     var selectorText = $@"foo:where(.bar, #bar)";
-        //     var parser = new CssSelectorParser();
-        //
-        //     var selector = parser.ParseSelector(selectorText);
-        //
-        //     var expected = new Priority(0, 0, 0, 1);
-        //
-        //     Assert.AreEqual("foo:where(.bar, #bar)", selector.Text);
-        //     Assert.AreEqual(expected, selector.Specificity);
-        // }
-        //
-        // [Test]
-        // public void PseudoClassFocusVisible_Issue1121()
-        // {
-        //     var selectorText = $@"foo:focus-visible";
-        //     var parser = new CssSelectorParser();
-        //
-        //     var selector = parser.ParseSelector(selectorText);
-        //
-        //     var expected = new Priority(0, 0, 1, 1);
-        //
-        //     Assert.AreEqual("foo:focus-visible", selector.Text);
-        //     Assert.AreEqual(expected, selector.Specificity);
-        // }
-        //
-        // [Test]
-        // public void PseudoClassFocusWithin_Issue1121()
-        // {
-        //     var selectorText = $@"foo:focus-within";
-        //     var parser = new CssSelectorParser();
-        //
-        //     var selector = parser.ParseSelector(selectorText);
-        //
-        //     var expected = new Priority(0, 0, 1, 1);
-        //
-        //     Assert.AreEqual("foo:focus-within", selector.Text);
-        //     Assert.AreEqual(expected, selector.Specificity);
-        // }
+        [Test]
+        public void SelectorText_EscapeCssSpecialCharacters_ClassSelector()
+        {
+            var selectorText = @".\@\$\!\.\%";
+            var parser = new CssSelectorParser();
+
+            var selector = parser.ParseSelector(selectorText);
+
+            Assert.IsInstanceOf<ClassSelector>(selector);
+            Assert.NotNull(selector);
+            Assert.AreEqual(selectorText, selector.Text);
+        }
+
+        [Test]
+        public void SelectorText_EscapeCssSpecialCharacters_IdSelector()
+        {
+            var selectorText = @"#\@\$\!\.\%";
+            var parser = new CssSelectorParser();
+
+            var selector = parser.ParseSelector(selectorText);
+
+            Assert.IsInstanceOf<IdSelector>(selector);
+            Assert.NotNull(selector);
+            Assert.AreEqual(selectorText, selector.Text);
+        }
+
+        [Test]
+        public void SelectorText_EscapeCssSpecialCharacters_AttrAvailableSelector()
+        {
+            var selectorText = @"[\@\$\!\.\%]";
+            var parser = new CssSelectorParser();
+
+            var selector = parser.ParseSelector(selectorText);
+
+            Assert.IsInstanceOf<AttrAvailableSelector>(selector);
+            Assert.NotNull(selector);
+            Assert.AreEqual(selectorText, selector.Text);
+        }
+
+        [Test]
+        public void SelectorText_EscapeCssSpecialCharacters_AttrMatchSelector()
+        {
+            var selectorText = @"[\@\$\!\.\%=""some text""]";
+            var parser = new CssSelectorParser();
+
+            var selector = parser.ParseSelector(selectorText);
+
+            Assert.IsInstanceOf<AttrMatchSelector>(selector);
+            Assert.NotNull(selector);
+            Assert.AreEqual(selectorText, selector.Text);
+        }
+
+        [Test]
+        public void SelectorText_EscapeCssSpecialCharacters_AttrContainsSelector()
+        {
+            var selectorText = @"[\@\$\!\.\%*=""some text""]";
+            var parser = new CssSelectorParser();
+
+            var selector = parser.ParseSelector(selectorText);
+
+            Assert.IsInstanceOf<AttrContainsSelector>(selector);
+            Assert.NotNull(selector);
+            Assert.AreEqual(selectorText, selector.Text);
+        }
+
+        [Test]
+        public void SelectorText_EscapeCssSpecialCharacters_AttrInListSelector()
+        {
+            var selectorText = @"[\@\$\!\.\%~=""some text""]";
+            var parser = new CssSelectorParser();
+
+            var selector = parser.ParseSelector(selectorText);
+
+            Assert.IsInstanceOf<AttrInListSelector>(selector);
+            Assert.NotNull(selector);
+            Assert.AreEqual(selectorText, selector.Text);
+        }
+
+        [Test]
+        public void SelectorText_EscapeCssSpecialCharacters_NamespaceSelector()
+        {
+            var selectorText = @"\@\$\!\.\%|node";
+            var parser = new CssSelectorParser();
+
+            var selector = parser.ParseSelector(selectorText);
+
+            Assert.IsInstanceOf<ComplexSelector>(selector);
+            Assert.NotNull(selector);
+            Assert.AreEqual(selectorText, selector.Text);
+        }
+
+        [TestCase("nth-child")]
+        [TestCase("nth-last-child")]
+        public void PseudoClassSpecificityExceptions_NthChild_ContributesSpecificity(String pseudoClass)
+        {
+            var selectorText = $@"foo:{pseudoClass}(even of .bar, #bar)";
+            var parser = new CssSelectorParser();
+
+            var selector = parser.ParseSelector(selectorText);
+
+            var expected = new Priority(0, 1, 1, 1);
+
+            Assert.AreEqual(expected, selector.Specificity);
+        }
+
+        [TestCase("nth-child")]
+        [TestCase("nth-last-child")]
+        public void PseudoClassSpecificityExceptions_EmptyNthChild_ContributesSingleClassSpecificity(String pseudoClass)
+        {
+            var selectorText = $@"foo:{pseudoClass}(even)";
+            var parser = new CssSelectorParser();
+
+            var selector = parser.ParseSelector(selectorText);
+
+            var expected = new Priority(0, 0, 1, 1);
+
+            Assert.AreEqual(expected, selector.Specificity);
+        }
+
+        [TestCase("has")]
+        [TestCase("matches")]
+        [TestCase("is")]
+        [TestCase("not")]
+        public void PseudoClassSpecificityExceptions_Matchers_ContributesSpecificity(String pseudoClass)
+        {
+            var selectorText = $@"foo:{pseudoClass}(.bar, #bar)";
+            var parser = new CssSelectorParser();
+
+            var selector = parser.ParseSelector(selectorText);
+
+            var expected = new Priority(0, 1, 0, 1);
+
+            Assert.AreEqual(expected, selector.Specificity);
+        }
+
+        [Test]
+        public void PseudoClassSpecificityExceptions_Where_DoesNotContributeSpecificity()
+        {
+            var selectorText = $@"foo:where(.bar, #bar)";
+            var parser = new CssSelectorParser();
+
+            var selector = parser.ParseSelector(selectorText);
+
+            var expected = new Priority(0, 0, 0, 1);
+
+            Assert.AreEqual("foo:where(.bar, #bar)", selector.Text);
+            Assert.AreEqual(expected, selector.Specificity);
+        }
+
+        [Test]
+        public void PseudoClassFocusVisible_Issue1121()
+        {
+            var selectorText = $@"foo:focus-visible";
+            var parser = new CssSelectorParser();
+
+            var selector = parser.ParseSelector(selectorText);
+
+            var expected = new Priority(0, 0, 1, 1);
+
+            Assert.AreEqual("foo:focus-visible", selector.Text);
+            Assert.AreEqual(expected, selector.Specificity);
+        }
+
+        [Test]
+        public void PseudoClassFocusWithin_Issue1121()
+        {
+            var selectorText = $@"foo:focus-within";
+            var parser = new CssSelectorParser();
+
+            var selector = parser.ParseSelector(selectorText);
+
+            var expected = new Priority(0, 0, 1, 1);
+
+            Assert.AreEqual("foo:focus-within", selector.Text);
+            Assert.AreEqual(expected, selector.Specificity);
+        }
     }
 }
