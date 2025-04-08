@@ -1,6 +1,7 @@
 ﻿namespace LayoutEngine.Platform.Tests.Unit.Update;
 
 using AutoFixture;
+using Contracts.Platform.Updates;
 using LayoutEngine.Contracts.Platform.Events;
 using LayoutEngine.Contracts.Platform.Threading;
 using LayoutEngine.Platform.Abstractions;
@@ -14,6 +15,7 @@ public class FrameSchedulerTests : IDisposable
     private readonly TestEventAggregator _eventAggregator;
     private readonly IThreadingCoordinator _threadingCoordinator;
     private readonly TestTimeProvider _timeProvider;
+    private readonly IFrameTimingStrategy _timingStrategy;
     private readonly FrameScheduler _frameScheduler;
 
     public FrameSchedulerTests()
@@ -22,7 +24,24 @@ public class FrameSchedulerTests : IDisposable
         _eventAggregator = new TestEventAggregator();
         _threadingCoordinator = Substitute.For<IThreadingCoordinator>();
         _timeProvider = new TestTimeProvider(initialTimeMs: 1000);
-        _frameScheduler = new FrameScheduler(_eventAggregator, _threadingCoordinator, _timeProvider);
+
+        // Create a mock timing strategy
+        _timingStrategy = Substitute.For<IFrameTimingStrategy>();
+        _timingStrategy.IsSynchronousModeEnabled.Returns(false);
+        _timingStrategy.GetCurrentTimeMs().Returns(1000.0);
+
+        // When RequestNextFrame is called, schedule the action on the main thread
+        _timingStrategy.When(x => x.RequestNextFrame(Arg.Any<Action>()))
+            .Do(callInfo => {
+                var action = callInfo.Arg<Action>();
+                _threadingCoordinator.ScheduleOnMainThread(action);
+            });
+
+        _frameScheduler = new FrameScheduler(
+            _eventAggregator,
+            _threadingCoordinator,
+            _timingStrategy,
+            _timeProvider);
     }
 
     [Fact]
@@ -167,7 +186,7 @@ public class FrameSchedulerTests : IDisposable
     }
 
     [Fact]
-    public void RequestAnimationFrame_InNormalMode_ShouldScheduleOnMainThread()
+    public void RequestAnimationFrame_InNormalMode_ShouldUseTimingStrategy()
     {
         // Arrange
         _frameScheduler.EnableSynchronousMode(false);
@@ -176,8 +195,8 @@ public class FrameSchedulerTests : IDisposable
         // Act
         _frameScheduler.RequestAnimationFrame(callback);
 
-        // Assert
-        _threadingCoordinator.Received(1).ScheduleOnMainThread(Arg.Any<Action>());
+        // Assert - Now we check that the timing strategy was used
+        _timingStrategy.Received(1).RequestNextFrame(Arg.Any<Action>());
     }
 
     public void Dispose()

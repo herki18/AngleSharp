@@ -47,7 +47,8 @@ public class LayoutEngineMainEndToEndTests : IDisposable
         services.AddLogging(configure => configure.AddConsole());
 
         // Add the LayoutEngine with configuration
-        services.AddLayoutEngine(options => {
+        services.AddLayoutEngine(options =>
+        {
             options.DevicePixelRatio = 1.0f;
             options.MaxWorkerThreads = 2;
             options.StyleCacheSize = 1000;
@@ -112,7 +113,8 @@ public class LayoutEngineMainEndToEndTests : IDisposable
     /// <summary>
     /// Waits for a specific lifecycle phase change.
     /// </summary>
-    private async Task WaitForPhaseAsync(DocumentLifecyclePhase phase, PhaseChangeType changeType, TimeSpan? timeout = null)
+    private async Task WaitForPhaseAsync(DocumentLifecyclePhase phase, PhaseChangeType changeType,
+        TimeSpan? timeout = null)
     {
         var timeoutValue = timeout ?? TimeSpan.FromSeconds(3);
         var tcs = new TaskCompletionSource<bool>();
@@ -139,6 +141,116 @@ public class LayoutEngineMainEndToEndTests : IDisposable
         {
             _eventAggregator.Unsubscribe(subscription);
         }
+    }
+
+    [Fact]
+    public async Task GetComputedStyleAsync_ForH1_ShouldReturnMockedH1Styles()
+    {
+        // Arrange
+        var document = await _layoutEngine.OpenAsync(SimpleHtml);
+        await _layoutEngine.ProcessFullDocumentAsync();
+        await WaitForUpdatesAsync(UpdateType.Full); // Ensure processing is done
+
+        var h1Element = document.QuerySelector("h1");
+        Assert.NotNull(h1Element); // Ensure element exists
+
+        // Act
+        var computedStyle = await _layoutEngine.GetComputedStyleAsync(h1Element);
+
+        // Assert
+        Assert.NotNull(computedStyle);
+
+        // --- Assert specific values from the MOCK ComputedStyle for H1 ---
+        // Values defined in LayoutEngine.StyleSystem.ComputedStyle constructor
+        Assert.True(computedStyle.HasProperty("font-weight"), "Mock should provide font-weight for h1");
+        Assert.Equal("bold", computedStyle.GetValue("font-weight"));
+
+        Assert.True(computedStyle.HasProperty("font-size"), "Mock should provide font-size for h1");
+        Assert.Equal("32px", computedStyle.GetValue("font-size")); // Mock specific value for h1
+
+        Assert.True(computedStyle.HasProperty("margin-bottom"), "Mock should provide margin-bottom for h1");
+        Assert.Equal("16px", computedStyle.GetValue("margin-bottom"));
+
+        Assert.True(computedStyle.HasProperty("display"), "Mock should provide display");
+        Assert.Equal("block", computedStyle.GetValue("display")); // Default mock value
+
+        // Optional: Assert the type if you want to be very specific
+        Assert.IsType<LayoutEngine.StyleSystem.ComputedStyle>(computedStyle);
+    }
+
+    [Fact]
+    public async Task GetComputedStyleAsync_ForParagraph_ShouldReturnMockedParagraphStyles()
+    {
+        // Arrange
+        var document = await _layoutEngine.OpenAsync(SimpleHtml);
+        await _layoutEngine.ProcessFullDocumentAsync();
+        await WaitForUpdatesAsync(UpdateType.Full);
+
+        var pElement = document.QuerySelector("p");
+        Assert.NotNull(pElement);
+
+        // Act
+        var computedStyle = await _layoutEngine.GetComputedStyleAsync(pElement);
+
+        // Assert
+        Assert.NotNull(computedStyle);
+
+        // --- Assert specific values from the MOCK ComputedStyle for P ---
+        Assert.True(computedStyle.HasProperty("margin-bottom"), "Mock should provide margin-bottom for p");
+        Assert.Equal("16px", computedStyle.GetValue("margin-bottom")); // Mock specific value for p
+
+        Assert.True(computedStyle.HasProperty("font-size"), "Mock should provide font-size");
+        Assert.Equal("16px", computedStyle.GetValue("font-size")); // Default mock value
+
+        Assert.True(computedStyle.HasProperty("color"), "Mock should provide color");
+        Assert.Equal("rgba(0, 0, 0, 1)", computedStyle.GetValue("color")); // Default mock value
+    }
+
+    [Fact]
+    public async Task GetComputedStyleAsync_ForAnchor_ShouldReturnMockedAnchorStyles()
+    {
+        // Arrange
+        var document = await _layoutEngine.OpenAsync(SimpleHtml);
+        await _layoutEngine.ProcessFullDocumentAsync();
+        await WaitForUpdatesAsync(UpdateType.Full);
+
+        var aElement = document.QuerySelector("a");
+        Assert.NotNull(aElement);
+
+        // Act
+        var computedStyle = await _layoutEngine.GetComputedStyleAsync(aElement);
+
+        // Assert
+        Assert.NotNull(computedStyle);
+
+        // --- Assert specific values from the MOCK ComputedStyle for A ---
+        Assert.True(computedStyle.HasProperty("color"), "Mock should provide color for a");
+        Assert.Equal("rgba(0, 0, 255, 1)", computedStyle.GetValue("color")); // Mock specific value for a
+
+        Assert.True(computedStyle.HasProperty("text-decoration"), "Mock should provide text-decoration for a");
+        Assert.Equal("underline", computedStyle.GetValue("text-decoration")); // Mock specific value for a
+    }
+
+    [Fact]
+    public async Task GetComputedStyleAsync_ForSpan_ShouldReturnMockedSpanStyles()
+    {
+        // Arrange
+        var document = await _layoutEngine.OpenAsync(SimpleHtml);
+        await _layoutEngine.ProcessFullDocumentAsync();
+        await WaitForUpdatesAsync(UpdateType.Full);
+
+        var spanElement = document.QuerySelector("span");
+        Assert.NotNull(spanElement);
+
+        // Act
+        var computedStyle = await _layoutEngine.GetComputedStyleAsync(spanElement);
+
+        // Assert
+        Assert.NotNull(computedStyle);
+
+        // --- Assert specific values from the MOCK ComputedStyle for SPAN ---
+        Assert.True(computedStyle.HasProperty("display"), "Mock should provide display for span");
+        Assert.Equal("inline", computedStyle.GetValue("display")); // Mock specific value for span
     }
 
     [Fact]
@@ -360,12 +472,14 @@ public class LayoutEngineMainEndToEndTests : IDisposable
         var styleUpdatedCount = 0;
         var layoutUpdatedCount = 0;
 
-        var styleSubscription = _eventAggregator.Subscribe<StyleComputedEvent>(e => {
+        var styleSubscription = _eventAggregator.Subscribe<StyleComputedEvent>(e =>
+        {
             if (e.Elements.Contains(paragraph))
                 styleUpdatedCount++;
         });
 
-        var layoutSubscription = _eventAggregator.Subscribe<LayoutUpdatedEvent>(e => {
+        var layoutSubscription = _eventAggregator.Subscribe<LayoutUpdatedEvent>(e =>
+        {
             if (e.UpdatedElements.Contains(paragraph))
                 layoutUpdatedCount++;
         });
