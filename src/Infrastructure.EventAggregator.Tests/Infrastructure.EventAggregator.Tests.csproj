@@ -15,6 +15,7 @@
         <PackageReference Include="AutoFixture" Version="5.0.0-preview0012" />
         <PackageReference Include="coverlet.collector" Version="6.0.0"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
+        <PackageReference Include="Microsoft.Reactive.Testing" Version="6.0.1" />
         <PackageReference Include="NSubstitute" Version="5.3.0" />
         <PackageReference Include="xunit" Version="2.5.3"/>
         <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
@@ -22,6 +23,10 @@
 
     <ItemGroup>
         <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Infrastructure.EventAggregator\Infrastructure.EventAggregator.csproj" />
     </ItemGroup>
 
 </Project>
