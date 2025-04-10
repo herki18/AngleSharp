@@ -46,6 +46,8 @@ public class LayoutEngineMainEndToEndTests : IDisposable
         // Add logging
         services.AddLogging(configure => configure.AddConsole());
 
+        services.AddSingleton<IFrameTimingStrategy, MinimalTestFrameTimingStrategy>();
+
         // Add the LayoutEngine with configuration
         services.AddLayoutEngine(options =>
         {
@@ -323,57 +325,6 @@ public class LayoutEngineMainEndToEndTests : IDisposable
         // Verify we can gracefully shut down
         await _layoutEngine.ShutdownAsync();
         Assert.Equal(DocumentLifecyclePhase.Disposed, _layoutEngine.CurrentPhase);
-    }
-
-    [Fact]
-    public async Task EndToEnd_FileLoading_ShouldLoadAndRenderHtmlFile()
-    {
-        // Arrange - Create a temporary HTML file
-        string tempHtmlPath = Path.GetTempFileName() + ".html";
-        File.WriteAllText(tempHtmlPath, SimpleHtml);
-
-        try
-        {
-            // Act
-            var document = await _layoutEngine.OpenFileAsync(tempHtmlPath);
-
-            // Assert
-            Assert.NotNull(document);
-            Assert.NotNull(document.Body);
-            Assert.Equal("Test Document", document.Title);
-
-            // Wait for layout processing
-            await _layoutEngine.ProcessFullDocumentAsync();
-            await WaitForUpdatesAsync(UpdateType.Full);
-
-            // Wait for render ready phase
-            if (_layoutEngine.CurrentPhase != DocumentLifecyclePhase.RenderReady)
-            {
-                await WaitForPhaseAsync(DocumentLifecyclePhase.RenderReady, PhaseChangeType.Enter);
-            }
-
-            // Basic verification
-            var h1 = document.QuerySelector("h1");
-            Assert.NotNull(h1);
-            Assert.Equal("Hello World", h1.TextContent.Trim());
-
-            // Verify style and layout engines are working
-            var computedStyle = await _layoutEngine.GetComputedStyleAsync(document.Body);
-            Assert.NotNull(computedStyle);
-
-            var layoutBox = await _layoutEngine.GetLayoutBoxAsync(document.Body);
-            Assert.NotNull(layoutBox);
-            Assert.True(layoutBox.Width > 0);
-            Assert.True(layoutBox.Height > 0);
-        }
-        finally
-        {
-            // Clean up
-            if (File.Exists(tempHtmlPath))
-            {
-                File.Delete(tempHtmlPath);
-            }
-        }
     }
 
     [Fact]

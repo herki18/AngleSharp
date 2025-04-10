@@ -12,117 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace LayoutEngine.LayoutSystem;
 
-/// <summary>
-/// Mock implementation of ILayoutBox to provide dummy layout data.
-/// </summary>
-public class LayoutBox : ILayoutBox
-{
-    private readonly List<ILayoutBox> _children = new List<ILayoutBox>();
-
-    public IElement? Element { get; }
-    public BoxType BoxType { get; }
-    public IComputedStyle? Style { get; }
-    public ILayoutBox? Parent { get; set; }
-    public IReadOnlyList<ILayoutBox> Children => _children;
-    public float X { get; set; }
-    public float Y { get; set; }
-    public float Width { get; set; }
-    public float Height { get; set; }
-    public BoxEdges Margin { get; set; }
-    public BoxEdges Border { get; set; }
-    public BoxEdges Padding { get; set; }
-
-    public Rect ContentRect => new Rect(X, Y, Width, Height);
-
-    public LayoutBox(IElement? element, BoxType boxType = BoxType.Block, IComputedStyle? style = null)
-    {
-        Element = element;
-        BoxType = boxType;
-        Style = style;
-
-        // Default dimensions
-        X = 0;
-        Y = 0;
-        Width = 100;
-        Height = 20;
-
-        // Default edges
-        Margin = new BoxEdges(0);
-        Border = new BoxEdges(0);
-        Padding = new BoxEdges(0);
-
-        // Adjust based on tag name if available
-        if (element != null)
-        {
-            var tagName = element.TagName.ToLowerInvariant();
-
-            switch (tagName)
-            {
-                case "body":
-                    Width = 800;
-                    Height = 600;
-                    break;
-                case "div":
-                    Width = 780;
-                    Height = 100;
-                    Margin = new BoxEdges(5);
-                    break;
-                case "h1":
-                    Height = 32;
-                    Margin = new BoxEdges(10, 0, 10, 0);
-                    break;
-                case "h2":
-                    Height = 24;
-                    Margin = new BoxEdges(8, 0, 8, 0);
-                    break;
-                case "p":
-                    Height = 20;
-                    Margin = new BoxEdges(5, 0, 5, 0);
-                    break;
-                case "a":
-                    BoxType = BoxType.Inline;
-                    break;
-                case "span":
-                    BoxType = BoxType.Inline;
-                    break;
-                case "img":
-                    Width = 200;
-                    Height = 150;
-                    break;
-            }
-        }
-    }
-
-    public Rect GetAbsoluteRect()
-    {
-        var absX = X;
-        var absY = Y;
-
-        // Traverse parent chain to calculate absolute position
-        var currentParent = Parent;
-        while (currentParent != null)
-        {
-            absX += currentParent.X;
-            absY += currentParent.Y;
-            currentParent = currentParent.Parent;
-        }
-
-        return new Rect(absX, absY, Width, Height);
-    }
-
-    public bool ContainsPoint(float x, float y)
-    {
-        var absoluteRect = GetAbsoluteRect();
-        return x >= absoluteRect.X && x <= absoluteRect.X + absoluteRect.Width &&
-               y >= absoluteRect.Y && y <= absoluteRect.Y + absoluteRect.Height;
-    }
-
-    public void AddChild(LayoutBox child)
-    {
-        child.Parent = this;
-        _children.Add(child);
-    }
-}
+using Contracts.Platform.Dom;
 
 /// <summary>
 /// Mock implementation of ILayoutEngine that returns dummy layout information.
@@ -183,41 +73,31 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
         if (_document?.Body == null)
             return Task.CompletedTask;
 
+        _logger?.LogDebug("Processing layout updates");
+
         // Create a root box for the document
         var bodyBox = GetOrCreateLayoutBox(_document.Body);
         _rootBox = (LayoutBox)bodyBox;
 
-        // Build a simple layout tree with the body's direct children
-        foreach (var child in _document.Body.Children)
-        {
-            var childBox = GetOrCreateLayoutBox(child);
-            if (childBox is LayoutBox layoutBox)
-            {
-                ((LayoutBox)bodyBox).AddChild(layoutBox);
-
-                // Position child boxes with y-offset
-                layoutBox.Y = bodyBox.Children.Count * 20; // Simple stacking
-            }
-        }
-
-        // Create the updated boxes dictionary
+        // Dictionary to track processed elements
+        var processedElements = new HashSet<IElement>();
         var updatedBoxes = new Dictionary<IElement, ILayoutBox>();
-        updatedBoxes[_document.Body] = bodyBox;
 
-        foreach (var child in _document.Body.Children)
-        {
-            var childBox = GetOrCreateLayoutBox(child);
-            updatedBoxes[child] = childBox;
-        }
+        // Process full document
+        ProcessElementAndDescendants(_document.Body, 0, 0, processedElements, updatedBoxes);
 
-        // Create list of elements
+        // Create list of elements that were updated
         var elements = updatedBoxes.Keys.ToList();
 
         // Publish the layout updated event
-        _eventAggregator.Publish(new LayoutUpdatedEvent(elements, _rootBox, updatedBoxes));
+        if (elements.Count > 0)
+        {
+            _logger?.LogDebug("Publishing LayoutUpdatedEvent for {count} elements", elements.Count);
+            _eventAggregator.Publish(new LayoutUpdatedEvent(elements, _rootBox, updatedBoxes));
 
-        // Also publish a fragment tree updated event for the render system
-        _eventAggregator.Publish(new FragmentTreeUpdatedEvent(_rootBox));
+            // Also publish a fragment tree updated event for the render system
+            _eventAggregator.Publish(new FragmentTreeUpdatedEvent(_rootBox));
+        }
 
         return Task.CompletedTask;
     }
@@ -226,7 +106,21 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
     {
         EnsureInitialized();
 
+        if (element == null)
+            throw new ArgumentNullException(nameof(element));
+
+        _logger?.LogDebug("Computing layout for element {element}", element.TagName);
+
+        // Get or create layout box for this element
         var layoutBox = GetOrCreateLayoutBox(element);
+
+        // Start with the simplest case - single element update
+        var elements = new List<IElement> { element };
+        var updatedBoxes = new Dictionary<IElement, ILayoutBox> { [element] = layoutBox };
+
+        // Publish layout update for this element
+        _eventAggregator.Publish(new LayoutUpdatedEvent(elements, _rootBox, updatedBoxes));
+
         return Task.FromResult(layoutBox);
     }
 
@@ -234,10 +128,19 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
     {
         EnsureInitialized();
 
+        _logger?.LogDebug("Invalidating layout for {count} elements", elements.Count);
+
         // Remove elements from cache
         foreach (var element in elements)
         {
-            _cachedBoxes.Remove(element);
+            InvalidateElementAndDescendants(element);
+        }
+
+        // If this is called directly (not from an event handler),
+        // publish the LayoutInvalidatedEvent
+        if (elements.Count > 0)
+        {
+            _eventAggregator.Publish(new LayoutInvalidatedEvent(elements));
         }
     }
 
@@ -245,12 +148,27 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
     {
         EnsureInitialized();
 
+        _logger?.LogDebug("Invalidating all layout");
+
         // Clear all cached layout boxes
         _cachedBoxes.Clear();
+
+        // Recreate the root box
+        _rootBox = new LayoutBox(null);
+
+        // If we have a document, invalidate the whole document
+        if (_document?.Body != null)
+        {
+            var elements = new List<IElement> { _document.Body };
+            _eventAggregator.Publish(new LayoutInvalidatedEvent(elements));
+        }
     }
 
     public ILayoutBox? GetCachedLayout(IElement element)
     {
+        if (element == null)
+            return null;
+
         return _cachedBoxes.TryGetValue(element, out var box) ? box : null;
     }
 
@@ -261,6 +179,9 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
 
     public void SetViewportSize(float width, float height)
     {
+        _logger?.LogDebug("Setting viewport size to {width}x{height}", width, height);
+
+        var oldViewport = _viewport;
         _viewport = new Rect(0, 0, width, height);
 
         // If we have the document, adjust the body box size too
@@ -273,43 +194,173 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
             }
         }
 
-        // Invalidate layout since viewport has changed
+        // Invalidate all layout since viewport has changed
         InvalidateAllLayout();
+
+        // Publish viewport changed event
+        _eventAggregator.Publish(new ViewportChangedEvent(
+            new Size((int)oldViewport.Width, (int)oldViewport.Height),
+            new Size((int)width, (int)height)));
     }
 
     public IElement? ElementFromPoint(float x, float y)
     {
-        // Simple hit testing - iterate through all boxes and check if the point is contained
-        foreach (var boxEntry in _cachedBoxes)
+        // Simple hit testing - find the topmost (last in tree traversal) element containing the point
+        IElement? result = null;
+        float smallestArea = float.MaxValue;
+
+        foreach (var kvp in _cachedBoxes)
         {
-            if (boxEntry.Value.ContainsPoint(x, y))
+            var element = kvp.Key;
+            var box = kvp.Value;
+
+            if (box.ContainsPoint(x, y))
             {
-                return boxEntry.Key;
+                var rect = box.GetAbsoluteRect();
+                var area = rect.Width * rect.Height;
+
+                // Prefer smaller boxes as they're likely more specific
+                if (area < smallestArea)
+                {
+                    smallestArea = area;
+                    result = element;
+                }
             }
         }
 
-        return null;
+        return result;
     }
 
     private ILayoutBox GetOrCreateLayoutBox(IElement element)
     {
-        if (!_cachedBoxes.TryGetValue(element, out var box))
+        if (_cachedBoxes.TryGetValue(element, out var box))
         {
-            // Determine box type based on element style (in a real implementation)
-            // For the mock, we'll just use some simple rules based on tag name
-            var tagName = element.TagName.ToLowerInvariant();
-            var boxType = tagName switch
-            {
-                "span" or "a" or "strong" or "em" or "b" or "i" => BoxType.Inline,
-                "div" or "p" or "h1" or "h2" or "h3" or "h4" or "h5" or "h6" => BoxType.Block,
-                _ => BoxType.Block
-            };
-
-            box = new LayoutBox(element, boxType);
-            _cachedBoxes[element] = box;
+            return box;
         }
 
+        // Determine box type based on element style (in a real implementation)
+        // For the mock, we'll just use some simple rules based on tag name
+        var tagName = element.TagName.ToLowerInvariant();
+        var boxType = tagName switch
+        {
+            "span" or "a" or "strong" or "em" or "b" or "i" => BoxType.Inline,
+            "div" or "p" or "h1" or "h2" or "h3" or "h4" or "h5" or "h6" => BoxType.Block,
+            _ => BoxType.Block
+        };
+
+        box = new LayoutBox(element, boxType);
+        _cachedBoxes[element] = box;
+
         return box;
+    }
+
+    private void ProcessElementAndDescendants(IElement element, float parentX, float parentY,
+        HashSet<IElement> processedElements, Dictionary<IElement, ILayoutBox> updatedBoxes)
+    {
+        if (processedElements.Contains(element))
+            return;
+
+        processedElements.Add(element);
+
+        // Get or create layout box for this element
+        var box = GetOrCreateLayoutBox(element);
+
+        // Update position relative to parent
+        if (box is LayoutBox layoutBox)
+        {
+            // Only update position if it's not already set
+            if (layoutBox.X == 0 && layoutBox.Parent == null)
+                layoutBox.X = parentX;
+
+            if (layoutBox.Y == 0 && layoutBox.Parent == null)
+                layoutBox.Y = parentY;
+        }
+
+        // Add to the updated boxes dictionary
+        updatedBoxes[element] = box;
+
+        // Calculate child position
+        float childX = parentX;
+        float childY = parentY;
+
+        if (box.BoxType == BoxType.Block)
+        {
+            // Blocks create a new positioning context
+            childX = box.X + box.Padding.Left + box.Border.Left;
+            childY = box.Y + box.Padding.Top + box.Border.Top;
+        }
+        else
+        {
+            // Inline boxes flow with parent
+            childX = parentX + box.Width;
+            childY = parentY;
+        }
+
+        // Currently we're creating a very simplified layout
+        // In a real implementation, we'd have a more complex layout algorithm
+        float yOffset = 0;
+
+        // Process children
+        foreach (var child in element.Children)
+        {
+            // Create a layout box for this child
+            var childBox = GetOrCreateLayoutBox(child);
+
+            // If block, position below previous siblings
+            if (childBox.BoxType == BoxType.Block)
+            {
+                if (childBox is LayoutBox layoutChildBox)
+                {
+                    layoutChildBox.X = childX;
+                    layoutChildBox.Y = childY + yOffset;
+
+                    // Set parent-child relationship
+                    if (box is LayoutBox parentLayoutBox)
+                    {
+                        parentLayoutBox.AddChild(layoutChildBox);
+                    }
+
+                    // Move down for next block element
+                    yOffset += childBox.Height + childBox.Margin.Top + childBox.Margin.Bottom;
+                }
+            }
+            else
+            {
+                // For inline elements, position to the right of previous siblings
+                if (childBox is LayoutBox layoutChildBox)
+                {
+                    layoutChildBox.X = childX;
+                    layoutChildBox.Y = childY;
+
+                    // Set parent-child relationship
+                    if (box is LayoutBox parentLayoutBox)
+                    {
+                        parentLayoutBox.AddChild(layoutChildBox);
+                    }
+
+                    // Move right for next inline element
+                    childX += childBox.Width + childBox.Margin.Left + childBox.Margin.Right;
+                }
+            }
+
+            // Recursively process this child's descendants
+            ProcessElementAndDescendants(child, childBox.X, childBox.Y, processedElements, updatedBoxes);
+        }
+    }
+
+    private void InvalidateElementAndDescendants(IElement element)
+    {
+        if (element == null)
+            return;
+
+        // Remove this element from cache
+        _cachedBoxes.Remove(element);
+
+        // Recursively invalidate all children
+        foreach (var child in element.Children)
+        {
+            InvalidateElementAndDescendants(child);
+        }
     }
 
     private void OnLayoutInvalidated(LayoutInvalidatedEvent e)
@@ -317,8 +368,26 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
         if (_isDisposed || !_isInitialized)
             return;
 
-        // Invalidate layout for the elements
-        InvalidateLayout(e.Elements);
+        _logger?.LogDebug("Layout invalidated for {count} elements", e.Elements.Count);
+
+        // Remove invalidated elements from cache
+        foreach (var element in e.Elements)
+        {
+            InvalidateElementAndDescendants(element);
+        }
+
+        // If we're in the layout phase, process updates immediately
+        if (_currentPhase == DocumentLifecyclePhase.InLayout ||
+            _currentPhase == DocumentLifecyclePhase.LayoutDirty)
+        {
+            ProcessUpdatesAsync().ContinueWith(t =>
+            {
+                if (t.Exception != null)
+                {
+                    _logger?.LogError(t.Exception, "Error processing layout updates");
+                }
+            });
+        }
     }
 
     private void OnPhaseChanged(PhaseChangedEvent e)
@@ -329,12 +398,17 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
         // Update current phase
         _currentPhase = e.Phase;
 
+        _logger?.LogDebug("Phase changed to {phase}, {changeType}", e.Phase, e.ChangeType);
+
         if (e.Phase == DocumentLifecyclePhase.InLayout && e.ChangeType == PhaseChangeType.Enter)
         {
-            // Process layout
-            ProcessUpdatesAsync().ContinueWith(_ =>
+            // Process layout updates when entering the layout phase
+            ProcessUpdatesAsync().ContinueWith(t =>
             {
-                // The event is published inside ProcessUpdatesAsync
+                if (t.Exception != null)
+                {
+                    _logger?.LogError(t.Exception, "Error processing layout updates");
+                }
             });
         }
     }
@@ -344,8 +418,25 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
         if (_isDisposed || !_isInitialized)
             return;
 
+        _logger?.LogDebug("Styles computed for {count} elements", e.Elements.Count);
+
         // When styles change, invalidate layout for those elements
         InvalidateLayout(e.Elements);
+
+        // If we're already in a layout phase, process updates immediately
+        // This helps tests that are waiting for layout after a style change
+        if (_currentPhase == DocumentLifecyclePhase.StyleClean ||
+            _currentPhase == DocumentLifecyclePhase.LayoutClean ||
+            _currentPhase == DocumentLifecyclePhase.InLayout)
+        {
+            ProcessUpdatesAsync().ContinueWith(t =>
+            {
+                if (t.Exception != null)
+                {
+                    _logger?.LogError(t.Exception, "Error processing layout updates after style changes");
+                }
+            });
+        }
     }
 
     private void EnsureInitialized()

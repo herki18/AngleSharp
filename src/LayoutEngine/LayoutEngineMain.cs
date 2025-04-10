@@ -305,29 +305,38 @@ namespace LayoutEngine
                 }
             });
 
-            // Schedule a style update using the UpdateScheduler
+            // Schedule a style update using the UpdateScheduler with high priority
             var update = VisualUpdate.CreateStyleUpdate(element);
             _updateScheduler.ScheduleUpdate(update, UpdatePriority.High);
 
             // Set a timeout to prevent indefinite waiting
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)); // Extended timeout
             cts.Token.Register(() =>
             {
-                tcs.TrySetException(new TimeoutException("Timed out waiting for style computation"));
-                if (subscription != null)
-                    _eventAggregator.Unsubscribe(subscription);
+                // Instead of directly calling style engine, try re-scheduling with critical priority
+                if (!tcs.Task.IsCompleted)
+                {
+                    _logger.LogWarning("Style computation via events timed out, re-scheduling with critical priority");
+
+                    // Schedule with critical priority
+                    var criticalUpdate = VisualUpdate.CreateStyleUpdate(element);
+                    _updateScheduler.ScheduleUpdate(criticalUpdate, UpdatePriority.Critical);
+
+                    // Continue waiting for the event response
+                    // We don't set exception here, just let it keep waiting
+                }
             });
 
             try
             {
-                // Try to get event-based result
-                return await tcs.Task;
+                // Add a longer final timeout as safety measure
+                return await TimeoutAfter(tcs.Task, TimeSpan.FromSeconds(10),
+                    () => new TimeoutException("Style computation timed out after multiple attempts"));
             }
-            catch (TimeoutException)
+            catch (TimeoutException ex)
             {
-                // As a fallback, call style engine directly
-                _logger.LogWarning("Style computation via events timed out, using direct call");
-                return await _styleEngine.ComputeStyleAsync(element);
+                _logger.LogError(ex, "Style computation completely failed after multiple scheduling attempts");
+                throw new InvalidOperationException("Failed to compute style after multiple attempts", ex);
             }
         }
 
@@ -364,29 +373,38 @@ namespace LayoutEngine
                 }
             });
 
-            // Schedule a layout update using the UpdateScheduler
+            // Schedule a layout update using the UpdateScheduler with high priority
             var update = VisualUpdate.CreateLayoutUpdate(element);
             _updateScheduler.ScheduleUpdate(update, UpdatePriority.High);
 
             // Set a timeout to prevent indefinite waiting
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)); // Extended timeout
             cts.Token.Register(() =>
             {
-                tcs.TrySetException(new TimeoutException("Timed out waiting for layout computation"));
-                if (subscription != null)
-                    _eventAggregator.Unsubscribe(subscription);
+                // Instead of directly calling layout engine, try re-scheduling with critical priority
+                if (!tcs.Task.IsCompleted)
+                {
+                    _logger.LogWarning("Layout computation via events timed out, re-scheduling with critical priority");
+
+                    // Schedule with critical priority
+                    var criticalUpdate = VisualUpdate.CreateLayoutUpdate(element);
+                    _updateScheduler.ScheduleUpdate(criticalUpdate, UpdatePriority.Critical);
+
+                    // Continue waiting for the event response
+                    // We don't set exception here, just let it keep waiting
+                }
             });
 
             try
             {
-                // Try to get event-based result
-                return await tcs.Task;
+                // Add a longer final timeout as safety measure
+                return await TimeoutAfter(tcs.Task, TimeSpan.FromSeconds(10),
+                    () => new TimeoutException("Layout computation timed out after multiple attempts"));
             }
-            catch (TimeoutException)
+            catch (TimeoutException ex)
             {
-                // As a fallback, call layout engine directly
-                _logger.LogWarning("Layout computation via events timed out, using direct call");
-                return await _layoutEngine.ComputeLayoutAsync(element);
+                _logger.LogError(ex, "Layout computation completely failed after multiple scheduling attempts");
+                throw new InvalidOperationException("Failed to compute layout after multiple attempts", ex);
             }
         }
 
@@ -532,6 +550,22 @@ namespace LayoutEngine
         }
 
         #region Private Methods
+
+        /// <summary>
+        /// Extension method to add timeout to a Task with a custom exception factory.
+        /// </summary>
+        private static async Task<T> TimeoutAfter<T>(Task<T> task, TimeSpan timeout, Func<Exception> exceptionFactory)
+        {
+            var timeoutTask = Task.Delay(timeout);
+            var completedTask = await Task.WhenAny(task, timeoutTask);
+
+            if (completedTask == timeoutTask)
+            {
+                throw exceptionFactory();
+            }
+
+            return await task;
+        }
 
         /// <summary>
         /// Cleans up resources after document shutdown.

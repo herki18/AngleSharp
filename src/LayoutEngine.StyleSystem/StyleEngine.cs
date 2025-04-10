@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AngleSharp.Dom;
 using LayoutEngine.Contracts.Platform.Events;
@@ -9,72 +10,6 @@ using Infrastructure.EventAggregator.API.Aggregation;
 using Microsoft.Extensions.Logging;
 
 namespace LayoutEngine.StyleSystem;
-
-/// <summary>
-/// Simple implementation of IComputedStyle that returns mocked style data.
-/// </summary>
-public class ComputedStyle : IComputedStyle
-{
-    private readonly Dictionary<string, string> _properties = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-    public IElement Element { get; }
-
-    public ComputedStyle(IElement element)
-    {
-        Element = element;
-
-        // Basic dummy style values based on element tag
-        _properties["color"] = "rgba(0, 0, 0, 1)";
-        _properties["background-color"] = "rgba(255, 255, 255, 1)";
-        _properties["font-family"] = "Arial, sans-serif";
-        _properties["font-size"] = "16px";
-        _properties["display"] = "block";
-        _properties["margin"] = "0px";
-        _properties["padding"] = "0px";
-
-        // Add tag-specific dummy styles
-        var tagName = element.TagName.ToLowerInvariant();
-        if (tagName == "h1" || tagName == "h2")
-        {
-            _properties["font-weight"] = "bold";
-            _properties["margin-bottom"] = "16px";
-            _properties["font-size"] = tagName == "h1" ? "32px" : "24px";
-        }
-        else if (tagName == "p")
-        {
-            _properties["margin-bottom"] = "16px";
-        }
-        else if (tagName == "a")
-        {
-            _properties["color"] = "rgba(0, 0, 255, 1)";
-            _properties["text-decoration"] = "underline";
-        }
-        else if (tagName == "span")
-        {
-            _properties["display"] = "inline";
-        }
-        else if (tagName == "body")
-        {
-            _properties["margin"] = "8px";
-        }
-        else if (tagName == "div")
-        {
-            _properties["margin-bottom"] = "8px";
-        }
-    }
-
-    public string GetValue(string propertyName)
-    {
-        return _properties.TryGetValue(propertyName, out var value) ? value : string.Empty;
-    }
-
-    public IReadOnlyDictionary<string, string> Properties => _properties;
-
-    public bool HasProperty(string propertyName)
-    {
-        return _properties.ContainsKey(propertyName);
-    }
-}
 
 /// <summary>
 /// Mock implementation of IStyleEngine that returns dummy style data.
@@ -135,22 +70,17 @@ public class StyleEngine : IStyleEngine, IDisposable
         if (_document?.Body == null)
             return Task.CompletedTask;
 
-        // Just compute styles for body and its direct children in our mock
+        // Compute styles for all elements in the document
         var elements = new List<IElement>();
         var computedStyles = new Dictionary<IElement, IComputedStyle>();
 
-        elements.Add(_document.Body);
-        computedStyles[_document.Body] = GetOrCreateComputedStyle(_document.Body);
-
-        foreach (var child in _document.Body.Children)
-        {
-            elements.Add(child);
-            computedStyles[child] = GetOrCreateComputedStyle(child);
-        }
+        // Process document element and all its descendants
+        ProcessElementAndDescendants(_document.DocumentElement ?? _document.Body, elements, computedStyles);
 
         // Publish computed styles event
         if (elements.Count > 0)
         {
+            _logger?.LogDebug("Publishing StyleComputedEvent for {count} elements", elements.Count);
             _eventAggregator.Publish(new StyleComputedEvent(elements, computedStyles));
         }
 
@@ -161,11 +91,16 @@ public class StyleEngine : IStyleEngine, IDisposable
     {
         EnsureInitialized();
 
+        if (element == null)
+            throw new ArgumentNullException(nameof(element));
+
         var style = GetOrCreateComputedStyle(element);
 
         // Publish single element style computed event
         var elements = new List<IElement> { element };
         var computedStyles = new Dictionary<IElement, IComputedStyle> { [element] = style };
+
+        _logger?.LogDebug("Publishing StyleComputedEvent for element {element}", element.TagName);
         _eventAggregator.Publish(new StyleComputedEvent(elements, computedStyles));
 
         return Task.FromResult(style);
@@ -192,6 +127,9 @@ public class StyleEngine : IStyleEngine, IDisposable
 
     public IComputedStyle? GetCachedStyle(IElement element)
     {
+        if (element == null)
+            return null;
+
         return _cachedStyles.TryGetValue(element, out var style) ? style : null;
     }
 
@@ -250,6 +188,22 @@ public class StyleEngine : IStyleEngine, IDisposable
         {
             _cachedStyles.Remove(element);
         }
+
+        // Immediately process the updates (recompute styles)
+        if (e.Elements.Count > 0)
+        {
+            _logger?.LogDebug("Style invalidated for {count} elements, recomputing", e.Elements.Count);
+
+            var computedStyles = new Dictionary<IElement, IComputedStyle>();
+            foreach (var element in e.Elements)
+            {
+                var style = GetOrCreateComputedStyle(element);
+                computedStyles[element] = style;
+            }
+
+            // Publish the computed styles event
+            _eventAggregator.Publish(new StyleComputedEvent(e.Elements.ToList(), computedStyles));
+        }
     }
 
     private void OnPhaseChanged(PhaseChangedEvent e)
@@ -262,15 +216,42 @@ public class StyleEngine : IStyleEngine, IDisposable
 
         if (e.Phase == DocumentLifecyclePhase.InStyleRecalc && e.ChangeType == PhaseChangeType.Enter)
         {
-            // Process styles
-            ProcessUpdatesAsync().ContinueWith(_ =>
+            _logger?.LogDebug("Entered style recalc phase, processing updates");
+
+            // Process styles immediately and synchronously
+            try
             {
-                // No direct calls to lifecycle coordinator - publish an event instead
+                var elements = new List<IElement>();
+                var computedStyles = new Dictionary<IElement, IComputedStyle>();
+
+                if (_document?.Body != null)
+                {
+                    ProcessElementAndDescendants(_document.DocumentElement ?? _document.Body, elements, computedStyles);
+                }
+
+                // Publish computed styles event, even if empty
                 _eventAggregator.Publish(new StyleComputedEvent(
-                    new List<IElement>(),
-                    new Dictionary<IElement, IComputedStyle>())
+                    elements,
+                    computedStyles)
                 );
-            });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error processing styles in InStyleRecalc phase");
+            }
+        }
+    }
+
+    private void ProcessElementAndDescendants(IElement element, List<IElement> elements, Dictionary<IElement, IComputedStyle> computedStyles)
+    {
+        // Process the element itself
+        elements.Add(element);
+        computedStyles[element] = GetOrCreateComputedStyle(element);
+
+        // Process all descendants
+        foreach (var child in element.Children)
+        {
+            ProcessElementAndDescendants(child, elements, computedStyles);
         }
     }
 
