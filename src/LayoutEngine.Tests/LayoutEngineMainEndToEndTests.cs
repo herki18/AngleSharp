@@ -46,7 +46,7 @@ public class LayoutEngineMainEndToEndTests : IDisposable
         // Add logging
         services.AddLogging(configure => configure.AddConsole());
 
-        services.AddSingleton<IFrameTimingStrategy, MinimalTestFrameTimingStrategy>();
+        // services.AddSingleton<IFrameTimingStrategy, MinimalTestFrameTimingStrategy>();
 
         // Add the LayoutEngine with configuration
         services.AddLayoutEngine(options =>

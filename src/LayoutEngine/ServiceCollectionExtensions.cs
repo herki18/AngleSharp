@@ -48,7 +48,8 @@ public static class ServiceCollectionExtensions
         // services.AddLayoutEnginePlatform(options);
         //
         // // Register system services
-        services.AddPlatformServices();
+        // services.AddPlatformServices();
+        services.AddSimplifiedPlatformServices();
         services.AddStyleSystem();
         services.AddLayoutSystem();
         // services.AddRenderSystem();

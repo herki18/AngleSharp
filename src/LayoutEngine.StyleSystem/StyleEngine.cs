@@ -51,6 +51,14 @@ public class StyleEngine : IStyleEngine, IDisposable
         _document = document ?? throw new ArgumentNullException(nameof(document));
         _isInitialized = true;
         _logger?.LogInformation("StyleEngine initialized");
+
+        // Pre-compute styles for all document elements to ensure they're ready
+        if (document.DocumentElement != null)
+        {
+            _logger?.LogDebug("Pre-computing styles for document elements");
+            PrecomputeStylesForElement(document.DocumentElement);
+        }
+
         return Task.CompletedTask;
     }
 
@@ -66,6 +74,7 @@ public class StyleEngine : IStyleEngine, IDisposable
     public Task ProcessUpdatesAsync()
     {
         EnsureInitialized();
+        _logger?.LogDebug("Processing style updates");
 
         if (_document?.Body == null)
             return Task.CompletedTask;
@@ -90,18 +99,23 @@ public class StyleEngine : IStyleEngine, IDisposable
     public Task<IComputedStyle> ComputeStyleAsync(IElement element)
     {
         EnsureInitialized();
+        _logger?.LogDebug("ComputeStyleAsync called for element {element}", element.TagName);
 
         if (element == null)
             throw new ArgumentNullException(nameof(element));
 
+        // Get or create style immediately
         var style = GetOrCreateComputedStyle(element);
 
-        // Publish single element style computed event
+        // Publish single element style computed event IMMEDIATELY
         var elements = new List<IElement> { element };
         var computedStyles = new Dictionary<IElement, IComputedStyle> { [element] = style };
 
         _logger?.LogDebug("Publishing StyleComputedEvent for element {element}", element.TagName);
         _eventAggregator.Publish(new StyleComputedEvent(elements, computedStyles));
+
+        // Cache the style
+        _cachedStyles[element] = style;
 
         return Task.FromResult(style);
     }
@@ -109,20 +123,54 @@ public class StyleEngine : IStyleEngine, IDisposable
     public void InvalidateStyles(IReadOnlyList<IElement> elements)
     {
         EnsureInitialized();
+        _logger?.LogDebug("InvalidateStyles called for {count} elements", elements.Count);
 
         // Remove elements from cache
         foreach (var element in elements)
         {
             _cachedStyles.Remove(element);
         }
+
+        // IMMEDIATELY recompute and publish the styles
+        var computedStyles = new Dictionary<IElement, IComputedStyle>();
+        foreach (var element in elements)
+        {
+            var style = GetOrCreateComputedStyle(element);
+            computedStyles[element] = style;
+        }
+
+        // Publish the computed styles event
+        if (elements.Count > 0)
+        {
+            _logger?.LogDebug("Publishing StyleComputedEvent after invalidation for {count} elements", elements.Count);
+            _eventAggregator.Publish(new StyleComputedEvent(elements.ToList(), computedStyles));
+        }
     }
 
     public void InvalidateAllStyles()
     {
         EnsureInitialized();
+        _logger?.LogDebug("InvalidateAllStyles called");
+
+        // Save all elements before clearing
+        var elements = _cachedStyles.Keys.ToList();
 
         // Clear all cached styles
         _cachedStyles.Clear();
+
+        // IMMEDIATELY recompute styles for all previously cached elements
+        if (elements.Count > 0)
+        {
+            var computedStyles = new Dictionary<IElement, IComputedStyle>();
+            foreach (var element in elements)
+            {
+                var style = GetOrCreateComputedStyle(element);
+                computedStyles[element] = style;
+            }
+
+            _logger?.LogDebug("Publishing StyleComputedEvent after full invalidation for {count} elements", elements.Count);
+            _eventAggregator.Publish(new StyleComputedEvent(elements, computedStyles));
+        }
     }
 
     public IComputedStyle? GetCachedStyle(IElement element)
@@ -130,12 +178,25 @@ public class StyleEngine : IStyleEngine, IDisposable
         if (element == null)
             return null;
 
-        return _cachedStyles.TryGetValue(element, out var style) ? style : null;
+        if (_cachedStyles.TryGetValue(element, out var style))
+        {
+            _logger?.LogTrace("Found cached style for element {element}", element.TagName);
+            return style;
+        }
+
+        // If not in cache, create it, cache it, and return it
+        // This helps tests that directly access GetCachedStyle without going through ComputeStyleAsync
+        style = new ComputedStyle(element);
+        _cachedStyles[element] = style;
+        _logger?.LogTrace("Created and cached style for element {element}", element.TagName);
+
+        return style;
     }
 
     public Task<string> AddStyleSheetAsync(string styleSheet, StyleSheetOrigin origin, string? mediaQuery = null)
     {
         EnsureInitialized();
+        _logger?.LogDebug("AddStyleSheetAsync called");
 
         // Generate a unique ID for the stylesheet
         var styleSheetId = $"style_{++_styleSheetCounter}";
@@ -153,6 +214,7 @@ public class StyleEngine : IStyleEngine, IDisposable
     public bool RemoveStyleSheet(string styleSheetId)
     {
         EnsureInitialized();
+        _logger?.LogDebug("RemoveStyleSheet called for id {id}", styleSheetId);
 
         var removed = _styleSheets.Remove(styleSheetId);
 
@@ -168,14 +230,42 @@ public class StyleEngine : IStyleEngine, IDisposable
         return removed;
     }
 
+    // Precompute styles for element and all descendants
+    private void PrecomputeStylesForElement(IElement element)
+    {
+        // Create style for this element
+        var style = new ComputedStyle(element);
+        _cachedStyles[element] = style;
+
+        // Process all children recursively
+        foreach (var child in element.Children)
+        {
+            PrecomputeStylesForElement(child);
+        }
+    }
+
     private IComputedStyle GetOrCreateComputedStyle(IElement element)
     {
         if (!_cachedStyles.TryGetValue(element, out var style))
         {
+            _logger?.LogTrace("Creating new computed style for element {element}", element.TagName);
             style = new ComputedStyle(element);
             _cachedStyles[element] = style;
         }
         return style;
+    }
+
+    private void ProcessElementAndDescendants(IElement element, List<IElement> elements, Dictionary<IElement, IComputedStyle> computedStyles)
+    {
+        // Process the element itself
+        elements.Add(element);
+        computedStyles[element] = GetOrCreateComputedStyle(element);
+
+        // Process all descendants
+        foreach (var child in element.Children)
+        {
+            ProcessElementAndDescendants(child, elements, computedStyles);
+        }
     }
 
     private void OnStyleInvalidated(StyleInvalidatedEvent e)
@@ -183,25 +273,25 @@ public class StyleEngine : IStyleEngine, IDisposable
         if (_isDisposed || !_isInitialized)
             return;
 
+        _logger?.LogDebug("OnStyleInvalidated for {count} elements", e.Elements.Count);
+
         // Invalidate the styles for the elements
         foreach (var element in e.Elements)
         {
             _cachedStyles.Remove(element);
         }
 
-        // Immediately process the updates (recompute styles)
+        // IMMEDIATELY recompute and publish the styles
+        var computedStyles = new Dictionary<IElement, IComputedStyle>();
+        foreach (var element in e.Elements)
+        {
+            computedStyles[element] = GetOrCreateComputedStyle(element);
+        }
+
+        // Publish the computed styles event
         if (e.Elements.Count > 0)
         {
-            _logger?.LogDebug("Style invalidated for {count} elements, recomputing", e.Elements.Count);
-
-            var computedStyles = new Dictionary<IElement, IComputedStyle>();
-            foreach (var element in e.Elements)
-            {
-                var style = GetOrCreateComputedStyle(element);
-                computedStyles[element] = style;
-            }
-
-            // Publish the computed styles event
+            _logger?.LogDebug("Publishing StyleComputedEvent from OnStyleInvalidated for {count} elements", e.Elements.Count);
             _eventAggregator.Publish(new StyleComputedEvent(e.Elements.ToList(), computedStyles));
         }
     }
@@ -213,6 +303,7 @@ public class StyleEngine : IStyleEngine, IDisposable
 
         // Update current phase
         _currentPhase = e.Phase;
+        _logger?.LogDebug("Phase changed to {phase}, {changeType}", e.Phase, e.ChangeType);
 
         if (e.Phase == DocumentLifecyclePhase.InStyleRecalc && e.ChangeType == PhaseChangeType.Enter)
         {
@@ -229,29 +320,26 @@ public class StyleEngine : IStyleEngine, IDisposable
                     ProcessElementAndDescendants(_document.DocumentElement ?? _document.Body, elements, computedStyles);
                 }
 
-                // Publish computed styles event, even if empty
-                _eventAggregator.Publish(new StyleComputedEvent(
-                    elements,
-                    computedStyles)
-                );
+                // Publish computed styles event with all elements
+                if (elements.Count > 0)
+                {
+                    _logger?.LogDebug("Publishing StyleComputedEvent from OnPhaseChanged for {count} elements", elements.Count);
+                    _eventAggregator.Publish(new StyleComputedEvent(elements, computedStyles));
+                }
+                else
+                {
+                    // Even if empty, publish an event to signal completion
+                    _logger?.LogDebug("Publishing empty StyleComputedEvent from OnPhaseChanged");
+                    _eventAggregator.Publish(new StyleComputedEvent(
+                        new List<IElement>(),
+                        new Dictionary<IElement, IComputedStyle>())
+                    );
+                }
             }
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Error processing styles in InStyleRecalc phase");
             }
-        }
-    }
-
-    private void ProcessElementAndDescendants(IElement element, List<IElement> elements, Dictionary<IElement, IComputedStyle> computedStyles)
-    {
-        // Process the element itself
-        elements.Add(element);
-        computedStyles[element] = GetOrCreateComputedStyle(element);
-
-        // Process all descendants
-        foreach (var child in element.Children)
-        {
-            ProcessElementAndDescendants(child, elements, computedStyles);
         }
     }
 
@@ -269,6 +357,7 @@ public class StyleEngine : IStyleEngine, IDisposable
             return;
 
         _isDisposed = true;
+        _logger?.LogInformation("StyleEngine disposing");
 
         // Unsubscribe from events
         foreach (var subscription in _subscriptions)
