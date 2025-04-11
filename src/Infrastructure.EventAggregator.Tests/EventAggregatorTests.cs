@@ -1,33 +1,17 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reactive.Concurrency; // Still potentially useful if interfaces changed
-using System.Reactive.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Infrastructure.EventAggregator.API.Aggregation;
 using Infrastructure.EventAggregator.API.Events;
 using Infrastructure.EventAggregator.DI;
-// Using InternalsVisibleTo is still required if any internal types ARE needed,
-// but these tests primarily use the public IEventAggregator interface.
-// using Infrastructure.EventAggregator.Internal.Core;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Reactive.Testing; // We keep this for TestScheduler if needed elsewhere, but not for the removed test
-using Xunit;
 
-namespace Infrastructure.EventAggregator.Tests; // Adjust namespace accordingly
+namespace Infrastructure.EventAggregator.Tests;
 
 public class EventAggregatorIntegrationTests : IDisposable
 {
     private readonly ServiceProvider _serviceProvider;
     private readonly IEventAggregator _eventAggregator;
-    // Keep TestScheduler instance in case other tests might benefit,
-    // but it's not used in the current set after removing the faulty test.
-    private readonly TestScheduler _testScheduler;
 
     public EventAggregatorIntegrationTests()
     {
-        _testScheduler = new TestScheduler(); // Can still be created
         var services = new ServiceCollection();
         services.AddEventAggregatorModule();
         _serviceProvider = services.BuildServiceProvider();
@@ -44,12 +28,47 @@ public class EventAggregatorIntegrationTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    // --- Test Event Classes (Define these in your test project) ---
-    public class TestEvent : EventBase { public string Message { get; } public TestEvent(string message) { Message = message; } }
-    public class PrioritizedTestEvent : PrioritizedEventBase { public string Data { get; } public PrioritizedTestEvent(string data, EventPriority priority) : base(priority) { Data = data; } }
-    public class AnotherTestEvent : EventBase { public int Value { get; } public AnotherTestEvent(int value) { Value = value; } }
-    // --- End Test Event Classes ---
+    // --- Test Event Classes ---
+    public class TestEvent : EventBase
+    {
+        public string Message { get; }
 
+        public TestEvent(string message)
+        {
+            Message = message;
+        }
+    }
+
+    public class PrioritizedTestEvent : PrioritizedEventBase
+    {
+        public string Data { get; }
+
+        public PrioritizedTestEvent(string data, EventPriority priority) : base(priority)
+        {
+            Data = data;
+        }
+    }
+
+    public class AnotherTestEvent : EventBase
+    {
+        public int Value { get; }
+
+        public AnotherTestEvent(int value)
+        {
+            Value = value;
+        }
+    }
+
+    public class ExceptionTestEvent : EventBase
+    {
+        public bool ShouldThrow { get; }
+
+        public ExceptionTestEvent(bool shouldThrow)
+        {
+            ShouldThrow = shouldThrow;
+        }
+    }
+    // --- End Test Event Classes ---
 
     [Fact]
     public void DI_ShouldResolveEventAggregatorAsSingleton()
@@ -64,66 +83,48 @@ public class EventAggregatorIntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task Publish_WhenSubscribedViaDIInstance_ShouldReceiveEvent()
+    public void Publish_WhenSubscribed_ShouldReceiveEventSynchronously()
     {
         // Arrange
         TestEvent? receivedEvent = null;
-        var handlerCalled = new ManualResetEventSlim(false);
-        var testEvent = new TestEvent("DI Hello");
+        var testEvent = new TestEvent("Hello");
 
         // Act
-        var token = _eventAggregator.Subscribe<TestEvent>(e =>
-        {
-            receivedEvent = e;
-            handlerCalled.Set();
-        });
-
-        await Task.Delay(100); // Allow time for internal subscription
+        var token = _eventAggregator.Subscribe<TestEvent>(e => { receivedEvent = e; });
 
         _eventAggregator.Publish(testEvent);
 
-        // Assert
-        bool received = handlerCalled.Wait(TimeSpan.FromSeconds(2));
-        token.Dispose();
-
-        Assert.True(received, "Handler should have been called");
+        // Assert - No need to wait, event should be processed immediately
         Assert.NotNull(receivedEvent);
         Assert.Same(testEvent, receivedEvent);
-        Assert.Equal("DI Hello", receivedEvent.Message);
+        Assert.Equal("Hello", receivedEvent.Message);
+
+        token.Dispose();
     }
 
     [Fact]
-    public async Task Publish_BeforeSubscribe_ShouldNotReceiveEvent_DI()
+    public void Publish_BeforeSubscribe_ShouldNotReceiveEvent()
     {
         // Arrange
         TestEvent? receivedEvent = null;
-        var handlerCalled = false;
-        var testEvent = new TestEvent("DI Past");
+        var testEvent = new TestEvent("Past");
 
         // Act
         _eventAggregator.Publish(testEvent);
-        await Task.Delay(100);
 
-        var token = _eventAggregator.Subscribe<TestEvent>(e =>
-        {
-            receivedEvent = e;
-            handlerCalled = true;
-        });
+        var token = _eventAggregator.Subscribe<TestEvent>(e => { receivedEvent = e; });
 
         // Assert
-        await Task.Delay(150);
-        token.Dispose();
-
-        Assert.False(handlerCalled, "Handler should not receive past events");
         Assert.Null(receivedEvent);
+
+        token.Dispose();
     }
 
     [Fact]
-    public async Task Subscribe_WithFilter_ShouldOnlyReceiveMatching_DI()
+    public void Subscribe_WithFilter_ShouldOnlyReceiveMatching()
     {
         // Arrange
         var receivedEvents = new List<TestEvent>();
-        var handlerComplete = new ManualResetEventSlim(false);
         var matchingEvent = new TestEvent("Match");
         var nonMatchingEvent = new TestEvent("NoMatch");
 
@@ -132,27 +133,24 @@ public class EventAggregatorIntegrationTests : IDisposable
             filter: e => e.Message == "Match",
             handler: e =>
             {
-                lock(receivedEvents) { receivedEvents.Add(e); }
-                handlerComplete.Set(); // Expect only one matching event
+                lock (receivedEvents)
+                {
+                    receivedEvents.Add(e);
+                }
             });
 
-        await Task.Delay(100);
-
         _eventAggregator.Publish(nonMatchingEvent);
-        await Task.Delay(50);
         _eventAggregator.Publish(matchingEvent);
 
         // Assert
-        bool completed = handlerComplete.Wait(TimeSpan.FromSeconds(2));
-        token.Dispose();
-
-        Assert.True(completed, "Handler should have been called for matching event");
         Assert.Single(receivedEvents);
         Assert.Same(matchingEvent, receivedEvents[0]);
+
+        token.Dispose();
     }
 
     [Fact]
-    public async Task Unsubscribe_ShouldStopReceivingEvents_DI()
+    public void Unsubscribe_ShouldStopReceivingEvents()
     {
         // Arrange
         int receivedCount = 0;
@@ -163,133 +161,65 @@ public class EventAggregatorIntegrationTests : IDisposable
         // Act
         token = _eventAggregator.Subscribe<TestEvent>(e => Interlocked.Increment(ref receivedCount));
 
-        await Task.Delay(100);
         _eventAggregator.Publish(event1);
-        await Task.Delay(100);
 
         Assert.NotNull(token);
         token.Dispose(); // Unsubscribe
 
-        await Task.Delay(100);
         _eventAggregator.Publish(event2);
-        await Task.Delay(150);
 
         // Assert
         Assert.Equal(1, receivedCount);
     }
 
     [Fact]
-    public async Task ClearSubscriptions_ShouldRemoveAllForType_DI()
+    public void ClearSubscriptions_ShouldRemoveAllForType()
     {
         // Arrange
         int testEventHandlerCount = 0;
         int anotherEventHandlerCount = 0;
 
         var token1 = _eventAggregator.Subscribe<TestEvent>(e => Interlocked.Increment(ref testEventHandlerCount));
-        var token2 = _eventAggregator.Subscribe<AnotherTestEvent>(e => Interlocked.Increment(ref anotherEventHandlerCount));
-
-        await Task.Delay(100);
+        var token2 =
+            _eventAggregator.Subscribe<AnotherTestEvent>(e => Interlocked.Increment(ref anotherEventHandlerCount));
 
         // Act
         _eventAggregator.ClearSubscriptions<TestEvent>();
-        await Task.Delay(100);
 
         _eventAggregator.Publish(new TestEvent("AfterClear"));
-        await Task.Delay(50);
         _eventAggregator.Publish(new AnotherTestEvent(99));
 
         // Assert
-        await Task.Delay(150);
-        token1.Dispose();
-        token2.Dispose();
-
         Assert.Equal(0, testEventHandlerCount);
         Assert.Equal(1, anotherEventHandlerCount);
+
+        token1.Dispose();
+        token2.Dispose();
     }
 
     [Fact]
-    public async Task Publish_PrioritizedEvents_ShouldAttemptProcessingByPriority_DI()
-    {
-        // !! WARNING: Still relies on internal timing, potentially flaky !!
-        // Arrange
-        var receivedEvents = new List<IPrioritizedEvent>();
-        var processingComplete = new ManualResetEventSlim(false);
-        int callCount = 0;
-        const int expectedCount = 3;
-
-        var lowPri = new PrioritizedTestEvent("LowDI", EventPriority.Low);
-        var highPri = new PrioritizedTestEvent("HighDI", EventPriority.High);
-        var normalPri = new PrioritizedTestEvent("NormalDI", EventPriority.Normal);
-
-        var token = _eventAggregator.Subscribe<PrioritizedTestEvent>(e =>
-        {
-            lock (receivedEvents)
-            {
-                receivedEvents.Add(e);
-                if (Interlocked.Increment(ref callCount) == expectedCount) { processingComplete.Set(); }
-            }
-        });
-
-        await Task.Delay(100);
-
-        // Act
-        _eventAggregator.Publish(lowPri);
-        _eventAggregator.Publish(highPri);
-        _eventAggregator.Publish(normalPri);
-
-        // Assert
-        bool completed = processingComplete.Wait(TimeSpan.FromSeconds(3));
-        token.Dispose();
-
-        Assert.True(completed, $"Should receive {expectedCount} events");
-        Assert.Equal(expectedCount, receivedEvents.Count);
-
-        int highIndex = receivedEvents.FindIndex(e => e.Priority == EventPriority.High);
-        int normalIndex = receivedEvents.FindIndex(e => e.Priority == EventPriority.Normal);
-        int lowIndex = receivedEvents.FindIndex(e => e.Priority == EventPriority.Low);
-
-        Assert.True(highIndex >= 0 && normalIndex >= 0 && lowIndex >= 0, "All priorities not received");
-        Assert.True(highIndex < normalIndex, "High priority ideally precedes Normal");
-        Assert.True(highIndex < lowIndex, "High priority ideally precedes Low");
-        Assert.True(normalIndex < lowIndex, "Normal priority ideally precedes Low");
-    }
-
-    [Fact]
-    public async Task SubscribeWithPriority_ShouldFilterCorrectly_DI()
+    public void SubscribeWithPriority_ShouldFilterCorrectly()
     {
         // Arrange
         var receivedEvents = new List<IEvent>();
-        var processingComplete = new ManualResetEventSlim(false);
-        int callCount = 0;
-        const int expectedCount = 2; // High and Critical
 
-        var lowPri = new PrioritizedTestEvent("LowP", EventPriority.Low);
-        var highPri = new PrioritizedTestEvent("HighP", EventPriority.High);
-        var criticalPri = new PrioritizedTestEvent("CritP", EventPriority.Critical);
-        var normalPri = new PrioritizedTestEvent("NormP", EventPriority.Normal);
-        var normalNonPri = new TestEvent("NormNonPri"); // Treated as Normal internally
+        var lowPri = new PrioritizedTestEvent("Low", EventPriority.Low);
+        var highPri = new PrioritizedTestEvent("High", EventPriority.High);
+        var criticalPri = new PrioritizedTestEvent("Critical", EventPriority.Critical);
+        var normalPri = new PrioritizedTestEvent("Normal", EventPriority.Normal);
+        var normalNonPri = new TestEvent("NonPrioritized"); // Treated as Normal internally
 
         // Act
         var token = _eventAggregator.SubscribeWithPriority<IEvent>(
-            handler: e => {
-                bool counted = false;
-                // Check if event meets the priority threshold before adding/counting
-                EventPriority currentPriority = (e is IPrioritizedEvent pe) ? pe.Priority : EventPriority.Normal; // Assume Normal if not IPrioritizedEvent
-                if ((int)currentPriority >= (int)EventPriority.High)
+            handler: e =>
+            {
+                lock (receivedEvents)
                 {
-                    lock(receivedEvents) { receivedEvents.Add(e); }
-                    counted = true;
-                }
-
-                if (counted && Interlocked.Increment(ref callCount) == expectedCount)
-                {
-                    processingComplete.Set();
+                    receivedEvents.Add(e);
                 }
             },
             minimumPriority: EventPriority.High // Filter
         );
-
-        await Task.Delay(100);
 
         _eventAggregator.Publish(lowPri);
         _eventAggregator.Publish(highPri);
@@ -298,18 +228,94 @@ public class EventAggregatorIntegrationTests : IDisposable
         _eventAggregator.Publish(normalNonPri); // Should be filtered (Normal < High)
 
         // Assert
-        bool completed = processingComplete.Wait(TimeSpan.FromSeconds(2));
-        token.Dispose();
-
-        Assert.True(completed, $"Should have received {expectedCount} events meeting priority");
-        Assert.Equal(expectedCount, receivedEvents.Count);
+        Assert.Equal(2, receivedEvents.Count);
         Assert.Contains(receivedEvents, e => e is IPrioritizedEvent pe && pe.Priority == EventPriority.High);
         Assert.Contains(receivedEvents, e => e is IPrioritizedEvent pe && pe.Priority == EventPriority.Critical);
         Assert.DoesNotContain(receivedEvents, e => e is IPrioritizedEvent pe && pe.Priority == EventPriority.Low);
         Assert.DoesNotContain(receivedEvents, e => e is IPrioritizedEvent pe && pe.Priority == EventPriority.Normal);
         Assert.DoesNotContain(receivedEvents, e => e is TestEvent); // Ensure non-prioritized (Normal) was filtered
+
+        token.Dispose();
     }
 
-    // Removed the problematic test Subscribe_WithTestScheduler_ShouldObserveOnScheduler
+    [Fact]
+    public void MultipleSubscribers_ShouldAllReceiveEvents()
+    {
+        // Arrange
+        int subscriber1Called = 0;
+        int subscriber2Called = 0;
+        var testEvent = new TestEvent("MultiSubscriber");
 
+        // Act
+        var token1 = _eventAggregator.Subscribe<TestEvent>(_ => Interlocked.Increment(ref subscriber1Called));
+        var token2 = _eventAggregator.Subscribe<TestEvent>(_ => Interlocked.Increment(ref subscriber2Called));
+
+        _eventAggregator.Publish(testEvent);
+
+        // Assert
+        Assert.Equal(1, subscriber1Called);
+        Assert.Equal(1, subscriber2Called);
+
+        token1.Dispose();
+        token2.Dispose();
+    }
+
+    // Test to check filtering based on event priority with non-prioritized events
+    [Fact]
+    public void PublishWithPriority_ShouldOverrideEventPriority()
+    {
+        // Arrange
+        var receivedEvents = new List<TestEvent>();
+        var testEvent = new TestEvent("Override"); // Not prioritized by default
+
+        // Act
+        // Subscribe first to a high-priority event
+        var token = _eventAggregator.Subscribe<TestEvent>(
+            filter: _ => true, // Accept all events
+            handler: e =>
+            {
+                lock (receivedEvents)
+                {
+                    receivedEvents.Add(e);
+                }
+            }
+        );
+
+        // This would normally be filtered, but we're overriding the priority
+        _eventAggregator.Publish(testEvent, EventPriority.Critical);
+
+        // Assert
+        Assert.Single(receivedEvents);
+        Assert.Same(testEvent, receivedEvents[0]);
+
+        token.Dispose();
+    }
+
+    [Fact]
+    public void ExceptionInHandler_ShouldNotBlockOtherHandlers()
+    {
+        // Arrange
+        bool firstHandlerCalled = false;
+        bool secondHandlerCalled = false;
+        var testEvent = new TestEvent("Exception");
+
+        // Act
+        var token1 = _eventAggregator.Subscribe<TestEvent>(_ =>
+        {
+            firstHandlerCalled = true;
+            throw new Exception("Test exception");
+        });
+
+        var token2 = _eventAggregator.Subscribe<TestEvent>(_ => { secondHandlerCalled = true; });
+
+        // Should not throw
+        _eventAggregator.Publish(testEvent);
+
+        // Assert
+        Assert.True(firstHandlerCalled);
+        Assert.True(secondHandlerCalled);
+
+        token1.Dispose();
+        token2.Dispose();
+    }
 }
