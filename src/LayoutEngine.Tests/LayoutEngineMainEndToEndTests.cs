@@ -1,14 +1,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using LayoutEngine.Contracts.StyleSystem;
 using LayoutEngine.Contracts.Platform.Lifecycle;
-using LayoutEngine.Contracts.Platform.Events;
 using LayoutEngine.Contracts.Platform.Updates;
 using Infrastructure.EventAggregator.API.Aggregation;
 
 namespace LayoutEngine.Tests;
 
 using Microsoft.Extensions.Logging;
-using System.Threading;
 using Contracts.LayoutSystem;
 
 public class LayoutEngineMainEndToEndTests : IDisposable
@@ -46,8 +44,6 @@ public class LayoutEngineMainEndToEndTests : IDisposable
         // Add logging
         services.AddLogging(configure => configure.AddConsole());
 
-        // services.AddSingleton<IFrameTimingStrategy, MinimalTestFrameTimingStrategy>();
-
         // Add the LayoutEngine with configuration
         services.AddLayoutEngine(options =>
         {
@@ -75,89 +71,18 @@ public class LayoutEngineMainEndToEndTests : IDisposable
         _serviceProvider.Dispose();
     }
 
-    /// <summary>
-    /// Waits for update processing to complete via the event system.
-    /// </summary>
-    private async Task WaitForUpdatesAsync(UpdateType updateType, TimeSpan? timeout = null)
-    {
-        var timeoutValue = timeout ?? TimeSpan.FromSeconds(3);
-        var tcs = new TaskCompletionSource<bool>();
-        var cts = new CancellationTokenSource(timeoutValue);
-
-        // Set up cancellation
-        cts.Token.Register(() => tcs.TrySetResult(false));
-
-        // Subscribe to the update processed event
-        var subscription = _eventAggregator.Subscribe<UpdateProcessedEvent>(e =>
-        {
-            if (e.Update.Type == updateType || e.Update.Type == UpdateType.Full)
-            {
-                tcs.TrySetResult(true);
-            }
-        });
-
-        try
-        {
-            // Wait for either the event or timeout
-            var result = await tcs.Task;
-            if (!result)
-            {
-                // If we timed out, we should also wait a bit to allow for any final processing
-                await Task.Delay(50);
-            }
-        }
-        finally
-        {
-            _eventAggregator.Unsubscribe(subscription);
-        }
-    }
-
-    /// <summary>
-    /// Waits for a specific lifecycle phase change.
-    /// </summary>
-    private async Task WaitForPhaseAsync(DocumentLifecyclePhase phase, PhaseChangeType changeType,
-        TimeSpan? timeout = null)
-    {
-        var timeoutValue = timeout ?? TimeSpan.FromSeconds(3);
-        var tcs = new TaskCompletionSource<bool>();
-        var cts = new CancellationTokenSource(timeoutValue);
-
-        // Set up cancellation
-        cts.Token.Register(() => tcs.TrySetResult(false));
-
-        // Subscribe to the phase changed event
-        var subscription = _eventAggregator.Subscribe<PhaseChangedEvent>(e =>
-        {
-            if (e.Phase == phase && e.ChangeType == changeType)
-            {
-                tcs.TrySetResult(true);
-            }
-        });
-
-        try
-        {
-            // Wait for either the event or timeout
-            await tcs.Task;
-        }
-        finally
-        {
-            _eventAggregator.Unsubscribe(subscription);
-        }
-    }
-
     [Fact]
-    public async Task GetComputedStyleAsync_ForH1_ShouldReturnMockedH1Styles()
+    public void GetComputedStyle_ForH1_ShouldReturnMockedH1Styles()
     {
         // Arrange
-        var document = await _layoutEngine.OpenAsync(SimpleHtml);
-        await _layoutEngine.ProcessFullDocumentAsync();
-        await WaitForUpdatesAsync(UpdateType.Full); // Ensure processing is done
+        var document = _layoutEngine.Open(SimpleHtml);
+        _layoutEngine.ProcessFullDocument();
 
         var h1Element = document.QuerySelector("h1");
         Assert.NotNull(h1Element); // Ensure element exists
 
         // Act
-        var computedStyle = await _layoutEngine.GetComputedStyleAsync(h1Element);
+        var computedStyle = _layoutEngine.GetComputedStyle(h1Element);
 
         // Assert
         Assert.NotNull(computedStyle);
@@ -181,18 +106,17 @@ public class LayoutEngineMainEndToEndTests : IDisposable
     }
 
     [Fact]
-    public async Task GetComputedStyleAsync_ForParagraph_ShouldReturnMockedParagraphStyles()
+    public void GetComputedStyle_ForParagraph_ShouldReturnMockedParagraphStyles()
     {
         // Arrange
-        var document = await _layoutEngine.OpenAsync(SimpleHtml);
-        await _layoutEngine.ProcessFullDocumentAsync();
-        await WaitForUpdatesAsync(UpdateType.Full);
+        var document = _layoutEngine.Open(SimpleHtml);
+        _layoutEngine.ProcessFullDocument();
 
         var pElement = document.QuerySelector("p");
         Assert.NotNull(pElement);
 
         // Act
-        var computedStyle = await _layoutEngine.GetComputedStyleAsync(pElement);
+        var computedStyle = _layoutEngine.GetComputedStyle(pElement);
 
         // Assert
         Assert.NotNull(computedStyle);
@@ -209,18 +133,17 @@ public class LayoutEngineMainEndToEndTests : IDisposable
     }
 
     [Fact]
-    public async Task GetComputedStyleAsync_ForAnchor_ShouldReturnMockedAnchorStyles()
+    public void GetComputedStyle_ForAnchor_ShouldReturnMockedAnchorStyles()
     {
         // Arrange
-        var document = await _layoutEngine.OpenAsync(SimpleHtml);
-        await _layoutEngine.ProcessFullDocumentAsync();
-        await WaitForUpdatesAsync(UpdateType.Full);
+        var document = _layoutEngine.Open(SimpleHtml);
+        _layoutEngine.ProcessFullDocument();
 
         var aElement = document.QuerySelector("a");
         Assert.NotNull(aElement);
 
         // Act
-        var computedStyle = await _layoutEngine.GetComputedStyleAsync(aElement);
+        var computedStyle = _layoutEngine.GetComputedStyle(aElement);
 
         // Assert
         Assert.NotNull(computedStyle);
@@ -234,18 +157,17 @@ public class LayoutEngineMainEndToEndTests : IDisposable
     }
 
     [Fact]
-    public async Task GetComputedStyleAsync_ForSpan_ShouldReturnMockedSpanStyles()
+    public void GetComputedStyle_ForSpan_ShouldReturnMockedSpanStyles()
     {
         // Arrange
-        var document = await _layoutEngine.OpenAsync(SimpleHtml);
-        await _layoutEngine.ProcessFullDocumentAsync();
-        await WaitForUpdatesAsync(UpdateType.Full);
+        var document = _layoutEngine.Open(SimpleHtml);
+        _layoutEngine.ProcessFullDocument();
 
         var spanElement = document.QuerySelector("span");
         Assert.NotNull(spanElement);
 
         // Act
-        var computedStyle = await _layoutEngine.GetComputedStyleAsync(spanElement);
+        var computedStyle = _layoutEngine.GetComputedStyle(spanElement);
 
         // Assert
         Assert.NotNull(computedStyle);
@@ -256,10 +178,10 @@ public class LayoutEngineMainEndToEndTests : IDisposable
     }
 
     [Fact]
-    public async Task EndToEnd_DocumentLoading_ShouldRenderCompletePage()
+    public void EndToEnd_DocumentLoading_ShouldRenderCompletePage()
     {
         // Act
-        var document = await _layoutEngine.OpenAsync(SimpleHtml);
+        var document = _layoutEngine.Open(SimpleHtml);
 
         // Assert - Verify document was loaded
         Assert.NotNull(document);
@@ -267,17 +189,8 @@ public class LayoutEngineMainEndToEndTests : IDisposable
         Assert.NotNull(document.Head);
         Assert.Equal("Test Document", document.Title);
 
-        // Wait for layout processing to complete
-        await _layoutEngine.ProcessFullDocumentAsync();
-
-        // Wait for the update to be processed
-        await WaitForUpdatesAsync(UpdateType.Full);
-
-        // Wait for render ready phase
-        if (_layoutEngine.CurrentPhase != DocumentLifecyclePhase.RenderReady)
-        {
-            await WaitForPhaseAsync(DocumentLifecyclePhase.RenderReady, PhaseChangeType.Enter);
-        }
+        // Process full document
+        _layoutEngine.ProcessFullDocument();
 
         // Verify basic document structure
         var container = document.QuerySelector(".container");
@@ -292,20 +205,19 @@ public class LayoutEngineMainEndToEndTests : IDisposable
         Assert.Equal("This is a test paragraph for the layout engine.", paragraph.TextContent.Trim());
 
         // Verify style computation works
-        var computedStyle = await _layoutEngine.GetComputedStyleAsync(h1);
+        var computedStyle = _layoutEngine.GetComputedStyle(h1);
         Assert.NotNull(computedStyle);
         Assert.True(computedStyle.HasProperty("color"));
 
         // Verify layout computation works
-        var layoutBox = await _layoutEngine.GetLayoutBoxAsync(paragraph);
+        var layoutBox = _layoutEngine.GetLayoutBox(paragraph);
         Assert.NotNull(layoutBox);
         Assert.True(layoutBox.Width > 0);
         Assert.True(layoutBox.Height > 0);
 
         // Test viewport resizing
         _layoutEngine.SetViewportSize(1024, 768);
-        await _layoutEngine.ProcessUpdatesAsync();
-        await WaitForUpdatesAsync(UpdateType.Layout);
+        _layoutEngine.ProcessUpdates();
 
         // Verify element lookup by position
         var elementAtPoint = _layoutEngine.ElementFromPoint(
@@ -316,19 +228,19 @@ public class LayoutEngineMainEndToEndTests : IDisposable
 
         // Test adding additional stylesheet
         var additionalCss = "body { background-color: #f0f0f0; }";
-        var styleId = await _layoutEngine.AddStyleSheetAsync(additionalCss, StyleSheetOrigin.Author);
+        var styleId = _layoutEngine.AddStyleSheet(additionalCss, StyleSheetOrigin.Author);
         Assert.False(string.IsNullOrEmpty(styleId));
 
-        // Wait for style update to be processed
-        await WaitForUpdatesAsync(UpdateType.Style);
+        // Update processing for style changes
+        _layoutEngine.ProcessUpdates();
 
         // Verify we can gracefully shut down
-        await _layoutEngine.ShutdownAsync();
+        _layoutEngine.Shutdown();
         Assert.Equal(DocumentLifecyclePhase.Disposed, _layoutEngine.CurrentPhase);
     }
 
     [Fact]
-    public async Task EndToEnd_ComplexLayout_ShouldCalculateNestedLayout()
+    public void EndToEnd_ComplexLayout_ShouldCalculateNestedLayout()
     {
         // Arrange
         string complexHtml = @"
@@ -359,16 +271,8 @@ public class LayoutEngineMainEndToEndTests : IDisposable
                 </html>";
 
         // Act
-        var document = await _layoutEngine.OpenAsync(complexHtml);
-        await _layoutEngine.ProcessFullDocumentAsync();
-        await WaitForUpdatesAsync(UpdateType.Full);
-
-        // Wait for layout phase to complete
-        if (_layoutEngine.CurrentPhase != DocumentLifecyclePhase.LayoutClean &&
-            _layoutEngine.CurrentPhase != DocumentLifecyclePhase.RenderReady)
-        {
-            await WaitForPhaseAsync(DocumentLifecyclePhase.LayoutClean, PhaseChangeType.Enter);
-        }
+        var document = _layoutEngine.Open(complexHtml);
+        _layoutEngine.ProcessFullDocument();
 
         // Assert
         var parent = document.QuerySelector(".parent");
@@ -381,10 +285,10 @@ public class LayoutEngineMainEndToEndTests : IDisposable
         Assert.NotNull(footer);
 
         // Get layout boxes
-        var parentBox = await _layoutEngine.GetLayoutBoxAsync(parent);
-        var firstChildBox = await _layoutEngine.GetLayoutBoxAsync(children[0]);
-        var secondChildBox = await _layoutEngine.GetLayoutBoxAsync(children[1]);
-        var footerBox = await _layoutEngine.GetLayoutBoxAsync(footer);
+        var parentBox = _layoutEngine.GetLayoutBox(parent);
+        var firstChildBox = _layoutEngine.GetLayoutBox(children[0]);
+        var secondChildBox = _layoutEngine.GetLayoutBox(children[1]);
+        var footerBox = _layoutEngine.GetLayoutBox(footer);
 
         // Verify layout relationships
         Assert.True(parentBox.Width > 0);
@@ -404,20 +308,19 @@ public class LayoutEngineMainEndToEndTests : IDisposable
     }
 
     [Fact]
-    public async Task EndToEnd_IncreaseEvents_ShouldDetectAndTriggerOtherUpdates()
+    public void EndToEnd_StyleChange_ShouldUpdateComputedStyles()
     {
         // Load the document
-        var document = await _layoutEngine.OpenAsync(SimpleHtml);
-        await _layoutEngine.ProcessFullDocumentAsync();
-        await WaitForUpdatesAsync(UpdateType.Full);
+        var document = _layoutEngine.Open(SimpleHtml);
+        _layoutEngine.ProcessFullDocument();
 
         // Get the paragraph element
         var paragraph = document.QuerySelector("p");
         Assert.NotNull(paragraph);
 
         // Get the initial style and layout
-        var initialStyle = await _layoutEngine.GetComputedStyleAsync(paragraph);
-        var initialLayout = await _layoutEngine.GetLayoutBoxAsync(paragraph);
+        var initialStyle = _layoutEngine.GetComputedStyle(paragraph);
+        var initialLayout = _layoutEngine.GetLayoutBox(paragraph);
 
         // Track update events
         var styleUpdatedCount = 0;
@@ -440,13 +343,12 @@ public class LayoutEngineMainEndToEndTests : IDisposable
             // Make a style change that should trigger layout
             paragraph.SetAttribute("style", "font-size: 24px; margin: 30px;");
 
-            // Trigger updates
-            await _layoutEngine.ProcessUpdatesAsync();
-            await WaitForUpdatesAsync(UpdateType.Layout);
+            // Trigger updates - since our system is now synchronous, this should process immediately
+            _layoutEngine.ProcessUpdates();
 
             // Get the updated style and layout
-            var updatedStyle = await _layoutEngine.GetComputedStyleAsync(paragraph);
-            var updatedLayout = await _layoutEngine.GetLayoutBoxAsync(paragraph);
+            var updatedStyle = _layoutEngine.GetComputedStyle(paragraph);
+            var updatedLayout = _layoutEngine.GetLayoutBox(paragraph);
 
             // Verify style changed
             Assert.NotEqual(initialStyle.GetValue("font-size"), updatedStyle.GetValue("font-size"));
