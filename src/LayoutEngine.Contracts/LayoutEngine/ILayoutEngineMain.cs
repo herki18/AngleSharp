@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using AngleSharp.Dom;
 using LayoutEngine.Contracts.LayoutSystem;
 using LayoutEngine.Contracts.Platform.Lifecycle;
@@ -44,22 +43,21 @@ public interface ILayoutEngineMain : IDisposable
     /// </summary>
     /// <param name="html">The HTML content.</param>
     /// <param name="baseUrl">Optional base URL for the document.</param>
-    /// <returns>A task representing the asynchronous open operation.</returns>
-    Task<IDocument> OpenAsync(string html, string? baseUrl = null);
+    /// <returns>The opened document.</returns>
+    IDocument Open(string html, string? baseUrl = null);
 
     /// <summary>
     /// Opens a document from a file.
     /// </summary>
     /// <param name="filePath">The path to the HTML file.</param>
-    /// <returns>A task representing the asynchronous open operation.</returns>
-    Task<IDocument> OpenFileAsync(string filePath);
+    /// <returns>The opened document.</returns>
+    IDocument OpenFile(string filePath);
 
     /// <summary>
     /// Initializes the LayoutEngine with the specified document.
     /// </summary>
     /// <param name="document">The document to render.</param>
-    /// <returns>A task representing the asynchronous initialization operation.</returns>
-    Task InitializeAsync(IDocument document);
+    void Initialize(IDocument document);
 
     /// <summary>
     /// Creates a new document with the specified HTML.
@@ -71,34 +69,31 @@ public interface ILayoutEngineMain : IDisposable
     /// <summary>
     /// Shuts down the LayoutEngine and releases all resources.
     /// </summary>
-    /// <returns>A task representing the asynchronous shutdown operation.</returns>
-    Task ShutdownAsync();
+    void Shutdown();
 
     /// <summary>
     /// Gets the style computed for the specified element.
     /// </summary>
     /// <param name="element">The element to get the style for.</param>
     /// <returns>The computed style for the element.</returns>
-    Task<IComputedStyle> GetComputedStyleAsync(IElement element);
+    IComputedStyle GetComputedStyle(IElement element);
 
     /// <summary>
     /// Gets the layout box for the specified element.
     /// </summary>
     /// <param name="element">The element to get the layout box for.</param>
     /// <returns>The layout box for the element.</returns>
-    Task<ILayoutBox> GetLayoutBoxAsync(IElement element);
+    ILayoutBox GetLayoutBox(IElement element);
 
     /// <summary>
     /// Processes all pending updates in the style and layout systems.
     /// </summary>
-    /// <returns>A task representing the asynchronous processing operation.</returns>
-    Task ProcessUpdatesAsync();
+    void ProcessUpdates();
 
     /// <summary>
     /// Processes the full document by invalidating all styles and layout.
     /// </summary>
-    /// <returns>A task representing the asynchronous processing operation.</returns>
-    Task ProcessFullDocumentAsync();
+    void ProcessFullDocument();
 
     /// <summary>
     /// Sets the viewport size.
@@ -122,7 +117,7 @@ public interface ILayoutEngineMain : IDisposable
     /// <param name="origin">The style sheet origin.</param>
     /// <param name="mediaQuery">Optional media query.</param>
     /// <returns>The style sheet ID.</returns>
-    Task<string> AddStyleSheetAsync(string styleSheet, StyleSheetOrigin origin, string? mediaQuery = null);
+    string AddStyleSheet(string styleSheet, StyleSheetOrigin origin, string? mediaQuery = null);
 
     /// <summary>
     /// Removes a style sheet from the document.

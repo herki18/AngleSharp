@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
@@ -113,14 +111,14 @@ namespace LayoutEngine
         /// <summary>
         /// Opens a document from a string of HTML.
         /// </summary>
-        public async Task<IDocument> OpenAsync(string html, string? baseUrl = null)
+        public IDocument Open(string html, string? baseUrl = null)
         {
             ThrowIfDisposed();
 
             // Shutdown any existing document
             if (_isInitialized)
             {
-                await ShutdownAsync();
+                Shutdown();
             }
 
             _logger.LogInformation("Opening document from HTML string");
@@ -128,10 +126,12 @@ namespace LayoutEngine
             try
             {
                 // Parse the HTML
-                var document = await _browsingContext.OpenAsync(req => req.Content(html).Address(baseUrl ?? "about:blank"));
+                // Note: Since AngleSharp uses async, we'll use GetAwaiter().GetResult() to get synchronous behavior
+                var document = _browsingContext.OpenAsync(req => req.Content(html).Address(baseUrl ?? "about:blank"))
+                                              .GetAwaiter().GetResult();
 
                 // Initialize the engine with the document
-                await InitializeAsync(document);
+                Initialize(document);
 
                 return document;
             }
@@ -145,7 +145,7 @@ namespace LayoutEngine
         /// <summary>
         /// Opens a document from a file.
         /// </summary>
-        public async Task<IDocument> OpenFileAsync(string filePath)
+        public IDocument OpenFile(string filePath)
         {
             ThrowIfDisposed();
 
@@ -158,7 +158,7 @@ namespace LayoutEngine
             // Shutdown any existing document
             if (_isInitialized)
             {
-                await ShutdownAsync();
+                Shutdown();
             }
 
             _logger.LogInformation("Opening document from file: {FilePath}", filePath);
@@ -166,10 +166,11 @@ namespace LayoutEngine
             try
             {
                 // Parse the HTML from file
-                var document = await _browsingContext.OpenAsync(filePath);
+                // Note: Since AngleSharp uses async, we'll use GetAwaiter().GetResult() to get synchronous behavior
+                var document = _browsingContext.OpenAsync(filePath).GetAwaiter().GetResult();
 
                 // Initialize the engine with the document
-                await InitializeAsync(document);
+                Initialize(document);
 
                 return document;
             }
@@ -183,7 +184,7 @@ namespace LayoutEngine
         /// <summary>
         /// Initializes the LayoutEngine with the specified document.
         /// </summary>
-        public async Task InitializeAsync(IDocument document)
+        public void Initialize(IDocument document)
         {
             ThrowIfDisposed();
 
@@ -192,7 +193,7 @@ namespace LayoutEngine
 
             if (_isInitialized)
             {
-                await ShutdownAsync();
+                Shutdown();
             }
 
             _logger.LogInformation("Initializing LayoutEngine");
@@ -201,8 +202,9 @@ namespace LayoutEngine
             try
             {
                 // Initialize subsystems
-                await _styleEngine.InitializeAsync(document);
-                await _layoutEngine.InitializeAsync(document);
+                // Note: If these methods are truly async (I/O bound), keep them as GetAwaiter().GetResult()
+                _styleEngine.InitializeAsync(document).GetAwaiter().GetResult();
+                _layoutEngine.InitializeAsync(document).GetAwaiter().GetResult();
 
                 // Enter inactive -> style clean phase through lifecycle coordinator
                 _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.StyleClean);
@@ -210,13 +212,13 @@ namespace LayoutEngine
                 _isInitialized = true;
                 _logger.LogInformation("LayoutEngine initialized successfully");
 
-                // Schedule a full document update using the UpdateScheduler
-                await ProcessFullDocumentAsync();
+                // Process the full document
+                ProcessFullDocument();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error initializing LayoutEngine");
-                await CleanupAsync();
+                Cleanup();
                 throw;
             }
         }
@@ -235,7 +237,7 @@ namespace LayoutEngine
         /// <summary>
         /// Shuts down the LayoutEngine and releases all resources.
         /// </summary>
-        public async Task ShutdownAsync()
+        public void Shutdown()
         {
             ThrowIfDisposed();
 
@@ -254,12 +256,9 @@ namespace LayoutEngine
                     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.Disposed);
                 }
 
-                // Wait for lifecycle events to propagate
-                await Task.Delay(50);
-
                 // Call shutdown on subsystems to ensure cleanup
-                await _layoutEngine.ShutdownAsync();
-                await _styleEngine.ShutdownAsync();
+                _layoutEngine.ShutdownAsync().GetAwaiter().GetResult();
+                _styleEngine.ShutdownAsync().GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
@@ -268,14 +267,14 @@ namespace LayoutEngine
             }
             finally
             {
-                await CleanupAsync();
+                Cleanup();
             }
         }
 
         /// <summary>
         /// Gets the style computed for the specified element.
         /// </summary>
-        public async Task<IComputedStyle> GetComputedStyleAsync(IElement element)
+        public IComputedStyle GetComputedStyle(IElement element)
         {
             ThrowIfDisposed();
             EnsureInitialized();
@@ -290,60 +289,34 @@ namespace LayoutEngine
                 return cachedStyle;
             }
 
-            // If not available in cache, schedule style update and wait for the event
-            var tcs = new TaskCompletionSource<IComputedStyle>();
-            ISubscriptionToken? subscription = null;
-
-            // Create a one-time subscription to StyleComputedEvent
-            subscription = _eventAggregator.Subscribe<StyleComputedEvent>(e =>
-            {
-                if (e.ComputedStyles.TryGetValue(element, out var style))
-                {
-                    tcs.TrySetResult(style);
-                    if (subscription != null)
-                        _eventAggregator.Unsubscribe(subscription);
-                }
-            });
-
-            // Schedule a style update using the UpdateScheduler with high priority
-            var update = VisualUpdate.CreateStyleUpdate(element);
-            _updateScheduler.ScheduleUpdate(update, UpdatePriority.High);
-
-            // Set a timeout to prevent indefinite waiting
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)); // Extended timeout
-            cts.Token.Register(() =>
-            {
-                // Instead of directly calling style engine, try re-scheduling with critical priority
-                if (!tcs.Task.IsCompleted)
-                {
-                    _logger.LogWarning("Style computation via events timed out, re-scheduling with critical priority");
-
-                    // Schedule with critical priority
-                    var criticalUpdate = VisualUpdate.CreateStyleUpdate(element);
-                    _updateScheduler.ScheduleUpdate(criticalUpdate, UpdatePriority.Critical);
-
-                    // Continue waiting for the event response
-                    // We don't set exception here, just let it keep waiting
-                }
-            });
-
             try
             {
-                // Add a longer final timeout as safety measure
-                return await TimeoutAfter(tcs.Task, TimeSpan.FromSeconds(10),
-                    () => new TimeoutException("Style computation timed out after multiple attempts"));
+                // Schedule a style update using the UpdateScheduler
+                var update = VisualUpdate.CreateStyleUpdate(element);
+                _updateScheduler.ScheduleUpdate(update, UpdatePriority.High);
+
+                // In the simplified model, updates are processed immediately
+                // After scheduling, the style should be available in the cache
+                cachedStyle = _styleEngine.GetCachedStyle(element);
+                if (cachedStyle != null)
+                {
+                    return cachedStyle;
+                }
+
+                // If still not available, make a direct call
+                return _styleEngine.ComputeStyleAsync(element).GetAwaiter().GetResult();
             }
-            catch (TimeoutException ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Style computation completely failed after multiple scheduling attempts");
-                throw new InvalidOperationException("Failed to compute style after multiple attempts", ex);
+                _logger.LogError(ex, "Error computing style for element");
+                throw new InvalidOperationException("Failed to compute style", ex);
             }
         }
 
         /// <summary>
         /// Gets the layout box for the specified element.
         /// </summary>
-        public async Task<ILayoutBox> GetLayoutBoxAsync(IElement element)
+        public ILayoutBox GetLayoutBox(IElement element)
         {
             ThrowIfDisposed();
             EnsureInitialized();
@@ -358,60 +331,34 @@ namespace LayoutEngine
                 return cachedLayout;
             }
 
-            // If not available in cache, schedule layout update and wait for the event
-            var tcs = new TaskCompletionSource<ILayoutBox>();
-            ISubscriptionToken? subscription = null;
-
-            // Create a one-time subscription to LayoutUpdatedEvent
-            subscription = _eventAggregator.Subscribe<LayoutUpdatedEvent>(e =>
-            {
-                if (e.UpdatedBoxes.TryGetValue(element, out var box))
-                {
-                    tcs.TrySetResult(box);
-                    if (subscription != null)
-                        _eventAggregator.Unsubscribe(subscription);
-                }
-            });
-
-            // Schedule a layout update using the UpdateScheduler with high priority
-            var update = VisualUpdate.CreateLayoutUpdate(element);
-            _updateScheduler.ScheduleUpdate(update, UpdatePriority.High);
-
-            // Set a timeout to prevent indefinite waiting
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)); // Extended timeout
-            cts.Token.Register(() =>
-            {
-                // Instead of directly calling layout engine, try re-scheduling with critical priority
-                if (!tcs.Task.IsCompleted)
-                {
-                    _logger.LogWarning("Layout computation via events timed out, re-scheduling with critical priority");
-
-                    // Schedule with critical priority
-                    var criticalUpdate = VisualUpdate.CreateLayoutUpdate(element);
-                    _updateScheduler.ScheduleUpdate(criticalUpdate, UpdatePriority.Critical);
-
-                    // Continue waiting for the event response
-                    // We don't set exception here, just let it keep waiting
-                }
-            });
-
             try
             {
-                // Add a longer final timeout as safety measure
-                return await TimeoutAfter(tcs.Task, TimeSpan.FromSeconds(10),
-                    () => new TimeoutException("Layout computation timed out after multiple attempts"));
+                // Schedule a layout update using the UpdateScheduler
+                var update = VisualUpdate.CreateLayoutUpdate(element);
+                _updateScheduler.ScheduleUpdate(update, UpdatePriority.High);
+
+                // In the simplified model, updates are processed immediately
+                // After scheduling, the layout should be available in the cache
+                cachedLayout = _layoutEngine.GetCachedLayout(element);
+                if (cachedLayout != null)
+                {
+                    return cachedLayout;
+                }
+
+                // If still not available, make a direct call
+                return _layoutEngine.ComputeLayoutAsync(element).GetAwaiter().GetResult();
             }
-            catch (TimeoutException ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Layout computation completely failed after multiple scheduling attempts");
-                throw new InvalidOperationException("Failed to compute layout after multiple attempts", ex);
+                _logger.LogError(ex, "Error computing layout for element");
+                throw new InvalidOperationException("Failed to compute layout", ex);
             }
         }
 
         /// <summary>
         /// Processes all pending updates in the style and layout systems.
         /// </summary>
-        public async Task ProcessUpdatesAsync()
+        public void ProcessUpdates()
         {
             ThrowIfDisposed();
             EnsureInitialized();
@@ -420,7 +367,6 @@ namespace LayoutEngine
                 return;
 
             // Use a single comprehensive update instead of separate style and layout updates
-            // This allows the UpdateScheduler to properly sequence the dependencies
             var documentElement = _document.DocumentElement ?? _document.Body;
             var update = VisualUpdate.CreateDocumentUpdate(UpdateType.Layout, documentElement);
 
@@ -428,15 +374,12 @@ namespace LayoutEngine
             _updateScheduler.ScheduleUpdate(update, UpdatePriority.Normal);
 
             _logger.LogDebug("Scheduled document update");
-
-            // Return immediately - the update will be processed by the platform infrastructure
-            await Task.CompletedTask;
         }
 
         /// <summary>
         /// Processes the full document by invalidating all styles and layout.
         /// </summary>
-        public async Task ProcessFullDocumentAsync()
+        public void ProcessFullDocument()
         {
             ThrowIfDisposed();
             EnsureInitialized();
@@ -452,9 +395,6 @@ namespace LayoutEngine
             _updateScheduler.ScheduleUpdate(update, UpdatePriority.High);
 
             _logger.LogDebug("Scheduled full document update");
-
-            // Return immediately - the update will be processed by the platform infrastructure
-            await Task.CompletedTask;
         }
 
         /// <summary>
@@ -499,13 +439,13 @@ namespace LayoutEngine
         /// <summary>
         /// Adds a style sheet to the document.
         /// </summary>
-        public async Task<string> AddStyleSheetAsync(string styleSheet, StyleSheetOrigin origin, string? mediaQuery = null)
+        public string AddStyleSheet(string styleSheet, StyleSheetOrigin origin, string? mediaQuery = null)
         {
             ThrowIfDisposed();
             EnsureInitialized();
 
             // Add the stylesheet
-            var styleSheetId = await _styleEngine.AddStyleSheetAsync(styleSheet, origin, mediaQuery);
+            var styleSheetId = _styleEngine.AddStyleSheetAsync(styleSheet, origin, mediaQuery).GetAwaiter().GetResult();
 
             // Schedule style update
             if (_document?.Body != null)
@@ -552,32 +492,15 @@ namespace LayoutEngine
         #region Private Methods
 
         /// <summary>
-        /// Extension method to add timeout to a Task with a custom exception factory.
-        /// </summary>
-        private static async Task<T> TimeoutAfter<T>(Task<T> task, TimeSpan timeout, Func<Exception> exceptionFactory)
-        {
-            var timeoutTask = Task.Delay(timeout);
-            var completedTask = await Task.WhenAny(task, timeoutTask);
-
-            if (completedTask == timeoutTask)
-            {
-                throw exceptionFactory();
-            }
-
-            return await task;
-        }
-
-        /// <summary>
         /// Cleans up resources after document shutdown.
         /// </summary>
-        private async Task CleanupAsync()
+        private void Cleanup()
         {
             _document = null;
             _isInitialized = false;
 
             // Clear memory
             GC.Collect();
-            await Task.Yield();
         }
 
         /// <summary>
@@ -587,7 +510,7 @@ namespace LayoutEngine
         {
             if (!_isInitialized || _document == null)
             {
-                throw new InvalidOperationException("LayoutEngine is not initialized. Call InitializeAsync first.");
+                throw new InvalidOperationException("LayoutEngine is not initialized. Call Initialize first.");
             }
         }
 
@@ -803,10 +726,10 @@ namespace LayoutEngine
 
             try
             {
-                // Shutdown asynchronously and wait for completion
+                // Shutdown synchronously
                 if (_isInitialized)
                 {
-                    ShutdownAsync().GetAwaiter().GetResult();
+                    Shutdown();
                 }
 
                 // Unsubscribe from events
