@@ -33,4 +33,8 @@
       <ProjectReference Include="..\LayoutEngine.Platform\LayoutEngine.Platform.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Unit\Abstractions\" />
+    </ItemGroup>
+
 </Project>
