@@ -125,10 +125,4 @@ public interface ILayoutEngineMain : IDisposable
     /// <param name="styleSheetId">The style sheet ID to remove.</param>
     /// <returns>True if the style sheet was removed, false otherwise.</returns>
     bool RemoveStyleSheet(string styleSheetId);
-
-    /// <summary>
-    /// Preloads a resource.
-    /// </summary>
-    /// <param name="url">The resource URL.</param>
-    void PreloadResource(string url);
 }

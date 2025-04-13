@@ -11,7 +11,6 @@ using LayoutEngine.Contracts.Platform.Events;
 using LayoutEngine.Contracts.Platform.Lifecycle;
 using LayoutEngine.Contracts.Platform.Threading;
 using LayoutEngine.Contracts.Platform.Updates;
-using LayoutEngine.Contracts.Resource;
 using LayoutEngine.Contracts.StyleSystem;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -29,7 +28,6 @@ namespace LayoutEngine
         private readonly IThreadingCoordinator _threadingCoordinator;
         private readonly IUpdateScheduler _updateScheduler;
         private readonly IFrameScheduler _frameScheduler;
-        private readonly IResourceLoader _resourceLoader;
         private readonly IStyleEngine _styleEngine;
         private readonly ILayoutEngine _layoutEngine;
         private readonly ILogger<LayoutEngineMain> _logger;
@@ -52,7 +50,6 @@ namespace LayoutEngine
             IThreadingCoordinator threadingCoordinator,
             IUpdateScheduler updateScheduler,
             IFrameScheduler frameScheduler,
-            IResourceLoader resourceLoader,
             IStyleEngine styleEngine,
             ILayoutEngine layoutEngine,
             LayoutEngineConfiguration? configuration = null,
@@ -64,7 +61,6 @@ namespace LayoutEngine
             _threadingCoordinator = threadingCoordinator ?? throw new ArgumentNullException(nameof(threadingCoordinator));
             _updateScheduler = updateScheduler ?? throw new ArgumentNullException(nameof(updateScheduler));
             _frameScheduler = frameScheduler ?? throw new ArgumentNullException(nameof(frameScheduler));
-            _resourceLoader = resourceLoader ?? throw new ArgumentNullException(nameof(resourceLoader));
             _styleEngine = styleEngine ?? throw new ArgumentNullException(nameof(styleEngine));
             _layoutEngine = layoutEngine ?? throw new ArgumentNullException(nameof(layoutEngine));
             _logger = logger ?? NullLogger<LayoutEngineMain>.Instance;
@@ -477,16 +473,6 @@ namespace LayoutEngine
             }
 
             return result;
-        }
-
-        /// <summary>
-        /// Preloads a resource.
-        /// </summary>
-        public void PreloadResource(string url)
-        {
-            ThrowIfDisposed();
-
-            _resourceLoader.PreloadResource(url);
         }
 
         #region Private Methods

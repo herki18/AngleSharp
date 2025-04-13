@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using LayoutEngine.Contracts.Resource;
-
-namespace LayoutEngine.Platform;
+﻿namespace LayoutEngine.Platform;
 
 using Threading;
 
@@ -25,11 +21,6 @@ public class PlatformOptions
     /// Gets or sets the default timeout for resource loading in milliseconds.
     /// </summary>
     public int DefaultResourceLoadTimeoutMs { get; set; } = 30000;
-
-    /// <summary>
-    /// Gets or sets the default error policy for resource loading.
-    /// </summary>
-    public ResourceErrorPolicy DefaultResourceErrorPolicy { get; set; } = ResourceErrorPolicy.Retry;
 
     /// <summary>
     /// Gets or sets the maximum number of retries for resource loading.

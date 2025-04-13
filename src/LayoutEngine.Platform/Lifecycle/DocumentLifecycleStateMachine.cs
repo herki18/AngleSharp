@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using Contracts.Platform.Events;
 using Contracts.Platform.Lifecycle;
+using Infrastructure.EventAggregator.API.Aggregation;
 using Infrastructure.EventAggregator.API.Events;
 using Stateless;
 
@@ -13,7 +14,7 @@ using Stateless;
 public sealed class DocumentLifecycleStateMachine : IDisposable
 {
     private readonly StateMachine<DocumentLifecyclePhase, LifecycleTrigger> _stateMachine;
-    private readonly Infrastructure.EventAggregator.API.Aggregation.IEventAggregator _eventAggregator;
+    private readonly IEventAggregator _eventAggregator;
 
     // Static mapping of states to allowed operations
     private static readonly Dictionary<DocumentLifecyclePhase, HashSet<DocumentOperation>> AllowedOperations = new()
@@ -105,7 +106,7 @@ public sealed class DocumentLifecycleStateMachine : IDisposable
     /// Initializes a new instance of the <see cref="DocumentLifecycleStateMachine"/> class.
     /// </summary>
     /// <param name="eventAggregator">The event aggregator for publishing state change events.</param>
-    public DocumentLifecycleStateMachine(Infrastructure.EventAggregator.API.Aggregation.IEventAggregator eventAggregator)
+    public DocumentLifecycleStateMachine(IEventAggregator eventAggregator)
     {
         _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
 
