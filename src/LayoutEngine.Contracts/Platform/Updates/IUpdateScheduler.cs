@@ -2,6 +2,8 @@ using System.Threading.Tasks;
 
 namespace LayoutEngine.Contracts.Platform.Updates;
 
+using System.Threading;
+
 /// <summary>
 /// Schedules and prioritizes visual updates for processing.
 /// </summary>
@@ -38,19 +40,20 @@ public interface IUpdateScheduler
     void ResumeUpdates();
 
     /// <summary>
-    /// Processes pending updates within a specified time budget.
-    /// This method is intended to be called repeatedly by the host loop.
+    /// Asynchronously processes pending updates within a specified time budget.
+    /// This is the preferred method for integration with async workflows.
     /// </summary>
-    /// <param name="timeBudgetMilliseconds">The maximum time in milliseconds allowed for processing in this call.</param>
-    /// <returns>A Task representing the asynchronous processing operation (optional for async schedulers).</returns>
-    Task ProcessUpdatesAsync(double timeBudgetMilliseconds);
+    /// <param name="timeBudgetMilliseconds">The maximum time in milliseconds allowed for processing.</param>
+    /// <param name="cancellationToken">Optional cancellation token.</param>
+    /// <returns>A Task representing the asynchronous processing operation.</returns>
+    Task ProcessUpdatesAsync(double timeBudgetMilliseconds, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Synchronous version of ProcessUpdatesAsync for simpler schedulers or blocking scenarios.
+    /// Synchronously processes pending updates within a specified time budget.
+    /// This wraps the async version and blocks until completion. Use with caution.
     /// </summary>
-    /// <param name="timeBudgetMilliseconds">The maximum time in milliseconds allowed for processing in this call.</param>
+    /// <param name="timeBudgetMilliseconds">The maximum time in milliseconds allowed for processing.</param>
     void ProcessUpdates(double timeBudgetMilliseconds);
-
 
     /// <summary>
     /// Gets the total number of updates currently pending in the scheduler across all priorities.

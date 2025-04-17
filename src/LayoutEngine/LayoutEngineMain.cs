@@ -375,58 +375,85 @@ namespace LayoutEngine
 
         #region Event Handlers (Orchestration Logic)
 
-        // Event handlers remain largely the same, reacting to *completion* events
-        // to manage lifecycle and schedule the *next* type of update.
-
+        /// <summary>
+        /// Reacts to style computation completion. Transitions lifecycle state AND schedules layout update.
+        /// </summary>
         private void OnStyleComputed(StyleComputedEvent e)
         {
             if (_isDisposed || !_isInitialized) return;
             _logger.LogInformation("Reacting to StyleComputedEvent ({Count} elements).", e.Elements.Count);
 
+            // 1. Update Lifecycle State
             if (_lifecycleCoordinator.CurrentPhase == DocumentLifecyclePhase.InStyleRecalc)
             {
                 if (_lifecycleCoordinator.IsValidTransition(DocumentLifecyclePhase.InStyleRecalc, DocumentLifecyclePhase.StyleClean))
                     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.StyleClean);
                 else
-                     _logger.LogWarning("Could not transition from InStyleRecalc to StyleClean.");
+                    _logger.LogWarning("Could not transition from InStyleRecalc to StyleClean.");
             }
 
+            // 2. Schedule Next Step (Layout) - This is the key change reverted back
             if (e.Elements.Count > 0 && _lifecycleCoordinator.IsOperationAllowed(DocumentOperation.LayoutCalculation))
             {
                 if (_document?.DocumentElement != null)
                 {
-                    _logger.LogDebug("Scheduling Layout update after StyleComputedEvent.");
+                    _logger.LogDebug("Scheduling Layout update following StyleComputedEvent.");
                     var update = VisualUpdate.CreateDocumentUpdate(UpdateType.Layout, _document.DocumentElement);
                     _updateScheduler.ScheduleUpdate(update, UpdatePriority.Normal);
                 }
             }
         }
 
+        /// <summary>
+        /// Reacts to layout computation completion. Transitions lifecycle state AND schedules render update.
+        /// </summary>
         private void OnLayoutUpdated(LayoutUpdatedEvent e)
         {
             if (_isDisposed || !_isInitialized) return;
-             _logger.LogInformation("Reacting to LayoutUpdatedEvent ({Count} elements).", e.UpdatedElements.Count);
+            _logger.LogInformation("Reacting to LayoutUpdatedEvent ({Count} elements).", e.UpdatedElements.Count);
 
+            // 1. Update Lifecycle State
             if (_lifecycleCoordinator.CurrentPhase == DocumentLifecyclePhase.InLayout)
             {
-                 if(_lifecycleCoordinator.IsValidTransition(DocumentLifecyclePhase.InLayout, DocumentLifecyclePhase.LayoutClean))
-                     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.LayoutClean);
-                 else
-                      _logger.LogWarning("Could not transition from InLayout to LayoutClean.");
+                if(_lifecycleCoordinator.IsValidTransition(DocumentLifecyclePhase.InLayout, DocumentLifecyclePhase.LayoutClean))
+                    _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.LayoutClean);
+                else
+                    _logger.LogWarning("Could not transition from InLayout to LayoutClean.");
             }
 
+            // 2. Schedule Next Step (Render) - This is the key change reverted back
             if (e.UpdatedElements.Count > 0 && _lifecycleCoordinator.IsOperationAllowed(DocumentOperation.Rendering))
             {
                 if (_document?.DocumentElement != null)
                 {
-                     _logger.LogDebug("Scheduling Render update after LayoutUpdatedEvent.");
+                    _logger.LogDebug("Scheduling Render update following LayoutUpdatedEvent.");
                     var update = VisualUpdate.CreateDocumentUpdate(UpdateType.Render, _document.DocumentElement);
                     _updateScheduler.ScheduleUpdate(update, UpdatePriority.Normal);
                 }
             }
         }
 
-        // OnUpdateProcessed, OnPhaseChanged, OnResourceError remain useful for logging/debugging
+        /// <summary>
+        /// Reacts to render completion by transitioning the lifecycle state.
+        /// </summary>
+        private void OnRenderCompleted(RenderCompletedEvent e)
+        {
+             if (_isDisposed || !_isInitialized) return;
+             _logger.LogInformation("Reacting to RenderCompletedEvent.");
+
+             // Update Lifecycle State
+             if (_lifecycleCoordinator.CurrentPhase == DocumentLifecyclePhase.InRender)
+             {
+                  if (_lifecycleCoordinator.IsValidTransition(DocumentLifecyclePhase.InRender, DocumentLifecyclePhase.RenderReady))
+                      _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.RenderReady);
+                  else
+                      _logger.LogWarning("Could not transition from InRender to RenderReady.");
+             }
+        }
+
+        /// <summary>
+        /// Logs processed updates.
+        /// </summary>
         private void OnUpdateProcessed(UpdateProcessedEvent e)
         {
              if (_isDisposed || !_isInitialized) return;
@@ -437,13 +464,19 @@ namespace LayoutEngine
                  _logger.LogError(e.Error, "Error processing update {Type} for {Elem} ({Time:F2}ms)", e.Update.Type, elementInfo, e.ProcessingTimeMs);
         }
 
+        /// <summary>
+        /// Logs phase changes. Scheduling is primarily driven by completion events now.
+        /// </summary>
         private void OnPhaseChanged(PhaseChangedEvent e)
         {
             if (_isDisposed) return;
-            _logger.LogDebug("Aware of lifecycle phase change: {Phase}, {ChangeType}", e.Phase, e.ChangeType);
-            // No longer trigger processing directly here; scheduler handles entry into "In..." phases.
+            _logger.LogDebug("Aware of lifecycle phase change: Phase={Phase}, Type={ChangeType}", e.Phase, e.ChangeType);
+            // We no longer schedule based on entering "...Clean" phases here.
         }
 
+        /// <summary>
+        /// Logs resource loading errors.
+        /// </summary>
         private void OnResourceError(ResourceErrorEvent e)
         {
             if (_isDisposed) return;

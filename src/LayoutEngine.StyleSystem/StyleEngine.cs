@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using AngleSharp.Dom;
 using LayoutEngine.Contracts.Platform.Events;
@@ -55,16 +54,9 @@ public class StyleEngine : IStyleEngine, IDisposable
     {
         _document = document ?? throw new ArgumentNullException(nameof(document));
         _isInitialized = true;
-        _logger?.LogInformation("StyleEngine initialized");
+        _logger.LogInformation("StyleEngine initialized");
 
         InvalidateAllStyles();
-
-        // Pre-compute styles for all document elements to ensure they're ready
-        // if (document.DocumentElement != null)
-        // {
-        //     _logger?.LogDebug("Pre-computing styles for document elements");
-        //     PrecomputeStylesForElement(document.DocumentElement);
-        // }
 
         return Task.CompletedTask;
     }
@@ -80,7 +72,7 @@ public class StyleEngine : IStyleEngine, IDisposable
         return Task.CompletedTask;
     }
 
-    public Task ProcessUpdatesAsync()
+    public async Task ProcessUpdatesAsync()
     {
         EnsureInitialized();
         if (!HasPendingUpdates)
@@ -91,7 +83,8 @@ public class StyleEngine : IStyleEngine, IDisposable
                  new List<IElement>(),
                  new Dictionary<IElement, IComputedStyle>())
              );
-            return Task.CompletedTask;
+             await Task.CompletedTask;
+             return;
         }
 
         _logger.LogDebug("Processing {Count} dirty style elements (or all)", _dirtyElements.Count);
@@ -112,20 +105,20 @@ public class StyleEngine : IStyleEngine, IDisposable
         else
         {
             // Process only the explicitly marked dirty elements
+            _logger.LogDebug("Processing {Count} specific dirty style elements.", _dirtyElements.Count);
             elementsToProcess.AddRange(_dirtyElements);
             _dirtyElements.Clear(); // Clear the dirty set
         }
 
+        _logger.LogInformation("Starting style computation for {Count} elements.", elementsToProcess.Count);
 
         // Compute styles for the collected elements
         foreach (var element in elementsToProcess)
         {
-            // Use the internal method to create/get style (mock logic)
-            var style = GetOrCreateComputedStyle(element);
+            _cachedStyles.Remove(element); // Invalidate cache entry first
+            var style = GetOrCreateComputedStyle(element); // Mock computation & caching
             computedStyles[element] = style;
-            _cachedStyles[element] = style; // Ensure cache is updated
         }
-
 
         // Publish computed styles event
         if (elementsToProcess.Count > 0)
@@ -135,6 +128,7 @@ public class StyleEngine : IStyleEngine, IDisposable
         }
         else
         {
+            _logger.LogDebug("No elements processed, publishing empty StyleComputedEvent.");
             // Publish empty event if nothing was processed but flag was set
              _eventAggregator.Publish(new StyleComputedEvent(
                  new List<IElement>(),
@@ -142,44 +136,29 @@ public class StyleEngine : IStyleEngine, IDisposable
              );
         }
 
-        return Task.CompletedTask;
+        await Task.CompletedTask;
     }
 
     public Task<IComputedStyle> ComputeStyleAsync(IElement element)
     {
         EnsureInitialized();
-        _logger.LogDebug("ComputeStyleAsync called for element {element}", element.TagName);
+        if (element == null) throw new ArgumentNullException(nameof(element));
+        _logger.LogDebug("ComputeStyleAsync called for element {Tag}", element.TagName);
 
-        if (element == null)
-            throw new ArgumentNullException(nameof(element));
-
-        // Check cache first
-        if (_cachedStyles.TryGetValue(element, out var style))
-        {
-            _logger.LogTrace("Returning cached style for {element}", element.TagName);
-            return Task.FromResult(style);
+        var cachedStyle = GetCachedStyle(element);
+        if (cachedStyle != null) {
+            _logger.LogTrace("Returning valid cached style for {Tag}", element.TagName);
+            return Task.FromResult(cachedStyle);
         }
 
-        // If not cached, it means it needs computation (or is dirty)
-        // Mark as dirty and rely on ProcessUpdatesAsync to handle it
-        _dirtyElements.Add(element);
-        _logger.LogTrace("Element {element} not cached or is dirty, marked for update.", element.TagName);
+        _logger.LogTrace("Style for {Tag} dirty/uncached. Computing mock directly.", element.TagName);
+        var style = GetOrCreateComputedStyle(element);
+        _dirtyElements.Remove(element); // Remove from dirty set as we computed it
 
-        // In a real engine, we might schedule an update here if not already processing
-        // For the mock, ProcessUpdatesAsync will pick it up.
-        // We return a *placeholder* or throw, as the actual computation is deferred.
-        // Let's return a newly created one for now, but acknowledge it might be stale
-        // until ProcessUpdatesAsync runs.
-        var placeholderStyle = GetOrCreateComputedStyle(element);
-        _cachedStyles[element] = placeholderStyle; // Cache immediately for subsequent calls before processing
+        // Publish event immediately (mock simplification)
+        _eventAggregator.Publish(new StyleComputedEvent(new List<IElement>{ element }, new Dictionary<IElement, IComputedStyle>{ { element, style } }));
 
-        // Publish event immediately for simplicity in mock, acknowledging this differs from real engine
-        _eventAggregator.Publish(new StyleComputedEvent(
-            new List<IElement>{ element },
-            new Dictionary<IElement, IComputedStyle>{ { element, placeholderStyle } })
-        );
-
-        return Task.FromResult(placeholderStyle);
+        return Task.FromResult(style);
     }
 
     public void InvalidateStyles(IReadOnlyList<IElement> elements)
@@ -193,21 +172,6 @@ public class StyleEngine : IStyleEngine, IDisposable
             _cachedStyles.Remove(element); // Remove from cache
             _dirtyElements.Add(element);   // Mark as dirty
         }
-        //
-        // // IMMEDIATELY recompute and publish the styles
-        // var computedStyles = new Dictionary<IElement, IComputedStyle>();
-        // foreach (var element in elements)
-        // {
-        //     var style = GetOrCreateComputedStyle(element);
-        //     computedStyles[element] = style;
-        // }
-        //
-        // // Publish the computed styles event
-        // if (elements.Count > 0)
-        // {
-        //     _logger?.LogDebug("Publishing StyleComputedEvent after invalidation for {count} elements", elements.Count);
-        //     _eventAggregator.Publish(new StyleComputedEvent(elements.ToList(), computedStyles));
-        // }
     }
 
     public void InvalidateAllStyles()
@@ -218,20 +182,6 @@ public class StyleEngine : IStyleEngine, IDisposable
         _cachedStyles.Clear();      // Clear cache
         _dirtyElements.Clear();     // Clear specific dirty elements
         _isEverythingDirty = true; // Mark everything as dirty
-
-        // IMMEDIATELY recompute styles for all previously cached elements
-        // if (elements.Count > 0)
-        // {
-        //     var computedStyles = new Dictionary<IElement, IComputedStyle>();
-        //     foreach (var element in elements)
-        //     {
-        //         var style = GetOrCreateComputedStyle(element);
-        //         computedStyles[element] = style;
-        //     }
-        //
-        //     _logger?.LogDebug("Publishing StyleComputedEvent after full invalidation for {count} elements", elements.Count);
-        //     _eventAggregator.Publish(new StyleComputedEvent(elements, computedStyles));
-        // }
     }
 
     public IComputedStyle? GetCachedStyle(IElement element)

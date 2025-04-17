@@ -18,7 +18,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 /// <summary>
 /// Mock implementation of ILayoutEngine that returns dummy layout information.
 /// </summary>
-public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
+public class LayoutEngine : ILayoutEngine, IDisposable
 {
     private readonly IEventAggregator _eventAggregator;
     private readonly ILogger<LayoutEngine> _logger;
@@ -75,90 +75,84 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
         return Task.CompletedTask;
     }
 
-    public Task ProcessUpdatesAsync()
+    public async Task ProcessUpdatesAsync()
     {
         EnsureInitialized();
         if (!HasPendingUpdates)
         {
             _logger.LogTrace("No pending layout updates to process.");
-             // Publish an empty event if nothing was dirty, to signal completion
-            _eventAggregator.Publish(new LayoutUpdatedEvent(
-                new List<IElement>(), _rootBox, new Dictionary<IElement, ILayoutBox>())
-            );
-            _eventAggregator.Publish(new FragmentTreeUpdatedEvent(_rootBox)); // Also publish fragment tree
-            return Task.CompletedTask;
+            // Publish empty events on completion even if no work
+            _eventAggregator.Publish(new LayoutUpdatedEvent(new List<IElement>(), _rootBox, new Dictionary<IElement, ILayoutBox>()));
+            _eventAggregator.Publish(new FragmentTreeUpdatedEvent(_rootBox));
+            await Task.CompletedTask; // Use await for async signature
+            return;
         }
 
-        _logger.LogDebug("Processing {Count} dirty layout elements (or all)", _dirtyLayoutElements.Count);
-
-        // Create a root box for the document if needed or if everything is dirty
-        if (_document?.Body != null && (_rootBox.Element == null || _isEverythingDirty))
+        // Rebuild root if needed (same logic)
+        bool rebuildRoot = _isEverythingDirty || _rootBox.Element == null;
+        if (rebuildRoot && _document?.Body != null)
         {
-             _rootBox = (LayoutBox)GetOrCreateLayoutBox(_document.Body); // Update root if dirty
-             _cachedBoxes[_document.Body] = _rootBox;
+            _rootBox = (LayoutBox)GetOrCreateLayoutBox(_document.Body);
+            _cachedBoxes[_document.Body] = _rootBox;
+            _logger.LogDebug("Rebuilding root box.");
+        }
+        else if (_document?.Body == null)
+        {
+            _logger.LogWarning("Cannot process layout: Body null.");
+            _dirtyLayoutElements.Clear();
+            _isEverythingDirty = false;
+            await Task.CompletedTask;
+            return;
         }
 
-        var processedElementsSet = new HashSet<IElement>();
+        var processedSet = new HashSet<IElement>();
         var updatedBoxes = new Dictionary<IElement, ILayoutBox>();
-        List<IElement> elementsToProcess;
+        List<IElement> rootsToProcess;
 
         if (_isEverythingDirty)
         {
-            // If everything is dirty, process the whole document from body
-            if (_document?.Body != null)
-            {
-                ProcessElementAndDescendants(_document.Body, 0, 0, processedElementsSet, updatedBoxes);
-                elementsToProcess = updatedBoxes.Keys.ToList(); // Get keys from the processed elements
-            }
-            else
-            {
-                 elementsToProcess = new List<IElement>();
-            }
-            _dirtyLayoutElements.Clear(); // Clear specific dirty elements
-            _isEverythingDirty = false;  // Reset the flag
+            _logger.LogDebug("Processing full layout.");
+            ProcessElementAndDescendants(_document.Body, 0, 0, processedSet, updatedBoxes);
+            rootsToProcess = new List<IElement> { _document.Body };
+            _dirtyLayoutElements.Clear();
+            _isEverythingDirty = false;
         }
         else
         {
-            // Process only the explicitly marked dirty elements and their descendants
-            // Find the highest-level dirty elements to avoid redundant processing
-            elementsToProcess = FindRootsOfDirtySubtrees(_dirtyLayoutElements);
-            foreach (var rootElement in elementsToProcess)
+            _logger.LogDebug("Processing layout for {Count} dirty subtrees.", _dirtyLayoutElements.Count);
+            rootsToProcess = FindRootsOfDirtySubtrees(_dirtyLayoutElements);
+            foreach (var root in rootsToProcess)
             {
-                // We need the parent's context for positioning, find the closest clean ancestor
-                ILayoutBox? parentBox = FindNearestCachedParentBox(rootElement);
-                float startX = parentBox?.X ?? 0;
-                float startY = parentBox?.Y ?? 0;
-
-                // Process this root and its descendants
-                ProcessElementAndDescendants(rootElement, startX, startY, processedElementsSet, updatedBoxes);
+                var pBox = FindNearestCachedParentBox(root);
+                float sx = pBox?.X ?? 0;
+                float sy = pBox?.Y ?? 0;
+                ProcessElementAndDescendants(root, sx, sy, processedSet, updatedBoxes);
             }
-            _dirtyLayoutElements.Clear(); // Clear the dirty set
+
+            _dirtyLayoutElements.Clear();
         }
 
-        var finalUpdatedElements = updatedBoxes.Keys.ToList();
+        var finalUpdated = updatedBoxes.Keys.ToList();
+        _logger.LogInformation("Layout computation finished for {Count} elements.", finalUpdated.Count);
 
-
-        // Publish the layout updated event
-        if (finalUpdatedElements.Count > 0)
+        // Publish events
+        if (finalUpdated.Count > 0)
         {
-            _logger.LogDebug("Publishing LayoutUpdatedEvent for {count} elements", finalUpdatedElements.Count);
-            _eventAggregator.Publish(new LayoutUpdatedEvent(finalUpdatedElements, _rootBox, updatedBoxes));
-
-            // Also publish a fragment tree updated event for the render system
-            _eventAggregator.Publish(new FragmentTreeUpdatedEvent(_rootBox));
+            _logger.LogDebug("Publishing LayoutUpdatedEvent for {Count}.", finalUpdated.Count);
+            _eventAggregator.Publish(new LayoutUpdatedEvent(finalUpdated, _rootBox, updatedBoxes));
         }
         else
         {
-             // Publish empty event if nothing was processed but flag was set
-             _eventAggregator.Publish(new LayoutUpdatedEvent(
-                 new List<IElement>(), _rootBox, new Dictionary<IElement, ILayoutBox>())
-             );
-             _eventAggregator.Publish(new FragmentTreeUpdatedEvent(_rootBox)); // Also publish fragment tree
+            _logger.LogDebug("No elements updated, publishing empty LayoutUpdatedEvent.");
+            _eventAggregator.Publish(new LayoutUpdatedEvent(new List<IElement>(), _rootBox, new Dictionary<IElement, ILayoutBox>()));
         }
 
+        _eventAggregator.Publish(new FragmentTreeUpdatedEvent(_rootBox));
 
-        return Task.CompletedTask;
+        // Yield or complete task for async signature
+        await Task.CompletedTask; // Or Task.Yield()
     }
+
 
     public Task<ILayoutBox> ComputeLayoutAsync(IElement element)
     {
@@ -186,7 +180,7 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
 
         // Publish event immediately for simplicity in mock
         _eventAggregator.Publish(new LayoutUpdatedEvent(
-            new List<IElement>{ element }, _rootBox, new Dictionary<IElement, ILayoutBox>{ { element, placeholderBox } })
+            new List<IElement> { element }, _rootBox, new Dictionary<IElement, ILayoutBox> { { element, placeholderBox } })
         );
         _eventAggregator.Publish(new FragmentTreeUpdatedEvent(_rootBox)); // Also publish fragment tree
 
@@ -244,6 +238,7 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
             _logger.LogWarning("GetLayoutTree called with pending updates. Processing synchronously.");
             ProcessUpdatesAsync().GetAwaiter().GetResult(); // Process synchronously for this call
         }
+
         return _rootBox;
     }
 
@@ -280,7 +275,7 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
         Queue<ILayoutBox> queue = new Queue<ILayoutBox>();
         if (_rootBox != null) queue.Enqueue(_rootBox);
 
-        while(queue.Count > 0)
+        while (queue.Count > 0)
         {
             var box = queue.Dequeue();
             if (box.Element != null && box.ContainsPoint(x, y))
@@ -356,41 +351,43 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
 
             if (childBox.BoxType == BoxType.Block)
             {
-                 // If previous elements were inline, move to next line
-                 if (currentLineX > childX)
-                 {
-                     currentLineY += maxLineHeight;
-                     maxLineHeight = 0;
-                 }
-                 currentLineX = childX; // Reset X for block
+                // If previous elements were inline, move to next line
+                if (currentLineX > childX)
+                {
+                    currentLineY += maxLineHeight;
+                    maxLineHeight = 0;
+                }
+
+                currentLineX = childX; // Reset X for block
 
                 // Position block below previous content
                 childBox.X = currentLineX;
                 childBox.Y = currentLineY;
                 ProcessElementAndDescendants(child, childBox.X, childBox.Y, processedElements, updatedBoxes);
 
-                 // Update Y position for next block
-                 currentLineY = childBox.Y + childBox.Height + childBox.Padding.Bottom + childBox.Border.Bottom + childBox.Margin.Bottom;
-
+                // Update Y position for next block
+                currentLineY = childBox.Y + childBox.Height + childBox.Padding.Bottom + childBox.Border.Bottom + childBox.Margin.Bottom;
             }
             else // Inline
             {
-                 // Simple inline layout: place to the right
-                 childBox.X = currentLineX;
-                 childBox.Y = currentLineY;
+                // Simple inline layout: place to the right
+                childBox.X = currentLineX;
+                childBox.Y = currentLineY;
 
-                 ProcessElementAndDescendants(child, childBox.X, childBox.Y, processedElements, updatedBoxes);
+                ProcessElementAndDescendants(child, childBox.X, childBox.Y, processedElements, updatedBoxes);
 
-                 currentLineX = childBox.X + childBox.Width + childBox.Padding.Right + childBox.Border.Right + childBox.Margin.Right;
-                 maxLineHeight = Math.Max(maxLineHeight, childBox.Height + childBox.Padding.Top + childBox.Padding.Bottom + childBox.Border.Top + childBox.Border.Bottom + childBox.Margin.Top + childBox.Margin.Bottom);
-
+                currentLineX = childBox.X + childBox.Width + childBox.Padding.Right + childBox.Border.Right + childBox.Margin.Right;
+                maxLineHeight = Math.Max(maxLineHeight,
+                    childBox.Height + childBox.Padding.Top + childBox.Padding.Bottom + childBox.Border.Top + childBox.Border.Bottom + childBox.Margin.Top +
+                    childBox.Margin.Bottom);
             }
 
-             // Set parent relationship (if needed by mock)
-             if (childBox is LayoutBox layoutChildBox) {
-                 layoutChildBox.Parent = box;
-                 box.AddChild(layoutChildBox); // Add to children if LayoutBox has such method
-             }
+            // Set parent relationship (if needed by mock)
+            if (childBox is LayoutBox layoutChildBox)
+            {
+                layoutChildBox.Parent = box;
+                box.AddChild(layoutChildBox); // Add to children if LayoutBox has such method
+            }
         }
     }
 
@@ -423,25 +420,29 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
             {
                 continue;
             }
+
             // Otherwise, it's a root of a dirty subtree
             roots.Add(element);
         }
+
         return roots;
     }
 
     private ILayoutBox? FindNearestCachedParentBox(IElement element)
     {
         var parent = element.ParentElement;
-        while(parent != null)
+        while (parent != null)
         {
-            if(_cachedBoxes.TryGetValue(parent, out var parentBox))
+            if (_cachedBoxes.TryGetValue(parent, out var parentBox))
             {
                 // Ensure this parent isn't also dirty
-                if(!_dirtyLayoutElements.Contains(parent))
+                if (!_dirtyLayoutElements.Contains(parent))
                     return parentBox;
             }
+
             parent = parent.ParentElement;
         }
+
         // If no cached parent found, return the root box
         return _rootBox;
     }
@@ -454,10 +455,7 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
         _logger.LogDebug("Received LayoutInvalidatedEvent for {count} elements", e.Elements.Count);
 
         // Mark invalidated elements as dirty
-        foreach (var element in e.Elements)
-        {
-            InvalidateElementAndDescendants(element); // Marks dirty and removes from cache
-        }
+        InvalidateLayout(e.Elements); // This now just marks things dirty
 
         // DO NOT process updates immediately.
     }
@@ -508,6 +506,7 @@ public class LayoutEngine : Contracts.LayoutSystem.ILayoutEngine, IDisposable
         {
             _eventAggregator.Unsubscribe(subscription);
         }
+
         _subscriptions.Clear();
 
         _cachedBoxes.Clear();
