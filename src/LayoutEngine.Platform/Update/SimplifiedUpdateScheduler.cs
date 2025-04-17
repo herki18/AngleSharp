@@ -1,42 +1,41 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks; // Added for Task
 using AngleSharp.Dom;
 using LayoutEngine.Contracts.Platform.Events;
+using LayoutEngine.Contracts.Platform.Lifecycle;
 using LayoutEngine.Contracts.Platform.Updates;
+using LayoutEngine.Contracts.StyleSystem;
+using LayoutEngine.Contracts.LayoutSystem;
 using Infrastructure.EventAggregator.API.Aggregation;
 using Infrastructure.EventAggregator.API.Events;
-
-namespace LayoutEngine.Platform.Update;
-
-using System.Linq;
-using System.Threading.Tasks;
-using Contracts.LayoutSystem;
-using Contracts.Platform.Lifecycle;
-using Contracts.StyleSystem;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
+namespace LayoutEngine.Platform.Update;
+
 /// <summary>
-/// Simplified update scheduler that processes visual updates in a single thread.
+/// Simplified update scheduler that processes visual updates sequentially in a single thread,
+/// respecting a time budget per processing call. It directly calls subsystem processing methods.
 /// </summary>
 public class SimplifiedUpdateScheduler : IUpdateScheduler, IDisposable
 {
     private readonly IEventAggregator _eventAggregator;
-    private readonly IDocumentLifecycleCoordinator _lifecycleCoordinator; // Added
-    private readonly IStyleEngine _styleEngine;                         // Added
-    private readonly ILayoutEngine _layoutEngine;                       // Added
-    private readonly ILogger<SimplifiedUpdateScheduler> _logger;        // Added
+    private readonly IDocumentLifecycleCoordinator _lifecycleCoordinator;
+    private readonly IStyleEngine _styleEngine;
+    private readonly ILayoutEngine _layoutEngine;
+    private readonly ILogger<SimplifiedUpdateScheduler> _logger;
     private readonly Dictionary<UpdatePriority, Queue<IVisualUpdate>> _updateQueues = new();
-    private readonly UpdatePriority[] _priorityLevels;
+    private readonly UpdatePriority[] _priorityLevels; // Highest to lowest
 
+    private bool _isProcessing = false; // Simple re-entrancy guard for sync processing
+    private readonly object _processingLock = new object();
     private bool _isPaused;
     private bool _isDisposed;
-    private readonly Stopwatch _performanceTimer = new();
+    private readonly Stopwatch _batchTimer = new(); // Timer for the overall budget
 
-    /// <summary>
-    /// Initializes a new instance of the SimplifiedUpdateScheduler.
-    /// </summary>
     public SimplifiedUpdateScheduler(
         IEventAggregator eventAggregator,
         IDocumentLifecycleCoordinator lifecycleCoordinator,
@@ -50,114 +49,90 @@ public class SimplifiedUpdateScheduler : IUpdateScheduler, IDisposable
         _layoutEngine = layoutEngine ?? throw new ArgumentNullException(nameof(layoutEngine));
         _logger = logger ?? NullLogger<SimplifiedUpdateScheduler>.Instance;
 
-        _priorityLevels = new[]
-        {
-            UpdatePriority.Critical, UpdatePriority.High, UpdatePriority.Normal, UpdatePriority.Low
-        };
-
-        foreach (var priority in _priorityLevels)
-        {
-            _updateQueues[priority] = new Queue<IVisualUpdate>();
-        }
+        _priorityLevels = new[] { UpdatePriority.Critical, UpdatePriority.High, UpdatePriority.Normal, UpdatePriority.Low };
+        foreach (var priority in _priorityLevels) { _updateQueues[priority] = new Queue<IVisualUpdate>(); }
         _logger.LogInformation("SimplifiedUpdateScheduler initialized.");
     }
 
-    /// <summary>
-    /// Schedules a visual update with normal priority.
-    /// </summary>
+    // --- Scheduling Methods ---
     public void ScheduleUpdate(IVisualUpdate update) => ScheduleUpdate(update, UpdatePriority.Normal);
 
-    /// <summary>
-    /// Schedules a visual update with specified priority.
-    /// </summary>
     public void ScheduleUpdate(IVisualUpdate update, UpdatePriority priority)
     {
         if (_isDisposed) throw new ObjectDisposedException(nameof(SimplifiedUpdateScheduler));
         if (update == null) throw new ArgumentNullException(nameof(update));
+
         _logger.LogTrace("Scheduling update {Id} ({Type}) Priority: {Priority}", update.Id, update.Type, priority);
+        // Enqueue based on priority
         _updateQueues[priority].Enqueue(update);
-        // No immediate processing trigger here - host calls ProcessPendingUpdates
+        // Note: Processing is NOT triggered here directly. It's driven by the host's calls to ProcessUpdates.
     }
 
-    /// <summary>
-    /// Cancels a previously scheduled update if it hasn't been processed yet.
-    /// </summary>
+    // CancelUpdate, PauseUpdates, ResumeUpdates remain the same...
     public bool CancelUpdate(IVisualUpdate update)
     {
-        if (_isDisposed)
-            throw new ObjectDisposedException(nameof(SimplifiedUpdateScheduler));
-        if (update == null)
-            throw new ArgumentNullException(nameof(update));
-
+        if (_isDisposed) throw new ObjectDisposedException(nameof(SimplifiedUpdateScheduler));
+        if (update == null) throw new ArgumentNullException(nameof(update));
         bool found = false;
-        foreach (var priority in _priorityLevels)
-        {
+        foreach (var priority in _priorityLevels) {
             var queue = _updateQueues[priority];
             var newQueue = new Queue<IVisualUpdate>(queue.Where(u => {
-                if (u.Id == update.Id) {
-                    found = true;
-                    return false; // Exclude the update
-                }
-                return true; // Keep others
+                if (u.Id == update.Id) { found = true; return false; }
+                return true;
             }));
             _updateQueues[priority] = newQueue;
         }
-
-        if (found) {
-            _logger.LogTrace("Cancelled update {UpdateId}", update.Id);
-        }
+        if (found) _logger.LogTrace("Cancelled update {Id}", update.Id);
         return found;
     }
-
-    /// <summary>
-    /// Pauses processing of updates.
-    /// </summary>
     public void PauseUpdates()
     {
-        if (_isDisposed)
-            throw new ObjectDisposedException(nameof(SimplifiedUpdateScheduler));
+        if (_isDisposed) throw new ObjectDisposedException(nameof(SimplifiedUpdateScheduler));
         _isPaused = true;
         _logger.LogInformation("Update processing paused.");
     }
-
-    /// <summary>
-    /// Resumes processing of updates.
-    /// </summary>
     public void ResumeUpdates()
     {
-        if (_isDisposed)
-            throw new ObjectDisposedException(nameof(SimplifiedUpdateScheduler));
-        if (_isPaused)
-        {
-            _isPaused = false;
-            _logger.LogInformation("Update processing resumed.");
-        }
+        if (_isDisposed) throw new ObjectDisposedException(nameof(SimplifiedUpdateScheduler));
+        _isPaused = false;
+        _logger.LogInformation("Update processing resumed.");
+    }
+
+    // --- Processing Methods ---
+
+    /// <summary>
+    /// Processes pending updates asynchronously within the budget.
+    /// Calls the synchronous version in this simplified implementation.
+    /// </summary>
+    public Task ProcessUpdatesAsync(double timeBudgetMilliseconds)
+    {
+        ProcessUpdates(timeBudgetMilliseconds);
+        return Task.CompletedTask; // Return completed task as processing is sync here
     }
 
     /// <summary>
-    /// Processes pending updates based on priority until the time budget is exceeded
-    /// or all queues are empty.
+    /// Processes pending updates synchronously based on priority until the time budget is exceeded
+    /// or all queues are empty. This is the primary method called by the host loop.
     /// </summary>
-    /// <param name="timeBudgetMilliseconds">The maximum time allowed for processing in this call.</param>
-    public async Task ProcessUpdatesAsync(double timeBudgetMilliseconds) // Changed to async Task
+    public void ProcessUpdates(double timeBudgetMilliseconds)
     {
-         if (_isDisposed || _isPaused) return;
+        if (_isDisposed || _isPaused) return;
 
-        // Simple lock to prevent re-entrancy in this single-threaded model
-         lock (_processingLock)
-         {
-             if (_isProcessing)
-             {
-                  _logger.LogTrace("Processing already in progress, skipping.");
-                 return;
-             }
-             _isProcessing = true;
-         }
-
+        // Prevent re-entrancy if an update processing triggers another ProcessUpdates call indirectly
+        lock (_processingLock)
+        {
+            if (_isProcessing)
+            {
+                _logger.LogTrace("Processing already in progress, skipping redundant call.");
+                return;
+            }
+            _isProcessing = true;
+        }
 
         _logger.LogTrace("Starting processing batch with budget: {Budget}ms. Pending: {PendingCount}", timeBudgetMilliseconds, GetPendingUpdateCount());
-        _performanceTimer.Restart(); // Start timing the whole batch
+        _batchTimer.Restart(); // Start timing the whole batch
         int updatesProcessedThisBatch = 0;
+        var stopwatch = Stopwatch.StartNew(); // For individual update timing
 
         try
         {
@@ -167,196 +142,148 @@ public class SimplifiedUpdateScheduler : IUpdateScheduler, IDisposable
                 while (queue.Count > 0)
                 {
                     // Check budget *before* processing the next item
-                    // Allow at least one item if budget > 0, otherwise respect budget strictly
-                    if (updatesProcessedThisBatch > 0 && _performanceTimer.Elapsed.TotalMilliseconds >= timeBudgetMilliseconds)
+                    if (_batchTimer.Elapsed.TotalMilliseconds >= timeBudgetMilliseconds && updatesProcessedThisBatch > 0)
                     {
-                        _logger.LogTrace("Time budget ({Budget}ms) exceeded after processing {Count} updates. Remaining will be processed later.", timeBudgetMilliseconds, updatesProcessedThisBatch);
-                        _performanceTimer.Stop();
-                        return; // Exit processing for this call
+                        _logger.LogDebug("Time budget ({Budget}ms) exceeded after processing {Count} updates. Stopping batch.", timeBudgetMilliseconds, updatesProcessedThisBatch);
+                        goto EndProcessing; // Exit loops cleanly
                     }
 
                     var update = queue.Dequeue();
-                    await ProcessSingleUpdateAsync(update); // Process one update (now async)
+                    stopwatch.Restart();
+                    bool errorHandled = false; // Flag specific to this update iteration
+
+                    try
+                    {
+                        // --- Process the single update ---
+                        ProcessSingleUpdate(update); // Call the synchronous helper
+                        // If ProcessSingleUpdate completes without throwing, it's considered successful
+                    }
+                    catch (Exception ex) // Catch errors specifically from ProcessSingleUpdate
+                    {
+                        errorHandled = true; // Mark that we handled an error for this update
+                        _logger.LogError(ex, "Error processing update {UpdateId} ({UpdateType})", update.Id, update.Type);
+                        stopwatch.Stop(); // Stop timer before publishing error event
+                        _eventAggregator.Publish(
+                            new UpdateProcessedEvent(update, stopwatch.Elapsed.TotalMilliseconds, false, ex), // Publish ERROR event
+                            EventPriority.Normal);
+                    }
+                    finally // Runs after try or catch for the single update
+                    {
+                        // Publish SUCCESS event only if no error was caught and handled above
+                        if (!errorHandled)
+                        {
+                            stopwatch.Stop(); // Stop timer before publishing success event
+                            _eventAggregator.Publish(
+                                new UpdateProcessedEvent(update, stopwatch.Elapsed.TotalMilliseconds, true, null), // Publish SUCCESS event
+                                EventPriority.Normal);
+                        }
+                    }
+                    // ----------------------------------
+
                     updatesProcessedThisBatch++;
                 }
             }
-             _performanceTimer.Stop(); // Stop timing after loop finishes naturally
-             _logger.LogTrace("Finished processing batch naturally. {Count} updates processed in {Duration:F2}ms.", updatesProcessedThisBatch, _performanceTimer.Elapsed.TotalMilliseconds);
+            EndProcessing:; // Label for budget break
+            _batchTimer.Stop(); // Stop timing the batch
+            if (updatesProcessedThisBatch > 0) {
+                _logger.LogTrace("Finished processing batch. {Count} updates processed in {Duration:F2}ms.", updatesProcessedThisBatch, _batchTimer.Elapsed.TotalMilliseconds);
+            }
         }
-        catch(Exception ex) // Catch unexpected errors during the loop
+        catch(Exception ex) // Catch unexpected errors during the outer loop/budget check etc.
         {
-             _logger.LogError(ex, "Unhandled exception during ProcessUpdates loop.");
-              _performanceTimer.Stop();
+             _logger.LogError(ex, "Unhandled exception during ProcessUpdates outer loop.");
+             _batchTimer.Stop();
         }
         finally
         {
-             lock (_processingLock)
-             {
+            lock (_processingLock)
+            {
                 _isProcessing = false; // Release processing flag
-             }
+            }
         }
     }
 
     /// <summary>
-    /// Processes pending updates.
+    /// Helper method to process a single update. Manages lifecycle state entries and calls subsystems.
     /// </summary>
-    /// <param name="maxUpdatesPerCall">Maximum number of updates to process per call. Default: 20.</param>
-    public void ProcessUpdates(double timeBudgetMilliseconds)
+    private void ProcessSingleUpdate(IVisualUpdate update)
     {
-        // Blocks until async version completes - use with caution
-        ProcessUpdatesAsync(timeBudgetMilliseconds).GetAwaiter().GetResult();
-    }
+         // Note: Individual update timing is now handled within the ProcessUpdates loop
+         _logger.LogDebug("Processing update {Id} ({Type}) for element {ElemId}", update.Id, update.Type, update.Element?.Id ?? "doc");
 
-    private void ScheduleNextProcessing() {
-        // In this simplified scheduler, we just call ProcessUpdates again.
-        // A real implementation might post to the UI thread or use Task.Run depending on threading model.
-        _logger.LogTrace("Scheduling next batch of update processing.");
-        // Using Task.Run to avoid potential stack overflow if updates schedule more updates immediately
-        Task.Run(() => ProcessUpdates());
-    }
-
-    /// <summary>
-    /// Processes a single update and publishes the appropriate events.
-    /// </summary>
-    private void ProcessUpdate(IVisualUpdate update)
-    {
-        _logger.LogDebug("Processing update {UpdateId} ({UpdateType}) for element {ElementId}",
-            update.Id, update.Type, update.Element?.Id ?? "document");
-
-        try
+        // No internal try-catch here; let exceptions bubble up to the main loop's catch
+        // This prevents hiding errors that might stop the entire batch correctly.
+        switch (update.Type)
         {
-            _performanceTimer.Restart();
-            bool needsLayout = false;
-            bool needsRender = false;
-
-            switch (update.Type)
-            {
-                case UpdateType.Full:
-                case UpdateType.Style:
-                    if (_lifecycleCoordinator.CurrentPhase != DocumentLifecyclePhase.InStyleRecalc)
-                    {
-                         if(_lifecycleCoordinator.IsValidTransition(_lifecycleCoordinator.CurrentPhase, DocumentLifecyclePhase.InStyleRecalc))
-                            _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InStyleRecalc);
-                         else
-                              _logger.LogWarning("Cannot enter InStyleRecalc phase from {CurrentPhase}", _lifecycleCoordinator.CurrentPhase);
-                    }
-                    // Call the actual style processing method
-                    _styleEngine.ProcessUpdatesAsync().GetAwaiter().GetResult(); // Use GetResult in simplified model
-                    needsLayout = true; // Style changes usually require layout
-                    break;
-
-                case UpdateType.Layout:
-                     if (_lifecycleCoordinator.CurrentPhase != DocumentLifecyclePhase.InLayout)
-                    {
-                        if(_lifecycleCoordinator.IsValidTransition(_lifecycleCoordinator.CurrentPhase, DocumentLifecyclePhase.InLayout))
-                            _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InLayout);
-                        else
-                            _logger.LogWarning("Cannot enter InLayout phase from {CurrentPhase}", _lifecycleCoordinator.CurrentPhase);
-                    }
-                    // Call the actual layout processing method
-                    _layoutEngine.ProcessUpdatesAsync().GetAwaiter().GetResult(); // Use GetResult in simplified model
-                    needsRender = true; // Layout changes require render
-                    break;
-
-                case UpdateType.Render:
-                     if (_lifecycleCoordinator.CurrentPhase != DocumentLifecyclePhase.InRender)
-                     {
-                        if(_lifecycleCoordinator.IsValidTransition(_lifecycleCoordinator.CurrentPhase, DocumentLifecyclePhase.RenderReady))
-                            _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.RenderReady);
-
-                         if(_lifecycleCoordinator.IsValidTransition(_lifecycleCoordinator.CurrentPhase, DocumentLifecyclePhase.InRender))
-                            _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InRender);
-                         else
-                            _logger.LogWarning("Cannot enter InRender phase from {CurrentPhase}", _lifecycleCoordinator.CurrentPhase);
-                     }
-                    // Trigger render (in a real engine, this would call a render system)
-                    _eventAggregator.Publish(new RenderInvalidatedEvent(null)); // Simplified: just publish event
-                    // In a real system, RenderCompletedEvent would be published by the renderer
-                    // For the mock, we might simulate completion here or in LayoutEngineMain
-                    _eventAggregator.Publish(new RenderCompletedEvent());
-                    if(_lifecycleCoordinator.IsValidTransition(_lifecycleCoordinator.CurrentPhase, DocumentLifecyclePhase.RenderReady))
-                        _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.RenderReady); // Assume render completes quickly
-                    break;
-
-                case UpdateType.Resource:
-                    _logger.LogTrace("Processing Resource update (no specific action taken in simplified scheduler).");
-                    // Handle resource updates if needed
-                    break;
-            }
-
-            _performanceTimer.Stop();
-
-            // Publish event that this specific update was processed
-            _eventAggregator.Publish(
-                new UpdateProcessedEvent(update, _performanceTimer.Elapsed.TotalMilliseconds),
-                EventPriority.Normal);
-
-            // --- Lifecycle transitions based on processing completion (Simplified) ---
-            // These would normally happen in response to StyleComputed/LayoutUpdated events handled by LayoutEngineMain/Coordinator
-            if (update.Type == UpdateType.Style || update.Type == UpdateType.Full)
-            {
+            case UpdateType.Full: // Fall through to Style
+            case UpdateType.Style:
+                if (_lifecycleCoordinator.CurrentPhase != DocumentLifecyclePhase.InStyleRecalc &&
+                    _lifecycleCoordinator.IsValidTransition(_lifecycleCoordinator.CurrentPhase, DocumentLifecyclePhase.InStyleRecalc))
+                {
+                    _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InStyleRecalc);
+                }
                 if (_lifecycleCoordinator.CurrentPhase == DocumentLifecyclePhase.InStyleRecalc)
                 {
-                    if(_lifecycleCoordinator.IsValidTransition(DocumentLifecyclePhase.InStyleRecalc, DocumentLifecyclePhase.StyleClean))
-                        _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.StyleClean);
+                    _logger.LogTrace("Calling StyleEngine.ProcessUpdatesAsync...");
+                    _styleEngine.ProcessUpdatesAsync().GetAwaiter().GetResult();
+                    // Exit handled by LayoutEngineMain based on StyleComputedEvent
+                } else _logger.LogWarning("Skipped style processing: Invalid phase ({Phase})", _lifecycleCoordinator.CurrentPhase);
+                break;
+
+            case UpdateType.Layout:
+                if (_lifecycleCoordinator.CurrentPhase != DocumentLifecyclePhase.InLayout &&
+                    _lifecycleCoordinator.IsValidTransition(_lifecycleCoordinator.CurrentPhase, DocumentLifecyclePhase.InLayout))
+                {
+                    _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InLayout);
                 }
-            }
-             if (update.Type == UpdateType.Layout || (update.Type == UpdateType.Full && needsLayout)) // If full implies layout
-            {
                 if (_lifecycleCoordinator.CurrentPhase == DocumentLifecyclePhase.InLayout)
                 {
-                     if(_lifecycleCoordinator.IsValidTransition(DocumentLifecyclePhase.InLayout, DocumentLifecyclePhase.LayoutClean))
-                        _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.LayoutClean);
+                    _logger.LogTrace("Calling LayoutEngine.ProcessUpdatesAsync...");
+                    _layoutEngine.ProcessUpdatesAsync().GetAwaiter().GetResult();
+                    // Exit handled by LayoutEngineMain based on LayoutUpdatedEvent
+                } else _logger.LogWarning("Skipped layout processing: Invalid phase ({Phase})", _lifecycleCoordinator.CurrentPhase);
+                break;
+
+            case UpdateType.Render:
+                if (_lifecycleCoordinator.CurrentPhase != DocumentLifecyclePhase.InRender)
+                {
+                    if(_lifecycleCoordinator.IsValidTransition(_lifecycleCoordinator.CurrentPhase, DocumentLifecyclePhase.RenderReady))
+                         _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.RenderReady);
+                    if(_lifecycleCoordinator.IsValidTransition(_lifecycleCoordinator.CurrentPhase, DocumentLifecyclePhase.InRender))
+                         _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InRender);
                 }
-            }
-             if (update.Type == UpdateType.Render || (update.Type == UpdateType.Layout && needsRender) || (update.Type == UpdateType.Full && needsRender)) // If layout/full implies render
-             {
-                  if (_lifecycleCoordinator.CurrentPhase == DocumentLifecyclePhase.InRender)
-                  {
-                      if(_lifecycleCoordinator.IsValidTransition(DocumentLifecyclePhase.InRender, DocumentLifecyclePhase.RenderReady))
-                          _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.RenderReady);
-                  }
-             }
-             // --- End Lifecycle ---
+                if (_lifecycleCoordinator.CurrentPhase == DocumentLifecyclePhase.InRender)
+                {
+                    _logger.LogTrace("Publishing RenderInvalidatedEvent...");
+                    _eventAggregator.Publish(new RenderInvalidatedEvent(null));
+                    // Simulate render completion for mock
+                    _eventAggregator.Publish(new RenderCompletedEvent());
+                     if(_lifecycleCoordinator.IsValidTransition(DocumentLifecyclePhase.InRender, DocumentLifecyclePhase.RenderReady))
+                         _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.RenderReady);
+                } else _logger.LogWarning("Skipped render processing: Invalid phase ({Phase})", _lifecycleCoordinator.CurrentPhase);
+                break;
 
-
+            case UpdateType.Resource:
+                 _logger.LogTrace("Processing Resource update (No specific action).");
+                break;
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing update {UpdateId} ({UpdateType})", update.Id, update.Type);
-            // Optionally publish an error event
-             _eventAggregator.Publish(
-                new UpdateProcessedEvent(update, _performanceTimer.Elapsed.TotalMilliseconds, false, ex),
-                EventPriority.Normal);
-        }
+        // Note: UpdateProcessedEvent is published in the calling loop (ProcessUpdates)
     }
 
-    /// <summary>
-    /// Gets the count of pending updates across all priority queues.
-    /// </summary>
+    // GetPendingUpdateCount remains the same
     public int GetPendingUpdateCount()
     {
         int count = 0;
-        foreach (var queue in _updateQueues.Values)
-        {
-            count += queue.Count;
-        }
+        foreach (var queue in _updateQueues.Values) count += queue.Count;
         return count;
     }
 
-    /// <summary>
-    /// Disposes the update scheduler and clears all queues.
-    /// </summary>
+    // Dispose remains the same
     public void Dispose()
     {
-        if (_isDisposed)
-            return;
-
+        if (_isDisposed) return;
         _isDisposed = true;
         _logger.LogInformation("SimplifiedUpdateScheduler disposing.");
-        foreach (var queue in _updateQueues.Values)
-        {
-            queue.Clear();
-        }
+        foreach (var queue in _updateQueues.Values) queue.Clear();
     }
 }

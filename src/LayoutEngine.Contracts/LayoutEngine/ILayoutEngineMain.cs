@@ -1,125 +1,156 @@
 ﻿using System;
+using System.Threading.Tasks; // Added for Task
+using AngleSharp;
 using AngleSharp.Dom;
 using LayoutEngine.Contracts.LayoutSystem;
 using LayoutEngine.Contracts.Platform.Lifecycle;
+using LayoutEngine.Contracts.Platform.Updates; // Added for IUpdateScheduler reference if needed
 using LayoutEngine.Contracts.StyleSystem;
 
 namespace LayoutEngine;
 
-using AngleSharp;
-
 /// <summary>
 /// Defines the main interface for the LayoutEngine rendering system.
+/// This orchestrates the various subsystems (Style, Layout, etc.).
 /// </summary>
 public interface ILayoutEngineMain : IDisposable
 {
     /// <summary>
-    /// Gets the AngleSharp browsing context.
+    /// Gets the AngleSharp browsing context used for parsing and DOM operations.
     /// </summary>
     IBrowsingContext BrowsingContext { get; }
 
     /// <summary>
-    /// Gets the active document.
+    /// Gets the active AngleSharp document currently being processed.
     /// </summary>
     IDocument? Document { get; }
 
     /// <summary>
-    /// Gets the current document lifecycle phase.
+    /// Gets the current phase of the document rendering lifecycle (e.g., StyleClean, InLayout).
     /// </summary>
     DocumentLifecyclePhase CurrentPhase { get; }
 
     /// <summary>
-    /// Gets the current viewport dimensions.
+    /// Gets the current viewport dimensions used for layout calculations.
     /// </summary>
     Rect Viewport { get; }
 
     /// <summary>
-    /// Gets whether the engine is currently initialized.
+    /// Gets whether the engine has been initialized with a document.
     /// </summary>
     bool IsInitialized { get; }
 
     /// <summary>
-    /// Opens a document from a string of HTML.
+    /// Opens a document from an HTML string content.
     /// </summary>
     /// <param name="html">The HTML content.</param>
-    /// <param name="baseUrl">Optional base URL for the document.</param>
-    /// <returns>The opened document.</returns>
+    /// <param name="baseUrl">Optional base URL for resolving relative paths.</param>
+    /// <returns>The loaded and parsed AngleSharp document.</returns>
     IDocument Open(string html, string? baseUrl = null);
 
     /// <summary>
-    /// Opens a document from a file.
+    /// Opens a document by loading it from a specified file path.
     /// </summary>
     /// <param name="filePath">The path to the HTML file.</param>
-    /// <returns>The opened document.</returns>
+    /// <returns>The loaded and parsed AngleSharp document.</returns>
     IDocument OpenFile(string filePath);
 
     /// <summary>
-    /// Initializes the LayoutEngine with the specified document.
+    /// Initializes the LayoutEngine with the specified document, setting up subsystems.
     /// </summary>
     /// <param name="document">The document to render.</param>
+    /// <returns>A task representing the asynchronous initialization process.</returns>
+    Task InitializeAsync(IDocument document);
+
+    /// <summary>
+    /// Synchronous version of InitializeAsync. Use with caution as it may block.
+    /// </summary>
+    /// <param name="document">The document to render.</param>
+    [Obsolete("Prefer InitializeAsync to avoid potential blocking.", false)]
     void Initialize(IDocument document);
 
     /// <summary>
-    /// Creates a new document with the specified HTML.
+    /// Creates a new AngleSharp document instance from an HTML string without initializing the engine.
     /// </summary>
     /// <param name="html">The HTML content.</param>
-    /// <returns>The created document.</returns>
+    /// <returns>The created AngleSharp document.</returns>
     IDocument CreateDocument(string html);
 
     /// <summary>
-    /// Shuts down the LayoutEngine and releases all resources.
+    /// Shuts down the LayoutEngine, releases resources, and cleans up subsystems.
     /// </summary>
+    /// <returns>A task representing the asynchronous shutdown process.</returns>
+    Task ShutdownAsync();
+
+    /// <summary>
+    /// Synchronous version of ShutdownAsync. Use with caution as it may block.
+    /// </summary>
+    [Obsolete("Prefer ShutdownAsync to avoid potential blocking.", false)]
     void Shutdown();
 
     /// <summary>
-    /// Gets the style computed for the specified element.
+    /// Gets the final computed style for the specified element. May trigger style computation if needed.
     /// </summary>
     /// <param name="element">The element to get the style for.</param>
-    /// <returns>The computed style for the element.</returns>
+    /// <returns>The computed style object.</returns>
     IComputedStyle GetComputedStyle(IElement element);
 
     /// <summary>
-    /// Gets the layout box for the specified element.
+    /// Gets the calculated layout box for the specified element. Ensures styles are computed first and may trigger layout computation.
     /// </summary>
     /// <param name="element">The element to get the layout box for.</param>
-    /// <returns>The layout box for the element.</returns>
+    /// <returns>The layout box object.</returns>
     ILayoutBox GetLayoutBox(IElement element);
 
     /// <summary>
-    /// Processes the full document by invalidating all styles and layout.
+    /// Explicitly processes all pending updates immediately, bypassing time budgeting.
+    /// Primarily intended for testing or non-real-time scenarios.
+    /// </summary>
+    [Obsolete("Prefer calling ProcessPendingUpdates with a specific budget in a loop. This method bypasses budgeting.", false)]
+    void ProcessUpdates();
+
+    /// <summary>
+    /// Schedules a full recalculation of styles and layout for the entire document.
+    /// Processing occurs during subsequent calls to ProcessPendingUpdates.
     /// </summary>
     void ProcessFullDocument();
 
     /// <summary>
-    /// Sets the viewport size.
+    /// Sets the viewport size used for layout calculations and media query evaluation.
     /// </summary>
-    /// <param name="width">The viewport width.</param>
-    /// <param name="height">The viewport height.</param>
+    /// <param name="width">The new viewport width in pixels.</param>
+    /// <param name="height">The new viewport height in pixels.</param>
     void SetViewportSize(float width, float height);
 
     /// <summary>
-    /// Gets the element at the specified point.
+    /// Finds the topmost element at the specified viewport coordinates. Ensures layout is up-to-date first.
     /// </summary>
     /// <param name="x">The x-coordinate.</param>
     /// <param name="y">The y-coordinate.</param>
-    /// <returns>The element at the specified point, or null if no element is found.</returns>
+    /// <returns>The element at the point, or null if no element is found.</returns>
     IElement? ElementFromPoint(float x, float y);
 
     /// <summary>
-    /// Adds a style sheet to the document.
+    /// Adds a stylesheet to the document and schedules a style update.
     /// </summary>
-    /// <param name="styleSheet">The style sheet content.</param>
-    /// <param name="origin">The style sheet origin.</param>
-    /// <param name="mediaQuery">Optional media query.</param>
-    /// <returns>The style sheet ID.</returns>
+    /// <param name="styleSheet">The CSS content of the stylesheet.</param>
+    /// <param name="origin">The origin of the stylesheet (Author, User, UserAgent).</param>
+    /// <param name="mediaQuery">Optional media query string for the stylesheet.</param>
+    /// <returns>A unique ID for the added stylesheet.</returns>
     string AddStyleSheet(string styleSheet, StyleSheetOrigin origin, string? mediaQuery = null);
 
     /// <summary>
-    /// Removes a style sheet from the document.
+    /// Removes a previously added stylesheet by its ID and schedules a style update.
     /// </summary>
-    /// <param name="styleSheetId">The style sheet ID to remove.</param>
-    /// <returns>True if the style sheet was removed, false otherwise.</returns>
+    /// <param name="styleSheetId">The ID returned by AddStyleSheet.</param>
+    /// <returns>True if the stylesheet was found and removed, false otherwise.</returns>
     bool RemoveStyleSheet(string styleSheetId);
+
+    /// <summary>
+    /// Hints that a resource should be loaded ahead of time (implementation specific).
+    /// </summary>
+    /// <param name="url">The URL of the resource to preload.</param>
+    void PreloadResource(string url);
 
     /// <summary>
     /// Processes pending style, layout, and other updates within a given time budget.
@@ -127,7 +158,4 @@ public interface ILayoutEngineMain : IDisposable
     /// </summary>
     /// <param name="timeBudgetMilliseconds">The maximum time allowed for processing in this call.</param>
     void ProcessPendingUpdates(double timeBudgetMilliseconds);
-
-    System.Threading.Tasks.Task InitializeAsync(IDocument document);
-    System.Threading.Tasks.Task ShutdownAsync();
 }

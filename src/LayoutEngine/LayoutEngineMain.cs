@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks; // Added for Task
 using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
@@ -17,20 +18,20 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LayoutEngine
 {
-    using System.Threading.Tasks;
-    using Platform.Update;
-
     /// <summary>
     /// Main implementation of the LayoutEngine rendering system.
+    /// Orchestrates subsystems (Style, Layout) and manages the document lifecycle.
+    /// Relies on the host calling ProcessPendingUpdates periodically.
     /// </summary>
-    public class LayoutEngineMain : ILayoutEngineMain
+    public class LayoutEngineMain : ILayoutEngineMain // Interface updated previously
     {
         private readonly IEventAggregator _eventAggregator;
         private readonly ICacheManager _cacheManager;
         private readonly IDocumentLifecycleCoordinator _lifecycleCoordinator;
-        private readonly IThreadingCoordinator _threadingCoordinator;
+        private readonly IThreadingCoordinator _threadingCoordinator; // Kept but might be unused with simplified scheduler
         private readonly IUpdateScheduler _updateScheduler;
-        private readonly IFrameScheduler _frameScheduler;
+        // IFrameScheduler is no longer directly used for the main processing loop in Option 4
+        // private readonly IFrameScheduler _frameScheduler;
         private readonly IStyleEngine _styleEngine;
         private readonly ILayoutEngine _layoutEngine;
         private readonly ILogger<LayoutEngineMain> _logger;
@@ -43,16 +44,14 @@ namespace LayoutEngine
         private Rect _currentViewport = new Rect(0, 0, 800, 600);
         private LayoutEngineConfiguration _configuration;
 
-        /// <summary>
-        /// Initializes a new instance of the LayoutEngineMain class.
-        /// </summary>
+        // Constructor: Keep IFrameScheduler for now if other parts might use it, but it's not driving the loop.
         public LayoutEngineMain(
             IEventAggregator eventAggregator,
             ICacheManager cacheManager,
             IDocumentLifecycleCoordinator lifecycleCoordinator,
             IThreadingCoordinator threadingCoordinator,
             IUpdateScheduler updateScheduler,
-            IFrameScheduler frameScheduler,
+            IFrameScheduler frameScheduler, // Keep param for now
             IStyleEngine styleEngine,
             ILayoutEngine layoutEngine,
             LayoutEngineConfiguration? configuration = null,
@@ -63,77 +62,46 @@ namespace LayoutEngine
             _lifecycleCoordinator = lifecycleCoordinator ?? throw new ArgumentNullException(nameof(lifecycleCoordinator));
             _threadingCoordinator = threadingCoordinator ?? throw new ArgumentNullException(nameof(threadingCoordinator));
             _updateScheduler = updateScheduler ?? throw new ArgumentNullException(nameof(updateScheduler));
-            _frameScheduler = frameScheduler ?? throw new ArgumentNullException(nameof(frameScheduler));
+            // _frameScheduler = frameScheduler; // Store if needed elsewhere, but not for main loop
             _styleEngine = styleEngine ?? throw new ArgumentNullException(nameof(styleEngine));
             _layoutEngine = layoutEngine ?? throw new ArgumentNullException(nameof(layoutEngine));
             _logger = logger ?? NullLogger<LayoutEngineMain>.Instance;
             _configuration = configuration ?? LayoutEngineConfiguration.Default;
 
-            // Create browsing context with default configuration
             _browsingContext = AngleSharp.BrowsingContext.New(_configuration.AngleSharpConfiguration);
 
-            // Subscribe to completion events from subsystems to drive lifecycle
+            // Subscribe to events needed for orchestration
             _subscriptions.Add(_eventAggregator.Subscribe<StyleComputedEvent>(OnStyleComputed));
             _subscriptions.Add(_eventAggregator.Subscribe<LayoutUpdatedEvent>(OnLayoutUpdated));
-            // Add subscription for RenderCompleted if/when a render system exists
-            _subscriptions.Add(_eventAggregator.Subscribe<UpdateProcessedEvent>(OnUpdateProcessed)); // Keep for logging/state checks
-            _subscriptions.Add(_eventAggregator.Subscribe<PhaseChangedEvent>(OnPhaseChanged)); // Keep for logging/reacting
-            // Remove subscriptions that subsystems handle internally or aren't needed for orchestration here
-            // _subscriptions.Add(_eventAggregator.Subscribe<ViewportChangedEvent>(OnViewportChanged)); // Let LayoutEngine handle viewport internally
-            // _subscriptions.Add(_eventAggregator.Subscribe<ResourceErrorEvent>(OnResourceError));
-            // _subscriptions.Add(_eventAggregator.Subscribe<FragmentTreeUpdatedEvent>(OnFragmentTreeUpdated));
+            // Add RenderCompleted when needed
+            _subscriptions.Add(_eventAggregator.Subscribe<UpdateProcessedEvent>(OnUpdateProcessed));
+            _subscriptions.Add(_eventAggregator.Subscribe<PhaseChangedEvent>(OnPhaseChanged));
+            _subscriptions.Add(_eventAggregator.Subscribe<ResourceErrorEvent>(OnResourceError));
         }
 
-        /// <summary>
-        /// Gets the AngleSharp browsing context.
-        /// </summary>
+        // --- Properties ---
         public IBrowsingContext BrowsingContext => _browsingContext;
-
-        /// <summary>
-        /// Gets the active document.
-        /// </summary>
         public IDocument? Document => _document;
-
-        /// <summary>
-        /// Gets the current document lifecycle phase.
-        /// </summary>
         public DocumentLifecyclePhase CurrentPhase => _lifecycleCoordinator.CurrentPhase;
-
-        /// <summary>
-        /// Gets the current viewport dimensions.
-        /// </summary>
         public Rect Viewport => _currentViewport;
-
-        /// <summary>
-        /// Gets whether the engine is currently initialized.
-        /// </summary>
         public bool IsInitialized => _isInitialized;
 
-        /// <summary>
-        /// Opens a document from a string of HTML.
-        /// </summary>
+        // --- Document Loading ---
         public IDocument Open(string html, string? baseUrl = null)
         {
+            // Uses InitializeAsync internally now
+            return OpenAsync(html, baseUrl).GetAwaiter().GetResult();
+        }
+
+        public async Task<IDocument> OpenAsync(string html, string? baseUrl = null)
+        {
             ThrowIfDisposed();
-
-            // Shutdown any existing document
-            if (_isInitialized)
-            {
-                Shutdown();
-            }
-
+            if (_isInitialized) await ShutdownAsync();
             _logger.LogInformation("Opening document from HTML string");
-
             try
             {
-                // Parse the HTML
-                // Note: Since AngleSharp uses async, we'll use GetAwaiter().GetResult() to get synchronous behavior
-                var document = _browsingContext.OpenAsync(req => req.Content(html).Address(baseUrl ?? "about:blank"))
-                                              .GetAwaiter().GetResult();
-
-                // Initialize the engine with the document
-                Initialize(document);
-
+                var document = await _browsingContext.OpenAsync(req => req.Content(html).Address(baseUrl ?? "about:blank"));
+                await InitializeAsync(document);
                 return document;
             }
             catch (Exception ex)
@@ -143,36 +111,23 @@ namespace LayoutEngine
             }
         }
 
-        /// <summary>
-        /// Opens a document from a file.
-        /// </summary>
         public IDocument OpenFile(string filePath)
         {
+             // Uses InitializeAsync internally now
+            return OpenFileAsync(filePath).GetAwaiter().GetResult();
+        }
+
+         public async Task<IDocument> OpenFileAsync(string filePath)
+        {
             ThrowIfDisposed();
-
-            if (string.IsNullOrEmpty(filePath))
-                throw new ArgumentException("File path cannot be null or empty", nameof(filePath));
-
-            if (!File.Exists(filePath))
-                throw new FileNotFoundException("HTML file not found", filePath);
-
-            // Shutdown any existing document
-            if (_isInitialized)
-            {
-                Shutdown();
-            }
-
+            if (string.IsNullOrEmpty(filePath)) throw new ArgumentException("File path cannot be null or empty", nameof(filePath));
+            if (!File.Exists(filePath)) throw new FileNotFoundException("HTML file not found", filePath);
+            if (_isInitialized) await ShutdownAsync();
             _logger.LogInformation("Opening document from file: {FilePath}", filePath);
-
             try
             {
-                // Parse the HTML from file
-                // Note: Since AngleSharp uses async, we'll use GetAwaiter().GetResult() to get synchronous behavior
-                var document = _browsingContext.OpenAsync(filePath).GetAwaiter().GetResult();
-
-                // Initialize the engine with the document
-                Initialize(document);
-
+                var document = await _browsingContext.OpenAsync(filePath);
+                await InitializeAsync(document);
                 return document;
             }
             catch (Exception ex)
@@ -182,15 +137,7 @@ namespace LayoutEngine
             }
         }
 
-        public void Initialize(IDocument document)
-        {
-            // This sync version might block if called from a UI thread. Prefer InitializeAsync.
-            InitializeAsync(document).GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Initializes the LayoutEngine with the specified document.
-        /// </summary>
+        // --- Initialization and Shutdown (Now Async) ---
         public async Task InitializeAsync(IDocument document)
         {
             ThrowIfDisposed();
@@ -198,17 +145,15 @@ namespace LayoutEngine
             if (_isInitialized)
             {
                 _logger.LogWarning("InitializeAsync called while already initialized. Shutting down previous document first.");
-                await ShutdownAsync(); // Await the async shutdown
+                await ShutdownAsync();
             }
             _logger.LogInformation("Initializing LayoutEngine for document: {DocumentUrl}", document.Url);
             _document = document;
             try
             {
-                // Initialize subsystems asynchronously
                 await _styleEngine.InitializeAsync(document);
                 await _layoutEngine.InitializeAsync(document);
 
-                // Enter the initial StyleClean phase
                 if (_lifecycleCoordinator.IsValidTransition(DocumentLifecyclePhase.Inactive, DocumentLifecyclePhase.StyleClean))
                     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.StyleClean);
                 else
@@ -216,9 +161,7 @@ namespace LayoutEngine
 
                 _isInitialized = true;
                 _logger.LogInformation("LayoutEngine initialized successfully.");
-
-                // Schedule a full initial processing
-                ProcessFullDocument(); // This schedules an update, processing happens via host calls now
+                ProcessFullDocument(); // Schedule initial update
             }
             catch (Exception ex)
             {
@@ -228,44 +171,27 @@ namespace LayoutEngine
             }
         }
 
-        /// <summary>
-        /// Creates a new document with the specified HTML.
-        /// </summary>
-        public IDocument CreateDocument(string html)
-        {
-            ThrowIfDisposed();
+         // Sync version for interface compatibility (use with caution)
+        [Obsolete("Prefer InitializeAsync to avoid potential blocking.", false)]
+        public void Initialize(IDocument document) => InitializeAsync(document).GetAwaiter().GetResult();
 
-            var parser = new HtmlParser();
-            return parser.ParseDocument(html);
-        }
-
-        public void Shutdown()
-        {
-            // This sync version might block. Prefer ShutdownAsync.
-            ShutdownAsync().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Shuts down the LayoutEngine and releases all resources.
-        /// </summary>
         public async Task ShutdownAsync()
         {
             ThrowIfDisposed();
             if (!_isInitialized) return;
             _logger.LogInformation("Shutting down LayoutEngine...");
+            var initialPhase = _lifecycleCoordinator.CurrentPhase; // Capture phase before shutdown
 
             try
             {
-                // Transition to Disposed phase
-                if (_lifecycleCoordinator.CurrentPhase != DocumentLifecyclePhase.Disposed)
+                if (initialPhase != DocumentLifecyclePhase.Disposed)
                 {
-                    if (_lifecycleCoordinator.IsValidTransition(_lifecycleCoordinator.CurrentPhase, DocumentLifecyclePhase.Disposed))
+                    if (_lifecycleCoordinator.IsValidTransition(initialPhase, DocumentLifecyclePhase.Disposed))
                         _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.Disposed);
                     else
-                        _logger.LogWarning("Could not transition from {CurrentPhase} to Disposed during shutdown.", _lifecycleCoordinator.CurrentPhase);
+                        _logger.LogWarning("Could not transition from {CurrentPhase} to Disposed during shutdown.", initialPhase);
                 }
 
-                // Shutdown subsystems asynchronously
                 await _layoutEngine.ShutdownAsync();
                 await _styleEngine.ShutdownAsync();
                 _logger.LogInformation("Subsystems shut down.");
@@ -281,122 +207,107 @@ namespace LayoutEngine
             }
         }
 
-        /// <summary>
-        /// Gets the style computed for the specified element.
-        /// </summary>
+        // Sync version for interface compatibility (use with caution)
+        [Obsolete("Prefer ShutdownAsync to avoid potential blocking.", false)]
+        public void Shutdown() => ShutdownAsync().GetAwaiter().GetResult();
+
+        // --- Core API Methods ---
+        public IDocument CreateDocument(string html)
+        {
+            ThrowIfDisposed();
+            var parser = new HtmlParser();
+            return parser.ParseDocument(html);
+        }
+
         public IComputedStyle GetComputedStyle(IElement element)
         {
             ThrowIfDisposed();
             EnsureInitialized();
             if (element == null) throw new ArgumentNullException(nameof(element));
 
+            // Try cache first (engine checks dirty state)
             var cachedStyle = _styleEngine.GetCachedStyle(element);
             if (cachedStyle != null) return cachedStyle;
 
-            _logger.LogDebug("Style not cached/dirty for {ElementTag}. Requesting computation (mock computes directly).", element.TagName);
-            // Mock computes directly. Real engine would need host to call ProcessPendingUpdates.
+            _logger.LogDebug("Style not cached/dirty for {Tag}. Requesting computation (mock computes directly).", element.TagName);
+            // Mock engine computes directly. Real engine would need ProcessPendingUpdates called by host.
+            // We might need to force processing in tests or simple hosts.
             return _styleEngine.ComputeStyleAsync(element).GetAwaiter().GetResult();
         }
 
-
-        /// <summary>
-        /// Gets the layout box for the specified element.
-        /// </summary>
         public ILayoutBox GetLayoutBox(IElement element)
         {
             ThrowIfDisposed();
             EnsureInitialized();
             if (element == null) throw new ArgumentNullException(nameof(element));
 
-            GetComputedStyle(element); // Ensure styles are computed first
+            // Ensure styles are ready first
+            GetComputedStyle(element);
 
+            // Try layout cache (engine checks dirty state)
             var cachedLayout = _layoutEngine.GetCachedLayout(element);
             if (cachedLayout != null) return cachedLayout;
 
-            _logger.LogDebug("Layout not cached/dirty for {ElementTag}. Requesting computation (mock computes directly).", element.TagName);
-            // Mock computes directly. Real engine would need host to call ProcessPendingUpdates.
+            _logger.LogDebug("Layout not cached/dirty for {Tag}. Requesting computation (mock computes directly).", element.TagName);
+            // Mock engine computes directly. Real engine would need ProcessPendingUpdates called by host.
             return _layoutEngine.ComputeLayoutAsync(element).GetAwaiter().GetResult();
         }
 
-        /// <summary>
-        /// Processes pending updates within the given time budget by calling the update scheduler.
-        /// </summary>
-        /// <param name="timeBudgetMilliseconds">Maximum time in milliseconds for this processing slice.</param>
-        public void ProcessPendingUpdates(double timeBudgetMilliseconds)
+        [Obsolete("Prefer calling ProcessPendingUpdates with a specific budget in a loop.", false)]
+        public void ProcessUpdates()
         {
-            ThrowIfDisposed();
-            if (!_isInitialized)
-            {
-                _logger.LogWarning("ProcessPendingUpdates called but engine is not initialized.");
-                return;
-            }
-            _logger.LogTrace("ProcessPendingUpdates called with budget: {Budget}ms", timeBudgetMilliseconds);
-            _updateScheduler.ProcessUpdates(timeBudgetMilliseconds);
+            _logger.LogWarning("Deprecated ProcessUpdates() called. Processing all pending updates without budget.");
+            ProcessPendingUpdates(double.MaxValue);
         }
 
-        /// <summary>
-        /// Processes the full document by invalidating all styles and layout.
-        /// </summary>
         public void ProcessFullDocument()
         {
             ThrowIfDisposed();
             EnsureInitialized();
             if (_document?.DocumentElement == null) return;
 
-            _logger.LogDebug("Scheduling full document update.");
+            _logger.LogInformation("Scheduling full document update.");
             var update = VisualUpdate.CreateDocumentUpdate(UpdateType.Full, _document.DocumentElement);
             _updateScheduler.ScheduleUpdate(update, UpdatePriority.High);
-            // With SimplifiedUpdateScheduler, this will trigger processing immediately.
-            // With a frame-based scheduler, it queues the update.
+            // Processing happens via host calls to ProcessPendingUpdates
         }
 
         public void SetViewportSize(float width, float height)
         {
             ThrowIfDisposed();
-            if (_currentViewport.Width == width && _currentViewport.Height == height) return;
+            if (Math.Abs(_currentViewport.Width - width) < 0.01f && Math.Abs(_currentViewport.Height - height) < 0.01f)
+                return;
 
             var oldViewport = _currentViewport;
-            var newViewport = new Rect(0, 0, width, height);
-            _currentViewport = newViewport;
+            _currentViewport = new Rect(0, 0, width, height);
+            _logger.LogInformation("Viewport set to {W}x{H}. Notifying LayoutEngine and scheduling layout update.", width, height);
 
-            _logger.LogDebug("Viewport changed from {OldViewport} to {NewViewport}. Notifying LayoutEngine.",
-                $"{oldViewport.Width}x{oldViewport.Height}",
-                $"{newViewport.Width}x{newViewport.Height}");
+            _layoutEngine.SetViewportSize(width, height); // Layout engine invalidates internally
 
-            // Notify the layout engine directly
-            _layoutEngine.SetViewportSize(width, height);
-
-            // LayoutEngine.SetViewportSize now invalidates layout internally.
-            // Schedule an update to process this invalidation.
             if (_document?.DocumentElement != null && _isInitialized)
             {
                 var update = VisualUpdate.CreateDocumentUpdate(UpdateType.Layout, _document.DocumentElement);
                 _updateScheduler.ScheduleUpdate(update, UpdatePriority.Normal);
             }
-            // Publish event for external listeners
-            _eventAggregator.Publish(new ViewportSizeChangedEvent(oldViewport, newViewport));
+            _eventAggregator.Publish(new ViewportSizeChangedEvent(oldViewport, _currentViewport));
         }
 
         public IElement? ElementFromPoint(float x, float y)
         {
             ThrowIfDisposed();
             EnsureInitialized();
-            _logger.LogDebug("Requesting element at point ({X}, {Y}). Layout must be up-to-date.", x, y);
-            // GetLayoutTree *should* be fast if host calls ProcessPendingUpdates regularly.
-            // If GetLayoutTree implementation still forces sync processing (like the mock did), keep it.
-            // Otherwise, rely on host loop. Let's assume host loop is sufficient.
-            // _layoutEngine.GetLayoutTree(); // REMOVED - Rely on host calling ProcessPendingUpdates
+            _logger.LogDebug("Hit testing at ({X}, {Y}). Layout must be up-to-date.", x, y);
+            // Assume host calls ProcessPendingUpdates regularly, so layout should be current.
+            // If the mock GetLayoutTree still forces processing, that's okay for now.
+            // _layoutEngine.GetLayoutTree(); // Might be needed if mock doesn't rely on host loop
             return _layoutEngine.ElementFromPoint(x, y);
         }
 
         public string AddStyleSheet(string styleSheet, StyleSheetOrigin origin, string? mediaQuery = null)
         {
-            ThrowIfDisposed();
-            EnsureInitialized();
-            _logger.LogDebug("Adding stylesheet (Origin: {Origin})", origin);
-            // StyleEngine handles invalidation internally now
-            var styleSheetId = _styleEngine.AddStyleSheetAsync(styleSheet, origin, mediaQuery).GetAwaiter().GetResult();
-            // Schedule an update to process the style invalidation
+            ThrowIfDisposed(); EnsureInitialized();
+            _logger.LogInformation("Adding stylesheet (Origin: {Origin}). Scheduling style update.", origin);
+            var styleSheetId = _styleEngine.AddStyleSheetAsync(styleSheet, origin, mediaQuery).GetAwaiter().GetResult(); // Style engine invalidates internally
             if (_document?.DocumentElement != null)
             {
                 var update = VisualUpdate.CreateDocumentUpdate(UpdateType.Style, _document.DocumentElement);
@@ -407,14 +318,12 @@ namespace LayoutEngine
 
         public bool RemoveStyleSheet(string styleSheetId)
         {
-            ThrowIfDisposed();
-            EnsureInitialized();
-            _logger.LogDebug("Removing stylesheet ID: {StyleSheetId}", styleSheetId);
-            // StyleEngine handles invalidation internally now
-            var result = _styleEngine.RemoveStyleSheet(styleSheetId);
-            // Schedule an update if removal was successful
+            ThrowIfDisposed(); EnsureInitialized();
+            _logger.LogInformation("Removing stylesheet ID: {Id}.", styleSheetId);
+            var result = _styleEngine.RemoveStyleSheet(styleSheetId); // Style engine invalidates internally
             if (result && _document?.DocumentElement != null)
             {
+                _logger.LogDebug("Stylesheet removed. Scheduling style update.");
                 var update = VisualUpdate.CreateDocumentUpdate(UpdateType.Style, _document.DocumentElement);
                 _updateScheduler.ScheduleUpdate(update, UpdatePriority.Normal);
             }
@@ -423,167 +332,127 @@ namespace LayoutEngine
 
         public void PreloadResource(string url)
         {
-            // TODO: Implement using a ResourceLoader service if added later
-            _logger.LogWarning("PreloadResource called but not implemented yet.");
+            _logger.LogWarning("PreloadResource called for {Url} but is not implemented.", url);
         }
 
-        #region Private Methods
-
+        // --- NEW: Primary processing method called by host ---
         /// <summary>
-        /// Cleans up resources after document shutdown.
+        /// Processes pending updates within the given time budget by invoking the update scheduler.
         /// </summary>
+        public void ProcessPendingUpdates(double timeBudgetMilliseconds)
+        {
+            ThrowIfDisposed();
+            if (!_isInitialized) return; // Don't process if not ready
+
+            _logger.LogTrace("Host requested processing with budget: {Budget}ms", timeBudgetMilliseconds);
+            // Delegate directly to the scheduler's budgeted processing method
+             _updateScheduler.ProcessUpdates(timeBudgetMilliseconds);
+            // If the scheduler needed to be async, we'd await:
+            // await _updateScheduler.ProcessUpdatesAsync(timeBudgetMilliseconds);
+        }
+
+        #region Private Methods (Cleanup, EnsureInitialized, ThrowIfDisposed)
         private void Cleanup()
         {
             _document = null;
             _isInitialized = false;
-
-            // Clear memory
-            GC.Collect();
+            // GC.Collect(); // Generally avoid explicit GC
         }
 
-        /// <summary>
-        /// Ensures the engine is initialized.
-        /// </summary>
         private void EnsureInitialized()
         {
             if (!_isInitialized || _document == null)
             {
-                throw new InvalidOperationException("LayoutEngine is not initialized. Call Initialize first.");
+                throw new InvalidOperationException("LayoutEngine is not initialized. Call InitializeAsync or Open first.");
             }
         }
 
-        /// <summary>
-        /// Throws if the engine is disposed.
-        /// </summary>
         private void ThrowIfDisposed()
         {
-            if (_isDisposed)
-            {
-                throw new ObjectDisposedException(nameof(LayoutEngineMain));
-            }
+            if (_isDisposed) throw new ObjectDisposedException(nameof(LayoutEngineMain));
         }
-
         #endregion
 
-        #region Event Handlers
+        #region Event Handlers (Orchestration Logic)
 
-        /// <summary>
-        /// Handles update processed events.
-        /// </summary>
-        private void OnUpdateProcessed(UpdateProcessedEvent e)
-        {
-            if (_isDisposed || !_isInitialized) return;
+        // Event handlers remain largely the same, reacting to *completion* events
+        // to manage lifecycle and schedule the *next* type of update.
 
-            string elementInfo = e.Update.Element != null
-                ? $"{e.Update.Element.TagName} (#{e.Update.Element.Id ?? "no-id"})"
-                : "document";
-
-            _logger.LogTrace("Update processed: {UpdateType} for {ElementInfo} in {ProcessingTime:F2}ms (Success: {Success})",
-                e.Update.Type, elementInfo, e.ProcessingTimeMs, e.Success);
-
-            if (!e.Success && e.Error != null)
-            {
-                _logger.LogError(e.Error, "Error processing update {UpdateId} ({UpdateType}) for {ElementInfo}", e.Update.Id, e.Update.Type, elementInfo);
-            }
-
-            // Maybe trigger next phase based on update type completion? Handled by specific compute events for now.
-        }
-
-        /// <summary>
-        /// Handles style computed events.
-        /// </summary>
         private void OnStyleComputed(StyleComputedEvent e)
         {
             if (_isDisposed || !_isInitialized) return;
+            _logger.LogInformation("Reacting to StyleComputedEvent ({Count} elements).", e.Elements.Count);
 
-            _logger.LogTrace("Styles computed for {ElementCount} elements", e.Elements.Count);
-
-            // Signal style phase completion
             if (_lifecycleCoordinator.CurrentPhase == DocumentLifecyclePhase.InStyleRecalc)
             {
-                if(_lifecycleCoordinator.IsValidTransition(DocumentLifecyclePhase.InStyleRecalc, DocumentLifecyclePhase.StyleClean))
+                if (_lifecycleCoordinator.IsValidTransition(DocumentLifecyclePhase.InStyleRecalc, DocumentLifecyclePhase.StyleClean))
                     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.StyleClean);
+                else
+                     _logger.LogWarning("Could not transition from InStyleRecalc to StyleClean.");
             }
 
-            // If styles changed, layout is now dirty (LayoutEngine handles marking internally)
-            // Schedule layout update if needed and allowed
             if (e.Elements.Count > 0 && _lifecycleCoordinator.IsOperationAllowed(DocumentOperation.LayoutCalculation))
             {
-                // Schedule a layout update for the document - LayoutEngine will figure out what's dirty
                 if (_document?.DocumentElement != null)
                 {
-                    _logger.LogTrace("Scheduling layout update after style computation.");
+                    _logger.LogDebug("Scheduling Layout update after StyleComputedEvent.");
                     var update = VisualUpdate.CreateDocumentUpdate(UpdateType.Layout, _document.DocumentElement);
                     _updateScheduler.ScheduleUpdate(update, UpdatePriority.Normal);
                 }
             }
         }
 
-        /// <summary>
-        /// Handles layout updated events.
-        /// </summary>
         private void OnLayoutUpdated(LayoutUpdatedEvent e)
         {
             if (_isDisposed || !_isInitialized) return;
+             _logger.LogInformation("Reacting to LayoutUpdatedEvent ({Count} elements).", e.UpdatedElements.Count);
 
-            _logger.LogTrace("Layout updated for {ElementCount} elements", e.UpdatedElements.Count);
-
-            // Signal layout phase completion
             if (_lifecycleCoordinator.CurrentPhase == DocumentLifecyclePhase.InLayout)
             {
-                if(_lifecycleCoordinator.IsValidTransition(DocumentLifecyclePhase.InLayout, DocumentLifecyclePhase.LayoutClean))
-                    _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.LayoutClean);
+                 if(_lifecycleCoordinator.IsValidTransition(DocumentLifecyclePhase.InLayout, DocumentLifecyclePhase.LayoutClean))
+                     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.LayoutClean);
+                 else
+                      _logger.LogWarning("Could not transition from InLayout to LayoutClean.");
             }
 
-            // If layout changed, rendering might be needed
-            // Schedule render update if needed and allowed
             if (e.UpdatedElements.Count > 0 && _lifecycleCoordinator.IsOperationAllowed(DocumentOperation.Rendering))
             {
-                // Schedule a render update for the document
                 if (_document?.DocumentElement != null)
                 {
-                    _logger.LogTrace("Scheduling render update after layout computation.");
+                     _logger.LogDebug("Scheduling Render update after LayoutUpdatedEvent.");
                     var update = VisualUpdate.CreateDocumentUpdate(UpdateType.Render, _document.DocumentElement);
                     _updateScheduler.ScheduleUpdate(update, UpdatePriority.Normal);
                 }
             }
         }
 
-        /// <summary>
-        /// Handles phase changed events.
-        /// </summary>
+        // OnUpdateProcessed, OnPhaseChanged, OnResourceError remain useful for logging/debugging
+        private void OnUpdateProcessed(UpdateProcessedEvent e)
+        {
+             if (_isDisposed || !_isInitialized) return;
+             string elementInfo = e.Update.Element != null ? $"{e.Update.Element.TagName}#{e.Update.Element.Id ?? "n/a"}" : "document";
+             if (e.Success)
+                 _logger.LogTrace("Update processed: {Type} for {Elem} ({Time:F2}ms)", e.Update.Type, elementInfo, e.ProcessingTimeMs);
+             else
+                 _logger.LogError(e.Error, "Error processing update {Type} for {Elem} ({Time:F2}ms)", e.Update.Type, elementInfo, e.ProcessingTimeMs);
+        }
+
         private void OnPhaseChanged(PhaseChangedEvent e)
         {
             if (_isDisposed) return;
+            _logger.LogDebug("Aware of lifecycle phase change: {Phase}, {ChangeType}", e.Phase, e.ChangeType);
+            // No longer trigger processing directly here; scheduler handles entry into "In..." phases.
+        }
 
-            _logger.LogDebug("Document lifecycle phase changed: {Phase}, {ChangeType}", e.Phase, e.ChangeType);
-
-            // Trigger processing when entering certain phases if needed
-            if (e.ChangeType == PhaseChangeType.Enter)
-            {
-                switch (e.Phase)
-                {
-                    case DocumentLifecyclePhase.InStyleRecalc:
-                        _logger.LogTrace("Entered InStyleRecalc phase, processing style updates.");
-                        _styleEngine.ProcessUpdatesAsync(); // Call directly in simplified model
-                        break;
-                    case DocumentLifecyclePhase.InLayout:
-                        _logger.LogTrace("Entered InLayout phase, processing layout updates.");
-                        _layoutEngine.ProcessUpdatesAsync(); // Call directly in simplified model
-                        break;
-                    case DocumentLifecyclePhase.InRender:
-                        _logger.LogTrace("Entered InRender phase (no direct action in LayoutEngineMain).");
-                        // Render system would handle this
-                        break;
-                }
-            }
+        private void OnResourceError(ResourceErrorEvent e)
+        {
+            if (_isDisposed) return;
+            _logger.LogWarning("Resource error for URL {Url}: {Error}", e.Url, e.Error.Message);
         }
 
         #endregion
 
-        /// <summary>
-        /// Disposes the LayoutEngineMain.
-        /// </summary>
+        // Dispose method remains mostly the same, calls async Shutdown
         public void Dispose()
         {
             if (_isDisposed) return;
@@ -593,10 +462,8 @@ namespace LayoutEngine
             {
                 if (_isInitialized)
                 {
-                    // Call async shutdown and wait synchronously (Dispose should not be async)
-                    ShutdownAsync().GetAwaiter().GetResult();
+                    ShutdownAsync().GetAwaiter().GetResult(); // Block on async shutdown in Dispose
                 }
-                // ... rest of Dispose ...
                 foreach (var subscription in _subscriptions) { _eventAggregator.Unsubscribe(subscription); }
                 _subscriptions.Clear();
                 _browsingContext?.Dispose();
