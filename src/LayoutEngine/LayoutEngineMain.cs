@@ -391,17 +391,6 @@ namespace LayoutEngine
                 else
                     _logger.LogWarning("Could not transition from InStyleRecalc to StyleClean.");
             }
-
-            // 2. Schedule Next Step (Layout) - This is the key change reverted back
-            if (e.Elements.Count > 0 && _lifecycleCoordinator.IsOperationAllowed(DocumentOperation.LayoutCalculation))
-            {
-                if (_document?.DocumentElement != null)
-                {
-                    _logger.LogDebug("Scheduling Layout update following StyleComputedEvent.");
-                    var update = VisualUpdate.CreateDocumentUpdate(UpdateType.Layout, _document.DocumentElement);
-                    _updateScheduler.ScheduleUpdate(update, UpdatePriority.Normal);
-                }
-            }
         }
 
         /// <summary>
