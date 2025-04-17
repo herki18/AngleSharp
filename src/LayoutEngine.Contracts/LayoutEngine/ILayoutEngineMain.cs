@@ -86,11 +86,6 @@ public interface ILayoutEngineMain : IDisposable
     ILayoutBox GetLayoutBox(IElement element);
 
     /// <summary>
-    /// Processes all pending updates in the style and layout systems.
-    /// </summary>
-    void ProcessUpdates();
-
-    /// <summary>
     /// Processes the full document by invalidating all styles and layout.
     /// </summary>
     void ProcessFullDocument();
@@ -125,4 +120,14 @@ public interface ILayoutEngineMain : IDisposable
     /// <param name="styleSheetId">The style sheet ID to remove.</param>
     /// <returns>True if the style sheet was removed, false otherwise.</returns>
     bool RemoveStyleSheet(string styleSheetId);
+
+    /// <summary>
+    /// Processes pending style, layout, and other updates within a given time budget.
+    /// This should be called repeatedly by the host application (e.g., game engine loop).
+    /// </summary>
+    /// <param name="timeBudgetMilliseconds">The maximum time allowed for processing in this call.</param>
+    void ProcessPendingUpdates(double timeBudgetMilliseconds);
+
+    System.Threading.Tasks.Task InitializeAsync(IDocument document);
+    System.Threading.Tasks.Task ShutdownAsync();
 }

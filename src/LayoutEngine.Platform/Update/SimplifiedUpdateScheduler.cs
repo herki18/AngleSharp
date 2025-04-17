@@ -65,33 +65,18 @@ public class SimplifiedUpdateScheduler : IUpdateScheduler, IDisposable
     /// <summary>
     /// Schedules a visual update with normal priority.
     /// </summary>
-    public void ScheduleUpdate(IVisualUpdate update)
-    {
-        ScheduleUpdate(update, UpdatePriority.Normal);
-    }
+    public void ScheduleUpdate(IVisualUpdate update) => ScheduleUpdate(update, UpdatePriority.Normal);
 
     /// <summary>
     /// Schedules a visual update with specified priority.
     /// </summary>
     public void ScheduleUpdate(IVisualUpdate update, UpdatePriority priority)
     {
-        if (_isDisposed)
-            throw new ObjectDisposedException(nameof(SimplifiedUpdateScheduler));
-
-        if (update == null)
-            throw new ArgumentNullException(nameof(update));
-
-        _logger.LogTrace("Scheduling update {UpdateId} ({UpdateType}) for element {ElementId} with priority {Priority}",
-            update.Id, update.Type, update.Element?.Id ?? "document", priority);
-
+        if (_isDisposed) throw new ObjectDisposedException(nameof(SimplifiedUpdateScheduler));
+        if (update == null) throw new ArgumentNullException(nameof(update));
+        _logger.LogTrace("Scheduling update {Id} ({Type}) Priority: {Priority}", update.Id, update.Type, priority);
         _updateQueues[priority].Enqueue(update);
-
-        // Process updates immediately if not paused
-        if (!_isPaused)
-        {
-            // Check if already processing to prevent re-entrancy if ProcessUpdate schedules more updates
-            ProcessUpdates();
-        }
+        // No immediate processing trigger here - host calls ProcessPendingUpdates
     }
 
     /// <summary>
@@ -146,7 +131,69 @@ public class SimplifiedUpdateScheduler : IUpdateScheduler, IDisposable
         {
             _isPaused = false;
             _logger.LogInformation("Update processing resumed.");
-            ProcessUpdates(); // Process queued updates
+        }
+    }
+
+    /// <summary>
+    /// Processes pending updates based on priority until the time budget is exceeded
+    /// or all queues are empty.
+    /// </summary>
+    /// <param name="timeBudgetMilliseconds">The maximum time allowed for processing in this call.</param>
+    public async Task ProcessUpdatesAsync(double timeBudgetMilliseconds) // Changed to async Task
+    {
+         if (_isDisposed || _isPaused) return;
+
+        // Simple lock to prevent re-entrancy in this single-threaded model
+         lock (_processingLock)
+         {
+             if (_isProcessing)
+             {
+                  _logger.LogTrace("Processing already in progress, skipping.");
+                 return;
+             }
+             _isProcessing = true;
+         }
+
+
+        _logger.LogTrace("Starting processing batch with budget: {Budget}ms. Pending: {PendingCount}", timeBudgetMilliseconds, GetPendingUpdateCount());
+        _performanceTimer.Restart(); // Start timing the whole batch
+        int updatesProcessedThisBatch = 0;
+
+        try
+        {
+            foreach (var priority in _priorityLevels)
+            {
+                var queue = _updateQueues[priority];
+                while (queue.Count > 0)
+                {
+                    // Check budget *before* processing the next item
+                    // Allow at least one item if budget > 0, otherwise respect budget strictly
+                    if (updatesProcessedThisBatch > 0 && _performanceTimer.Elapsed.TotalMilliseconds >= timeBudgetMilliseconds)
+                    {
+                        _logger.LogTrace("Time budget ({Budget}ms) exceeded after processing {Count} updates. Remaining will be processed later.", timeBudgetMilliseconds, updatesProcessedThisBatch);
+                        _performanceTimer.Stop();
+                        return; // Exit processing for this call
+                    }
+
+                    var update = queue.Dequeue();
+                    await ProcessSingleUpdateAsync(update); // Process one update (now async)
+                    updatesProcessedThisBatch++;
+                }
+            }
+             _performanceTimer.Stop(); // Stop timing after loop finishes naturally
+             _logger.LogTrace("Finished processing batch naturally. {Count} updates processed in {Duration:F2}ms.", updatesProcessedThisBatch, _performanceTimer.Elapsed.TotalMilliseconds);
+        }
+        catch(Exception ex) // Catch unexpected errors during the loop
+        {
+             _logger.LogError(ex, "Unhandled exception during ProcessUpdates loop.");
+              _performanceTimer.Stop();
+        }
+        finally
+        {
+             lock (_processingLock)
+             {
+                _isProcessing = false; // Release processing flag
+             }
         }
     }
 
@@ -154,36 +201,10 @@ public class SimplifiedUpdateScheduler : IUpdateScheduler, IDisposable
     /// Processes pending updates.
     /// </summary>
     /// <param name="maxUpdatesPerCall">Maximum number of updates to process per call. Default: 20.</param>
-    public void ProcessUpdates(int maxUpdatesPerCall = 20)
+    public void ProcessUpdates(double timeBudgetMilliseconds)
     {
-        if (_isDisposed || _isPaused)
-            return;
-
-        _logger.LogTrace("Processing up to {MaxUpdates} pending updates.", maxUpdatesPerCall);
-        int updatesProcessed = 0;
-
-        foreach (var priority in _priorityLevels)
-        {
-            var queue = _updateQueues[priority];
-            while (queue.Count > 0 && updatesProcessed < maxUpdatesPerCall)
-            {
-                var update = queue.Dequeue();
-                ProcessUpdate(update);
-                updatesProcessed++;
-            }
-            if (updatesProcessed >= maxUpdatesPerCall)
-            {
-                _logger.LogTrace("Reached max updates per call ({MaxUpdates}). Will process more later.", maxUpdatesPerCall);
-                // Schedule next processing batch if more updates exist
-                if (GetPendingUpdateCount() > 0 && !_isPaused) {
-                    // Simple immediate reschedule in simplified model
-                    // In a real scheduler, this might post to the next frame/event loop iteration
-                    ScheduleNextProcessing();
-                }
-                break;
-            }
-        }
-        _logger.LogTrace("Finished processing batch. {UpdatesProcessed} updates processed.", updatesProcessed);
+        // Blocks until async version completes - use with caution
+        ProcessUpdatesAsync(timeBudgetMilliseconds).GetAwaiter().GetResult();
     }
 
     private void ScheduleNextProcessing() {

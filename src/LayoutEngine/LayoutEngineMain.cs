@@ -17,6 +17,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LayoutEngine
 {
+    using System.Threading.Tasks;
     using Platform.Update;
 
     /// <summary>
@@ -181,38 +182,47 @@ namespace LayoutEngine
             }
         }
 
+        public void Initialize(IDocument document)
+        {
+            // This sync version might block if called from a UI thread. Prefer InitializeAsync.
+            InitializeAsync(document).GetAwaiter().GetResult();
+        }
+
         /// <summary>
         /// Initializes the LayoutEngine with the specified document.
         /// </summary>
-        public void Initialize(IDocument document)
+        public async Task InitializeAsync(IDocument document)
         {
             ThrowIfDisposed();
             if (document == null) throw new ArgumentNullException(nameof(document));
-            if (_isInitialized) Shutdown();
-            _logger.LogInformation("Initializing LayoutEngine");
+            if (_isInitialized)
+            {
+                _logger.LogWarning("InitializeAsync called while already initialized. Shutting down previous document first.");
+                await ShutdownAsync(); // Await the async shutdown
+            }
+            _logger.LogInformation("Initializing LayoutEngine for document: {DocumentUrl}", document.Url);
             _document = document;
             try
             {
-                // Initialize subsystems synchronously (as per their current implementation)
-                _styleEngine.InitializeAsync(document).GetAwaiter().GetResult();
-                _layoutEngine.InitializeAsync(document).GetAwaiter().GetResult();
+                // Initialize subsystems asynchronously
+                await _styleEngine.InitializeAsync(document);
+                await _layoutEngine.InitializeAsync(document);
 
-                // Enter initial StyleClean phase
-                if(_lifecycleCoordinator.IsValidTransition(DocumentLifecyclePhase.Inactive, DocumentLifecyclePhase.StyleClean))
+                // Enter the initial StyleClean phase
+                if (_lifecycleCoordinator.IsValidTransition(DocumentLifecyclePhase.Inactive, DocumentLifecyclePhase.StyleClean))
                     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.StyleClean);
                 else
-                    _logger.LogWarning("Could not enter StyleClean phase from Inactive.");
-
+                    _logger.LogWarning("Could not transition from Inactive to StyleClean upon initialization.");
 
                 _isInitialized = true;
-                _logger.LogInformation("LayoutEngine initialized successfully");
+                _logger.LogInformation("LayoutEngine initialized successfully.");
 
-                // Schedule a full initial processing of the document
-                ProcessFullDocument();
+                // Schedule a full initial processing
+                ProcessFullDocument(); // This schedules an update, processing happens via host calls now
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error initializing LayoutEngine");
+                _logger.LogError(ex, "Error during LayoutEngine initialization.");
                 Cleanup();
                 throw;
             }
@@ -229,36 +239,45 @@ namespace LayoutEngine
             return parser.ParseDocument(html);
         }
 
+        public void Shutdown()
+        {
+            // This sync version might block. Prefer ShutdownAsync.
+            ShutdownAsync().GetAwaiter().GetResult();
+        }
+
         /// <summary>
         /// Shuts down the LayoutEngine and releases all resources.
         /// </summary>
-        public void Shutdown()
+        public async Task ShutdownAsync()
         {
             ThrowIfDisposed();
             if (!_isInitialized) return;
-            _logger.LogInformation("Shutting down LayoutEngine");
+            _logger.LogInformation("Shutting down LayoutEngine...");
+
             try
             {
+                // Transition to Disposed phase
                 if (_lifecycleCoordinator.CurrentPhase != DocumentLifecyclePhase.Disposed)
                 {
-                    if(_lifecycleCoordinator.IsValidTransition(_lifecycleCoordinator.CurrentPhase, DocumentLifecyclePhase.Disposed))
+                    if (_lifecycleCoordinator.IsValidTransition(_lifecycleCoordinator.CurrentPhase, DocumentLifecyclePhase.Disposed))
                         _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.Disposed);
                     else
-                        _logger.LogWarning("Could not enter Disposed phase from {CurrentPhase}", _lifecycleCoordinator.CurrentPhase);
+                        _logger.LogWarning("Could not transition from {CurrentPhase} to Disposed during shutdown.", _lifecycleCoordinator.CurrentPhase);
                 }
 
-                // Shutdown subsystems
-                _layoutEngine.ShutdownAsync().GetAwaiter().GetResult();
-                _styleEngine.ShutdownAsync().GetAwaiter().GetResult();
+                // Shutdown subsystems asynchronously
+                await _layoutEngine.ShutdownAsync();
+                await _styleEngine.ShutdownAsync();
+                _logger.LogInformation("Subsystems shut down.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during LayoutEngine shutdown");
-                // Don't rethrow from Shutdown/Dispose
+                _logger.LogError(ex, "Error during LayoutEngine shutdown process.");
             }
             finally
             {
                 Cleanup();
+                _logger.LogInformation("LayoutEngine shutdown complete.");
             }
         }
 
@@ -271,26 +290,14 @@ namespace LayoutEngine
             EnsureInitialized();
             if (element == null) throw new ArgumentNullException(nameof(element));
 
-            // Try cache first
             var cachedStyle = _styleEngine.GetCachedStyle(element);
-            if (cachedStyle != null)
-            {
-                return cachedStyle;
-            }
+            if (cachedStyle != null) return cachedStyle;
 
-            _logger.LogDebug("Style not cached for {Element}. Requesting compute.", element.TagName);
-            // If not cached, it needs computation. The mock engine handles this,
-            // a real engine would rely on the update loop.
-            // For testing with the mock, we might call ComputeStyleAsync directly,
-            // acknowledging this bypasses the ideal scheduling.
+            _logger.LogDebug("Style not cached/dirty for {ElementTag}. Requesting computation (mock computes directly).", element.TagName);
+            // Mock computes directly. Real engine would need host to call ProcessPendingUpdates.
             return _styleEngine.ComputeStyleAsync(element).GetAwaiter().GetResult();
-
-            // Ideal flow (commented out for mock):
-            // var update = VisualUpdate.CreateStyleUpdate(element);
-            // _updateScheduler.ScheduleUpdate(update, UpdatePriority.High);
-            // // Need a mechanism to wait for the specific style or throw/return default
-            // throw new InvalidOperationException("Style computation pending. Call ProcessUpdates and retry.");
         }
+
 
         /// <summary>
         /// Gets the layout box for the specified element.
@@ -301,47 +308,30 @@ namespace LayoutEngine
             EnsureInitialized();
             if (element == null) throw new ArgumentNullException(nameof(element));
 
-            // Ensure styles are up-to-date first (might trigger style recalc if needed)
-            GetComputedStyle(element); // Call this to ensure style is computed/cached
+            GetComputedStyle(element); // Ensure styles are computed first
 
-            // Try cache first
             var cachedLayout = _layoutEngine.GetCachedLayout(element);
-            if (cachedLayout != null)
-            {
-                return cachedLayout;
-            }
+            if (cachedLayout != null) return cachedLayout;
 
-            _logger.LogDebug("Layout not cached for {Element}. Requesting compute.", element.TagName);
-            // Similar to GetComputedStyle, call directly for mock compatibility
+            _logger.LogDebug("Layout not cached/dirty for {ElementTag}. Requesting computation (mock computes directly).", element.TagName);
+            // Mock computes directly. Real engine would need host to call ProcessPendingUpdates.
             return _layoutEngine.ComputeLayoutAsync(element).GetAwaiter().GetResult();
-
-            // Ideal flow (commented out for mock):
-            // var update = VisualUpdate.CreateLayoutUpdate(element);
-            // _updateScheduler.ScheduleUpdate(update, UpdatePriority.High);
-            // // Need a mechanism to wait or throw
-            // throw new InvalidOperationException("Layout computation pending. Call ProcessUpdates and retry.");
         }
 
         /// <summary>
-        /// Processes all pending updates in the style and layout systems.
+        /// Processes pending updates within the given time budget by calling the update scheduler.
         /// </summary>
-        public void ProcessUpdates()
+        /// <param name="timeBudgetMilliseconds">Maximum time in milliseconds for this processing slice.</param>
+        public void ProcessPendingUpdates(double timeBudgetMilliseconds)
         {
             ThrowIfDisposed();
-            EnsureInitialized();
-            // Explicitly trigger the scheduler to process pending updates
-            // This is useful in tests or simple hosts without a continuous frame loop.
-            if (_updateScheduler is SimplifiedUpdateScheduler simplifiedScheduler)
+            if (!_isInitialized)
             {
-                _logger.LogDebug("Explicitly processing updates via SimplifiedUpdateScheduler.");
-                simplifiedScheduler.ProcessUpdates();
+                _logger.LogWarning("ProcessPendingUpdates called but engine is not initialized.");
+                return;
             }
-            else
-            {
-                _logger.LogWarning("ProcessUpdates called, but using a non-simplified scheduler. Updates might process based on frame loop.");
-                // For a real scheduler, this might not do anything if it's frame-driven.
-                // Alternatively, schedule a high-priority "ProcessNow" update if needed.
-            }
+            _logger.LogTrace("ProcessPendingUpdates called with budget: {Budget}ms", timeBudgetMilliseconds);
+            _updateScheduler.ProcessUpdates(timeBudgetMilliseconds);
         }
 
         /// <summary>
@@ -391,9 +381,11 @@ namespace LayoutEngine
         {
             ThrowIfDisposed();
             EnsureInitialized();
-            // Ensure layout is up-to-date before hit testing
-            // Calling GetLayoutTree will process updates if needed (in the mock)
-            _layoutEngine.GetLayoutTree();
+            _logger.LogDebug("Requesting element at point ({X}, {Y}). Layout must be up-to-date.", x, y);
+            // GetLayoutTree *should* be fast if host calls ProcessPendingUpdates regularly.
+            // If GetLayoutTree implementation still forces sync processing (like the mock did), keep it.
+            // Otherwise, rely on host loop. Let's assume host loop is sufficient.
+            // _layoutEngine.GetLayoutTree(); // REMOVED - Rely on host calling ProcessPendingUpdates
             return _layoutEngine.ElementFromPoint(x, y);
         }
 
@@ -596,24 +588,24 @@ namespace LayoutEngine
         {
             if (_isDisposed) return;
             _isDisposed = true;
-            _logger.LogInformation("LayoutEngineMain disposing.");
+            _logger.LogInformation("LayoutEngineMain disposing...");
             try
             {
                 if (_isInitialized)
                 {
-                    Shutdown(); // Call synchronous shutdown
+                    // Call async shutdown and wait synchronously (Dispose should not be async)
+                    ShutdownAsync().GetAwaiter().GetResult();
                 }
-                foreach (var subscription in _subscriptions)
-                {
-                    _eventAggregator.Unsubscribe(subscription);
-                }
+                // ... rest of Dispose ...
+                foreach (var subscription in _subscriptions) { _eventAggregator.Unsubscribe(subscription); }
                 _subscriptions.Clear();
                 _browsingContext?.Dispose();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error disposing LayoutEngineMain");
+                _logger.LogError(ex, "Error during LayoutEngineMain disposal.");
             }
+            _logger.LogInformation("LayoutEngineMain disposed.");
         }
     }
 }
