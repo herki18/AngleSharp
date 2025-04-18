@@ -51,7 +51,6 @@ public class LayoutEngineMain : ILayoutEngineMain // Interface updated previousl
         IDocumentLifecycleCoordinator lifecycleCoordinator,
         IThreadingCoordinator threadingCoordinator,
         IUpdateScheduler updateScheduler,
-        IFrameScheduler frameScheduler, // Keep param for now
         IStyleEngine styleEngine,
         ILayoutEngine layoutEngine,
         LayoutEngineConfiguration? configuration = null,
@@ -62,7 +61,6 @@ public class LayoutEngineMain : ILayoutEngineMain // Interface updated previousl
         _lifecycleCoordinator = lifecycleCoordinator ?? throw new ArgumentNullException(nameof(lifecycleCoordinator));
         _threadingCoordinator = threadingCoordinator ?? throw new ArgumentNullException(nameof(threadingCoordinator));
         _updateScheduler = updateScheduler ?? throw new ArgumentNullException(nameof(updateScheduler));
-        // _frameScheduler = frameScheduler; // Store if needed elsewhere, but not for main loop
         _styleEngine = styleEngine ?? throw new ArgumentNullException(nameof(styleEngine));
         _layoutEngine = layoutEngine ?? throw new ArgumentNullException(nameof(layoutEngine));
         _logger = logger ?? NullLogger<LayoutEngineMain>.Instance;
