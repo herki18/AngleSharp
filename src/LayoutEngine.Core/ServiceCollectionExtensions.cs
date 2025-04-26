@@ -3,6 +3,7 @@
 using AngleSharp;
 using Infrastructure.CacheManager.DI;
 using Infrastructure.EventAggregator.DI;
+using LayoutEngine.Contracts.Platform.Dom.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 
 public static class ServiceCollectionExtensions
@@ -25,6 +26,10 @@ public static class ServiceCollectionExtensions
 
         // Register the document manager
         services.AddSingleton<IDocumentManager, DocumentManager>();
+
+        // Register the DOM mutation tracker and its factory
+        services.AddSingleton<IMutationObserverFactory, MutationObserverFactory>();
+        services.AddSingleton<IDomMutationTracker, DomMutationTracker>();
 
         services.AddEventAggregatorModule();
         services.AddCacheManagerModule();

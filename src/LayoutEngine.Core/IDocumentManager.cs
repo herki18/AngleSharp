@@ -1,14 +1,14 @@
-﻿namespace LayoutEngine.Core;
+namespace LayoutEngine.Core;
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp;
 using AngleSharp.Dom;
 
-public interface IEngine
+public interface IDocumentManager
 {
     IBrowsingContext BrowsingContext { get; }
     IDocument? Document { get; }
-
-    Task<IDocument> OpenAsync(string html, CancellationToken cancellation = default);
+    Task<IDocument> OpenAsync(String html, CancellationToken cancellation = default);
 }
