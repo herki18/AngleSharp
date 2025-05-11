@@ -1,10 +1,13 @@
 ﻿namespace LayoutEngine.Core;
 
 using AngleSharp;
+using Contracts.Platform.Lifecycle;
 using Infrastructure.CacheManager.DI;
 using Infrastructure.EventAggregator.DI;
+using Layout;
 using LayoutEngine.Contracts.Platform.Dom.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
+using Style;
 
 public static class ServiceCollectionExtensions
 {
@@ -23,6 +26,13 @@ public static class ServiceCollectionExtensions
 
         // Register the engine
         services.AddSingleton<IEngine, Engine>();
+
+        // Lifecycle management
+        services.AddSingleton<IDocumentLifecycleCoordinator, DocumentLifecycleCoordinator>();
+
+        // Core systems
+        services.AddSingleton<IStyleSystem, StyleSystem>();
+        services.AddSingleton<ILayoutSystem, LayoutSystem>();
 
         // Register the document manager
         services.AddSingleton<IDocumentManager, DocumentManager>();

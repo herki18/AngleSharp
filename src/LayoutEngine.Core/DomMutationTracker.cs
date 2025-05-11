@@ -8,6 +8,7 @@ using Infrastructure.EventAggregator.API.Aggregation;
 using Infrastructure.EventAggregator.API.Events;
 using LayoutEngine.Contracts.Platform.Dom.Abstractions;
 using LayoutEngine.Contracts.Platform.Events;
+using LayoutInvalidatedEvent = Events.LayoutInvalidatedEvent;
 
 /// <summary>
 /// Implements DOM mutation tracking using AngleSharp's MutationObserver.
