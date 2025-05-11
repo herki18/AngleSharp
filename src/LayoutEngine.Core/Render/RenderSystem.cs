@@ -1,96 +1,122 @@
-﻿namespace LayoutEngine.Core.Render;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Dom;
-using Events;
 using Infrastructure.EventAggregator.API.Aggregation;
-using Layout;
+using LayoutEngine.Core.Events;
+using LayoutEngine.Core.Layout;
+
+namespace LayoutEngine.Core.Render;
 
 /// <summary>
-/// Default implementation of the render system
+/// Manages the rendering process by generating and executing render commands.
 /// </summary>
 public class RenderSystem : IRenderSystem
 {
     private readonly IEventAggregator _eventAggregator;
     private readonly HashSet<IElement> _elementsNeedingRender = new();
-    private readonly Dictionary<ILayoutFragment, string> _fragmentIdMap = new();
+    private readonly FragmentRegistry _fragmentRegistry = new();
     private IRenderer? _renderer;
 
-    /// <summary>
-    /// Initializes a new instance of the RenderSystem
-    /// </summary>
     public RenderSystem(IEventAggregator eventAggregator)
     {
         _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
-
-        // Subscribe to layout invalidation events
         _eventAggregator.Subscribe<LayoutInvalidatedEvent>(OnLayoutInvalidated);
     }
 
     /// <summary>
-    /// Processes a fragment tree and generates render commands
+    /// Processes a fragment tree and generates corresponding render commands.
     /// </summary>
     public IReadOnlyList<IRenderCommand> ProcessFragmentTree(IFragmentTree fragmentTree)
     {
         var commands = new List<IRenderCommand>();
         var processedIds = new HashSet<string>();
 
-        // Process the root fragment and all its descendants
-        ProcessFragment(fragmentTree.RootFragment, commands, processedIds);
+        // Process the root fragment and all its children recursively
+        ProcessFragmentHierarchy(fragmentTree.RootFragment, commands, processedIds);
 
-        // Clean up any fragments that are no longer in the tree
-        CleanupRemovedFragments(processedIds, commands);
+        // Handle cleanup of fragments that no longer exist
+        HandleRemovedFragments(processedIds, commands);
 
-        // Clear invalidated elements
+        // Clear invalidated state
         _elementsNeedingRender.Clear();
 
-        // If we have a renderer, execute the commands
+        // Execute commands if renderer is attached
         _renderer?.Execute(commands);
 
-        // Signal that rendering is complete
+        // Notify completion
         _eventAggregator.Publish(new RenderCompletedEvent());
 
         return commands;
     }
 
     /// <summary>
-    /// Processes a single fragment and generates render commands for it
+    /// Process a fragment and all its children to generate render commands.
     /// </summary>
-    private void ProcessFragment(ILayoutFragment fragment, List<IRenderCommand> commands, HashSet<string> processedIds)
+    private void ProcessFragmentHierarchy(
+        ILayoutFragment fragment,
+        List<IRenderCommand> commands,
+        HashSet<string> processedIds)
     {
-        // Get or create a unique ID for this fragment
-        var fragmentId = GetOrCreateFragmentId(fragment);
-        processedIds.Add(fragmentId);
+        // Register fragment and determine if it's new
+        var fragmentStatus = _fragmentRegistry.RegisterFragment(fragment);
+        processedIds.Add(fragmentStatus.Id);
 
-        // Determine what kind of element to create based on the fragment
-        string elementType = DetermineElementType(fragment);
+        // Generate appropriate commands based on fragment status
+        GenerateFragmentCommands(fragment, fragmentStatus, commands);
 
-        // Add create command if this is a new fragment
-        if (!_fragmentIdMap.ContainsKey(fragment))
-        {
-            commands.Add(new CreateElementCommand(fragment, elementType));
-        }
-
-        // Add layout command
-        commands.Add(new SetLayoutCommand(fragment, fragment.Bounds));
-
-        // Add visual property commands
-        foreach (var prop in GetVisualPropertyCommands(fragment))
-        {
-            commands.Add(prop);
-        }
-
-        // Process children
+        // Process all children recursively
         foreach (var child in fragment.Children)
         {
-            ProcessFragment(child, commands, processedIds);
+            ProcessFragmentHierarchy(child, commands, processedIds);
         }
     }
 
     /// <summary>
-    /// Determines the element type based on the fragment
+    /// Generate all commands needed for a specific fragment.
+    /// </summary>
+    private void GenerateFragmentCommands(
+        ILayoutFragment fragment,
+        FragmentStatus fragmentStatus,
+        List<IRenderCommand> commands)
+    {
+        // If this is a new fragment, create it
+        if (fragmentStatus.IsNew)
+        {
+            string elementType = DetermineElementType(fragment);
+            commands.Add(new CreateElementCommand(fragment, elementType));
+        }
+
+        // Always update layout
+        commands.Add(new SetLayoutCommand(fragment, fragment.Bounds));
+
+        // Add all visual property commands
+        foreach (var command in GenerateVisualPropertyCommands(fragment))
+        {
+            commands.Add(command);
+        }
+    }
+
+    /// <summary>
+    /// Generate commands to handle any removed fragments.
+    /// </summary>
+    private void HandleRemovedFragments(HashSet<string> processedIds, List<IRenderCommand> commands)
+    {
+        // Get IDs that were previously registered but not seen in this process
+        var removedIds = _fragmentRegistry.GetRemovedFragmentIds(processedIds);
+
+        // Clean up registry and generate delete commands if needed
+        foreach (var id in removedIds)
+        {
+            // If we have a renderer and want to generate deletion commands, we would do it here
+            // commands.Add(new DeleteElementCommand(id));
+
+            _fragmentRegistry.UnregisterFragmentById(id);
+        }
+    }
+
+    /// <summary>
+    /// Determine the type of element to create based on the fragment.
     /// </summary>
     private string DetermineElementType(ILayoutFragment fragment)
     {
@@ -99,7 +125,6 @@ public class RenderSystem : IRenderSystem
             return "container";
         }
 
-        // Determine element type based on tag name or display property
         switch (fragment.Element.TagName?.ToUpperInvariant())
         {
             case "DIV":
@@ -119,9 +144,9 @@ public class RenderSystem : IRenderSystem
     }
 
     /// <summary>
-    /// Generates visual property commands for a fragment
+    /// Generate commands for all visual properties of a fragment.
     /// </summary>
-    private IEnumerable<IRenderCommand> GetVisualPropertyCommands(ILayoutFragment fragment)
+    private IEnumerable<IRenderCommand> GenerateVisualPropertyCommands(ILayoutFragment fragment)
     {
         var commands = new List<IRenderCommand>();
         var props = fragment.VisualProperties;
@@ -157,7 +182,7 @@ public class RenderSystem : IRenderSystem
             commands.Add(new SetPropertyCommand(fragment, "borderLeftColor", props.BorderLeftColor));
         }
 
-        // Text properties
+        // Text and font properties
         commands.Add(new SetPropertyCommand(fragment, "color", props.Color));
         commands.Add(new SetPropertyCommand(fragment, "fontSize", props.FontSize));
 
@@ -171,7 +196,7 @@ public class RenderSystem : IRenderSystem
             commands.Add(new SetPropertyCommand(fragment, "fontWeight", props.FontWeight));
         }
 
-        // Text content for text nodes
+        // Text content
         if (fragment.Element?.NodeType == (int)NodeType.Text)
         {
             commands.Add(new SetPropertyCommand(fragment, "textContent", fragment.Element.TextContent));
@@ -181,43 +206,7 @@ public class RenderSystem : IRenderSystem
     }
 
     /// <summary>
-    /// Gets or creates a unique ID for a fragment
-    /// </summary>
-    private string GetOrCreateFragmentId(ILayoutFragment fragment)
-    {
-        if (_fragmentIdMap.TryGetValue(fragment, out var id))
-        {
-            return id;
-        }
-
-        id = Guid.NewGuid().ToString();
-        _fragmentIdMap[fragment] = id;
-        return id;
-    }
-
-    /// <summary>
-    /// Cleans up any fragments that are no longer in the tree
-    /// </summary>
-    private void CleanupRemovedFragments(HashSet<string> processedIds, List<IRenderCommand> commands)
-    {
-        var toRemove = new List<ILayoutFragment>();
-
-        foreach (var kvp in _fragmentIdMap)
-        {
-            if (!processedIds.Contains(kvp.Value))
-            {
-                toRemove.Add(kvp.Key);
-            }
-        }
-
-        foreach (var fragment in toRemove)
-        {
-            _fragmentIdMap.Remove(fragment);
-        }
-    }
-
-    /// <summary>
-    /// Marks an element as needing to be re-rendered
+    /// Invalidates rendering for the specified element.
     /// </summary>
     public void InvalidateRender(IElement element, bool recursive = true)
     {
@@ -237,7 +226,7 @@ public class RenderSystem : IRenderSystem
     }
 
     /// <summary>
-    /// Recursively marks an element and its descendants as needing to be re-rendered
+    /// Recursively invalidates rendering for an element and its children.
     /// </summary>
     private void InvalidateRenderRecursive(IElement element, List<IElement> affectedElements)
     {
@@ -251,7 +240,7 @@ public class RenderSystem : IRenderSystem
     }
 
     /// <summary>
-    /// Checks if an element needs to be re-rendered
+    /// Checks if an element needs rendering.
     /// </summary>
     public bool NeedsRender(IElement element)
     {
@@ -259,7 +248,7 @@ public class RenderSystem : IRenderSystem
     }
 
     /// <summary>
-    /// Attaches a renderer to the render system
+    /// Attaches a renderer to the render system.
     /// </summary>
     public void AttachRenderer(IRenderer renderer)
     {
@@ -267,7 +256,7 @@ public class RenderSystem : IRenderSystem
     }
 
     /// <summary>
-    /// Gets the attached renderer
+    /// Gets the attached renderer.
     /// </summary>
     public IRenderer GetRenderer()
     {
@@ -275,7 +264,7 @@ public class RenderSystem : IRenderSystem
     }
 
     /// <summary>
-    /// Handles layout invalidation events
+    /// Handles layout invalidation events by invalidating rendering.
     /// </summary>
     private void OnLayoutInvalidated(LayoutInvalidatedEvent @event)
     {
@@ -283,5 +272,89 @@ public class RenderSystem : IRenderSystem
         {
             InvalidateRender(element, false);
         }
+    }
+}
+
+/// <summary>
+/// Manages the registration and tracking of layout fragments.
+/// </summary>
+public class FragmentRegistry
+{
+    private readonly Dictionary<ILayoutFragment, string> _fragmentToIdMap = new();
+    private readonly Dictionary<string, ILayoutFragment> _idToFragmentMap = new();
+
+    /// <summary>
+    /// Registers a fragment and returns its status.
+    /// </summary>
+    public FragmentStatus RegisterFragment(ILayoutFragment fragment)
+    {
+        if (_fragmentToIdMap.TryGetValue(fragment, out var existingId))
+        {
+            return new FragmentStatus(existingId, false);
+        }
+
+        var newId = Guid.NewGuid().ToString();
+        _fragmentToIdMap[fragment] = newId;
+        _idToFragmentMap[newId] = fragment;
+
+        return new FragmentStatus(newId, true);
+    }
+
+    /// <summary>
+    /// Gets all fragment IDs that were previously registered but not in the provided set.
+    /// </summary>
+    public IEnumerable<string> GetRemovedFragmentIds(HashSet<string> currentFragmentIds)
+    {
+        return _idToFragmentMap.Keys.Where(id => !currentFragmentIds.Contains(id)).ToList();
+    }
+
+    /// <summary>
+    /// Unregisters a fragment by its ID.
+    /// </summary>
+    public void UnregisterFragmentById(string id)
+    {
+        if (_idToFragmentMap.TryGetValue(id, out var fragment))
+        {
+            _fragmentToIdMap.Remove(fragment);
+            _idToFragmentMap.Remove(id);
+        }
+    }
+
+    /// <summary>
+    /// Gets the ID for a fragment, if registered.
+    /// </summary>
+    public string? GetFragmentId(ILayoutFragment fragment)
+    {
+        return _fragmentToIdMap.TryGetValue(fragment, out var id) ? id : null;
+    }
+
+    /// <summary>
+    /// Gets the fragment for an ID, if registered.
+    /// </summary>
+    public ILayoutFragment? GetFragmentById(string id)
+    {
+        return _idToFragmentMap.TryGetValue(id, out var fragment) ? fragment : null;
+    }
+}
+
+/// <summary>
+/// Represents the status of a fragment after registration.
+/// </summary>
+public class FragmentStatus
+{
+    /// <summary>
+    /// The unique identifier for the fragment.
+    /// </summary>
+    public string Id { get; }
+
+    /// <summary>
+    /// Whether this is a newly registered fragment.
+    /// </summary>
+    public bool IsNew { get; }
+
+    public FragmentStatus(string id, bool isNew)
+    {
+        Id = id;
+        IsNew = isNew;
     }
 }
