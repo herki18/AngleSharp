@@ -51,28 +51,25 @@ public class StyleSystemTests
     }
 
     [Fact]
-    public void ComputeDocumentStyles_ComputesStylesForAllElements()
+    public void ComputeDocumentStyles_PublishesEventEachTimeItsCalled()
     {
         // Arrange
         var child1 = TestHelpers.CreateMockElement("div");
         var child2 = TestHelpers.CreateMockElement("span");
         var root = TestHelpers.CreateMockElement("html");
 
-        // Set up element hierarchy
         var children = new List<IElement> { child1, child2 };
-        var htmlCollection = Substitute.For<IHtmlCollection<IElement>>();
-        htmlCollection.GetEnumerator().Returns(children.GetEnumerator());
-        htmlCollection.Length.Returns(children.Count);
-        htmlCollection.ToList().Returns(children.ToList());
+        var htmlCollection = new TestHtmlCollection(children);
         root.Children.Returns(htmlCollection);
 
         var document = TestHelpers.CreateMockDocument(root);
 
-        // Act
+        // Act - call twice
+        _styleSystem.ComputeDocumentStyles(document);
         _styleSystem.ComputeDocumentStyles(document);
 
-        // Assert
-        _eventAggregator.Received(1).Publish(Arg.Is<StyleComputedEvent>(e =>
+        // Assert - expect 2 calls total
+        _eventAggregator.Received(2).Publish(Arg.Is<StyleComputedEvent>(e =>
             e.Elements.Count >= 3 &&
             e.ComputedStyles.Count >= 3));
     }
@@ -155,15 +152,14 @@ public class StyleSystemTests
         var child2 = TestHelpers.CreateMockElement("span");
         var parent = TestHelpers.CreateMockElement("div");
 
-        var children = new List<INode> { child1, child2 };
-        parent.Children.Returns(_ =>
-        {
-            var htmlCollection = Substitute.For<IHtmlCollection<IElement>>();
-            htmlCollection.GetEnumerator().Returns(children.OfType<IElement>().GetEnumerator());
-            htmlCollection.Length.Returns(children.Count);
-            htmlCollection.ToList().Returns(children.OfType<IElement>().ToList());
-            return htmlCollection;
-        });
+        // Create a list of elements (not nodes)
+        var childElements = new List<IElement> { child1, child2 };
+
+        // Use the TestHtmlCollection that worked in the previous test
+        var htmlCollection = new TestHtmlCollection(childElements);
+
+        // Set up the parent to return this collection
+        parent.Children.Returns(htmlCollection);
 
         // Act
         _styleSystem.InvalidateStyle(parent, true);

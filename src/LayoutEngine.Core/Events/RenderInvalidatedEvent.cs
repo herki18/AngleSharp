@@ -1,5 +1,8 @@
 namespace LayoutEngine.Core.Events;
 
+using System;
+using System.Collections.Generic;
+using AngleSharp.Dom;
 using Infrastructure.EventAggregator.API.Events;
 
 /// <summary>
@@ -7,17 +10,10 @@ using Infrastructure.EventAggregator.API.Events;
 /// </summary>
 public class RenderInvalidatedEvent : EventBase
 {
-    /// <summary>
-    /// Gets the fragment tree to render.
-    /// </summary>
-    public object? FragmentTree { get; }
+    public IReadOnlyList<IElement> Elements { get; }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="RenderInvalidatedEvent"/> class.
-    /// </summary>
-    /// <param name="fragmentTree">The fragment tree to render.</param>
-    public RenderInvalidatedEvent(object? fragmentTree)
+    public RenderInvalidatedEvent(IReadOnlyList<IElement> elements)
     {
-        FragmentTree = fragmentTree;
+        Elements = elements ?? throw new ArgumentNullException(nameof(elements));
     }
 }

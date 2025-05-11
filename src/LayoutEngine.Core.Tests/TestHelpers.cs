@@ -86,7 +86,8 @@ public static class TestHelpers
     public static IFragmentTree CreateMockFragmentTree(ILayoutFragment? rootFragment = null)
     {
         var fragmentTree = Substitute.For<IFragmentTree>();
-        fragmentTree.RootFragment.Returns(rootFragment ?? CreateMockLayoutFragment());
+        var root = rootFragment ?? CreateMockLayoutFragment();
+        fragmentTree.RootFragment.Returns(root);
         fragmentTree.FindFragmentsForElement(Arg.Any<IElement>()).Returns(new List<ILayoutFragment>());
         return fragmentTree;
     }

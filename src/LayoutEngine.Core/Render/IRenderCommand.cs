@@ -4,10 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Dom;
-using Contracts.Platform.Events;
+using Events;
 using Infrastructure.EventAggregator.API.Aggregation;
 using Layout;
-using LayoutInvalidatedEvent = Events.LayoutInvalidatedEvent;
 
 /// <summary>
 /// Interface for render commands - these are platform-agnostic
