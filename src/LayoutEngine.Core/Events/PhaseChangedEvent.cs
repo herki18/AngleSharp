@@ -1,6 +1,5 @@
 namespace LayoutEngine.Core.Events;
 
-using Contracts.Platform.Lifecycle;
 using Infrastructure.EventAggregator.API.Events;
 
 /// <summary>

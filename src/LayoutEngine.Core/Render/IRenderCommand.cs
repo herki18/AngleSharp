@@ -6,7 +6,6 @@ using System.Linq;
 using AngleSharp.Dom;
 using Contracts.Platform.Events;
 using Infrastructure.EventAggregator.API.Aggregation;
-using Infrastructure.EventAggregator.API.Events;
 using Layout;
 using LayoutInvalidatedEvent = Events.LayoutInvalidatedEvent;
 
@@ -414,25 +413,5 @@ public class RenderSystem : IRenderSystem
         {
             InvalidateRender(element, false);
         }
-    }
-}
-
-/// <summary>
-/// Event fired when rendering is completed
-/// </summary>
-public class RenderCompletedEvent : EventBase
-{
-}
-
-/// <summary>
-/// Event fired when rendering is invalidated
-/// </summary>
-public class RenderInvalidatedEvent : EventBase
-{
-    public IReadOnlyList<IElement> AffectedElements { get; }
-
-    public RenderInvalidatedEvent(IReadOnlyList<IElement> affectedElements)
-    {
-        AffectedElements = affectedElements ?? throw new ArgumentNullException(nameof(affectedElements));
     }
 }
