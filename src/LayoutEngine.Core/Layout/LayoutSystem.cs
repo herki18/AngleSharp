@@ -52,7 +52,7 @@ public class LayoutSystem : ILayoutSystem
         _elementsNeedingLayout.Clear();
 
         // Notify that fragment tree has been updated
-        _eventAggregator.Publish(new FragmentTreeUpdatedEvent());
+        _eventAggregator.Publish(new FragmentTreeUpdatedEvent(result));
 
         return result;
     }

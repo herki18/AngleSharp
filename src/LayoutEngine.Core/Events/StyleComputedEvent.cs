@@ -3,8 +3,8 @@ namespace LayoutEngine.Core.Events;
 using System;
 using System.Collections.Generic;
 using AngleSharp.Dom;
-using Contracts.StyleSystem;
 using Infrastructure.EventAggregator.API.Events;
+using Style;
 
 /// <summary>
 /// Event published when styles have been computed for elements.

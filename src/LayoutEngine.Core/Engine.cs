@@ -13,12 +13,17 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Render;
 using Style;
-using PhaseChangedEvent = Events.PhaseChangedEvent;
+using StyleInvalidatedEvent = Events.StyleInvalidatedEvent;
 
-public class Engine : IEngine
+public class Engine : IEngine, IDisposable
 {
+    // Properties from IEngine interface
     public IBrowsingContext BrowsingContext => _documentManager.BrowsingContext;
     public IDocument? Document => _documentManager.Document;
+    public IStyleSystem StyleSystem => _styleSystem;
+    public ILayoutSystem LayoutSystem => _layoutSystem;
+    public IRenderSystem RenderSystem => _renderSystem;
+    public DocumentLifecyclePhase CurrentPhase => _lifecycleCoordinator.CurrentPhase;
 
     private readonly ILogger<Engine> _logger;
     private readonly IDocumentManager _documentManager;
@@ -31,23 +36,31 @@ public class Engine : IEngine
     private readonly IDocumentLifecycleCoordinator _lifecycleCoordinator;
     private readonly IEventAggregator _eventAggregator;
 
+    private readonly LayoutEngineConfiguration _configuration;
+
+    private bool _isDisposed;
+
     public Engine(
         IDocumentManager documentManager,
         IDomMutationTracker mutationTracker,
-        StyleSystem styleSystem,
+        IStyleSystem styleSystem,
         ILayoutSystem layoutSystem,
+        IRenderSystem renderSystem,
         IDocumentLifecycleCoordinator lifecycleCoordinator,
-        IEventAggregator eventAggregator, IRenderSystem renderSystem, ILogger<Engine>? logger = null
+        IEventAggregator eventAggregator,
+        LayoutEngineConfiguration configuration,
+        ILogger<Engine>? logger = null
     )
     {
         _logger = logger ?? NullLogger<Engine>.Instance;
-        _documentManager = documentManager;
-        _mutationTracker = mutationTracker;
-        _styleSystem = styleSystem;
-        _layoutSystem = layoutSystem;
-        _lifecycleCoordinator = lifecycleCoordinator;
-        _eventAggregator = eventAggregator;
-        _renderSystem = renderSystem;
+        _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
+        _mutationTracker = mutationTracker ?? throw new ArgumentNullException(nameof(mutationTracker));
+        _styleSystem = styleSystem ?? throw new ArgumentNullException(nameof(styleSystem));
+        _layoutSystem = layoutSystem ?? throw new ArgumentNullException(nameof(layoutSystem));
+        _renderSystem = renderSystem ?? throw new ArgumentNullException(nameof(renderSystem));
+        _lifecycleCoordinator = lifecycleCoordinator ?? throw new ArgumentNullException(nameof(lifecycleCoordinator));
+        _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
         SubscribeToEvents();
     }
@@ -98,76 +111,92 @@ public class Engine : IEngine
         }
     }
 
+    /// <summary>
+    /// Processes the document lifecycle based on the current phase
+    /// </summary>
     private void ProcessLifecycle()
     {
         var currentPhase = _lifecycleCoordinator.CurrentPhase;
-
         switch (currentPhase)
         {
+            case DocumentLifecyclePhase.Inactive:
+                break;
             case DocumentLifecyclePhase.StyleDirty:
-                if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.StyleCalculation))
+                if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.StyleModification))
                 {
                     _logger.LogDebug("Entering style calculation phase");
                     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InStyleRecalc);
                     _styleSystem.ComputeDocumentStyles(Document!);
-                    // StyleComputedEvent will be published by the style system
-                    // which will cause the lifecycle coordinator to exit InStyleRecalc
                 }
-                break;
 
+                break;
             case DocumentLifecyclePhase.StyleClean:
                 if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.LayoutCalculation))
                 {
                     _logger.LogDebug("Entering layout calculation phase");
                     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InLayout);
                     _layoutSystem.PerformLayout(Document!);
-                    // FragmentTreeUpdatedEvent will be published by the layout system
-                    // which will cause the lifecycle coordinator to exit InLayout
                 }
-                break;
 
+                break;
             case DocumentLifecyclePhase.LayoutClean:
-                if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.RenderPreparation))
+                if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.LayoutReading))
                 {
                     _logger.LogDebug("Transitioning to render ready phase");
                     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.RenderReady);
                 }
-                break;
 
+                break;
             case DocumentLifecyclePhase.RenderReady:
                 if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.Rendering))
                 {
                     _logger.LogDebug("Entering rendering phase");
                     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InRender);
                     var fragmentTree = _layoutSystem.GetFragmentTree();
-                    // RenderCompletedEvent will be published by the render system
-                    // which will cause the lifecycle coordinator to exit InRender
+                    _renderSystem.ProcessFragmentTree(fragmentTree);
                 }
-                break;
 
+                break;
             case DocumentLifecyclePhase.RenderDirty:
                 if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.Rendering))
                 {
                     _logger.LogDebug("Rendering from dirty state");
                     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InRender);
                     var fragmentTree = _layoutSystem.GetFragmentTree();
+                    _renderSystem.ProcessFragmentTree(fragmentTree);
                 }
+
+                break;
+            case DocumentLifecyclePhase.InStyleRecalc:
+            case DocumentLifecyclePhase.InLayout:
+            case DocumentLifecyclePhase.InRender:
+                break;
+            case DocumentLifecyclePhase.LayoutDirty:
+                if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.LayoutCalculation))
+                {
+                    _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InLayout);
+                }
+
+                break;
+            case DocumentLifecyclePhase.Disposed:
+                _logger.LogWarning("Attempted to process lifecycle on a disposed document");
+                break;
+            default:
+                _logger.LogWarning($"Unknown document lifecycle phase: {currentPhase}");
                 break;
         }
     }
 
+    /// <summary>
+    /// Subscribes to relevant events for engine coordination
+    /// </summary>
     private void SubscribeToEvents()
     {
-        // This is just a sample of what event subscriptions might look like
-        // The actual implementation would depend on your event system
-
-        // When a phase change occurs, log it
         _eventAggregator.Subscribe<PhaseChangedEvent>(e =>
         {
             _logger.LogDebug($"Document lifecycle phase changed: {e.Phase} ({e.ChangeType})");
         });
 
-        // DOM mutations should invalidate styles
         _eventAggregator.Subscribe<DomAttributeChangedEvent>(e =>
         {
             if (e.AttributeName == "style" || e.AttributeName == "class")
@@ -178,6 +207,11 @@ public class Engine : IEngine
 
         _eventAggregator.Subscribe<DomNodeAddedEvent>(e =>
         {
+            if (e.Node is IElement addedElement)
+            {
+                _styleSystem.InvalidateStyle(addedElement);
+            }
+
             if (e.Parent is IElement parentElement)
             {
                 _styleSystem.InvalidateStyle(parentElement);
@@ -191,5 +225,29 @@ public class Engine : IEngine
                 _styleSystem.InvalidateStyle(parentElement);
             }
         });
+
+        // Subscribe to style invalidation events to cascade to layout
+        _eventAggregator.Subscribe<StyleInvalidatedEvent>(e =>
+        {
+            foreach (var element in e.Elements)
+            {
+                _layoutSystem.InvalidateLayout(element);
+            }
+        });
+    }
+
+    /// <summary>
+    /// Disposes the engine and releases any resources
+    /// </summary>
+    public void Dispose()
+    {
+        if (_isDisposed)
+            return;
+
+        _isDisposed = true;
+
+        // Dispose other resources
+        (_lifecycleCoordinator as IDisposable)?.Dispose();
+        (_mutationTracker as IDisposable)?.Dispose();
     }
 }

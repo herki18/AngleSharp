@@ -2,7 +2,6 @@ namespace LayoutEngine.Core.Events;
 
 using Contracts.Platform.Lifecycle;
 using Infrastructure.EventAggregator.API.Events;
-using DocumentLifecyclePhase = Core.DocumentLifecyclePhase;
 
 /// <summary>
 /// Event raised when a document lifecycle phase changes.

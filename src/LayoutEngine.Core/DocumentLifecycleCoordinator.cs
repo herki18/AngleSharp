@@ -2,12 +2,8 @@ namespace LayoutEngine.Core;
 
 using System;
 using System.Collections.Generic;
+using Events;
 using Infrastructure.EventAggregator.API.Aggregation;
-using LayoutEngine.Contracts.Platform.Events;
-using LayoutEngine.Contracts.StyleSystem;
-using FragmentTreeUpdatedEvent = Events.FragmentTreeUpdatedEvent;
-using LayoutInvalidatedEvent = Events.LayoutInvalidatedEvent;
-using StyleComputedEvent = Events.StyleComputedEvent;
 
 /// <summary>
 /// Coordinates the document lifecycle phases using a state machine.

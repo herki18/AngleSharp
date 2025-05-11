@@ -410,7 +410,7 @@ public class RenderSystem : IRenderSystem
     /// </summary>
     private void OnLayoutInvalidated(LayoutInvalidatedEvent @event)
     {
-        foreach (var element in @event.AffectedElements)
+        foreach (var element in @event.Elements)
         {
             InvalidateRender(element, false);
         }

@@ -4,10 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Dom;
-using Contracts.Platform.Events;
-using Contracts.StyleSystem;
+using Events;
 using Infrastructure.EventAggregator.API.Aggregation;
-using StyleComputedEvent = Events.StyleComputedEvent;
 
 // Implementation of the style system
 public class StyleSystem : IStyleSystem
@@ -56,7 +54,8 @@ public class StyleSystem : IStyleSystem
         }
 
         // Notify that style computation is complete
-        _eventAggregator.Publish(new StyleComputedEvent());
+        var elements = _computedStyles.Keys.ToList();
+        _eventAggregator.Publish(new StyleComputedEvent(elements, _computedStyles));
     }
 
     // Helper to compute styles recursively
