@@ -10,7 +10,7 @@ public class DomScrollEventBridge : IDisposable
 {
     private readonly ViewportManager _viewportManager;
     private readonly IEventAggregator _eventAggregator;
-    private readonly Dictionary<IElement, ScrollEventListener> _scrollListeners = new();
+    private readonly Dictionary<IElement?, ScrollEventListener> _scrollListeners = new();
     private bool _isDisposed;
 
     public DomScrollEventBridge(ViewportManager viewportManager, IEventAggregator eventAggregator)
@@ -74,7 +74,7 @@ public class DomScrollEventBridge : IDisposable
     }
 
     // Update a DOM element's scroll position using JavaScript
-    private void UpdateDomElementScroll(IElement element, Point scrollOffset)
+    private void UpdateDomElementScroll(IElement? element, Point scrollOffset)
     {
         // In a real implementation, this would use some JavaScript interop
         // to update the element.scrollLeft and element.scrollTop properties
@@ -84,7 +84,7 @@ public class DomScrollEventBridge : IDisposable
         //          $"document.querySelector('{selector}').scrollTop = {scrollOffset.Y};";
         // ExecuteJavaScript(js);
 
-        Console.WriteLine($"DOM scroll position updated: Element={element.TagName}, ScrollX={scrollOffset.X}, ScrollY={scrollOffset.Y}");
+        Console.WriteLine($"DOM scroll position updated: Element={element?.TagName}, ScrollX={scrollOffset.X}, ScrollY={scrollOffset.Y}");
     }
 
     // Detach all DOM listeners
@@ -113,7 +113,7 @@ public class DomScrollEventBridge : IDisposable
         private readonly Action<IElement, double, double> _callback;
         private bool _isDisposed;
 
-        public ScrollEventListener(IElement element, Action<IElement, double, double> callback)
+        public ScrollEventListener(IElement? element, Action<IElement, double, double> callback)
         {
             _element = element ?? throw new ArgumentNullException(nameof(element));
             _callback = callback ?? throw new ArgumentNullException(nameof(callback));

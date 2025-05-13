@@ -11,7 +11,7 @@ public class Viewport
     public string Id { get; }
 
     // Reference to DOM element (for sync purposes)
-    public IElement DomElement { get; }
+    public IElement? DomElement { get; }
 
     // Visible rectangle in the coordinate space of the parent viewport
     public Rect ViewportRect { get; set; }
@@ -39,7 +39,7 @@ public class Viewport
     public Viewport(string id, IElement? domElement)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
-        DomElement = domElement ?? throw new ArgumentNullException(nameof(domElement));
+        DomElement = domElement;
     }
 
     // Get absolute position in document space (accounting for parent scroll offsets)

@@ -4,7 +4,7 @@ public interface IVisualProperties
 {
     // Background color, texture, etc.
     string BackgroundColor { get; }
-    
+
     // Border properties
     float BorderTopWidth { get; }
     float BorderRightWidth { get; }
@@ -14,12 +14,13 @@ public interface IVisualProperties
     string BorderRightColor { get; }
     string BorderBottomColor { get; }
     string BorderLeftColor { get; }
-    
+
     // Text properties
     string Color { get; }
     string FontFamily { get; }
     float FontSize { get; }
     string FontWeight { get; }
-    
-    // Other visual properties...
+
+
+    int ZIndex { get; }
 }

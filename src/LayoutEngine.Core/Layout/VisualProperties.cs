@@ -15,4 +15,6 @@ public class VisualProperties : IVisualProperties
     public string FontFamily { get; set; } = "sans-serif";
     public float FontSize { get; set; } = 16;
     public string FontWeight { get; set; } = "normal";
+
+    public int ZIndex { get; set; } = 0;
 }
