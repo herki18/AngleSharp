@@ -1,25 +1,27 @@
-﻿// namespace LayoutEngine.Core.UnityMock;
-//
-// using System;
+﻿// using System;
 // using System.Collections.Generic;
-// using System.Net.Mime;
-// using System.Reflection.Emit;
-// using AngleSharp.Css.Dom;
-// using AngleSharp.Dom;
-// using Layout;
-// using Render;
+// using System.Numerics;
+// using Infrastructure.EventAggregator.API.Aggregation;
+// using LayoutEngine.Core.Layout;
+// using LayoutEngine.Core.Render;
+// using LayoutEngine.Core.Render.Commands;
+// using LayoutEngine.Core.Viewport;
 //
-// /// <summary>
-// /// Implementation of IRenderer that uses Unity UI Toolkit
-// /// </summary>
-// public class UnityRenderer : IRenderer
+// namespace LayoutEngine.Core.UnityMock;
+//
+// public class UnityViewportRenderer : IRenderer
 // {
 //     private readonly VisualElement _rootElement;
-//     private readonly Dictionary<ILayoutFragment, VisualElement> _fragmentToElement = new Dictionary<ILayoutFragment, VisualElement>();
+//     private readonly IEventAggregator _eventAggregator;
+//     private readonly Dictionary<ILayoutFragment, VisualElement> _fragmentToElement = new();
+//     private readonly Dictionary<string, ScrollView> _viewportScrollViews = new();
+//     private readonly Stack<VisualElement> _contentContainerStack = new();
 //
-//     public UnityRenderer(VisualElement rootElement)
+//     public UnityViewportRenderer(VisualElement rootElement, IEventAggregator eventAggregator)
 //     {
 //         _rootElement = rootElement ?? throw new ArgumentNullException(nameof(rootElement));
+//         _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+//         _contentContainerStack.Push(_rootElement);
 //     }
 //
 //     public void Execute(IReadOnlyList<IRenderCommand> commands)
@@ -30,11 +32,6 @@
 //         }
 //     }
 //
-//     public object GetRootElement()
-//     {
-//         return _rootElement;
-//     }
-//
 //     private void ExecuteCommand(IRenderCommand command)
 //     {
 //         switch (command.CommandType)
@@ -42,228 +39,125 @@
 //             case RenderCommandType.Create:
 //                 ExecuteCreateCommand(command as CreateElementCommand);
 //                 break;
-//
 //             case RenderCommandType.SetProperty:
 //                 ExecuteSetPropertyCommand(command as SetPropertyCommand);
 //                 break;
-//
 //             case RenderCommandType.SetLayout:
 //                 ExecuteSetLayoutCommand(command as SetLayoutCommand);
 //                 break;
-//
-//             case RenderCommandType.Delete:
-//                 // Implement deletion logic
+//             case RenderCommandType.CreateViewport:
+//                 ExecuteCreateViewportCommand(command as CreateViewportCommand);
 //                 break;
-//
-//             case RenderCommandType.SetChildren:
-//                 // Implement children updating logic
+//             case RenderCommandType.PopViewport:
+//                 ExecutePopViewportCommand(command as PopViewportCommand);
 //                 break;
-//
-//             default:
-//                 Debug.LogWarning($"Unsupported command type: {command.CommandType}");
+//             case RenderCommandType.SetScrollOffset:
+//                 ExecuteSetScrollOffsetCommand(command as SetScrollOffsetCommand);
 //                 break;
+//             // Handle other commands...
 //         }
 //     }
 //
-//     private void ExecuteCreateCommand(CreateElementCommand command)
+//     private void ExecuteCreateViewportCommand(CreateViewportCommand command)
 //     {
 //         if (command == null) return;
 //
-//         // Create the appropriate Unity UI Toolkit element based on the element type
-//         VisualElement element = command.ElementType switch
+//         var viewport = command.Viewport;
+//
+//         // Create a new scroll view for this viewport
+//         var scrollView = new ScrollView();
+//
+//         // Configure the scroll view based on viewport properties
+//         scrollView.style.width = new StyleLength(viewport.ViewportRect.Width);
+//         scrollView.style.height = new StyleLength(viewport.ViewportRect.Height);
+//         scrollView.style.position = Position.Absolute;
+//         scrollView.style.left = viewport.ViewportRect.X;
+//         scrollView.style.top = viewport.ViewportRect.Y;
+//
+//         // Set scroll directions
+//         scrollView.horizontalScrollerVisibility = viewport.CanScrollHorizontally
+//             ? ScrollerVisibility.Auto
+//             : ScrollerVisibility.Hidden;
+//
+//         scrollView.verticalScrollerVisibility = viewport.CanScrollVertically
+//             ? ScrollerVisibility.Auto
+//             : ScrollerVisibility.Hidden;
+//
+//         // Set content size
+//         var contentContainer = new VisualElement();
+//         contentContainer.style.width = viewport.ContentSize.Width;
+//         contentContainer.style.height = viewport.ContentSize.Height;
+//         contentContainer.style.position = Position.Relative;
+//
+//         scrollView.contentContainer.Add(contentContainer);
+//
+//         // Add to current content container
+//         var currentContainer = _contentContainerStack.Peek();
+//         currentContainer.Add(scrollView);
+//
+//         // Register for scroll events
+//         scrollView.RegisterCallback<ScrollEvent>(evt => {
+//             var viewportId = viewport.Id;
+//             var newOffset = new Point(scrollView.scrollOffset.x, scrollView.scrollOffset.y);
+//             _eventAggregator.Publish(new UnityScrollEvent(viewportId, newOffset));
+//         });
+//
+//         // Store for later reference
+//         _viewportScrollViews[viewport.Id] = scrollView;
+//         _contentContainerStack.Push(contentContainer);
+//
+//         // Apply optimizations
+//         OptimizeScrollView(scrollView);
+//     }
+//
+//     private void ExecutePopViewportCommand(PopViewportCommand command)
+//     {
+//         if (command == null || _contentContainerStack.Count <= 1) return;
+//
+//         _contentContainerStack.Pop();
+//     }
+//
+//     private void ExecuteSetScrollOffsetCommand(SetScrollOffsetCommand command)
+//     {
+//         if (command == null) return;
+//
+//         if (_viewportScrollViews.TryGetValue(command.ViewportId, out var scrollView))
 //         {
-//             "container" => new VisualElement(),
-//             "text" => new Label(),
-//             "image" => new MediaTypeNames.Image(),
-//             "input-text" => new TextField(),
-//             "button" => new Button(),
-//             _ => new VisualElement()
-//         };
+//             // Set scroll position with or without animation
+//             var viewport = _viewportManager.GetViewport(command.ViewportId);
+//             bool useSmooth = viewport?.UseSmoothScrolling ?? false;
 //
-//         // Set default styles
-//         element.style.position = Position.Absolute;
-//
-//         // Store the element for later use
-//         _fragmentToElement[command.Fragment] = element;
-//
-//         // Find the parent element
-//         VisualElement parent = _rootElement;
-//         if (command.Fragment.Element?.ParentElement != null)
-//         {
-//             var parentFragment = GetFragmentForElement(command.Fragment.Element.ParentElement);
-//             if (parentFragment != null && _fragmentToElement.TryGetValue(parentFragment, out var parentElement))
+//             if (useSmooth)
 //             {
-//                 parent = parentElement;
+//                 scrollView.smoothScrollTo(new Vector2(command.ScrollOffset.X, command.ScrollOffset.Y));
+//             }
+//             else
+//             {
+//                 scrollView.scrollOffset = new Vector2(command.ScrollOffset.X, command.ScrollOffset.Y);
 //             }
 //         }
-//
-//         // Add the element to the parent
-//         parent.Add(element);
 //     }
 //
-//     private void ExecuteSetPropertyCommand(SetPropertyCommand command)
+//     // Other execute methods (CreateElement, SetProperty, SetLayout) remain mostly the same
+//     // but may need adjustments to work with the content container stack
+//
+//     private void OptimizeScrollView(ScrollView scrollView)
 //     {
-//         if (command == null) return;
+//         // Enable virtualization for better performance with large content
+//         scrollView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
 //
-//         if (!_fragmentToElement.TryGetValue(command.Fragment, out var element))
-//         {
-//             return;
-//         }
+//         // Adjust scroll deceleration for more natural feel
+//         scrollView.scrollDecelerationRate = 0.135f;
 //
-//         switch (command.PropertyName)
-//         {
-//             case "backgroundColor":
-//                 element.style.backgroundColor = ParseColor(command.PropertyValue.ToString());
-//                 break;
+//         // Enable elastic scrolling
+//         scrollView.elasticity = 0.1f;
 //
-//             case "color":
-//                 if (element is Label label)
-//                 {
-//                     label.style.color = ParseColor(command.PropertyValue.ToString());
-//                 }
-//                 break;
-//
-//             case "fontSize":
-//                 if (element is TextElement textElement)
-//                 {
-//                     textElement.style.fontSize = ParseLength(command.PropertyValue);
-//                 }
-//                 break;
-//
-//             case "fontFamily":
-//                 if (element is TextElement textElement2)
-//                 {
-//                     // Handle font family - you might need to load fonts from Resources
-//                     var fontName = command.PropertyValue.ToString();
-//                     var font = Resources.Load<Font>(fontName);
-//                     if (font != null)
-//                     {
-//                         textElement2.style.unityFont = font;
-//                     }
-//                 }
-//                 break;
-//
-//             case "fontWeight":
-//                 if (element is TextElement textElement3)
-//                 {
-//                     var fontWeight = command.PropertyValue.ToString();
-//                     textElement3.style.unityFontStyleAndWeight = fontWeight == "bold"
-//                         ? FontStyle.Bold
-//                         : FontStyle.Normal;
-//                 }
-//                 break;
-//
-//             case "borderTopWidth":
-//                 element.style.borderTopWidth = ParseLength(command.PropertyValue);
-//                 break;
-//
-//             case "borderRightWidth":
-//                 element.style.borderRightWidth = ParseLength(command.PropertyValue);
-//                 break;
-//
-//             case "borderBottomWidth":
-//                 element.style.borderBottomWidth = ParseLength(command.PropertyValue);
-//                 break;
-//
-//             case "borderLeftWidth":
-//                 element.style.borderLeftWidth = ParseLength(command.PropertyValue);
-//                 break;
-//
-//             case "borderTopColor":
-//                 element.style.borderTopColor = ParseColor(command.PropertyValue.ToString());
-//                 break;
-//
-//             case "borderRightColor":
-//                 element.style.borderRightColor = ParseColor(command.PropertyValue.ToString());
-//                 break;
-//
-//             case "borderBottomColor":
-//                 element.style.borderBottomColor = ParseColor(command.PropertyValue.ToString());
-//                 break;
-//
-//             case "borderLeftColor":
-//                 element.style.borderLeftColor = ParseColor(command.PropertyValue.ToString());
-//                 break;
-//
-//             case "textContent":
-//                 if (element is Label label2)
-//                 {
-//                     label2.text = command.PropertyValue.ToString();
-//                 }
-//                 else if (element is Button button)
-//                 {
-//                     button.text = command.PropertyValue.ToString();
-//                 }
-//                 break;
-//         }
+//         // Configure scroll snapping if available
+//         // (UI Toolkit doesn't directly support this, would need custom implementation)
 //     }
 //
-//     private void ExecuteSetLayoutCommand(SetLayoutCommand command)
+//     public object GetRootElement()
 //     {
-//         if (command == null) return;
-//
-//         if (!_fragmentToElement.TryGetValue(command.Fragment, out var element))
-//         {
-//             return;
-//         }
-//
-//         // Set position and size
-//         element.style.left = command.Bounds.X;
-//         element.style.top = command.Bounds.Y;
-//         element.style.width = command.Bounds.Width;
-//         element.style.height = command.Bounds.Height;
-//     }
-//
-//     private ILayoutFragment GetFragmentForElement(IElement element)
-//     {
-//         foreach (var kvp in _fragmentToElement)
-//         {
-//             if (kvp.Key.Element == element)
-//             {
-//                 return kvp.Key;
-//             }
-//         }
-//
-//         return null;
-//     }
-//
-//     private Color ParseColor(string colorString)
-//     {
-//         if (ColorUtility.TryParseHtmlString(colorString, out var color))
-//         {
-//             return color;
-//         }
-//
-//         // Handle named colors
-//         return colorString.ToLowerInvariant() switch
-//         {
-//             "black" => Color.black,
-//             "white" => Color.white,
-//             "red" => Color.red,
-//             "green" => Color.green,
-//             "blue" => Color.blue,
-//             "transparent" => new Color(0, 0, 0, 0),
-//             _ => Color.black
-//         };
-//     }
-//
-//     private float ParseLength(object value)
-//     {
-//         if (value is float floatValue)
-//         {
-//             return floatValue;
-//         }
-//
-//         if (value is int intValue)
-//         {
-//             return intValue;
-//         }
-//
-//         if (float.TryParse(value.ToString(), out var result))
-//         {
-//             return result;
-//         }
-//
-//         return 0;
+//         return _rootElement;
 //     }
 // }

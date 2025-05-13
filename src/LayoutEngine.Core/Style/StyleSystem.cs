@@ -69,8 +69,8 @@ public class StyleSystem : IStyleSystem
         }
     }
 
-    // Other IStyleSystem methods
-    public IComputedStyle? GetComputedStyle(IElement element)
+    // TODO: Needs to return null if the element is not foun
+    public IComputedStyle GetComputedStyle(IElement element)
     {
         _computedStyles.TryGetValue(element, out var style);
         return style;

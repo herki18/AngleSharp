@@ -1,6 +1,7 @@
 ﻿namespace LayoutEngine.Core.Render;
 
 using System.Collections.Generic;
+using Commands;
 
 /// <summary>
 /// Interface for a renderer that can process render commands

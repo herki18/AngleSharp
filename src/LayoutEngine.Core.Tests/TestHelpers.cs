@@ -24,7 +24,8 @@ public static class TestHelpers
     public static IDocument CreateMockDocument(IElement? documentElement = null)
     {
         var document = Substitute.For<IDocument>();
-        document.DocumentElement.Returns(documentElement ?? CreateMockElement("html"));
+        var docElement = documentElement ?? CreateMockElement("html");
+        document.DocumentElement.Returns(docElement);
         return document;
     }
 

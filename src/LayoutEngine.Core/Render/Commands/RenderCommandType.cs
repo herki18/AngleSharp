@@ -1,4 +1,4 @@
-﻿namespace LayoutEngine.Core.Render;
+﻿namespace LayoutEngine.Core.Render.Commands;
 
 /// <summary>
 /// Enumeration of render command types
@@ -12,5 +12,8 @@ public enum RenderCommandType
     SetChildren,
     SetText,
     SetImage,
-    SetLayout
+    SetLayout,
+    CreateViewport,
+    PopViewport,
+    SetScrollOffset,
 }

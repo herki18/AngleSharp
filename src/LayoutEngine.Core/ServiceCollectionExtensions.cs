@@ -8,6 +8,7 @@ using Layout;
 using LayoutEngine.Contracts.Platform.Dom.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Style;
+using Viewport;
 
 public static class ServiceCollectionExtensions
 {
@@ -33,6 +34,9 @@ public static class ServiceCollectionExtensions
         // Core systems
         services.AddSingleton<IStyleSystem, StyleSystem>();
         services.AddSingleton<ILayoutSystem, LayoutSystem>();
+
+        services.AddSingleton<ViewportManager>();
+        services.AddSingleton<DomScrollEventBridge>();
 
         // Register the document manager
         services.AddSingleton<IDocumentManager, DocumentManager>();

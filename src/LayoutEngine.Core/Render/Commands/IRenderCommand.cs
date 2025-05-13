@@ -1,6 +1,6 @@
-﻿namespace LayoutEngine.Core.Render;
+﻿namespace LayoutEngine.Core.Render.Commands;
 
-using Layout;
+using LayoutEngine.Core.Layout;
 
 /// <summary>
 /// Interface for render commands - these are platform-agnostic

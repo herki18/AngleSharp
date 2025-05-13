@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Render;
 using Style;
+using Viewport;
 using StyleInvalidatedEvent = Events.StyleInvalidatedEvent;
 
 public class Engine : IEngine, IDisposable
@@ -33,6 +34,9 @@ public class Engine : IEngine, IDisposable
     private readonly ILayoutSystem _layoutSystem;
     private readonly IRenderSystem _renderSystem;
 
+    private ViewportManager _viewportManager;
+    private DomScrollEventBridge _domScrollEventBridge;
+
     private readonly IDocumentLifecycleCoordinator _lifecycleCoordinator;
     private readonly IEventAggregator _eventAggregator;
 
@@ -48,8 +52,7 @@ public class Engine : IEngine, IDisposable
         IRenderSystem renderSystem,
         IDocumentLifecycleCoordinator lifecycleCoordinator,
         IEventAggregator eventAggregator,
-        LayoutEngineConfiguration configuration,
-        ILogger<Engine>? logger = null
+        LayoutEngineConfiguration configuration, ViewportManager viewportManager, DomScrollEventBridge domScrollEventBridge, ILogger<Engine>? logger = null
     )
     {
         _logger = logger ?? NullLogger<Engine>.Instance;
@@ -61,6 +64,8 @@ public class Engine : IEngine, IDisposable
         _lifecycleCoordinator = lifecycleCoordinator ?? throw new ArgumentNullException(nameof(lifecycleCoordinator));
         _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        _viewportManager = viewportManager;
+        _domScrollEventBridge = domScrollEventBridge;
 
         SubscribeToEvents();
     }
@@ -87,6 +92,9 @@ public class Engine : IEngine, IDisposable
         _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InRender);
         var fragmentTree = _layoutSystem.GetFragmentTree();
         _renderSystem.ProcessFragmentTree(fragmentTree);
+
+        // Set up DOM event listeners for scrolling
+        _domScrollEventBridge.AttachDomListeners();
 
         _logger.LogInformation("Document initialized and rendered");
 

@@ -1,7 +1,7 @@
-﻿namespace LayoutEngine.Core.Render;
+﻿namespace LayoutEngine.Core.Render.Commands;
 
 using System;
-using Layout;
+using LayoutEngine.Core.Layout;
 
 /// <summary>
 /// Command for setting the layout properties of a visual element
