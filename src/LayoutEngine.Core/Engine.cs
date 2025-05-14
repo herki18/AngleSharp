@@ -70,37 +70,6 @@ public class Engine : IEngine, IDisposable
         SubscribeToEvents();
     }
 
-    // public async Task<IDocument> OpenAsync(string html, CancellationToken cancellation = default)
-    // {
-    //     var document = await _documentManager.OpenAsync(html, cancellation);
-    //
-    //     // Start tracking mutations for the loaded document
-    //     _mutationTracker.TrackDocument(document);
-    //
-    //     // Initialize the document lifecycle
-    //     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.StyleClean);
-    //
-    //     // Perform initial style calculation
-    //     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InStyleRecalc);
-    //     _styleSystem.ComputeDocumentStyles(document);
-    //
-    //     // Perform initial layout
-    //     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InLayout);
-    //     var layoutResult = _layoutSystem.PerformLayout(document);
-    //
-    //     // Perform initial render
-    //     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InRender);
-    //     var fragmentTree = _layoutSystem.GetFragmentTree();
-    //     _renderSystem.ProcessFragmentTree(fragmentTree);
-    //
-    //     // Set up DOM event listeners for scrolling
-    //     _domScrollEventBridge.AttachDomListeners();
-    //
-    //     _logger.LogInformation("Document initialized and rendered");
-    //
-    //     return document;
-    // }
-
     public async Task<IDocument> OpenAsync(string html, CancellationToken cancellation = default)
     {
         var document = await _documentManager.OpenAsync(html, cancellation);
@@ -127,6 +96,7 @@ public class Engine : IEngine, IDisposable
     {
         if (Document == null)
         {
+            _logger.LogError("Document is null, cannot update engine");
             return;
         }
 
@@ -147,6 +117,7 @@ public class Engine : IEngine, IDisposable
     private void ProcessLifecycle()
     {
         var currentPhase = _lifecycleCoordinator.CurrentPhase;
+        // _logger.LogDebug($"Processing lifecycle phase: {currentPhase}");
         switch (currentPhase)
         {
             case DocumentLifecyclePhase.Inactive:

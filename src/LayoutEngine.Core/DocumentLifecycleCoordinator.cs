@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using Events;
 using Infrastructure.EventAggregator.API.Aggregation;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Coordinates the document lifecycle phases using a state machine.
@@ -12,6 +13,7 @@ using Infrastructure.EventAggregator.API.Aggregation;
 public sealed class DocumentLifecycleCoordinator : IDocumentLifecycleCoordinator, IDisposable
 {
     private readonly IEventAggregator _eventAggregator;
+    private readonly ILogger<DocumentLifecycleCoordinator> _logger;
     private readonly DocumentLifecycleStateMachine _stateMachine;
     private readonly List<ISubscriptionToken> _subscriptions = new();
     private bool _isDisposed;
@@ -20,10 +22,12 @@ public sealed class DocumentLifecycleCoordinator : IDocumentLifecycleCoordinator
     /// Initializes a new instance of the <see cref="DocumentLifecycleCoordinator"/> class.
     /// </summary>
     /// <param name="eventAggregator">The event aggregator for publishing and subscribing to events.</param>
+    /// <param name="logger"></param>
     /// <exception cref="ArgumentNullException">Thrown if any required dependency is null.</exception>
-    public DocumentLifecycleCoordinator(IEventAggregator eventAggregator)
+    public DocumentLifecycleCoordinator(IEventAggregator eventAggregator, ILogger<DocumentLifecycleCoordinator> logger)
     {
         _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+        _logger = logger;
         _stateMachine = new DocumentLifecycleStateMachine(eventAggregator);
 
         // Subscribe to system events
@@ -129,6 +133,7 @@ public sealed class DocumentLifecycleCoordinator : IDocumentLifecycleCoordinator
     /// <param name="e">The event arguments.</param>
     private void OnStyleComputed(StyleComputedEvent e)
     {
+        _logger.LogDebug("[DocumentLifecycleCoordinator] StyleComputedEvent received");
         if (CurrentPhase == DocumentLifecyclePhase.InStyleRecalc)
         {
             ExitPhase(DocumentLifecyclePhase.InStyleRecalc);

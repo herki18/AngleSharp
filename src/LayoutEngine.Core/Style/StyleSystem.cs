@@ -6,6 +6,7 @@ using System.Linq;
 using AngleSharp.Dom;
 using Events;
 using Infrastructure.EventAggregator.API.Aggregation;
+using Microsoft.Extensions.Logging;
 
 // Implementation of the style system
 public class StyleSystem : IStyleSystem
@@ -13,10 +14,12 @@ public class StyleSystem : IStyleSystem
     private readonly Dictionary<IElement, IComputedStyle> _computedStyles = new();
     private readonly HashSet<IElement> _elementsNeedingStyleRecalc = new();
     private readonly IEventAggregator _eventAggregator;
+    private readonly ILogger<StyleSystem> _logger;
 
-    public StyleSystem(IEventAggregator eventAggregator)
+    public StyleSystem(IEventAggregator eventAggregator, ILogger<StyleSystem> logger)
     {
         _eventAggregator = eventAggregator;
+        _logger = logger;
     }
 
     // Computes style for a specific element
@@ -58,6 +61,7 @@ public class StyleSystem : IStyleSystem
     // Computes styles for the entire document
     public void ComputeDocumentStyles(IDocument document)
     {
+        _logger.LogDebug("[StyleSystem] Publishing StyleComputedEvent");
         // Process elements in document order (depth-first)
         if (document.DocumentElement != null)
         {

@@ -113,7 +113,7 @@ public sealed class DocumentLifecycleStateMachine : IDisposable
         _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
 
         // Create the state machine starting in Inactive state
-        _stateMachine = new StateMachine<DocumentLifecyclePhase, LifecycleTrigger>(DocumentLifecyclePhase.Inactive);
+        _stateMachine = new StateMachine<DocumentLifecyclePhase, LifecycleTrigger>(DocumentLifecyclePhase.Inactive, Stateless.FiringMode.Immediate);
 
         // Configure state machine with valid transitions and events
         ConfigureStateMachine();
