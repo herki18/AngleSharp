@@ -1,0 +1,323 @@
+This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
+The content has been processed where comments have been removed, empty lines have been removed.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+4. Repository files, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching these patterns are excluded: **/obj, **/bin, **/*.csproj
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Code comments have been removed from supported file types
+- Empty lines have been removed from all files
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+<additional_info>
+
+</additional_info>
+
+</file_summary>
+
+<directory_structure>
+HtmlRenderer.cs
+HtmlRenderer.cs.meta
+NewUXMLTemplate.uxml
+NewUXMLTemplate.uxml.meta
+UnityViewportRenderer.cs
+UnityViewportRenderer.cs.meta
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="HtmlRenderer.cs">
+using System;
+using System.Threading.Tasks;
+using LayoutEngine.Core;
+using LayoutEngine.Core.Render;
+using Microsoft.Extensions.DependencyInjection;
+using UnityEngine;
+using UnityEngine.UIElements;
+namespace V3.Code
+{
+    public class HtmlRenderer : MonoBehaviour
+    {
+        [SerializeField] private UIDocument uiDocument;
+        [SerializeField, TextArea(5, 20)] private string initialHtml =
+            "<div style=\"background-color: white; width: 100%; height: 100%;\"><div style=\"color: blue; font-size: 20px; margin: 20px;\">Hello, World!</div></div>";
+        private IServiceProvider _serviceProvider;
+        private IEngine _engine;
+        private UnityViewportRenderer _unityRenderer;
+        private void Awake()
+        {
+            if (uiDocument == null)
+            {
+                uiDocument = GetComponent<UIDocument>();
+                if (uiDocument == null)
+                {
+                    Debug.LogError("UIDocument is required for HtmlRenderer");
+                    return;
+                }
+            }
+            InitializeServices();
+        }
+        private void Start()
+        {
+            LoadHtml(initialHtml);
+        }
+        private void Update()
+        {
+            _engine?.Update(Time.deltaTime);
+            _unityRenderer?.PollScrollOffsets();
+        }
+        private void InitializeServices()
+        {
+            var services = new ServiceCollection();
+            var config = new LayoutEngineConfiguration
+            {
+                TargetFramesPerSecond = 60
+            };
+            services.AddLayoutEngine();
+            var rootElement = new VisualElement();
+            rootElement.style.width = new StyleLength(new Length(100, LengthUnit.Percent));
+            rootElement.style.height = new StyleLength(new Length(100, LengthUnit.Percent));
+            uiDocument.rootVisualElement.Add(rootElement);
+            _serviceProvider = services.BuildServiceProvider();
+            var eventAggregator = _serviceProvider.GetRequiredService<Infrastructure.EventAggregator.API.Aggregation.IEventAggregator>();
+            var viewportManager = _serviceProvider.GetRequiredService<LayoutEngine.Core.Viewport.ViewportManager>();
+            _unityRenderer = new UnityViewportRenderer(rootElement, eventAggregator, viewportManager);
+            services.AddSingleton<IRenderer>(_unityRenderer);
+            _serviceProvider = services.BuildServiceProvider();
+            _engine = _serviceProvider.GetRequiredService<IEngine>();
+            var renderSystem = _serviceProvider.GetRequiredService<IRenderSystem>();
+            renderSystem.AttachRenderer(_unityRenderer);
+        }
+        public async Task LoadHtml(string html)
+        {
+            if (_engine == null)
+            {
+                Debug.LogError("Engine not initialized");
+                return;
+            }
+            try
+            {
+                await _engine.OpenAsync(html);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error loading HTML: {ex}");
+            }
+        }
+        private void OnDestroy()
+        {
+            if (_engine is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+            if (_serviceProvider is IDisposable disposableProvider)
+            {
+                disposableProvider.Dispose();
+            }
+        }
+    }
+}
+</file>
+
+<file path="HtmlRenderer.cs.meta">
+fileFormatVersion: 2
+guid: 1b983e9ef3e68724ea8cdb4fb454c68f
+</file>
+
+<file path="NewUXMLTemplate.uxml">
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ui="UnityEngine.UIElements"
+    xmlns:uie="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd"
+>
+    
+</ui:UXML>
+</file>
+
+<file path="NewUXMLTemplate.uxml.meta">
+fileFormatVersion: 2
+guid: b723fe5db36368b44b8ed0a62801f2a9
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 13804, guid: 0000000000000000e000000000000000, type: 0}
+</file>
+
+<file path="UnityViewportRenderer.cs">
+using System;
+using System.Collections.Generic;
+using Infrastructure.EventAggregator.API.Aggregation;
+using LayoutEngine.Core.Layout;
+using LayoutEngine.Core.Render;
+using LayoutEngine.Core.Render.Commands;
+using LayoutEngine.Core.Viewport;
+using UnityEngine;
+using UnityEngine.UIElements;
+namespace V3.Code
+{
+    public class UnityViewportRenderer : IRenderer
+    {
+        private readonly VisualElement _rootElement;
+        private readonly IEventAggregator _eventAggregator;
+        private readonly ViewportManager _viewportManager;
+        private readonly Dictionary<ILayoutFragment, VisualElement> _fragmentToElement = new();
+        private readonly Dictionary<string, ScrollView> _viewportScrollViews = new();
+        private readonly Stack<VisualElement> _contentContainerStack = new();
+        private readonly Dictionary<string, Vector2> _lastScrollOffsets = new();
+        public UnityViewportRenderer(
+            VisualElement rootElement,
+            IEventAggregator eventAggregator,
+            ViewportManager viewportManager)
+        {
+            _rootElement = rootElement ?? throw new ArgumentNullException(nameof(rootElement));
+            _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+            _viewportManager = viewportManager ?? throw new ArgumentNullException(nameof(viewportManager));
+            _contentContainerStack.Push(_rootElement);
+        }
+        public void Execute(IReadOnlyList<IRenderCommand> commands)
+        {
+            foreach (var command in commands)
+            {
+                ExecuteCommand(command);
+            }
+        }
+        private void ExecuteCommand(IRenderCommand command)
+        {
+            switch (command.CommandType)
+            {
+                case RenderCommandType.Create:
+                    ExecuteCreateCommand(command as CreateElementCommand);
+                    break;
+                case RenderCommandType.SetProperty:
+                    ExecuteSetPropertyCommand(command as SetPropertyCommand);
+                    break;
+                case RenderCommandType.SetLayout:
+                    ExecuteSetLayoutCommand(command as SetLayoutCommand);
+                    break;
+                case RenderCommandType.CreateViewport:
+                    ExecuteCreateViewportCommand(command as CreateViewportCommand);
+                    break;
+                case RenderCommandType.PopViewport:
+                    ExecutePopViewportCommand(command as PopViewportCommand);
+                    break;
+                case RenderCommandType.SetScrollOffset:
+                    ExecuteSetScrollOffsetCommand(command as SetScrollOffsetCommand);
+                    break;
+            }
+        }
+        private void ExecuteCreateCommand(CreateElementCommand command)
+        {
+        }
+        private void ExecuteSetPropertyCommand(SetPropertyCommand command)
+        {
+        }
+        private void ExecuteSetLayoutCommand(SetLayoutCommand command)
+        {
+        }
+        private void ExecuteCreateViewportCommand(CreateViewportCommand command)
+        {
+            if (command == null) return;
+            var viewport = command.Viewport;
+            var scrollView = new ScrollView();
+            scrollView.style.width = new StyleLength(viewport.ViewportRect.Width);
+            scrollView.style.height = new StyleLength(viewport.ViewportRect.Height);
+            scrollView.style.position = Position.Absolute;
+            scrollView.style.left = viewport.ViewportRect.X;
+            scrollView.style.top = viewport.ViewportRect.Y;
+            scrollView.horizontalScrollerVisibility = viewport.CanScrollHorizontally
+                ? ScrollerVisibility.Auto
+                : ScrollerVisibility.Hidden;
+            scrollView.verticalScrollerVisibility = viewport.CanScrollVertically
+                ? ScrollerVisibility.Auto
+                : ScrollerVisibility.Hidden;
+            var contentContainer = new VisualElement();
+            contentContainer.style.width = viewport.ContentSize.Width;
+            contentContainer.style.height = viewport.ContentSize.Height;
+            contentContainer.style.position = Position.Relative;
+            scrollView.contentContainer.Add(contentContainer);
+            var currentContainer = _contentContainerStack.Peek();
+            currentContainer.Add(scrollView);
+            _viewportScrollViews[viewport.Id] = scrollView;
+            _contentContainerStack.Push(contentContainer);
+            _lastScrollOffsets[viewport.Id] = scrollView.scrollOffset;
+        }
+        private void ExecutePopViewportCommand(PopViewportCommand command)
+        {
+            if (command == null || _contentContainerStack.Count <= 1) return;
+            _contentContainerStack.Pop();
+        }
+        private void ExecuteSetScrollOffsetCommand(SetScrollOffsetCommand command)
+        {
+            if (command == null) return;
+            if (_viewportScrollViews.TryGetValue(command.ViewportId, out var scrollView))
+            {
+                scrollView.scrollOffset = new Vector2(command.ScrollOffset.X, command.ScrollOffset.Y);
+            }
+        }
+        public void PollScrollOffsets()
+        {
+            foreach (var kvp in _viewportScrollViews)
+            {
+                var viewportId = kvp.Key;
+                var scrollView = kvp.Value;
+                var currentOffset = scrollView.scrollOffset;
+                if (!_lastScrollOffsets.TryGetValue(viewportId, out var lastOffset) || lastOffset != currentOffset)
+                {
+                    _eventAggregator.Publish(new UnityScrollEvent(viewportId, new Point(currentOffset.x, currentOffset.y)));
+                    _lastScrollOffsets[viewportId] = currentOffset;
+                }
+            }
+        }
+        public object GetRootElement()
+        {
+            return _rootElement;
+        }
+    }
+}
+</file>
+
+<file path="UnityViewportRenderer.cs.meta">
+fileFormatVersion: 2
+guid: 6c42fe8a928e6f94691d9b24b7a37a02
+</file>
+
+</files>

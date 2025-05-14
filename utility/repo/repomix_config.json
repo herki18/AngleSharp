@@ -1,0 +1,58 @@
+{
+  "globalSettings": {
+    "outputBaseDirectory": "C:\\dev\\AI Sanitized Code\\Data",
+    "outputFileNamePattern": "{dirName}.txt",
+    "repomixOptions": {
+      "style": "xml",
+      "removeComments": true,
+      "removeEmptyLines": true,
+      "noFileSummary": false,
+      "noDirectoryStructure": false
+    },
+    "additionalIgnorePatterns": [
+      "**/obj",
+      "**/bin",
+      "**/*.csproj"
+    ]
+  },
+  "tasks": [
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Platform",
+      "skip": true
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Tests",
+      "skip": true
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine",
+      "skip": true
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Contracts",
+      "skip": true
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.StyleSystem",
+      "skip": true
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.LayoutSystem",
+      "skip": true
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Tests",
+      "skip": true
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core"
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core.Tests"
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\JSXEngine\\src\\JSXEngine4\\Assets\\V3\\Code",
+      "outputFileNamePattern": "Unity.V3.txt"
+    } 
+  ]
+}

@@ -1,0 +1,2910 @@
+This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
+The content has been processed where comments have been removed, empty lines have been removed.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+4. Repository files, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching these patterns are excluded: **/obj, **/bin, **/*.csproj
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Code comments have been removed from supported file types
+- Empty lines have been removed from all files
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+<additional_info>
+
+</additional_info>
+
+</file_summary>
+
+<directory_structure>
+DocumentLifecycleCoordinator.cs
+DocumentLifecyclePhase.cs
+DocumentLifecycleStateMachine.cs
+DocumentManager.cs
+DocumentOperation.cs
+DomMutationTracker.cs
+Engine.cs
+Events/DomAttributeChangedEvent.cs
+Events/DomNodeAddedEvent.cs
+Events/DomNodeRemovedEvent.cs
+Events/DomTextChangedEvent.cs
+Events/FragmentTreeUpdatedEvent.cs
+Events/LayoutInvalidatedEvent.cs
+Events/PhaseChangedEvent.cs
+Events/RenderCompletedEvent.cs
+Events/RenderInvalidatedEvent.cs
+Events/StyleComputedEvent.cs
+Events/StyleInvalidatedEvent.cs
+IDocumentLifecycleCoordinator.cs
+IDocumentManager.cs
+IEngine.cs
+Layout/FragmentTree.cs
+Layout/IFragmentTree.cs
+Layout/ILayoutFragment.cs
+Layout/ILayoutInfo.cs
+Layout/ILayoutResult.cs
+Layout/ILayoutSystem.cs
+Layout/IVisualProperties.cs
+Layout/LayoutFragment.cs
+Layout/LayoutInfo.cs
+Layout/LayoutResult.cs
+Layout/LayoutSystem.cs
+Layout/Point.cs
+Layout/Rect.cs
+Layout/Size.cs
+Layout/VisualProperties.cs
+LayoutEngineConfiguration.cs
+MutationObserverFactory.cs
+PhaseChangeType.cs
+Render/Commands/CreateElementCommand.cs
+Render/Commands/CreateViewportCommand.cs
+Render/Commands/IRenderCommand.cs
+Render/Commands/PopViewportCommand.cs
+Render/Commands/RenderCommandType.cs
+Render/Commands/SetLayoutCommand.cs
+Render/Commands/SetPropertyCommand.cs
+Render/Commands/SetScrollOffsetCommand.cs
+Render/FragmentRegistry.cs
+Render/FragmentStatus.cs
+Render/IRenderer.cs
+Render/IRenderSystem.cs
+Render/RenderCommandGenerator.cs
+Render/RenderSystem.cs
+Render/RenderTreeWalker.cs
+ServiceCollectionExtensions.cs
+Style/ComputedStyle.cs
+Style/IComputedStyle.cs
+Style/IStyleSystem.cs
+Style/StyleSystem.cs
+Viewport/DomScrollEvent.cs
+Viewport/DomScrollEventBridge.cs
+Viewport/ScrollAnchor.cs
+Viewport/Viewport.cs
+Viewport/ViewportManager.cs
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="DocumentLifecycleCoordinator.cs">
+namespace LayoutEngine.Core;
+using System;
+using System.Collections.Generic;
+using Events;
+using Infrastructure.EventAggregator.API.Aggregation;
+public sealed class DocumentLifecycleCoordinator : IDocumentLifecycleCoordinator, IDisposable
+{
+    private readonly IEventAggregator _eventAggregator;
+    private readonly DocumentLifecycleStateMachine _stateMachine;
+    private readonly List<ISubscriptionToken> _subscriptions = new();
+    private bool _isDisposed;
+    public DocumentLifecycleCoordinator(IEventAggregator eventAggregator)
+    {
+        _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+        _stateMachine = new DocumentLifecycleStateMachine(eventAggregator);
+        SubscribeToEvents();
+    }
+    public DocumentLifecyclePhase CurrentPhase => _stateMachine.CurrentPhase;
+    public void EnterPhase(DocumentLifecyclePhase phase)
+    {
+        ThrowIfDisposed();
+        bool success = _stateMachine.TryTransitionTo(phase);
+        if (!success)
+        {
+            throw new InvalidOperationException(
+                $"Invalid phase transition from {CurrentPhase} to {phase}");
+        }
+    }
+    public void ExitPhase(DocumentLifecyclePhase phase)
+    {
+        ThrowIfDisposed();
+        if (CurrentPhase != phase)
+        {
+            throw new InvalidOperationException(
+                $"Cannot exit phase {phase} when current phase is {CurrentPhase}");
+        }
+        bool success = _stateMachine.SignalPhaseExit();
+        if (!success)
+        {
+            throw new InvalidOperationException(
+                $"Failed to exit phase {phase}");
+        }
+    }
+    public bool IsValidTransition(DocumentLifecyclePhase fromPhase, DocumentLifecyclePhase toPhase)
+    {
+        if (fromPhase != CurrentPhase)
+            return false;
+        return _stateMachine.CanTransitionTo(toPhase);
+    }
+    public bool IsOperationAllowed(DocumentOperation operation)
+    {
+        return _stateMachine.IsOperationAllowed(operation);
+    }
+    private void SubscribeToEvents()
+    {
+        _subscriptions.Add(_eventAggregator.Subscribe<StyleComputedEvent>(OnStyleComputed));
+        _subscriptions.Add(_eventAggregator.Subscribe<FragmentTreeUpdatedEvent>(OnFragmentTreeUpdated));
+        _subscriptions.Add(_eventAggregator.Subscribe<RenderCompletedEvent>(OnRenderCompleted));
+        _subscriptions.Add(_eventAggregator.Subscribe<StyleInvalidatedEvent>(OnStyleInvalidated));
+        _subscriptions.Add(_eventAggregator.Subscribe<LayoutInvalidatedEvent>(OnLayoutInvalidated));
+        _subscriptions.Add(_eventAggregator.Subscribe<RenderInvalidatedEvent>(OnRenderInvalidated));
+    }
+    private void OnStyleComputed(StyleComputedEvent e)
+    {
+        if (CurrentPhase == DocumentLifecyclePhase.InStyleRecalc)
+        {
+            ExitPhase(DocumentLifecyclePhase.InStyleRecalc);
+        }
+    }
+    private void OnFragmentTreeUpdated(FragmentTreeUpdatedEvent e)
+    {
+        if (CurrentPhase == DocumentLifecyclePhase.InLayout)
+        {
+            ExitPhase(DocumentLifecyclePhase.InLayout);
+        }
+    }
+    private void OnRenderCompleted(RenderCompletedEvent e)
+    {
+        if (CurrentPhase == DocumentLifecyclePhase.InRender)
+        {
+            ExitPhase(DocumentLifecyclePhase.InRender);
+        }
+    }
+    private void OnStyleInvalidated(StyleInvalidatedEvent e)
+    {
+        if (CurrentPhase == DocumentLifecyclePhase.StyleClean)
+        {
+            EnterPhase(DocumentLifecyclePhase.InStyleRecalc);
+        }
+    }
+    private void OnLayoutInvalidated(LayoutInvalidatedEvent e)
+    {
+        if (CurrentPhase == DocumentLifecyclePhase.LayoutClean)
+        {
+            EnterPhase(DocumentLifecyclePhase.InLayout);
+        }
+    }
+    private void OnRenderInvalidated(RenderInvalidatedEvent e)
+    {
+        if (CurrentPhase == DocumentLifecyclePhase.RenderReady)
+        {
+            EnterPhase(DocumentLifecyclePhase.InRender);
+        }
+    }
+    private void ThrowIfDisposed()
+    {
+        if (_isDisposed)
+        {
+            throw new ObjectDisposedException(nameof(DocumentLifecycleCoordinator));
+        }
+    }
+    public void Dispose()
+    {
+        if (_isDisposed)
+            return;
+        _isDisposed = true;
+        foreach (var subscription in _subscriptions)
+        {
+            _eventAggregator.Unsubscribe(subscription);
+        }
+        _subscriptions.Clear();
+        _stateMachine.Dispose();
+    }
+}
+</file>
+
+<file path="DocumentLifecyclePhase.cs">
+namespace LayoutEngine.Core;
+public enum DocumentLifecyclePhase
+{
+    Inactive,
+    StyleClean,
+    InStyleRecalc,
+    StyleDirty,
+    LayoutClean,
+    InLayout,
+    LayoutDirty,
+    RenderReady,
+    InRender,
+    RenderDirty,
+    Disposed,
+    Unknown
+}
+</file>
+
+<file path="DocumentLifecycleStateMachine.cs">
+namespace LayoutEngine.Core;
+using System;
+using System.Collections.Generic;
+using Infrastructure.EventAggregator.API.Aggregation;
+using Infrastructure.EventAggregator.API.Events;
+using LayoutEngine.Contracts.Platform.Events;
+using LayoutEngine.Contracts.Platform.Lifecycle;
+using Platform.Lifecycle;
+using Stateless;
+using PhaseChangedEvent = Events.PhaseChangedEvent;
+public sealed class DocumentLifecycleStateMachine : IDisposable
+{
+    private readonly StateMachine<DocumentLifecyclePhase, LifecycleTrigger> _stateMachine;
+    private readonly IEventAggregator _eventAggregator;
+    private static readonly Dictionary<DocumentLifecyclePhase, HashSet<DocumentOperation>> AllowedOperations = new()
+    {
+        [DocumentLifecyclePhase.Inactive] = new HashSet<DocumentOperation>
+        {
+            DocumentOperation.DomReading,
+            DocumentOperation.DomModification
+        },
+        [DocumentLifecyclePhase.StyleClean] = new HashSet<DocumentOperation>
+        {
+            DocumentOperation.StyleReading,
+            DocumentOperation.StyleModification,
+            DocumentOperation.DomReading,
+            DocumentOperation.DomModification
+        },
+        [DocumentLifecyclePhase.InStyleRecalc] = new HashSet<DocumentOperation>
+        {
+            DocumentOperation.DomReading
+        },
+        [DocumentLifecyclePhase.StyleDirty] = new HashSet<DocumentOperation>
+        {
+            DocumentOperation.StyleModification,
+            DocumentOperation.DomReading
+        },
+        [DocumentLifecyclePhase.LayoutClean] = new HashSet<DocumentOperation>
+        {
+            DocumentOperation.StyleReading,
+            DocumentOperation.LayoutReading,
+            DocumentOperation.DomReading
+        },
+        [DocumentLifecyclePhase.InLayout] = new HashSet<DocumentOperation>
+        {
+            DocumentOperation.StyleReading,
+            DocumentOperation.LayoutCalculation,
+            DocumentOperation.DomReading
+        },
+        [DocumentLifecyclePhase.LayoutDirty] = new HashSet<DocumentOperation>
+        {
+            DocumentOperation.StyleReading,
+            DocumentOperation.LayoutCalculation,
+            DocumentOperation.DomReading
+        },
+        [DocumentLifecyclePhase.RenderReady] = new HashSet<DocumentOperation>
+        {
+            DocumentOperation.StyleReading,
+            DocumentOperation.LayoutReading,
+            DocumentOperation.RenderReading,
+            DocumentOperation.DomReading
+        },
+        [DocumentLifecyclePhase.InRender] = new HashSet<DocumentOperation>
+        {
+            DocumentOperation.StyleReading,
+            DocumentOperation.LayoutReading,
+            DocumentOperation.RenderReading,
+            DocumentOperation.Rendering,
+            DocumentOperation.DomReading
+        },
+        [DocumentLifecyclePhase.RenderDirty] = new HashSet<DocumentOperation>
+        {
+            DocumentOperation.StyleReading,
+            DocumentOperation.LayoutReading,
+            DocumentOperation.RenderReading,
+            DocumentOperation.Rendering,
+            DocumentOperation.DomReading
+        },
+        [DocumentLifecyclePhase.Disposed] = new HashSet<DocumentOperation>()
+    };
+    private static readonly Dictionary<LifecycleTrigger, LifecycleTrigger> ExitToNextTrigger = new()
+    {
+        [LifecycleTrigger.ExitInStyleRecalc] = LifecycleTrigger.StyleChanged,
+        [LifecycleTrigger.ExitStyleDirty] = LifecycleTrigger.StyleComplete,
+        [LifecycleTrigger.ExitInLayout] = LifecycleTrigger.LayoutChanged,
+        [LifecycleTrigger.ExitLayoutDirty] = LifecycleTrigger.LayoutComplete,
+        [LifecycleTrigger.ExitInRender] = LifecycleTrigger.RenderChanged,
+        [LifecycleTrigger.ExitRenderDirty] = LifecycleTrigger.RenderComplete
+    };
+    private bool _isDisposed;
+    public DocumentLifecycleStateMachine(IEventAggregator eventAggregator)
+    {
+        _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+        _stateMachine = new StateMachine<DocumentLifecyclePhase, LifecycleTrigger>(DocumentLifecyclePhase.Inactive);
+        ConfigureStateMachine();
+    }
+    public DocumentLifecyclePhase CurrentPhase => _stateMachine.State;
+    public bool CanTransitionTo(DocumentLifecyclePhase targetState)
+    {
+        return _stateMachine.CanFire(GetTriggerForTargetState(CurrentPhase, targetState));
+    }
+    public bool TryTransitionTo(DocumentLifecyclePhase targetState)
+    {
+        ThrowIfDisposed();
+        var trigger = GetTriggerForTargetState(CurrentPhase, targetState);
+        if (!_stateMachine.CanFire(trigger))
+        {
+            return false;
+        }
+        _stateMachine.Fire(trigger);
+        return true;
+    }
+    public bool SignalPhaseExit()
+    {
+        ThrowIfDisposed();
+        var exitTrigger = GetExitTriggerForState(CurrentPhase);
+        if (exitTrigger == null || !_stateMachine.CanFire(exitTrigger.Value))
+        {
+            return false;
+        }
+        _stateMachine.Fire(exitTrigger.Value);
+        return true;
+    }
+    public bool IsOperationAllowed(DocumentOperation operation)
+    {
+        return AllowedOperations.TryGetValue(CurrentPhase, out var allowedOps) &&
+               allowedOps.Contains(operation);
+    }
+    private void ConfigureStateMachine()
+    {
+        _stateMachine.Configure(DocumentLifecyclePhase.Inactive)
+            .Permit(LifecycleTrigger.EnterStyleClean, DocumentLifecyclePhase.StyleClean)
+            .Permit(LifecycleTrigger.Dispose, DocumentLifecyclePhase.Disposed)
+            .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.Inactive, PhaseChangeType.Enter));
+        _stateMachine.Configure(DocumentLifecyclePhase.StyleClean)
+            .Permit(LifecycleTrigger.BeginStyleCalculation, DocumentLifecyclePhase.InStyleRecalc)
+            .Permit(LifecycleTrigger.EnterLayoutClean, DocumentLifecyclePhase.LayoutClean)
+            .Permit(LifecycleTrigger.Dispose, DocumentLifecyclePhase.Disposed)
+            .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.StyleClean, PhaseChangeType.Enter))
+            .OnExit(() => PublishPhaseEvent(DocumentLifecyclePhase.StyleClean, PhaseChangeType.Exit));
+        _stateMachine.Configure(DocumentLifecyclePhase.InStyleRecalc)
+            .Permit(LifecycleTrigger.StyleChanged, DocumentLifecyclePhase.StyleDirty)
+            .Permit(LifecycleTrigger.NoStyleChanges, DocumentLifecyclePhase.StyleClean)
+            .Permit(LifecycleTrigger.ExitInStyleRecalc, DocumentLifecyclePhase.StyleDirty)
+            .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.InStyleRecalc, PhaseChangeType.Enter))
+            .OnExit(() => PublishPhaseEvent(DocumentLifecyclePhase.InStyleRecalc, PhaseChangeType.Exit));
+        _stateMachine.Configure(DocumentLifecyclePhase.StyleDirty)
+            .Permit(LifecycleTrigger.StyleComplete, DocumentLifecyclePhase.StyleClean)
+            .Permit(LifecycleTrigger.ExitStyleDirty, DocumentLifecyclePhase.StyleClean)
+            .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.StyleDirty, PhaseChangeType.Enter))
+            .OnExit(() => PublishPhaseEvent(DocumentLifecyclePhase.StyleDirty, PhaseChangeType.Exit));
+        _stateMachine.Configure(DocumentLifecyclePhase.LayoutClean)
+            .Permit(LifecycleTrigger.BeginLayoutCalculation, DocumentLifecyclePhase.InLayout)
+            .Permit(LifecycleTrigger.EnterRenderReady, DocumentLifecyclePhase.RenderReady)
+            .Permit(LifecycleTrigger.Dispose, DocumentLifecyclePhase.Disposed)
+            .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.LayoutClean, PhaseChangeType.Enter))
+            .OnExit(() => PublishPhaseEvent(DocumentLifecyclePhase.LayoutClean, PhaseChangeType.Exit));
+        _stateMachine.Configure(DocumentLifecyclePhase.InLayout)
+            .Permit(LifecycleTrigger.LayoutChanged, DocumentLifecyclePhase.LayoutDirty)
+            .Permit(LifecycleTrigger.NoLayoutChanges, DocumentLifecyclePhase.LayoutClean)
+            .Permit(LifecycleTrigger.ExitInLayout, DocumentLifecyclePhase.LayoutDirty)
+            .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.InLayout, PhaseChangeType.Enter))
+            .OnExit(() => PublishPhaseEvent(DocumentLifecyclePhase.InLayout, PhaseChangeType.Exit));
+        _stateMachine.Configure(DocumentLifecyclePhase.LayoutDirty)
+            .Permit(LifecycleTrigger.LayoutComplete, DocumentLifecyclePhase.LayoutClean)
+            .Permit(LifecycleTrigger.ExitLayoutDirty, DocumentLifecyclePhase.LayoutClean)
+            .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.LayoutDirty, PhaseChangeType.Enter))
+            .OnExit(() => PublishPhaseEvent(DocumentLifecyclePhase.LayoutDirty, PhaseChangeType.Exit));
+        _stateMachine.Configure(DocumentLifecyclePhase.RenderReady)
+            .Permit(LifecycleTrigger.BeginRendering, DocumentLifecyclePhase.InRender)
+            .Permit(LifecycleTrigger.NextFrame, DocumentLifecyclePhase.StyleClean)
+            .Permit(LifecycleTrigger.Dispose, DocumentLifecyclePhase.Disposed)
+            .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.RenderReady, PhaseChangeType.Enter))
+            .OnExit(() => PublishPhaseEvent(DocumentLifecyclePhase.RenderReady, PhaseChangeType.Exit));
+        _stateMachine.Configure(DocumentLifecyclePhase.InRender)
+            .Permit(LifecycleTrigger.RenderChanged, DocumentLifecyclePhase.RenderDirty)
+            .Permit(LifecycleTrigger.NoRenderChanges, DocumentLifecyclePhase.RenderReady)
+            .Permit(LifecycleTrigger.ExitInRender, DocumentLifecyclePhase.RenderDirty)
+            .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.InRender, PhaseChangeType.Enter))
+            .OnExit(() => PublishPhaseEvent(DocumentLifecyclePhase.InRender, PhaseChangeType.Exit));
+        _stateMachine.Configure(DocumentLifecyclePhase.RenderDirty)
+            .Permit(LifecycleTrigger.RenderComplete, DocumentLifecyclePhase.RenderReady)
+            .Permit(LifecycleTrigger.ExitRenderDirty, DocumentLifecyclePhase.RenderReady)
+            .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.RenderDirty, PhaseChangeType.Enter))
+            .OnExit(() => PublishPhaseEvent(DocumentLifecyclePhase.RenderDirty, PhaseChangeType.Exit));
+        _stateMachine.Configure(DocumentLifecyclePhase.Disposed)
+            .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.Disposed, PhaseChangeType.Enter));
+    }
+    private void PublishPhaseEvent(DocumentLifecyclePhase phase, PhaseChangeType changeType)
+    {
+        _eventAggregator.Publish(
+            new PhaseChangedEvent(phase, changeType),
+            EventPriority.High);
+    }
+    private LifecycleTrigger GetTriggerForTargetState(DocumentLifecyclePhase currentState, DocumentLifecyclePhase targetState)
+    {
+        return (currentState, targetState) switch
+        {
+            (DocumentLifecyclePhase.Inactive, DocumentLifecyclePhase.StyleClean) => LifecycleTrigger.EnterStyleClean,
+            (DocumentLifecyclePhase.Inactive, DocumentLifecyclePhase.Disposed) => LifecycleTrigger.Dispose,
+            (DocumentLifecyclePhase.StyleClean, DocumentLifecyclePhase.InStyleRecalc) => LifecycleTrigger.BeginStyleCalculation,
+            (DocumentLifecyclePhase.StyleClean, DocumentLifecyclePhase.LayoutClean) => LifecycleTrigger.EnterLayoutClean,
+            (DocumentLifecyclePhase.StyleClean, DocumentLifecyclePhase.Disposed) => LifecycleTrigger.Dispose,
+            (DocumentLifecyclePhase.InStyleRecalc, DocumentLifecyclePhase.StyleClean) => LifecycleTrigger.NoStyleChanges,
+            (DocumentLifecyclePhase.InStyleRecalc, DocumentLifecyclePhase.StyleDirty) => LifecycleTrigger.StyleChanged,
+            (DocumentLifecyclePhase.StyleDirty, DocumentLifecyclePhase.StyleClean) => LifecycleTrigger.StyleComplete,
+            (DocumentLifecyclePhase.LayoutClean, DocumentLifecyclePhase.InLayout) => LifecycleTrigger.BeginLayoutCalculation,
+            (DocumentLifecyclePhase.LayoutClean, DocumentLifecyclePhase.RenderReady) => LifecycleTrigger.EnterRenderReady,
+            (DocumentLifecyclePhase.LayoutClean, DocumentLifecyclePhase.Disposed) => LifecycleTrigger.Dispose,
+            (DocumentLifecyclePhase.InLayout, DocumentLifecyclePhase.LayoutClean) => LifecycleTrigger.NoLayoutChanges,
+            (DocumentLifecyclePhase.InLayout, DocumentLifecyclePhase.LayoutDirty) => LifecycleTrigger.LayoutChanged,
+            (DocumentLifecyclePhase.LayoutDirty, DocumentLifecyclePhase.LayoutClean) => LifecycleTrigger.LayoutComplete,
+            (DocumentLifecyclePhase.RenderReady, DocumentLifecyclePhase.InRender) => LifecycleTrigger.BeginRendering,
+            (DocumentLifecyclePhase.RenderReady, DocumentLifecyclePhase.StyleClean) => LifecycleTrigger.NextFrame,
+            (DocumentLifecyclePhase.RenderReady, DocumentLifecyclePhase.Disposed) => LifecycleTrigger.Dispose,
+            (DocumentLifecyclePhase.InRender, DocumentLifecyclePhase.RenderReady) => LifecycleTrigger.NoRenderChanges,
+            (DocumentLifecyclePhase.InRender, DocumentLifecyclePhase.RenderDirty) => LifecycleTrigger.RenderChanged,
+            (DocumentLifecyclePhase.RenderDirty, DocumentLifecyclePhase.RenderReady) => LifecycleTrigger.RenderComplete,
+            _ => throw new InvalidOperationException($"No valid trigger defined for transition from {currentState} to {targetState}")
+        };
+    }
+    private LifecycleTrigger? GetExitTriggerForState(DocumentLifecyclePhase state)
+    {
+        return state switch
+        {
+            DocumentLifecyclePhase.InStyleRecalc => LifecycleTrigger.ExitInStyleRecalc,
+            DocumentLifecyclePhase.StyleDirty => LifecycleTrigger.ExitStyleDirty,
+            DocumentLifecyclePhase.InLayout => LifecycleTrigger.ExitInLayout,
+            DocumentLifecyclePhase.LayoutDirty => LifecycleTrigger.ExitLayoutDirty,
+            DocumentLifecyclePhase.InRender => LifecycleTrigger.ExitInRender,
+            DocumentLifecyclePhase.RenderDirty => LifecycleTrigger.ExitRenderDirty,
+            _ => null
+        };
+    }
+    private void ThrowIfDisposed()
+    {
+        if (_isDisposed)
+        {
+            throw new ObjectDisposedException(nameof(DocumentLifecycleStateMachine));
+        }
+    }
+    public void Dispose()
+    {
+        if (_isDisposed)
+            return;
+        _isDisposed = true;
+    }
+}
+</file>
+
+<file path="DocumentManager.cs">
+namespace LayoutEngine.Core;
+using System.Threading;
+using System.Threading.Tasks;
+using AngleSharp;
+using AngleSharp.Dom;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+internal class DocumentManager : IDocumentManager
+{
+    public IBrowsingContext BrowsingContext { get; private set; }
+    public IDocument? Document { get; private set; }
+    private readonly ILogger<DocumentManager> _logger;
+    public DocumentManager(
+        IConfiguration configuration,
+        ILogger<DocumentManager>? logger = null
+    )
+    {
+        _logger = logger ?? NullLogger<DocumentManager>.Instance;;
+        BrowsingContext = AngleSharp.BrowsingContext.New(configuration);
+    }
+    public async Task<IDocument> OpenAsync(string html, CancellationToken cancellation = default)
+    {
+        _logger.LogInformation("Opening document with HTML content.");
+        var document = await BrowsingContext.OpenAsync(req => req.Content(html), cancellation);
+        Document = document;
+        return document;
+    }
+}
+</file>
+
+<file path="DocumentOperation.cs">
+namespace LayoutEngine.Core;
+public enum DocumentOperation
+{
+    StyleReading,
+    StyleModification,
+    LayoutReading,
+    LayoutCalculation,
+    RenderReading,
+    Rendering,
+    DomReading,
+    DomModification
+}
+</file>
+
+<file path="DomMutationTracker.cs">
+namespace LayoutEngine.Core;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using AngleSharp.Dom;
+using Infrastructure.EventAggregator.API.Aggregation;
+using Infrastructure.EventAggregator.API.Events;
+using LayoutEngine.Contracts.Platform.Dom.Abstractions;
+using LayoutEngine.Contracts.Platform.Events;
+using DomAttributeChangedEvent = Events.DomAttributeChangedEvent;
+using DomNodeAddedEvent = Events.DomNodeAddedEvent;
+using DomNodeRemovedEvent = Events.DomNodeRemovedEvent;
+using DomTextChangedEvent = Events.DomTextChangedEvent;
+using LayoutInvalidatedEvent = Events.LayoutInvalidatedEvent;
+using StyleInvalidatedEvent = Events.StyleInvalidatedEvent;
+public sealed class DomMutationTracker : IDomMutationTracker
+{
+    private readonly IEventAggregator _eventAggregator;
+    private readonly IMutationObserverFactory _observerFactory;
+    private readonly Dictionary<Guid, TrackingInfo> _trackingInfoById = new();
+    private readonly Dictionary<IElement, Guid> _trackingIdByElement = new();
+    private bool _isDisposed;
+    public DomMutationTracker(
+        IEventAggregator eventAggregator,
+        IMutationObserverFactory observerFactory)
+    {
+        _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+        _observerFactory = observerFactory ?? throw new ArgumentNullException(nameof(observerFactory));
+    }
+    public Guid TrackElement(IElement element)
+    {
+        return TrackElement(element, new MutationTrackerOptions());
+    }
+    public Guid TrackElement(IElement element, MutationTrackerOptions options)
+    {
+        ThrowIfDisposed();
+        if (element == null)
+            throw new ArgumentNullException(nameof(element));
+        if (options == null)
+            throw new ArgumentNullException(nameof(options));
+        if (_trackingIdByElement.TryGetValue(element, out var existingId))
+        {
+            return existingId;
+        }
+        var observer = _observerFactory.Create(ProcessMutations);
+        observer.Connect(
+            element,
+            options.TrackChildList,
+            options.TrackSubtree,
+            options.TrackAttributes,
+            options.TrackCharacterData,
+            options.RecordAttributeOldValue,
+            options.RecordCharacterDataOldValue,
+            options.AttributeFilter);
+        var trackingId = Guid.NewGuid();
+        var trackingInfo = new TrackingInfo
+        {
+            Element = element,
+            Observer = observer,
+            Options = options
+        };
+        _trackingInfoById[trackingId] = trackingInfo;
+        _trackingIdByElement[element] = trackingId;
+        return trackingId;
+    }
+    public Guid TrackDocument(IDocument document)
+    {
+        return TrackDocument(document, new MutationTrackerOptions());
+    }
+    public Guid TrackDocument(IDocument document, MutationTrackerOptions options)
+    {
+        ThrowIfDisposed();
+        if (document == null)
+            throw new ArgumentNullException(nameof(document));
+        if (document.DocumentElement == null)
+            throw new InvalidOperationException("Document does not have a document element.");
+        return TrackElement(document.DocumentElement, options);
+    }
+    public void StopTracking(IElement element)
+    {
+        ThrowIfDisposed();
+        if (element == null)
+            throw new ArgumentNullException(nameof(element));
+        if (_trackingIdByElement.TryGetValue(element, out var trackingId))
+        {
+            StopTracking(trackingId);
+        }
+    }
+    public void StopTracking(Guid trackingId)
+    {
+        ThrowIfDisposed();
+        if (_trackingInfoById.TryGetValue(trackingId, out var trackingInfo))
+        {
+            trackingInfo.Observer.Disconnect();
+            _trackingInfoById.Remove(trackingId);
+            _trackingIdByElement.Remove(trackingInfo.Element);
+        }
+    }
+    public void StopAllTracking()
+    {
+        ThrowIfDisposed();
+        foreach (var info in _trackingInfoById.Values)
+        {
+            info.Observer.Disconnect();
+        }
+        _trackingInfoById.Clear();
+        _trackingIdByElement.Clear();
+    }
+    public void ProcessMutations(IMutationRecord[] mutations, IMutationObserver? observer = null)
+    {
+        ThrowIfDisposed();
+        if (mutations == null || mutations.Length == 0)
+            return;
+        var attributeChanges = new HashSet<IElement>();
+        var structureChanges = new HashSet<IElement>();
+        var textChanges = new HashSet<IElement>();
+        foreach (var mutation in mutations)
+        {
+            switch (mutation.Type)
+            {
+                case "attributes":
+                    if (mutation.Target is IElement element && mutation.AttributeName != null)
+                    {
+                        string? newValue = element.GetAttribute(mutation.AttributeName);
+                        _eventAggregator.Publish(new DomAttributeChangedEvent(
+                            element,
+                            mutation.AttributeName,
+                            mutation.PreviousValue,
+                            newValue
+                        ));
+                        attributeChanges.Add(element);
+                        if (IsLayoutAffectingAttribute(mutation.AttributeName))
+                        {
+                            structureChanges.Add(element);
+                        }
+                    }
+                    break;
+                case "characterData":
+                    if (mutation.Target is ICharacterData charData &&
+                        FindParentElement(mutation.Target) is IElement parentElement)
+                    {
+                        if (charData is IText textNode)
+                        {
+                            _eventAggregator.Publish(new DomTextChangedEvent(
+                                textNode,
+                                mutation.PreviousValue,
+                                textNode.TextContent
+                            ));
+                        }
+                        textChanges.Add(parentElement);
+                        structureChanges.Add(parentElement);
+                    }
+                    break;
+                case "childList":
+                    if (mutation.Target is IElement parentNode)
+                    {
+                        if (mutation.Added != null && mutation.Added.Length > 0)
+                        {
+                            foreach (var addedNode in mutation.Added)
+                            {
+                                _eventAggregator.Publish(new DomNodeAddedEvent(
+                                    addedNode,
+                                    parentNode
+                                ));
+                            }
+                        }
+                        if (mutation.Removed != null && mutation.Removed.Length > 0)
+                        {
+                            foreach (var removedNode in mutation.Removed)
+                            {
+                                _eventAggregator.Publish(new DomNodeRemovedEvent(
+                                    removedNode,
+                                    parentNode
+                                ));
+                            }
+                        }
+                        structureChanges.Add(parentNode);
+                    }
+                    break;
+            }
+        }
+        if (attributeChanges.Count > 0)
+        {
+            _eventAggregator.Publish(new StyleInvalidatedEvent(attributeChanges.ToList()), EventPriority.High);
+        }
+        if (structureChanges.Count > 0)
+        {
+            _eventAggregator.Publish(new LayoutInvalidatedEvent(structureChanges.ToList()), EventPriority.High);
+        }
+    }
+    private IElement? FindParentElement(INode node)
+    {
+        var parent = node.Parent;
+        while (parent != null)
+        {
+            if (parent is IElement element)
+            {
+                return element;
+            }
+            parent = parent.Parent;
+        }
+        return null;
+    }
+    private bool IsLayoutAffectingAttribute(string attributeName)
+    {
+        return attributeName.Equals("style", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.Equals("class", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.Equals("width", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.Equals("height", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.Equals("display", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.Equals("position", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.Equals("margin", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.Equals("padding", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.StartsWith("margin-", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.StartsWith("padding-", StringComparison.OrdinalIgnoreCase);
+    }
+    private void ThrowIfDisposed()
+    {
+        if (_isDisposed)
+        {
+            throw new ObjectDisposedException(nameof(DomMutationTracker));
+        }
+    }
+    public void Dispose()
+    {
+        if (_isDisposed)
+            return;
+        _isDisposed = true;
+        StopAllTracking();
+    }
+    private class TrackingInfo
+    {
+        public IElement Element { get; set; } = null!;
+        public IMutationObserver Observer { get; set; } = null!;
+        public MutationTrackerOptions Options { get; set; } = null!;
+    }
+}
+</file>
+
+<file path="Engine.cs">
+namespace LayoutEngine.Core;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using AngleSharp;
+using AngleSharp.Dom;
+using Contracts.Platform.Events;
+using Infrastructure.EventAggregator.API.Aggregation;
+using Layout;
+using LayoutEngine.Contracts.Platform.Dom.Abstractions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Render;
+using Style;
+using Viewport;
+using StyleInvalidatedEvent = Events.StyleInvalidatedEvent;
+public class Engine : IEngine, IDisposable
+{
+    public IBrowsingContext BrowsingContext => _documentManager.BrowsingContext;
+    public IDocument? Document => _documentManager.Document;
+    public IStyleSystem StyleSystem => _styleSystem;
+    public ILayoutSystem LayoutSystem => _layoutSystem;
+    public IRenderSystem RenderSystem => _renderSystem;
+    public DocumentLifecyclePhase CurrentPhase => _lifecycleCoordinator.CurrentPhase;
+    private readonly ILogger<Engine> _logger;
+    private readonly IDocumentManager _documentManager;
+    private readonly IDomMutationTracker _mutationTracker;
+    private readonly IStyleSystem _styleSystem;
+    private readonly ILayoutSystem _layoutSystem;
+    private readonly IRenderSystem _renderSystem;
+    private ViewportManager _viewportManager;
+    private DomScrollEventBridge _domScrollEventBridge;
+    private readonly IDocumentLifecycleCoordinator _lifecycleCoordinator;
+    private readonly IEventAggregator _eventAggregator;
+    private readonly LayoutEngineConfiguration _configuration;
+    private bool _isDisposed;
+    public Engine(
+        IDocumentManager documentManager,
+        IDomMutationTracker mutationTracker,
+        IStyleSystem styleSystem,
+        ILayoutSystem layoutSystem,
+        IRenderSystem renderSystem,
+        IDocumentLifecycleCoordinator lifecycleCoordinator,
+        IEventAggregator eventAggregator,
+        LayoutEngineConfiguration configuration, ViewportManager viewportManager, DomScrollEventBridge domScrollEventBridge, ILogger<Engine>? logger = null
+    )
+    {
+        _logger = logger ?? NullLogger<Engine>.Instance;
+        _documentManager = documentManager ?? throw new ArgumentNullException(nameof(documentManager));
+        _mutationTracker = mutationTracker ?? throw new ArgumentNullException(nameof(mutationTracker));
+        _styleSystem = styleSystem ?? throw new ArgumentNullException(nameof(styleSystem));
+        _layoutSystem = layoutSystem ?? throw new ArgumentNullException(nameof(layoutSystem));
+        _renderSystem = renderSystem ?? throw new ArgumentNullException(nameof(renderSystem));
+        _lifecycleCoordinator = lifecycleCoordinator ?? throw new ArgumentNullException(nameof(lifecycleCoordinator));
+        _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        _viewportManager = viewportManager;
+        _domScrollEventBridge = domScrollEventBridge;
+        SubscribeToEvents();
+    }
+    public async Task<IDocument> OpenAsync(string html, CancellationToken cancellation = default)
+    {
+        var document = await _documentManager.OpenAsync(html, cancellation);
+        _mutationTracker.TrackDocument(document);
+        _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.StyleClean);
+        _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InStyleRecalc);
+        _styleSystem.ComputeDocumentStyles(document);
+        ProcessLifecycle();
+        _domScrollEventBridge.AttachDomListeners();
+        _logger.LogInformation("Document initialized and rendered");
+        return document;
+    }
+    public void Update(double deltaTime)
+    {
+        if (Document == null)
+        {
+            return;
+        }
+        try
+        {
+            ProcessLifecycle();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in engine update");
+        }
+    }
+    private void ProcessLifecycle()
+    {
+        var currentPhase = _lifecycleCoordinator.CurrentPhase;
+        switch (currentPhase)
+        {
+            case DocumentLifecyclePhase.Inactive:
+                break;
+            case DocumentLifecyclePhase.StyleDirty:
+                if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.StyleModification))
+                {
+                    _logger.LogDebug("Entering style calculation phase");
+                    _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InStyleRecalc);
+                    _styleSystem.ComputeDocumentStyles(Document!);
+                }
+                break;
+            case DocumentLifecyclePhase.StyleClean:
+                if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.LayoutCalculation))
+                {
+                    _logger.LogDebug("Entering layout calculation phase");
+                    _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InLayout);
+                    _layoutSystem.PerformLayout(Document!);
+                }
+                break;
+            case DocumentLifecyclePhase.LayoutClean:
+                if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.LayoutReading))
+                {
+                    _logger.LogDebug("Transitioning to render ready phase");
+                    _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.RenderReady);
+                }
+                break;
+            case DocumentLifecyclePhase.RenderReady:
+                if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.Rendering))
+                {
+                    _logger.LogDebug("Entering rendering phase");
+                    _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InRender);
+                    var fragmentTree = _layoutSystem.GetFragmentTree();
+                    _renderSystem.ProcessFragmentTree(fragmentTree);
+                }
+                break;
+            case DocumentLifecyclePhase.RenderDirty:
+                if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.Rendering))
+                {
+                    _logger.LogDebug("Rendering from dirty state");
+                    _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InRender);
+                    var fragmentTree = _layoutSystem.GetFragmentTree();
+                    _renderSystem.ProcessFragmentTree(fragmentTree);
+                }
+                break;
+            case DocumentLifecyclePhase.InStyleRecalc:
+            case DocumentLifecyclePhase.InLayout:
+            case DocumentLifecyclePhase.InRender:
+                break;
+            case DocumentLifecyclePhase.LayoutDirty:
+                if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.LayoutCalculation))
+                {
+                    _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InLayout);
+                }
+                break;
+            case DocumentLifecyclePhase.Disposed:
+                _logger.LogWarning("Attempted to process lifecycle on a disposed document");
+                break;
+            default:
+                _logger.LogWarning($"Unknown document lifecycle phase: {currentPhase}");
+                break;
+        }
+    }
+    private void SubscribeToEvents()
+    {
+        _eventAggregator.Subscribe<PhaseChangedEvent>(e =>
+        {
+            _logger.LogDebug($"Document lifecycle phase changed: {e.Phase} ({e.ChangeType})");
+        });
+        _eventAggregator.Subscribe<DomAttributeChangedEvent>(e =>
+        {
+            if (e.AttributeName == "style" || e.AttributeName == "class")
+            {
+                _styleSystem.InvalidateStyle(e.Element);
+            }
+        });
+        _eventAggregator.Subscribe<DomNodeAddedEvent>(e =>
+        {
+            if (e.Node is IElement addedElement)
+            {
+                _styleSystem.InvalidateStyle(addedElement);
+            }
+            if (e.Parent is IElement parentElement)
+            {
+                _styleSystem.InvalidateStyle(parentElement);
+            }
+        });
+        _eventAggregator.Subscribe<DomNodeRemovedEvent>(e =>
+        {
+            if (e.Parent is IElement parentElement)
+            {
+                _styleSystem.InvalidateStyle(parentElement);
+            }
+        });
+        _eventAggregator.Subscribe<StyleInvalidatedEvent>(e =>
+        {
+            foreach (var element in e.Elements)
+            {
+                _layoutSystem.InvalidateLayout(element);
+            }
+        });
+    }
+    public void Dispose()
+    {
+        if (_isDisposed)
+            return;
+        _isDisposed = true;
+        (_lifecycleCoordinator as IDisposable)?.Dispose();
+        (_mutationTracker as IDisposable)?.Dispose();
+    }
+}
+</file>
+
+<file path="Events/DomAttributeChangedEvent.cs">
+namespace LayoutEngine.Core.Events;
+using System;
+using AngleSharp.Dom;
+using Infrastructure.EventAggregator.API.Events;
+public class DomAttributeChangedEvent : EventBase
+{
+    public IElement Element { get; }
+    public string AttributeName { get; }
+    public string? OldValue { get; }
+    public string? NewValue { get; }
+    public DomAttributeChangedEvent(IElement element, string attributeName, string? oldValue, string? newValue)
+    {
+        Element = element ?? throw new ArgumentNullException(nameof(element));
+        AttributeName = attributeName ?? throw new ArgumentNullException(nameof(attributeName));
+        OldValue = oldValue;
+        NewValue = newValue;
+    }
+}
+</file>
+
+<file path="Events/DomNodeAddedEvent.cs">
+namespace LayoutEngine.Core.Events;
+using System;
+using AngleSharp.Dom;
+using Infrastructure.EventAggregator.API.Events;
+public class DomNodeAddedEvent : EventBase
+{
+    public INode Node { get; }
+    public INode Parent { get; }
+    public DomNodeAddedEvent(INode node, INode parent)
+    {
+        Node = node ?? throw new ArgumentNullException(nameof(node));
+        Parent = parent ?? throw new ArgumentNullException(nameof(parent));
+    }
+}
+</file>
+
+<file path="Events/DomNodeRemovedEvent.cs">
+namespace LayoutEngine.Core.Events;
+using System;
+using AngleSharp.Dom;
+using Infrastructure.EventAggregator.API.Events;
+public class DomNodeRemovedEvent : EventBase
+{
+    public INode Node { get; }
+    public INode Parent { get; }
+    public DomNodeRemovedEvent(INode node, INode parent)
+    {
+        Node = node ?? throw new ArgumentNullException(nameof(node));
+        Parent = parent ?? throw new ArgumentNullException(nameof(parent));
+    }
+}
+</file>
+
+<file path="Events/DomTextChangedEvent.cs">
+namespace LayoutEngine.Core.Events;
+using System;
+using AngleSharp.Dom;
+using Infrastructure.EventAggregator.API.Events;
+public class DomTextChangedEvent : EventBase
+{
+    public IText TextNode { get; }
+    public string? OldValue { get; }
+    public string? NewValue { get; }
+    public DomTextChangedEvent(IText textNode, string? oldValue, string? newValue)
+    {
+        TextNode = textNode ?? throw new ArgumentNullException(nameof(textNode));
+        OldValue = oldValue;
+        NewValue = newValue;
+    }
+}
+</file>
+
+<file path="Events/FragmentTreeUpdatedEvent.cs">
+namespace LayoutEngine.Core.Events;
+using System;
+using Infrastructure.EventAggregator.API.Events;
+public class FragmentTreeUpdatedEvent : EventBase
+{
+    public object FragmentTree { get; }
+    public FragmentTreeUpdatedEvent(object fragmentTree)
+    {
+        FragmentTree = fragmentTree ?? throw new ArgumentNullException(nameof(fragmentTree));
+    }
+}
+</file>
+
+<file path="Events/LayoutInvalidatedEvent.cs">
+namespace LayoutEngine.Core.Events;
+using System;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+using Infrastructure.EventAggregator.API.Events;
+public class LayoutInvalidatedEvent : EventBase
+{
+    public IReadOnlyList<IElement> Elements { get; }
+    public LayoutInvalidatedEvent(IReadOnlyList<IElement> elements)
+    {
+        Elements = elements ?? throw new ArgumentNullException(nameof(elements));
+    }
+}
+</file>
+
+<file path="Events/PhaseChangedEvent.cs">
+namespace LayoutEngine.Core.Events;
+using Infrastructure.EventAggregator.API.Events;
+public class PhaseChangedEvent : PrioritizedEventBase
+{
+    public DocumentLifecyclePhase Phase { get; }
+    public PhaseChangeType ChangeType { get; }
+    public PhaseChangedEvent(DocumentLifecyclePhase phase, PhaseChangeType changeType)
+        : base(EventPriority.High)
+    {
+        Phase = phase;
+        ChangeType = changeType;
+    }
+}
+</file>
+
+<file path="Events/RenderCompletedEvent.cs">
+namespace LayoutEngine.Core.Events;
+using Infrastructure.EventAggregator.API.Events;
+public class RenderCompletedEvent : EventBase
+{
+    public object? RenderInfo { get; }
+    public RenderCompletedEvent(object? renderInfo = null)
+    {
+        RenderInfo = renderInfo;
+    }
+}
+</file>
+
+<file path="Events/RenderInvalidatedEvent.cs">
+namespace LayoutEngine.Core.Events;
+using System;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+using Infrastructure.EventAggregator.API.Events;
+public class RenderInvalidatedEvent : EventBase
+{
+    public IReadOnlyList<IElement> Elements { get; }
+    public RenderInvalidatedEvent(IReadOnlyList<IElement> elements)
+    {
+        Elements = elements ?? throw new ArgumentNullException(nameof(elements));
+    }
+}
+</file>
+
+<file path="Events/StyleComputedEvent.cs">
+namespace LayoutEngine.Core.Events;
+using System;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+using Infrastructure.EventAggregator.API.Events;
+using Style;
+public class StyleComputedEvent : EventBase
+{
+    public IReadOnlyList<IElement> Elements { get; }
+    public IReadOnlyDictionary<IElement, IComputedStyle> ComputedStyles { get; }
+    public StyleComputedEvent(
+        IReadOnlyList<IElement> elements,
+        IReadOnlyDictionary<IElement, IComputedStyle> computedStyles)
+    {
+        Elements = elements ?? throw new ArgumentNullException(nameof(elements));
+        ComputedStyles = computedStyles ?? throw new ArgumentNullException(nameof(computedStyles));
+    }
+}
+</file>
+
+<file path="Events/StyleInvalidatedEvent.cs">
+namespace LayoutEngine.Core.Events;
+using System;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+using Infrastructure.EventAggregator.API.Events;
+public class StyleInvalidatedEvent : EventBase
+{
+    public IReadOnlyList<IElement> Elements { get; }
+    public StyleInvalidatedEvent(IReadOnlyList<IElement> elements)
+    {
+        Elements = elements ?? throw new ArgumentNullException(nameof(elements));
+    }
+}
+</file>
+
+<file path="IDocumentLifecycleCoordinator.cs">
+namespace LayoutEngine.Core;
+using System;
+public interface IDocumentLifecycleCoordinator
+{
+    DocumentLifecyclePhase CurrentPhase { get; }
+    void EnterPhase(DocumentLifecyclePhase phase);
+    void ExitPhase(DocumentLifecyclePhase phase);
+    bool IsValidTransition(DocumentLifecyclePhase fromPhase, DocumentLifecyclePhase toPhase);
+    bool IsOperationAllowed(DocumentOperation operation);
+}
+</file>
+
+<file path="IDocumentManager.cs">
+namespace LayoutEngine.Core;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using AngleSharp;
+using AngleSharp.Dom;
+public interface IDocumentManager
+{
+    IBrowsingContext BrowsingContext { get; }
+    IDocument? Document { get; }
+    Task<IDocument> OpenAsync(String html, CancellationToken cancellation = default);
+}
+</file>
+
+<file path="IEngine.cs">
+namespace LayoutEngine.Core;
+using System.Threading;
+using System.Threading.Tasks;
+using AngleSharp;
+using AngleSharp.Css.Dom;
+using AngleSharp.Dom;
+using Layout;
+using Style;
+public interface IEngine
+{
+    IBrowsingContext BrowsingContext { get; }
+    IDocument? Document { get; }
+    Task<IDocument> OpenAsync(string html, CancellationToken cancellation = default);
+    IStyleSystem StyleSystem { get; }
+    ILayoutSystem LayoutSystem { get; }
+    DocumentLifecyclePhase CurrentPhase { get; }
+    void Update(double deltaTIme);
+}
+</file>
+
+<file path="Layout/FragmentTree.cs">
+namespace LayoutEngine.Core.Layout;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+public class FragmentTree : IFragmentTree
+{
+    private readonly ILayoutResult _layoutResult;
+    public FragmentTree(ILayoutResult layoutResult)
+    {
+        _layoutResult = layoutResult;
+        RootFragment = layoutResult.RootFragment;
+    }
+    public FragmentTree(ILayoutFragment rootFragment)
+    {
+        RootFragment = rootFragment;
+        _layoutResult = null!;
+    }
+    public ILayoutFragment RootFragment { get; }
+    public IReadOnlyList<ILayoutFragment> FindFragmentsForElement(IElement element)
+    {
+        if (_layoutResult != null)
+        {
+            var layoutInfo = _layoutResult.GetLayoutInfo(element);
+            if (layoutInfo != null)
+            {
+                return layoutInfo.Fragments;
+            }
+        }
+        var fragments = new List<ILayoutFragment>();
+        FindFragmentsForElementRecursive(RootFragment, element, fragments);
+        return fragments;
+    }
+    private void FindFragmentsForElementRecursive(ILayoutFragment fragment, IElement element, List<ILayoutFragment> results)
+    {
+        if (fragment.Element == element)
+        {
+            results.Add(fragment);
+        }
+        foreach (var child in fragment.Children)
+        {
+            FindFragmentsForElementRecursive(child, element, results);
+        }
+    }
+}
+</file>
+
+<file path="Layout/IFragmentTree.cs">
+namespace LayoutEngine.Core.Layout;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+public interface IFragmentTree
+{
+    ILayoutFragment RootFragment { get; }
+    IReadOnlyList<ILayoutFragment> FindFragmentsForElement(IElement element);
+}
+</file>
+
+<file path="Layout/ILayoutFragment.cs">
+namespace LayoutEngine.Core.Layout;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+public interface ILayoutFragment
+{
+    Rect Bounds { get; }
+    IElement? Element { get; }
+    IReadOnlyList<ILayoutFragment> Children { get; }
+    IVisualProperties VisualProperties { get; }
+}
+</file>
+
+<file path="Layout/ILayoutInfo.cs">
+namespace LayoutEngine.Core.Layout;
+using System.Collections.Generic;
+public interface ILayoutInfo
+{
+    Rect ContentRect { get; }
+    Rect PaddingRect { get; }
+    Rect BorderRect { get; }
+    Rect MarginRect { get; }
+    Point Position { get; }
+    IReadOnlyList<ILayoutFragment> Fragments { get; }
+}
+</file>
+
+<file path="Layout/ILayoutResult.cs">
+namespace LayoutEngine.Core.Layout;
+using AngleSharp.Dom;
+public interface ILayoutResult
+{
+    ILayoutFragment RootFragment { get; }
+    ILayoutInfo? GetLayoutInfo(IElement element);
+}
+</file>
+
+<file path="Layout/ILayoutSystem.cs">
+namespace LayoutEngine.Core.Layout;
+using AngleSharp.Dom;
+public interface ILayoutSystem
+{
+    ILayoutResult PerformLayout(IDocument document);
+    bool NeedsLayout(IElement element);
+    void InvalidateLayout(IElement element, bool recursive = true);
+    IFragmentTree GetFragmentTree();
+    ILayoutInfo? GetLayoutInfo(IElement element);
+}
+</file>
+
+<file path="Layout/IVisualProperties.cs">
+namespace LayoutEngine.Core.Layout;
+public interface IVisualProperties
+{
+    string BackgroundColor { get; }
+    float BorderTopWidth { get; }
+    float BorderRightWidth { get; }
+    float BorderBottomWidth { get; }
+    float BorderLeftWidth { get; }
+    string BorderTopColor { get; }
+    string BorderRightColor { get; }
+    string BorderBottomColor { get; }
+    string BorderLeftColor { get; }
+    string Color { get; }
+    string FontFamily { get; }
+    float FontSize { get; }
+    string FontWeight { get; }
+    int ZIndex { get; }
+}
+</file>
+
+<file path="Layout/LayoutFragment.cs">
+namespace LayoutEngine.Core.Layout;
+using System;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+public class LayoutFragment : ILayoutFragment
+{
+    public Rect Bounds { get; set; }
+    public IElement? Element { get; set; }
+    public IReadOnlyList<ILayoutFragment> Children { get; set; } = Array.Empty<ILayoutFragment>();
+    public IVisualProperties VisualProperties { get; set; } = new VisualProperties();
+}
+</file>
+
+<file path="Layout/LayoutInfo.cs">
+namespace LayoutEngine.Core.Layout;
+using System.Collections.Generic;
+public class LayoutInfo : ILayoutInfo
+{
+    private readonly List<ILayoutFragment> _fragments = new();
+    public Rect ContentRect { get; set; }
+    public Rect PaddingRect { get; set; }
+    public Rect BorderRect { get; set; }
+    public Rect MarginRect { get; set; }
+    public Point Position { get; set; }
+    public IReadOnlyList<ILayoutFragment> Fragments => _fragments;
+    public void AddFragment(ILayoutFragment fragment)
+    {
+        _fragments.Add(fragment);
+    }
+}
+</file>
+
+<file path="Layout/LayoutResult.cs">
+namespace LayoutEngine.Core.Layout;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+public class LayoutResult : ILayoutResult
+{
+    private readonly Dictionary<IElement, ILayoutInfo> _layoutInfo = new();
+    private ILayoutFragment _rootFragment = null!;
+    public ILayoutFragment RootFragment => _rootFragment;
+    public void SetRootFragment(ILayoutFragment rootFragment)
+    {
+        _rootFragment = rootFragment;
+    }
+    public ILayoutInfo? GetLayoutInfo(IElement element)
+    {
+        _layoutInfo.TryGetValue(element, out var info);
+        return info;
+    }
+    public void SetLayoutInfo(IElement element, ILayoutInfo info)
+    {
+        _layoutInfo[element] = info;
+    }
+    public void AddFragment(IElement element, ILayoutFragment fragment)
+    {
+        if (!_layoutInfo.TryGetValue(element, out var info))
+        {
+            info = new LayoutInfo();
+            _layoutInfo[element] = info;
+        }
+        if (info is LayoutInfo layoutInfo)
+        {
+            layoutInfo.AddFragment(fragment);
+        }
+    }
+}
+</file>
+
+<file path="Layout/LayoutSystem.cs">
+namespace LayoutEngine.Core.Layout;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using AngleSharp.Dom;
+using Contracts.Platform.Events;
+using Infrastructure.EventAggregator.API.Aggregation;
+using Style;
+using FragmentTreeUpdatedEvent = Events.FragmentTreeUpdatedEvent;
+using LayoutInvalidatedEvent = Events.LayoutInvalidatedEvent;
+public class LayoutSystem : ILayoutSystem
+{
+    private readonly IStyleSystem _styleSystem;
+    private readonly IEventAggregator _eventAggregator;
+    private readonly HashSet<IElement> _elementsNeedingLayout = new();
+    private ILayoutResult? _currentLayoutResult;
+    public LayoutSystem(IStyleSystem styleSystem, IEventAggregator eventAggregator)
+    {
+        _styleSystem = styleSystem;
+        _eventAggregator = eventAggregator;
+    }
+    public ILayoutResult PerformLayout(IDocument document)
+    {
+        var result = new LayoutResult();
+        _styleSystem.ComputeDocumentStyles(document);
+        if (document.DocumentElement != null)
+        {
+            var viewportWidth = 800f;
+            var viewportHeight = 600f;
+            var context = new LayoutContext(viewportWidth, viewportHeight);
+            var rootFragment = LayoutElement(document.DocumentElement, context, result);
+            result.SetRootFragment(rootFragment);
+        }
+        _currentLayoutResult = result;
+        _elementsNeedingLayout.Clear();
+        _eventAggregator.Publish(new FragmentTreeUpdatedEvent(result));
+        return result;
+    }
+    private ILayoutFragment LayoutElement(IElement element, LayoutContext context, LayoutResult result)
+    {
+        var style = _styleSystem.GetComputedStyle(element);
+        if (style == null)
+        {
+            style = _styleSystem.ComputeStyle(element);
+        }
+        var fragment = new LayoutFragment
+        {
+            Element = element,
+            VisualProperties = ExtractVisualProperties(style)
+        };
+        switch (style.Display)
+        {
+            case DisplayType.Block:
+                LayoutBlockElement(element, style, fragment, context, result);
+                break;
+            case DisplayType.Flex:
+                LayoutFlexElement(element, style, fragment, context, result);
+                break;
+            case DisplayType.Inline:
+            case DisplayType.InlineBlock:
+                LayoutInlineElement(element, style, fragment, context, result);
+                break;
+            case DisplayType.None:
+                break;
+        }
+        result.AddFragment(element, fragment);
+        return fragment;
+    }
+    private void LayoutBlockElement(IElement element, IComputedStyle style, LayoutFragment fragment, LayoutContext context, LayoutResult result)
+    {
+        var boxModel = CalculateBoxModel(element, style, context);
+        fragment.Bounds = boxModel.ContentRect;
+        var layoutInfo = new LayoutInfo
+        {
+            ContentRect = boxModel.ContentRect,
+            PaddingRect = boxModel.PaddingRect,
+            BorderRect = boxModel.BorderRect,
+            MarginRect = boxModel.MarginRect,
+            Position = new Point(boxModel.ContentRect.X, boxModel.ContentRect.Y)
+        };
+        layoutInfo.AddFragment(fragment);
+        result.SetLayoutInfo(element, layoutInfo);
+        var childContext = new LayoutContext(
+            boxModel.ContentRect.Width,
+            boxModel.ContentRect.Height,
+            boxModel.ContentRect.X,
+            boxModel.ContentRect.Y
+        );
+        var children = new List<ILayoutFragment>();
+        foreach (var child in element.Children.OfType<IElement>())
+        {
+            var childFragment = LayoutElement(child, childContext, result);
+            children.Add(childFragment);
+        }
+        fragment.Children = children;
+    }
+    private void LayoutFlexElement(IElement element, IComputedStyle style, LayoutFragment fragment, LayoutContext context, LayoutResult result)
+    {
+    }
+    private void LayoutInlineElement(IElement element, IComputedStyle style, LayoutFragment fragment, LayoutContext context, LayoutResult result)
+    {
+    }
+    private BoxModel CalculateBoxModel(IElement element, IComputedStyle style, LayoutContext context)
+    {
+        var marginTop = ParseLength(style.GetValue("margin-top"), context.ContainerWidth, 0);
+        var marginRight = ParseLength(style.GetValue("margin-right"), context.ContainerWidth, 0);
+        var marginBottom = ParseLength(style.GetValue("margin-bottom"), context.ContainerWidth, 0);
+        var marginLeft = ParseLength(style.GetValue("margin-left"), context.ContainerWidth, 0);
+        var borderTop = ParseLength(style.GetValue("border-top-width"), context.ContainerWidth, 0);
+        var borderRight = ParseLength(style.GetValue("border-right-width"), context.ContainerWidth, 0);
+        var borderBottom = ParseLength(style.GetValue("border-bottom-width"), context.ContainerWidth, 0);
+        var borderLeft = ParseLength(style.GetValue("border-left-width"), context.ContainerWidth, 0);
+        var paddingTop = ParseLength(style.GetValue("padding-top"), context.ContainerWidth, 0);
+        var paddingRight = ParseLength(style.GetValue("padding-right"), context.ContainerWidth, 0);
+        var paddingBottom = ParseLength(style.GetValue("padding-bottom"), context.ContainerWidth, 0);
+        var paddingLeft = ParseLength(style.GetValue("padding-left"), context.ContainerWidth, 0);
+        float width;
+        var widthValue = style.GetValue("width");
+        if (!string.IsNullOrEmpty(widthValue))
+        {
+            width = ParseLength(widthValue, context.ContainerWidth, context.ContainerWidth);
+        }
+        else
+        {
+            if (style.Display == DisplayType.Block)
+            {
+                width = context.ContainerWidth - marginLeft - marginRight - borderLeft - borderRight - paddingLeft - paddingRight;
+            }
+            else
+            {
+                width = 100;
+            }
+        }
+        float height;
+        var heightValue = style.GetValue("height");
+        if (!string.IsNullOrEmpty(heightValue))
+        {
+            height = ParseLength(heightValue, context.ContainerHeight, context.ContainerHeight);
+        }
+        else
+        {
+            height = 50;
+        }
+        var x = context.X + marginLeft + borderLeft + paddingLeft;
+        var y = context.Y + marginTop + borderTop + paddingTop;
+        return new BoxModel
+        {
+            ContentRect = new Rect(x, y, width, height),
+            PaddingRect = new Rect(
+                x - paddingLeft,
+                y - paddingTop,
+                width + paddingLeft + paddingRight,
+                height + paddingTop + paddingBottom
+            ),
+            BorderRect = new Rect(
+                x - paddingLeft - borderLeft,
+                y - paddingTop - borderTop,
+                width + paddingLeft + paddingRight + borderLeft + borderRight,
+                height + paddingTop + paddingBottom + borderTop + borderBottom
+            ),
+            MarginRect = new Rect(
+                x - paddingLeft - borderLeft - marginLeft,
+                y - paddingTop - borderTop - marginTop,
+                width + paddingLeft + paddingRight + borderLeft + borderRight + marginLeft + marginRight,
+                height + paddingTop + paddingBottom + borderTop + borderBottom + marginTop + marginBottom
+            )
+        };
+    }
+    private float ParseLength(string? value, float containerSize, float defaultValue)
+    {
+        if (string.IsNullOrEmpty(value)) return defaultValue;
+        if (value.EndsWith("px"))
+        {
+            if (float.TryParse(value.AsSpan(0, value.Length - 2), out var px))
+            {
+                return px;
+            }
+        }
+        else if (value.EndsWith("%"))
+        {
+            if (float.TryParse(value.AsSpan(0, value.Length - 1), out var percent))
+            {
+                return containerSize * percent / 100f;
+            }
+        }
+        else if (value == "auto")
+        {
+            return defaultValue;
+        }
+        else if (float.TryParse(value, out var number))
+        {
+            return number;
+        }
+        return defaultValue;
+    }
+    private IVisualProperties ExtractVisualProperties(IComputedStyle style)
+    {
+        return new VisualProperties
+        {
+            BackgroundColor = style.GetValue("background-color"),
+            BorderTopWidth = float.TryParse(style.GetValue("border-top-width"), out var btw) ? btw : 0,
+            BorderRightWidth = float.TryParse(style.GetValue("border-right-width"), out var brw) ? brw : 0,
+            BorderBottomWidth = float.TryParse(style.GetValue("border-bottom-width"), out var bbw) ? bbw : 0,
+            BorderLeftWidth = float.TryParse(style.GetValue("border-left-width"), out var blw) ? blw : 0,
+            BorderTopColor = style.GetValue("border-top-color"),
+            BorderRightColor = style.GetValue("border-right-color"),
+            BorderBottomColor = style.GetValue("border-bottom-color"),
+            BorderLeftColor = style.GetValue("border-left-color"),
+            Color = style.GetValue("color"),
+            FontFamily = style.GetValue("font-family"),
+            FontSize = float.TryParse(style.GetValue("font-size"), out var fs) ? fs : 16,
+            FontWeight = style.GetValue("font-weight")
+        };
+    }
+    public bool NeedsLayout(IElement element)
+    {
+        return _elementsNeedingLayout.Contains(element);
+    }
+    public void InvalidateLayout(IElement element, bool recursive = true)
+    {
+        var affectedElements = new List<IElement>();
+        _elementsNeedingLayout.Add(element);
+        affectedElements.Add(element);
+        if (recursive)
+        {
+            foreach (var child in element.Children.OfType<IElement>())
+            {
+                InvalidateLayoutRecursive(child, affectedElements);
+            }
+        }
+        _eventAggregator.Publish(new LayoutInvalidatedEvent(affectedElements));
+    }
+    private void InvalidateLayoutRecursive(IElement element, List<IElement> affectedElements)
+    {
+        _elementsNeedingLayout.Add(element);
+        affectedElements.Add(element);
+        foreach (var child in element.Children.OfType<IElement>())
+        {
+            InvalidateLayoutRecursive(child, affectedElements);
+        }
+    }
+    public IFragmentTree GetFragmentTree()
+    {
+        if (_currentLayoutResult == null)
+        {
+            throw new InvalidOperationException("Layout has not been performed yet.");
+        }
+        return new FragmentTree(_currentLayoutResult);
+    }
+    public ILayoutInfo? GetLayoutInfo(IElement element)
+    {
+        return _currentLayoutResult?.GetLayoutInfo(element);
+    }
+    private class LayoutContext
+    {
+        public float ContainerWidth { get; }
+        public float ContainerHeight { get; }
+        public float X { get; }
+        public float Y { get; }
+        public LayoutContext(float containerWidth, float containerHeight, float x = 0, float y = 0)
+        {
+            ContainerWidth = containerWidth;
+            ContainerHeight = containerHeight;
+            X = x;
+            Y = y;
+        }
+    }
+    private class BoxModel
+    {
+        public Rect ContentRect { get; set; }
+        public Rect PaddingRect { get; set; }
+        public Rect BorderRect { get; set; }
+        public Rect MarginRect { get; set; }
+    }
+}
+</file>
+
+<file path="Layout/Point.cs">
+namespace LayoutEngine.Core.Layout;
+public struct Point
+{
+    public float X { get; set; }
+    public float Y { get; set; }
+    public Point(float x, float y)
+    {
+        X = x;
+        Y = y;
+    }
+}
+</file>
+
+<file path="Layout/Rect.cs">
+namespace LayoutEngine.Core.Layout;
+public struct Rect
+{
+    public float X { get; set; }
+    public float Y { get; set; }
+    public float Width { get; set; }
+    public float Height { get; set; }
+    public Rect(float x, float y, float width, float height)
+    {
+        X = x;
+        Y = y;
+        Width = width;
+        Height = height;
+    }
+}
+</file>
+
+<file path="Layout/Size.cs">
+namespace LayoutEngine.Core.Layout;
+public struct Size
+{
+    public float Width { get; set; }
+    public float Height { get; set; }
+    public Size(float width, float height) { Width = width; Height = height; }
+}
+</file>
+
+<file path="Layout/VisualProperties.cs">
+namespace LayoutEngine.Core.Layout;
+public class VisualProperties : IVisualProperties
+{
+    public string BackgroundColor { get; set; } = "transparent";
+    public float BorderTopWidth { get; set; } = 0;
+    public float BorderRightWidth { get; set; } = 0;
+    public float BorderBottomWidth { get; set; } = 0;
+    public float BorderLeftWidth { get; set; } = 0;
+    public string BorderTopColor { get; set; } = "black";
+    public string BorderRightColor { get; set; } = "black";
+    public string BorderBottomColor { get; set; } = "black";
+    public string BorderLeftColor { get; set; } = "black";
+    public string Color { get; set; } = "black";
+    public string FontFamily { get; set; } = "sans-serif";
+    public float FontSize { get; set; } = 16;
+    public string FontWeight { get; set; } = "normal";
+    public int ZIndex { get; set; } = 0;
+}
+</file>
+
+<file path="LayoutEngineConfiguration.cs">
+namespace LayoutEngine.Core;
+using AngleSharp;
+public class LayoutEngineConfiguration
+{
+    public static LayoutEngineConfiguration Default => new LayoutEngineConfiguration
+    {
+        AngleSharpConfiguration = Configuration.Default
+            .WithDefaultLoader()
+            .WithCss()
+    };
+    public IConfiguration AngleSharpConfiguration { get; set; } = Configuration.Default.WithDefaultLoader().WithCss();
+    public int TargetFramesPerSecond { get; set; } = 60;
+    public bool EnableBackgroundProcessing { get; set; } = true;
+    public bool PreloadResources { get; set; } = true;
+}
+</file>
+
+<file path="MutationObserverFactory.cs">
+namespace LayoutEngine.Core;
+using System;
+using AngleSharp.Dom;
+using LayoutEngine.Contracts.Platform.Dom.Abstractions;
+public class MutationObserverFactory : IMutationObserverFactory
+{
+    public IMutationObserver Create(Action<IMutationRecord[], IMutationObserver> callback)
+    {
+        if (callback == null)
+            throw new ArgumentNullException(nameof(callback));
+        return new MutationObserver((records, observer) =>
+        {
+            callback(records, observer);
+        });
+    }
+}
+</file>
+
+<file path="PhaseChangeType.cs">
+namespace LayoutEngine.Core;
+public enum PhaseChangeType
+{
+    Enter,
+    Exit
+}
+</file>
+
+<file path="Render/Commands/CreateElementCommand.cs">
+namespace LayoutEngine.Core.Render.Commands;
+using System;
+using LayoutEngine.Core.Layout;
+public class CreateElementCommand : IRenderCommand
+{
+    public ILayoutFragment Fragment { get; }
+    public RenderCommandType CommandType => RenderCommandType.Create;
+    public string ElementType { get; }
+    public CreateElementCommand(ILayoutFragment fragment, string elementType)
+    {
+        Fragment = fragment ?? throw new ArgumentNullException(nameof(fragment));
+        ElementType = elementType ?? throw new ArgumentNullException(nameof(elementType));
+    }
+}
+</file>
+
+<file path="Render/Commands/CreateViewportCommand.cs">
+namespace LayoutEngine.Core.Render.Commands;
+using System;
+using LayoutEngine.Core.Layout;
+using LayoutEngine.Core.Viewport;
+public class CreateViewportCommand : IRenderCommand
+{
+    public ILayoutFragment Fragment => null!;
+    public RenderCommandType CommandType => RenderCommandType.CreateViewport;
+    public Viewport Viewport { get; }
+    public CreateViewportCommand(Viewport viewport)
+    {
+        Viewport = viewport ?? throw new ArgumentNullException(nameof(viewport));
+    }
+}
+</file>
+
+<file path="Render/Commands/IRenderCommand.cs">
+namespace LayoutEngine.Core.Render.Commands;
+using LayoutEngine.Core.Layout;
+public interface IRenderCommand
+{
+    ILayoutFragment Fragment { get; }
+    RenderCommandType CommandType { get; }
+}
+</file>
+
+<file path="Render/Commands/PopViewportCommand.cs">
+namespace LayoutEngine.Core.Render.Commands;
+using System;
+using LayoutEngine.Core.Layout;
+public class PopViewportCommand : IRenderCommand
+{
+    public ILayoutFragment Fragment => null!;
+    public RenderCommandType CommandType => RenderCommandType.PopViewport;
+    public string ViewportId { get; }
+    public PopViewportCommand(string viewportId)
+    {
+        ViewportId = viewportId ?? throw new ArgumentNullException(nameof(viewportId));
+    }
+}
+</file>
+
+<file path="Render/Commands/RenderCommandType.cs">
+namespace LayoutEngine.Core.Render.Commands;
+public enum RenderCommandType
+{
+    Create,
+    Update,
+    Delete,
+    SetProperty,
+    SetChildren,
+    SetText,
+    SetImage,
+    SetLayout,
+    CreateViewport,
+    PopViewport,
+    SetScrollOffset,
+}
+</file>
+
+<file path="Render/Commands/SetLayoutCommand.cs">
+namespace LayoutEngine.Core.Render.Commands;
+using System;
+using LayoutEngine.Core.Layout;
+public class SetLayoutCommand : IRenderCommand
+{
+    public ILayoutFragment Fragment { get; }
+    public RenderCommandType CommandType => RenderCommandType.SetLayout;
+    public Rect Bounds { get; }
+    public SetLayoutCommand(ILayoutFragment fragment, Rect bounds)
+    {
+        Fragment = fragment ?? throw new ArgumentNullException(nameof(fragment));
+        Bounds = bounds;
+    }
+}
+</file>
+
+<file path="Render/Commands/SetPropertyCommand.cs">
+namespace LayoutEngine.Core.Render.Commands;
+using System;
+using LayoutEngine.Core.Layout;
+public class SetPropertyCommand : IRenderCommand
+{
+    public ILayoutFragment Fragment { get; }
+    public RenderCommandType CommandType => RenderCommandType.SetProperty;
+    public string PropertyName { get; }
+    public object PropertyValue { get; }
+    public SetPropertyCommand(ILayoutFragment fragment, string propertyName, object propertyValue)
+    {
+        Fragment = fragment ?? throw new ArgumentNullException(nameof(fragment));
+        PropertyName = propertyName ?? throw new ArgumentNullException(nameof(propertyName));
+        PropertyValue = propertyValue;
+    }
+}
+</file>
+
+<file path="Render/Commands/SetScrollOffsetCommand.cs">
+namespace LayoutEngine.Core.Render.Commands;
+using System;
+using LayoutEngine.Core.Layout;
+public class SetScrollOffsetCommand : IRenderCommand
+{
+    public ILayoutFragment Fragment => null!;
+    public RenderCommandType CommandType => RenderCommandType.SetScrollOffset;
+    public string ViewportId { get; }
+    public Point ScrollOffset { get; }
+    public SetScrollOffsetCommand(string viewportId, Point scrollOffset)
+    {
+        ViewportId = viewportId ?? throw new ArgumentNullException(nameof(viewportId));
+        ScrollOffset = scrollOffset;
+    }
+}
+</file>
+
+<file path="Render/FragmentRegistry.cs">
+namespace LayoutEngine.Core.Render;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Layout;
+public class FragmentRegistry
+{
+    private readonly Dictionary<ILayoutFragment, string> _fragmentToIdMap = new();
+    private readonly Dictionary<string, ILayoutFragment> _idToFragmentMap = new();
+    public FragmentStatus RegisterFragment(ILayoutFragment fragment)
+    {
+        if (_fragmentToIdMap.TryGetValue(fragment, out var existingId))
+        {
+            return new FragmentStatus(existingId, false);
+        }
+        var newId = Guid.NewGuid().ToString();
+        _fragmentToIdMap[fragment] = newId;
+        _idToFragmentMap[newId] = fragment;
+        return new FragmentStatus(newId, true);
+    }
+    public IEnumerable<string> GetRemovedFragmentIds(HashSet<string> currentFragmentIds)
+    {
+        return _idToFragmentMap.Keys.Where(id => !currentFragmentIds.Contains(id)).ToList();
+    }
+    public void UnregisterFragmentById(string id)
+    {
+        if (_idToFragmentMap.TryGetValue(id, out var fragment))
+        {
+            _fragmentToIdMap.Remove(fragment);
+            _idToFragmentMap.Remove(id);
+        }
+    }
+    public string? GetFragmentId(ILayoutFragment fragment)
+    {
+        return _fragmentToIdMap.TryGetValue(fragment, out var id) ? id : null;
+    }
+    public ILayoutFragment? GetFragmentById(string id)
+    {
+        return _idToFragmentMap.TryGetValue(id, out var fragment) ? fragment : null;
+    }
+}
+</file>
+
+<file path="Render/FragmentStatus.cs">
+namespace LayoutEngine.Core.Render;
+public class FragmentStatus
+{
+    public string Id { get; }
+    public bool IsNew { get; }
+    public FragmentStatus(string id, bool isNew)
+    {
+        Id = id;
+        IsNew = isNew;
+    }
+}
+</file>
+
+<file path="Render/IRenderer.cs">
+namespace LayoutEngine.Core.Render;
+using System.Collections.Generic;
+using Commands;
+public interface IRenderer
+{
+    void Execute(IReadOnlyList<IRenderCommand> commands);
+    object GetRootElement();
+}
+</file>
+
+<file path="Render/IRenderSystem.cs">
+namespace LayoutEngine.Core.Render;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+using Commands;
+using Layout;
+public interface IRenderSystem
+{
+    IReadOnlyList<IRenderCommand> ProcessFragmentTree(IFragmentTree fragmentTree);
+    void InvalidateRender(IElement element, bool recursive = true);
+    bool NeedsRender(IElement element);
+    void AttachRenderer(IRenderer renderer);
+    IRenderer GetRenderer();
+}
+</file>
+
+<file path="Render/RenderCommandGenerator.cs">
+using System.Collections.Generic;
+using AngleSharp.Dom;
+using LayoutEngine.Core.Layout;
+using LayoutEngine.Core.Render.Commands;
+namespace LayoutEngine.Core.Render;
+public class RenderCommandGenerator
+{
+    public IEnumerable<IRenderCommand> GenerateFragmentCommands(
+        ILayoutFragment fragment,
+        FragmentStatus fragmentStatus)
+    {
+        var commands = new List<IRenderCommand>();
+        var props = fragment.VisualProperties;
+        if (fragmentStatus.IsNew)
+        {
+            string elementType = DetermineElementType(fragment);
+            commands.Add(new CreateElementCommand(fragment, elementType));
+        }
+        commands.Add(new SetLayoutCommand(fragment, fragment.Bounds));
+        if (!string.IsNullOrEmpty(props.BackgroundColor) && props.BackgroundColor != "transparent")
+            commands.Add(new SetPropertyCommand(fragment, "backgroundColor", props.BackgroundColor));
+        if (props.BorderTopWidth > 0)
+        {
+            commands.Add(new SetPropertyCommand(fragment, "borderTopWidth", props.BorderTopWidth));
+            commands.Add(new SetPropertyCommand(fragment, "borderTopColor", props.BorderTopColor));
+        }
+        if (props.BorderRightWidth > 0)
+        {
+            commands.Add(new SetPropertyCommand(fragment, "borderRightWidth", props.BorderRightWidth));
+            commands.Add(new SetPropertyCommand(fragment, "borderRightColor", props.BorderRightColor));
+        }
+        if (props.BorderBottomWidth > 0)
+        {
+            commands.Add(new SetPropertyCommand(fragment, "borderBottomWidth", props.BorderBottomWidth));
+            commands.Add(new SetPropertyCommand(fragment, "borderBottomColor", props.BorderBottomColor));
+        }
+        if (props.BorderLeftWidth > 0)
+        {
+            commands.Add(new SetPropertyCommand(fragment, "borderLeftWidth", props.BorderLeftWidth));
+            commands.Add(new SetPropertyCommand(fragment, "borderLeftColor", props.BorderLeftColor));
+        }
+        commands.Add(new SetPropertyCommand(fragment, "color", props.Color));
+        commands.Add(new SetPropertyCommand(fragment, "fontSize", props.FontSize));
+        if (!string.IsNullOrEmpty(props.FontFamily))
+            commands.Add(new SetPropertyCommand(fragment, "fontFamily", props.FontFamily));
+        if (!string.IsNullOrEmpty(props.FontWeight))
+            commands.Add(new SetPropertyCommand(fragment, "fontWeight", props.FontWeight));
+        commands.Add(new SetPropertyCommand(fragment, "zIndex", props.ZIndex));
+        if (fragment.Element?.NodeType == (int)NodeType.Text)
+            commands.Add(new SetPropertyCommand(fragment, "textContent", fragment.Element.TextContent));
+        return commands;
+    }
+    private string DetermineElementType(ILayoutFragment fragment)
+    {
+        if (fragment.Element == null)
+            return "container";
+        switch (fragment.Element.TagName?.ToUpperInvariant())
+        {
+            case "DIV": return "container";
+            case "SPAN": return "text";
+            case "IMG": return "image";
+            case "INPUT":
+                var type = fragment.Element.GetAttribute("type") ?? "text";
+                return $"input-{type}";
+            case "BUTTON": return "button";
+            default: return "container";
+        }
+    }
+}
+</file>
+
+<file path="Render/RenderSystem.cs">
+using System;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+using Infrastructure.EventAggregator.API.Aggregation;
+using LayoutEngine.Core.Events;
+using LayoutEngine.Core.Layout;
+using LayoutEngine.Core.Render.Commands;
+namespace LayoutEngine.Core.Render;
+using System.Linq;
+public class RenderSystem : IRenderSystem
+{
+    private readonly IEventAggregator _eventAggregator;
+    private readonly RenderTreeWalker _treeWalker;
+    private IRenderer? _renderer;
+    private readonly HashSet<IElement> _elementsNeedingRender = new();
+    public RenderSystem(
+        IEventAggregator eventAggregator,
+        RenderTreeWalker treeWalker)
+    {
+        _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+        _treeWalker = treeWalker ?? throw new ArgumentNullException(nameof(treeWalker));
+        _eventAggregator.Subscribe<LayoutInvalidatedEvent>(OnLayoutInvalidated);
+    }
+    public IReadOnlyList<IRenderCommand> ProcessFragmentTree(IFragmentTree fragmentTree)
+    {
+        var commands = _treeWalker.Walk(fragmentTree);
+        _renderer?.Execute(commands);
+        _eventAggregator.Publish(new RenderCompletedEvent());
+        return commands;
+    }
+    public void InvalidateRender(IElement element, bool recursive = true)
+    {
+        var affectedElements = new List<IElement>();
+        _elementsNeedingRender.Add(element);
+        affectedElements.Add(element);
+        if (recursive)
+        {
+            foreach (var child in element.Children.OfType<IElement>())
+                InvalidateRenderRecursive(child, affectedElements);
+        }
+        _eventAggregator.Publish(new RenderInvalidatedEvent(affectedElements));
+    }
+    private void InvalidateRenderRecursive(IElement element, List<IElement> affectedElements)
+    {
+        _elementsNeedingRender.Add(element);
+        affectedElements.Add(element);
+        foreach (var child in element.Children.OfType<IElement>())
+            InvalidateRenderRecursive(child, affectedElements);
+    }
+    public bool NeedsRender(IElement element) => _elementsNeedingRender.Contains(element);
+    public void AttachRenderer(IRenderer renderer)
+    {
+        _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
+    }
+    public IRenderer GetRenderer()
+    {
+        return _renderer ?? throw new InvalidOperationException("No renderer attached to the render system.");
+    }
+    private void OnLayoutInvalidated(LayoutInvalidatedEvent @event)
+    {
+        foreach (var element in @event.Elements)
+            InvalidateRender(element, false);
+    }
+}
+</file>
+
+<file path="Render/RenderTreeWalker.cs">
+using System.Collections.Generic;
+using System.Linq;
+using AngleSharp.Dom;
+using LayoutEngine.Core.Layout;
+using LayoutEngine.Core.Viewport;
+using LayoutEngine.Core.Render.Commands;
+namespace LayoutEngine.Core.Render;
+using Viewport = Viewport.Viewport;
+public class RenderTreeWalker
+{
+    private readonly FragmentRegistry _fragmentRegistry;
+    private readonly ViewportManager _viewportManager;
+    private readonly RenderCommandGenerator _commandGenerator;
+    public RenderTreeWalker(
+        FragmentRegistry fragmentRegistry,
+        ViewportManager viewportManager,
+        RenderCommandGenerator commandGenerator)
+    {
+        _fragmentRegistry = fragmentRegistry;
+        _viewportManager = viewportManager;
+        _commandGenerator = commandGenerator;
+    }
+    public List<IRenderCommand> Walk(IFragmentTree fragmentTree)
+    {
+        var commands = new List<IRenderCommand>();
+        var processedIds = new HashSet<string>();
+        var rootViewport = _viewportManager.BuildViewportTree(fragmentTree);
+        ProcessFragmentWithViewports(fragmentTree.RootFragment, rootViewport, commands, processedIds);
+        return commands;
+    }
+    private void ProcessFragmentWithViewports(
+        ILayoutFragment fragment,
+        Viewport viewport,
+        List<IRenderCommand> commands,
+        HashSet<string> processedIds)
+    {
+        var fragmentStatus = _fragmentRegistry.RegisterFragment(fragment);
+        processedIds.Add(fragmentStatus.Id);
+        commands.AddRange(_commandGenerator.GenerateFragmentCommands(fragment, fragmentStatus));
+        var fragmentViewport = _viewportManager.GetViewportForElement(fragment.Element);
+        if (fragmentViewport != null)
+        {
+            commands.Add(new CreateViewportCommand(fragmentViewport));
+            commands.Add(new SetScrollOffsetCommand(fragmentViewport.Id, fragmentViewport.ScrollOffset));
+            foreach (var child in SortedChildren(fragment))
+                ProcessFragmentWithViewports(child, fragmentViewport, commands, processedIds);
+            commands.Add(new PopViewportCommand(fragmentViewport.Id));
+        }
+        else
+        {
+            foreach (var child in SortedChildren(fragment))
+                ProcessFragmentWithViewports(child, viewport, commands, processedIds);
+        }
+    }
+    private IEnumerable<ILayoutFragment> SortedChildren(ILayoutFragment fragment)
+    {
+        return fragment.Children.OrderBy(f => f.VisualProperties.ZIndex);
+    }
+}
+</file>
+
+<file path="ServiceCollectionExtensions.cs">
+namespace LayoutEngine.Core;
+using AngleSharp;
+using Contracts.Platform.Lifecycle;
+using Infrastructure.CacheManager.DI;
+using Infrastructure.EventAggregator.DI;
+using Layout;
+using LayoutEngine.Contracts.Platform.Dom.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
+using Render;
+using Style;
+using Viewport;
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddLayoutEngine(this IServiceCollection services)
+    {
+        var config = new LayoutEngineConfiguration
+        {
+            TargetFramesPerSecond = 60
+        };
+        services.AddSingleton(config);
+        services.AddSingleton<IConfiguration>(provider =>
+        {
+            var config = Configuration.Default
+                .WithCss()
+                .WithRenderDevice()
+                .WithDefaultLoader();
+            return config;
+        });
+        services.AddSingleton<IEngine, Engine>();
+        services.AddSingleton<IDocumentLifecycleCoordinator, DocumentLifecycleCoordinator>();
+        services.AddSingleton<IStyleSystem, StyleSystem>();
+        services.AddSingleton<ILayoutSystem, LayoutSystem>();
+        services.AddSingleton<FragmentRegistry>();
+        services.AddSingleton<RenderCommandGenerator>();
+        services.AddSingleton<RenderTreeWalker>();
+        services.AddSingleton<IRenderSystem, RenderSystem>();
+        services.AddSingleton<ViewportManager>();
+        services.AddSingleton<DomScrollEventBridge>();
+        services.AddSingleton<IDocumentManager, DocumentManager>();
+        services.AddSingleton<IMutationObserverFactory, MutationObserverFactory>();
+        services.AddSingleton<IDomMutationTracker, DomMutationTracker>();
+        services.AddEventAggregatorModule();
+        services.AddCacheManagerModule();
+        return services;
+    }
+}
+</file>
+
+<file path="Style/ComputedStyle.cs">
+namespace LayoutEngine.Core.Style;
+using System;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+public class ComputedStyle : IComputedStyle
+{
+    private readonly Dictionary<string, string> _properties = new();
+    public ComputedStyle(IElement element, IComputedStyle? parentStyle)
+    {
+        Element = element;
+        ApplyDefaultStyles();
+        ApplyInheritedStyles(parentStyle);
+        ApplyStylesheetStyles();
+        ApplyInlineStyles();
+    }
+    public IElement Element { get; }
+    public string GetValue(string propertyName)
+    {
+        return _properties.TryGetValue(propertyName, out var value) ? value : string.Empty;
+    }
+    public bool HasValue(string propertyName)
+    {
+        return _properties.ContainsKey(propertyName);
+    }
+    public IReadOnlyDictionary<string, string> Properties => _properties;
+    public DisplayType Display
+    {
+        get
+        {
+            var display = GetValue("display");
+            return display switch
+            {
+                "block" => DisplayType.Block,
+                "flex" => DisplayType.Flex,
+                "grid" => DisplayType.Grid,
+                "inline" => DisplayType.Inline,
+                "inline-block" => DisplayType.InlineBlock,
+                "none" => DisplayType.None,
+                _ => DisplayType.Block
+            };
+        }
+    }
+    public PositionType Position
+    {
+        get
+        {
+            var position = GetValue("position");
+            return position switch
+            {
+                "relative" => PositionType.Relative,
+                "absolute" => PositionType.Absolute,
+                "fixed" => PositionType.Fixed,
+                "sticky" => PositionType.Sticky,
+                _ => PositionType.Static
+            };
+        }
+    }
+    private void ApplyDefaultStyles()
+    {
+        if (Element.TagName == "DIV")
+        {
+            _properties["display"] = "block";
+        }
+        else if (Element.TagName == "SPAN")
+        {
+            _properties["display"] = "inline";
+        }
+    }
+    private void ApplyInheritedStyles(IComputedStyle? parentStyle)
+    {
+        if (parentStyle == null) return;
+        foreach (var prop in InheritedProperties)
+        {
+            if (parentStyle.HasValue(prop))
+            {
+                _properties[prop] = parentStyle.GetValue(prop);
+            }
+        }
+    }
+    private void ApplyStylesheetStyles()
+    {
+    }
+    private void ApplyInlineStyles()
+    {
+        var style = Element.GetAttribute("style");
+        if (string.IsNullOrEmpty(style)) return;
+        var declarations = style.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var declaration in declarations)
+        {
+            var parts = declaration.Split(':', 2);
+            if (parts.Length == 2)
+            {
+                var prop = parts[0].Trim();
+                var value = parts[1].Trim();
+                _properties[prop] = value;
+            }
+        }
+    }
+    private static readonly HashSet<string> InheritedProperties = new()
+    {
+        "color",
+        "font-family",
+        "font-size",
+        "font-weight",
+        "line-height",
+        "text-align",
+    };
+}
+public enum DisplayType
+{
+    None,
+    Block,
+    Inline,
+    InlineBlock,
+    Flex,
+    Grid
+}
+public enum PositionType
+{
+    Static,
+    Relative,
+    Absolute,
+    Fixed,
+    Sticky
+}
+</file>
+
+<file path="Style/IComputedStyle.cs">
+namespace LayoutEngine.Core.Style;
+using AngleSharp.Dom;
+public interface IComputedStyle
+{
+    IElement Element { get; }
+    string GetValue(string propertyName);
+    bool HasValue(string propertyName);
+    DisplayType Display { get; }
+    PositionType Position { get; }
+}
+</file>
+
+<file path="Style/IStyleSystem.cs">
+namespace LayoutEngine.Core.Style;
+using AngleSharp.Dom;
+public interface IStyleSystem
+{
+    IComputedStyle ComputeStyle(IElement element);
+    void ComputeDocumentStyles(IDocument document);
+    IComputedStyle GetComputedStyle(IElement element);
+    bool NeedsStyleRecalc(IElement element);
+    void InvalidateStyle(IElement element, bool recursive = true);
+    void ClearStyles();
+}
+</file>
+
+<file path="Style/StyleSystem.cs">
+namespace LayoutEngine.Core.Style;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using AngleSharp.Dom;
+using Events;
+using Infrastructure.EventAggregator.API.Aggregation;
+public class StyleSystem : IStyleSystem
+{
+    private readonly Dictionary<IElement, IComputedStyle> _computedStyles = new();
+    private readonly HashSet<IElement> _elementsNeedingStyleRecalc = new();
+    private readonly IEventAggregator _eventAggregator;
+    public StyleSystem(IEventAggregator eventAggregator)
+    {
+        _eventAggregator = eventAggregator;
+    }
+    public IComputedStyle ComputeStyle(IElement element)
+    {
+        IComputedStyle? parentStyle = null;
+        if (element.Parent is IElement parentElement)
+        {
+            if (NeedsStyleRecalc(parentElement))
+            {
+                ComputeStyle(parentElement);
+            }
+            _computedStyles.TryGetValue(parentElement, out parentStyle);
+        }
+        var computedStyle = new ComputedStyle(element, parentStyle);
+        _computedStyles[element] = computedStyle;
+        _elementsNeedingStyleRecalc.Remove(element);
+        return computedStyle;
+    }
+    public void ComputeDocumentStyles(IDocument document)
+    {
+        if (document.DocumentElement != null)
+        {
+            ComputeStylesRecursive(document.DocumentElement);
+        }
+        var elements = _computedStyles.Keys.ToList();
+        _eventAggregator.Publish(new StyleComputedEvent(elements, _computedStyles));
+    }
+    private void ComputeStylesRecursive(IElement element)
+    {
+        ComputeStyle(element);
+        foreach (var child in element.Children.OfType<IElement>())
+        {
+            ComputeStylesRecursive(child);
+        }
+    }
+    public IComputedStyle GetComputedStyle(IElement element)
+    {
+        _computedStyles.TryGetValue(element, out var style);
+        return style;
+    }
+    public bool NeedsStyleRecalc(IElement element)
+    {
+        return _elementsNeedingStyleRecalc.Contains(element);
+    }
+    public void InvalidateStyle(IElement element, bool recursive = true)
+    {
+        var affectedElements = new List<IElement>();
+        _elementsNeedingStyleRecalc.Add(element);
+        affectedElements.Add(element);
+        if (recursive)
+        {
+            foreach (var child in element.Children.OfType<IElement>())
+            {
+                InvalidateStyleRecursive(child, affectedElements);
+            }
+        }
+        _eventAggregator.Publish(new StyleInvalidatedEvent(affectedElements));
+    }
+    private void InvalidateStyleRecursive(IElement element, List<IElement> affectedElements)
+    {
+        _elementsNeedingStyleRecalc.Add(element);
+        affectedElements.Add(element);
+        foreach (var child in element.Children.OfType<IElement>())
+        {
+            InvalidateStyleRecursive(child, affectedElements);
+        }
+    }
+    public void ClearStyles()
+    {
+        _computedStyles.Clear();
+    }
+}
+</file>
+
+<file path="Viewport/DomScrollEvent.cs">
+namespace LayoutEngine.Core.Viewport;
+using Infrastructure.EventAggregator.API.Events;
+using Layout;
+public class DomScrollEvent : EventBase
+{
+    public string ViewportId { get; }
+    public Point NewScrollOffset { get; }
+    public Point OldScrollOffset { get; }
+    public DomScrollEvent(string viewportId, Point newScrollOffset, Point oldScrollOffset)
+    {
+        ViewportId = viewportId;
+        NewScrollOffset = newScrollOffset;
+        OldScrollOffset = oldScrollOffset;
+    }
+}
+public class UnityScrollEvent : EventBase
+{
+    public string ViewportId { get; }
+    public Point NewScrollOffset { get; }
+    public UnityScrollEvent(string viewportId, Point newScrollOffset)
+    {
+        ViewportId = viewportId;
+        NewScrollOffset = newScrollOffset;
+    }
+}
+</file>
+
+<file path="Viewport/DomScrollEventBridge.cs">
+namespace LayoutEngine.Core.Viewport;
+using System;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+using Infrastructure.EventAggregator.API.Aggregation;
+using Layout;
+public class DomScrollEventBridge : IDisposable
+{
+    private readonly ViewportManager _viewportManager;
+    private readonly IEventAggregator _eventAggregator;
+    private readonly Dictionary<IElement?, ScrollEventListener> _scrollListeners = new();
+    private bool _isDisposed;
+    public DomScrollEventBridge(ViewportManager viewportManager, IEventAggregator eventAggregator)
+    {
+        _viewportManager = viewportManager ?? throw new ArgumentNullException(nameof(viewportManager));
+        _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+        _eventAggregator.Subscribe<UnityScrollEvent>(OnUnityScroll);
+    }
+    public void AttachDomListeners()
+    {
+        DetachAllDomListeners();
+        AttachDomListenersRecursive(_viewportManager.RootViewport);
+    }
+    private void AttachDomListenersRecursive(Viewport viewport)
+    {
+        if (viewport.DomElement != null && !_scrollListeners.ContainsKey(viewport.DomElement))
+        {
+            var listener = new ScrollEventListener(viewport.DomElement, OnDomElementScrolled);
+            _scrollListeners[viewport.DomElement] = listener;
+        }
+        foreach (var child in viewport.Children)
+        {
+            AttachDomListenersRecursive(child);
+        }
+    }
+    private void OnDomElementScrolled(IElement element, double scrollX, double scrollY)
+    {
+        var viewport = _viewportManager.GetViewportForElement(element);
+        if (viewport != null)
+        {
+            var oldOffset = viewport.ScrollOffset;
+            viewport.ScrollOffset = new Point((float)scrollX, (float)scrollY);
+            _eventAggregator.Publish(new DomScrollEvent(viewport.Id, viewport.ScrollOffset, oldOffset));
+        }
+    }
+    private void OnUnityScroll(UnityScrollEvent evt)
+    {
+        if (_viewportManager.GetViewport(evt.ViewportId) is Viewport viewport &&
+            viewport.DomElement != null)
+        {
+            viewport.ScrollOffset = evt.NewScrollOffset;
+            UpdateDomElementScroll(viewport.DomElement, evt.NewScrollOffset);
+        }
+    }
+    private void UpdateDomElementScroll(IElement? element, Point scrollOffset)
+    {
+        Console.WriteLine($"DOM scroll position updated: Element={element?.TagName}, ScrollX={scrollOffset.X}, ScrollY={scrollOffset.Y}");
+    }
+    private void DetachAllDomListeners()
+    {
+        foreach (var listener in _scrollListeners.Values)
+        {
+            listener.Dispose();
+        }
+        _scrollListeners.Clear();
+    }
+    public void Dispose()
+    {
+        if (_isDisposed)
+            return;
+        _isDisposed = true;
+        DetachAllDomListeners();
+    }
+    private class ScrollEventListener : IDisposable
+    {
+        private readonly IElement _element;
+        private readonly Action<IElement, double, double> _callback;
+        private bool _isDisposed;
+        public ScrollEventListener(IElement? element, Action<IElement, double, double> callback)
+        {
+            _element = element ?? throw new ArgumentNullException(nameof(element));
+            _callback = callback ?? throw new ArgumentNullException(nameof(callback));
+            AttachJsEventListener();
+        }
+        private void AttachJsEventListener()
+        {
+            Console.WriteLine($"Attached scroll listener to element: {_element.TagName}");
+        }
+        private void DetachJsEventListener()
+        {
+        }
+        public void Dispose()
+        {
+            if (_isDisposed)
+                return;
+            _isDisposed = true;
+            DetachJsEventListener();
+        }
+    }
+}
+</file>
+
+<file path="Viewport/ScrollAnchor.cs">
+namespace LayoutEngine.Core.Viewport;
+using System;
+using AngleSharp.Dom;
+using Layout;
+public class ScrollAnchor
+{
+    public IElement Element { get; }
+    public float RelativeX { get; }
+    public float RelativeY { get; }
+    public Point OriginalScrollOffset { get; }
+    public ScrollAnchor(IElement element, Viewport viewport)
+    {
+        Element = element;
+        OriginalScrollOffset = viewport.ScrollOffset;
+        RelativeX = 0.5f;
+        RelativeY = 0.5f;
+    }
+    public Point CalculateNewScrollOffset(Viewport viewport, ILayoutSystem layoutSystem)
+    {
+        var layoutInfo = layoutSystem.GetLayoutInfo(Element);
+        if (layoutInfo == null)
+        {
+            return OriginalScrollOffset;
+        }
+        var elementRect = layoutInfo.ContentRect;
+        float targetX = elementRect.X - (viewport.ViewportRect.Width * RelativeX);
+        float targetY = elementRect.Y - (viewport.ViewportRect.Height * RelativeY);
+        targetX = Math.Max(0, Math.Min(targetX, viewport.ContentSize.Width - viewport.ViewportRect.Width));
+        targetY = Math.Max(0, Math.Min(targetY, viewport.ContentSize.Height - viewport.ViewportRect.Height));
+        return new Point(targetX, targetY);
+    }
+}
+</file>
+
+<file path="Viewport/Viewport.cs">
+namespace LayoutEngine.Core.Viewport;
+using System;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+using Layout;
+public class Viewport
+{
+    public string Id { get; }
+    public IElement? DomElement { get; }
+    public Rect ViewportRect { get; set; }
+    public Size ContentSize { get; set; }
+    public Point ScrollOffset { get; set; }
+    public Viewport? Parent { get; set; }
+    public List<Viewport> Children { get; } = new List<Viewport>();
+    public HashSet<string> FragmentIds { get; } = new HashSet<string>();
+    public bool CanScrollHorizontally { get; set; }
+    public bool CanScrollVertically { get; set; }
+    public bool UseSmoothScrolling { get; set; }
+    public Viewport(string id, IElement? domElement)
+    {
+        Id = id ?? throw new ArgumentNullException(nameof(id));
+        DomElement = domElement;
+    }
+    public Rect GetAbsoluteRect()
+    {
+        var x = ViewportRect.X;
+        var y = ViewportRect.Y;
+        var current = Parent;
+        while (current != null)
+        {
+            x += current.ViewportRect.X - current.ScrollOffset.X;
+            y += current.ViewportRect.Y - current.ScrollOffset.Y;
+            current = current.Parent;
+        }
+        return new Rect(x, y, ViewportRect.Width, ViewportRect.Height);
+    }
+    public Point DocumentToLocal(Point documentPoint)
+    {
+        var absRect = GetAbsoluteRect();
+        return new Point(
+            documentPoint.X - absRect.X + ScrollOffset.X,
+            documentPoint.Y - absRect.Y + ScrollOffset.Y
+        );
+    }
+    public Point LocalToDocument(Point localPoint)
+    {
+        var absRect = GetAbsoluteRect();
+        return new Point(
+            localPoint.X + absRect.X - ScrollOffset.X,
+            localPoint.Y + absRect.Y - ScrollOffset.Y
+        );
+    }
+}
+</file>
+
+<file path="Viewport/ViewportManager.cs">
+using System;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+using LayoutEngine.Core.Layout;
+using LayoutEngine.Core.Style;
+namespace LayoutEngine.Core.Viewport;
+public class ViewportManager
+{
+    private readonly IStyleSystem _styleSystem;
+    private readonly Dictionary<string, Viewport> _viewportsById = new();
+    private readonly Dictionary<IElement, string> _elementToViewportId = new();
+    private readonly Dictionary<string, List<string>> _fragmentsInViewport = new();
+    private readonly Dictionary<IElement, Point> _savedScrollPositions = new();
+    public Viewport RootViewport { get; private set; }
+    public ViewportManager(IStyleSystem styleSystem)
+    {
+        _styleSystem = styleSystem ?? throw new ArgumentNullException(nameof(styleSystem));
+        RootViewport = new Viewport("root", null);
+        _viewportsById["root"] = RootViewport;
+    }
+    public Viewport BuildViewportTree(IFragmentTree fragmentTree)
+    {
+        _viewportsById.Clear();
+        _elementToViewportId.Clear();
+        _fragmentsInViewport.Clear();
+        RootViewport = new Viewport("root", null);
+        _viewportsById["root"] = RootViewport;
+        ProcessFragment(fragmentTree.RootFragment, RootViewport);
+        RestoreScrollPositions();
+        return RootViewport;
+    }
+    private void ProcessFragment(ILayoutFragment fragment, Viewport parentViewport)
+    {
+        string fragmentId = fragment.GetHashCode().ToString();
+        if (!_fragmentsInViewport.TryGetValue(parentViewport.Id, out var fragments))
+        {
+            fragments = new List<string>();
+            _fragmentsInViewport[parentViewport.Id] = fragments;
+        }
+        fragments.Add(fragmentId);
+        if (fragment.Element != null)
+        {
+            var style = _styleSystem.GetComputedStyle(fragment.Element);
+            if (IsScrollContainer(style))
+            {
+                var viewportId = Guid.NewGuid().ToString();
+                var viewport = new Viewport(viewportId, fragment.Element);
+                viewport.ViewportRect = fragment.Bounds;
+                viewport.Parent = parentViewport;
+                var overflowX = style.GetValue("overflow-x");
+                var overflowY = style.GetValue("overflow-y");
+                viewport.CanScrollHorizontally = overflowX == "auto" || overflowX == "scroll";
+                viewport.CanScrollVertically = overflowY == "auto" || overflowY == "scroll";
+                var scrollBehavior = style.GetValue("scroll-behavior");
+                viewport.UseSmoothScrolling = scrollBehavior == "smooth";
+                _viewportsById[viewportId] = viewport;
+                _elementToViewportId[fragment.Element] = viewportId;
+                parentViewport.Children.Add(viewport);
+                ProcessFragmentChildren(fragment, viewport);
+                CalculateContentSize(viewport, fragment);
+                return;
+            }
+        }
+        foreach (var child in fragment.Children)
+        {
+            ProcessFragment(child, parentViewport);
+        }
+    }
+    private void ProcessFragmentChildren(ILayoutFragment parentFragment, Viewport viewport)
+    {
+        foreach (var child in parentFragment.Children)
+        {
+            ProcessFragment(child, viewport);
+        }
+    }
+    private void CalculateContentSize(Viewport viewport, ILayoutFragment fragment)
+    {
+        float maxRight = 0;
+        float maxBottom = 0;
+        foreach (var child in fragment.Children)
+        {
+            maxRight = Math.Max(maxRight, child.Bounds.X + child.Bounds.Width);
+            maxBottom = Math.Max(maxBottom, child.Bounds.Y + child.Bounds.Height);
+        }
+        viewport.ContentSize = new Size(
+            Math.Max(maxRight, viewport.ViewportRect.Width),
+            Math.Max(maxBottom, viewport.ViewportRect.Height)
+        );
+    }
+    private bool IsScrollContainer(IComputedStyle style)
+    {
+        var overflow = style.GetValue("overflow");
+        var overflowX = style.GetValue("overflow-x");
+        var overflowY = style.GetValue("overflow-y");
+        return overflow == "auto" || overflow == "scroll" ||
+               overflowX == "auto" || overflowX == "scroll" ||
+               overflowY == "auto" || overflowY == "scroll";
+    }
+    public void SaveScrollPosition(IElement element)
+    {
+        if (_elementToViewportId.TryGetValue(element, out var viewportId) &&
+            _viewportsById.TryGetValue(viewportId, out var viewport))
+        {
+            _savedScrollPositions[element] = viewport.ScrollOffset;
+        }
+    }
+    public void SaveAllScrollPositions()
+    {
+        foreach (var kvp in _elementToViewportId)
+        {
+            var element = kvp.Key;
+            var viewportId = kvp.Value;
+            if (_viewportsById.TryGetValue(viewportId, out var viewport))
+            {
+                _savedScrollPositions[element] = viewport.ScrollOffset;
+            }
+        }
+    }
+    private void RestoreScrollPositions()
+    {
+        foreach (var kvp in _savedScrollPositions)
+        {
+            var element = kvp.Key;
+            var scrollPos = kvp.Value;
+            if (_elementToViewportId.TryGetValue(element, out var viewportId) &&
+                _viewportsById.TryGetValue(viewportId, out var viewport))
+            {
+                viewport.ScrollOffset = scrollPos;
+            }
+        }
+    }
+    public Viewport? GetViewport(string id)
+    {
+        _viewportsById.TryGetValue(id, out var viewport);
+        return viewport;
+    }
+    public Viewport? GetViewportForElement(IElement? element)
+    {
+        if (element == null) return null;
+        if (_elementToViewportId.TryGetValue(element, out var viewportId))
+        {
+            _viewportsById.TryGetValue(viewportId, out var viewport);
+            return viewport;
+        }
+        return null;
+    }
+}
+</file>
+
+</files>

@@ -1,0 +1,774 @@
+This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
+The content has been processed where comments have been removed, empty lines have been removed.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+4. Repository files, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching these patterns are excluded: **/obj, **/bin, **/*.csproj
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Code comments have been removed from supported file types
+- Empty lines have been removed from all files
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+<additional_info>
+
+</additional_info>
+
+</file_summary>
+
+<directory_structure>
+DocumentManagerUnitTests.cs
+DomMutationTrackerIntegrationTests.cs
+EngineFacadeIntegrationTests.cs
+LayoutSystemTests.cs
+RenderSystemTests.cs
+StyleSystemTests.cs
+TestHelpers.cs
+TestHtmlCollection.cs
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="DocumentManagerUnitTests.cs">
+using Xunit;
+using Xunit.Abstractions;
+using AngleSharp;
+using AngleSharp.Dom;
+using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
+using LayoutEngine.Core;
+using System;
+using MartinCostello.Logging.XUnit;
+namespace LayoutEngine.Core.Tests;
+public class DocumentManagerUnitTests
+{
+    private readonly ITestOutputHelper _output;
+    private readonly ILogger<DocumentManager> _logger;
+    private readonly IConfiguration _testConfiguration;
+    private readonly DocumentManager _documentManager;
+    public DocumentManagerUnitTests(ITestOutputHelper output)
+    {
+        _output = output;
+        _logger = new LoggerFactory()
+            .AddXUnit(output)
+            .CreateLogger<DocumentManager>();
+        _testConfiguration = Configuration.Default.WithCss();
+        _documentManager = new DocumentManager(_testConfiguration, _logger);
+    }
+    [Fact]
+    public void Constructor_WithConfiguration_InitializesBrowsingContext()
+    {
+        var context = _documentManager.BrowsingContext;
+        Assert.NotNull(context);
+    }
+    [Fact]
+    public void Document_Property_IsNull_AfterConstruction()
+    {
+        var document = _documentManager.Document;
+        Assert.Null(document);
+    }
+    [Fact]
+    public async Task OpenAsync_WithValidHtml_LogsInformationAndUpdatesDocument()
+    {
+        var htmlInput = "<html><body><p>Testing Open</p></body></html>";
+        var resultDocument = await _documentManager.OpenAsync(htmlInput);
+        var documentFromProperty = _documentManager.Document;
+        Assert.NotNull(resultDocument);
+        Assert.NotNull(documentFromProperty);
+        Assert.Same(resultDocument, documentFromProperty);
+        Assert.Equal("Testing Open", resultDocument.QuerySelector("p")?.TextContent);
+        Assert.Equal(htmlInput, resultDocument.Source.Text);
+    }
+    [Fact]
+    public async Task OpenAsync_CalledMultipleTimes_UpdatesDocumentPropertyEachTime()
+    {
+        var htmlInput1 = "<html><body><p>First</p></body></html>";
+        var htmlInput2 = "<html><body><span>Second</span></body></html>";
+        var resultDocument1 = await _documentManager.OpenAsync(htmlInput1);
+        var documentFromProperty1 = _documentManager.Document;
+        Assert.NotNull(resultDocument1);
+        Assert.Same(resultDocument1, documentFromProperty1);
+        Assert.Equal("First", resultDocument1.QuerySelector("p")?.TextContent);
+        var resultDocument2 = await _documentManager.OpenAsync(htmlInput2);
+        var documentFromProperty2 = _documentManager.Document;
+        Assert.NotNull(resultDocument2);
+        Assert.Same(resultDocument2, documentFromProperty2);
+        Assert.NotSame(resultDocument1, resultDocument2);
+        Assert.Equal("Second", resultDocument2.QuerySelector("span")?.TextContent);
+        Assert.Null(resultDocument2.QuerySelector("p"));
+    }
+}
+</file>
+
+<file path="DomMutationTrackerIntegrationTests.cs">
+using AngleSharp.Dom;
+using LayoutEngine.Contracts.Platform.Events;
+using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
+using Infrastructure.EventAggregator.API.Aggregation;
+using System.Collections.Concurrent;
+namespace LayoutEngine.Core.Tests;
+using Infrastructure.EventAggregator.API.Events;
+public class DomMutationTrackerIntegrationTests
+{
+    private readonly ServiceProvider _serviceProvider;
+    private readonly IEngine _engine;
+    private readonly TestEventSubscriber _subscriber;
+    public DomMutationTrackerIntegrationTests()
+    {
+        var services = new ServiceCollection();
+        services.AddLayoutEngine();
+        _serviceProvider = services.BuildServiceProvider();
+        _engine = _serviceProvider.GetRequiredService<IEngine>();
+        var eventAggregator = _serviceProvider.GetRequiredService<IEventAggregator>();
+        _subscriber = new TestEventSubscriber();
+        eventAggregator.Subscribe<DomAttributeChangedEvent>(_subscriber.OnDomAttributeChangedEvent);
+        eventAggregator.Subscribe<DomNodeAddedEvent>(_subscriber.OnDomNodeAddedEvent);
+        eventAggregator.Subscribe<DomTextChangedEvent>(_subscriber.OnDomTextChangedEvent);
+    }
+    [Fact]
+    public async Task AttributeChange_PublishesDomAttributeChangedEvent()
+    {
+        var html = "<html><body><div id='test'></div></body></html>";
+        var document = await _engine.OpenAsync(html);
+        var div = document.QuerySelector("#test");
+        Assert.NotNull(div);
+        div.SetAttribute("data-foo", "bar");
+        await Task.Delay(50);
+        Assert.Contains(_subscriber.DomAttributeChangedEvents, evt =>
+            evt.Element == div &&
+            evt.AttributeName == "data-foo" &&
+            evt.NewValue == "bar");
+    }
+    [Fact]
+    public async Task NodeAddition_PublishesDomNodeAddedEvent()
+    {
+        var html = "<html><body></body></html>";
+        var document = await _engine.OpenAsync(html);
+        var body = document.Body;
+        Assert.NotNull(body);
+        var newDiv = document.CreateElement("div");
+        body.AppendChild(newDiv);
+        await Task.Delay(50);
+        Assert.Contains(_subscriber.DomNodeAddedEvents, evt =>
+            evt.Node == newDiv &&
+            evt.Parent == body);
+    }
+    [Fact]
+    public async Task TextChange_PublishesDomTextChangedEvent()
+    {
+        var html = "<html><body><span id='s'>hello</span></body></html>";
+        var document = await _engine.OpenAsync(html);
+        var span = document.QuerySelector("#s");
+        Assert.NotNull(span);
+        var textNode = span.FirstChild as IText;
+        Assert.NotNull(textNode);
+        textNode.TextContent = "world";
+        await Task.Delay(50);
+        Assert.Contains(_subscriber.DomTextChangedEvents, evt =>
+            evt.TextNode == textNode &&
+            evt.NewValue == "world");
+    }
+    public class TestEventSubscriber
+    {
+        public ConcurrentBag<DomAttributeChangedEvent> DomAttributeChangedEvents { get; } = new();
+        public ConcurrentBag<DomNodeAddedEvent> DomNodeAddedEvents { get; } = new();
+        public ConcurrentBag<DomTextChangedEvent> DomTextChangedEvents { get; } = new();
+        public void OnDomAttributeChangedEvent(DomAttributeChangedEvent evt) => DomAttributeChangedEvents.Add(evt);
+        public void OnDomNodeAddedEvent(DomNodeAddedEvent evt) => DomNodeAddedEvents.Add(evt);
+        public void OnDomTextChangedEvent(DomTextChangedEvent evt) => DomTextChangedEvents.Add(evt);
+    }
+}
+</file>
+
+<file path="EngineFacadeIntegrationTests.cs">
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+namespace LayoutEngine.Core.Tests;
+using MartinCostello.Logging.XUnit;
+using Xunit.Abstractions;
+public class EngineFacadeIntegrationTests
+{
+    private readonly ServiceProvider _serviceProvider;
+    private ITestOutputHelper _output;
+    private readonly IEngine _engine;
+    public EngineFacadeIntegrationTests(ITestOutputHelper output)
+    {
+        _output = output;
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddLayoutEngine();
+        serviceCollection.AddLogging(builder =>
+        {
+            builder.SetMinimumLevel(LogLevel.Trace);
+            builder.AddXUnit(_output);
+        });
+        _serviceProvider = serviceCollection.BuildServiceProvider();
+        _engine = _serviceProvider.GetRequiredService<IEngine>();
+    }
+    [Fact]
+    public async Task OpenAsync_Facade_LoadsHtmlAndUpdatesDocument()
+    {
+        var html = "<html><body><h1>Hello Integration Test!</h1></body></html>";
+        var loadedDocument = await _engine.OpenAsync(html);
+        var documentFromProperty = _engine.Document;
+        Assert.NotNull(loadedDocument);
+        Assert.Same(loadedDocument, documentFromProperty);
+        Assert.Equal("Hello Integration Test!", documentFromProperty?.QuerySelector("h1")?.TextContent);
+    }
+    [Fact]
+    public void DocumentProperty_Facade_IsNullBeforeOpen()
+    {
+        Assert.Null(_engine.Document);
+    }
+    [Fact]
+    public void BrowsingContext_Facade_IsAvailableAfterConstruction()
+    {
+        Assert.NotNull(_engine.BrowsingContext);
+    }
+}
+</file>
+
+<file path="LayoutSystemTests.cs">
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using AngleSharp.Dom;
+using Infrastructure.EventAggregator.API.Aggregation;
+using LayoutEngine.Core.Events;
+using LayoutEngine.Core.Layout;
+using LayoutEngine.Core.Style;
+using NSubstitute;
+using Xunit;
+namespace LayoutEngine.Core.Tests;
+public class LayoutSystemTests
+{
+    private readonly IStyleSystem _styleSystem;
+    private readonly IEventAggregator _eventAggregator;
+    private readonly LayoutSystem _layoutSystem;
+    public LayoutSystemTests()
+    {
+        _styleSystem = Substitute.For<IStyleSystem>();
+        _eventAggregator = Substitute.For<IEventAggregator>();
+        _layoutSystem = new LayoutSystem(_styleSystem, _eventAggregator);
+    }
+    [Fact]
+    public void PerformLayout_ComputesDocumentStyles()
+    {
+        var document = TestHelpers.CreateMockDocument();
+        var result = _layoutSystem.PerformLayout(document);
+        _styleSystem.Received(1).ComputeDocumentStyles(document);
+    }
+    [Fact]
+    public void PerformLayout_ReturnsLayoutResult_WithRootFragment()
+    {
+        var rootElement = TestHelpers.CreateMockElement("html");
+        var document = TestHelpers.CreateMockDocument(rootElement);
+        SetUpStyleSystemForElement(rootElement);
+        var result = _layoutSystem.PerformLayout(document);
+        Assert.NotNull(result);
+        Assert.NotNull(result.RootFragment);
+        Assert.Equal(rootElement, result.RootFragment.Element);
+    }
+    [Fact]
+    public void PerformLayout_PublishesFragmentTreeUpdatedEvent()
+    {
+        var document = TestHelpers.CreateMockDocument();
+        SetUpStyleSystemForElement(document.DocumentElement);
+        _layoutSystem.PerformLayout(document);
+        _eventAggregator.Received(1).Publish(Arg.Any<FragmentTreeUpdatedEvent>());
+    }
+    [Fact]
+    public void NeedsLayout_ReturnsFalse_ForInitialElement()
+    {
+        var element = TestHelpers.CreateMockElement();
+        var result = _layoutSystem.NeedsLayout(element);
+        Assert.False(result);
+    }
+    [Fact]
+    public void NeedsLayout_ReturnsTrue_ForInvalidatedElement()
+    {
+        var element = TestHelpers.CreateMockElement();
+        _layoutSystem.InvalidateLayout(element, false);
+        var result = _layoutSystem.NeedsLayout(element);
+        Assert.True(result);
+    }
+    [Fact]
+    public void InvalidateLayout_PublishesLayoutInvalidatedEvent()
+    {
+        var element = TestHelpers.CreateMockElement();
+        _layoutSystem.InvalidateLayout(element, false);
+        _eventAggregator.Received(1).Publish(Arg.Is<LayoutInvalidatedEvent>(e =>
+            e.Elements.Count == 1 &&
+            e.Elements[0] == element));
+    }
+    [Fact]
+    public void InvalidateLayout_WithRecursive_InvalidatesChildLayouts()
+    {
+        var child1 = TestHelpers.CreateMockElement("div");
+        var child2 = TestHelpers.CreateMockElement("span");
+        var parent = TestHelpers.CreateMockElement("div");
+        var children = new List<IElement> { child1, child2 };
+        var htmlCollection = new TestHtmlCollection(children);
+        parent.Children.Returns(htmlCollection);
+        _layoutSystem.InvalidateLayout(parent, true);
+        _eventAggregator.Received(1).Publish(Arg.Is<LayoutInvalidatedEvent>(e =>
+            e.Elements.Count == 3 &&
+            e.Elements.Contains(parent) &&
+            e.Elements.Contains(child1) &&
+            e.Elements.Contains(child2)));
+        Assert.True(_layoutSystem.NeedsLayout(parent));
+        Assert.True(_layoutSystem.NeedsLayout(child1));
+        Assert.True(_layoutSystem.NeedsLayout(child2));
+    }
+    [Fact]
+    public void GetFragmentTree_ThrowsException_WhenNoLayoutPerformed()
+    {
+        Assert.Throws<InvalidOperationException>(() => _layoutSystem.GetFragmentTree());
+    }
+    [Fact]
+    public void GetFragmentTree_ReturnsFragmentTree_AfterLayoutPerformed()
+    {
+        var document = TestHelpers.CreateMockDocument();
+        SetUpStyleSystemForElement(document.DocumentElement);
+        _layoutSystem.PerformLayout(document);
+        var result = _layoutSystem.GetFragmentTree();
+        Assert.NotNull(result);
+        Assert.NotNull(result.RootFragment);
+    }
+    [Fact]
+    public void GetLayoutInfo_ReturnsNull_WhenNoLayoutPerformed()
+    {
+        var element = TestHelpers.CreateMockElement();
+        var result = _layoutSystem.GetLayoutInfo(element);
+        Assert.Null(result);
+    }
+    [Fact]
+    public void GetLayoutInfo_ReturnsLayoutInfo_AfterLayoutPerformed()
+    {
+        var rootElement = TestHelpers.CreateMockElement("html");
+        var childElement = TestHelpers.CreateMockElement("div", rootElement);
+        var children = new List<IElement> { childElement };
+        var htmlCollection = new TestHtmlCollection(children);
+        rootElement.Children.Returns(htmlCollection);
+        var document = TestHelpers.CreateMockDocument(rootElement);
+        SetUpStyleSystemForElement(rootElement);
+        SetUpStyleSystemForElement(childElement);
+        _layoutSystem.PerformLayout(document);
+        var result = _layoutSystem.GetLayoutInfo(childElement);
+        Assert.NotNull(result);
+        Assert.Equal(childElement, result.Fragments[0].Element);
+    }
+    private void SetUpStyleSystemForElement(IElement element, string display = "block")
+    {
+        var computedStyle = TestHelpers.CreateMockComputedStyle(element, display);
+        _styleSystem.GetComputedStyle(element).Returns(computedStyle);
+        _styleSystem.ComputeStyle(element).Returns(computedStyle);
+    }
+}
+</file>
+
+<file path="RenderSystemTests.cs">
+namespace LayoutEngine.Core.Tests;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+using Infrastructure.EventAggregator.API.Aggregation;
+using LayoutEngine.Core.Events;
+using LayoutEngine.Core.Layout;
+using LayoutEngine.Core.Render;
+using LayoutEngine.Core.Render.Commands;
+using LayoutEngine.Core.Viewport;
+using NSubstitute;
+using Style;
+using Xunit;
+public class RenderSystemTests
+{
+    private readonly IEventAggregator _eventAggregator;
+    private readonly FragmentRegistry _fragmentRegistry;
+    private readonly IStyleSystem _styleSystem;
+    private readonly ViewportManager _viewportManager;
+    private readonly RenderCommandGenerator _commandGenerator;
+    private readonly RenderTreeWalker _treeWalker;
+    private readonly RenderSystem _renderSystem;
+    public RenderSystemTests()
+    {
+        _eventAggregator = Substitute.For<IEventAggregator>();
+        _fragmentRegistry = new FragmentRegistry();
+        _styleSystem = Substitute.For<IStyleSystem>();
+        _viewportManager = new ViewportManager(_styleSystem);
+        _commandGenerator = new RenderCommandGenerator();
+        _treeWalker = new RenderTreeWalker(_fragmentRegistry, _viewportManager, _commandGenerator);
+        _renderSystem = new RenderSystem(_eventAggregator, _treeWalker);
+    }
+    [Fact]
+    public void ProcessFragmentTree_GeneratesRenderCommands()
+    {
+        var element = TestHelpers.CreateMockElement();
+        var layoutFragment = TestHelpers.CreateMockLayoutFragment(element);
+        var fragmentTree = TestHelpers.CreateMockFragmentTree(layoutFragment);
+        var commands = _renderSystem.ProcessFragmentTree(fragmentTree);
+        Assert.NotNull(commands);
+        Assert.NotEmpty(commands);
+        Assert.Contains(commands, c => c.CommandType == RenderCommandType.Create);
+        Assert.Contains(commands, c => c.CommandType == RenderCommandType.SetLayout);
+    }
+    [Fact]
+    public void ProcessFragmentTree_WithRenderer_ExecutesCommands()
+    {
+        var renderer = Substitute.For<IRenderer>();
+        _renderSystem.AttachRenderer(renderer);
+        var element = TestHelpers.CreateMockElement();
+        var layoutFragment = TestHelpers.CreateMockLayoutFragment(element);
+        var fragmentTree = TestHelpers.CreateMockFragmentTree(layoutFragment);
+        _renderSystem.ProcessFragmentTree(fragmentTree);
+        renderer.Received(1).Execute(Arg.Any<IReadOnlyList<IRenderCommand>>());
+    }
+    [Fact]
+    public void ProcessFragmentTree_PublishesRenderCompletedEvent()
+    {
+        var fragmentTree = TestHelpers.CreateMockFragmentTree();
+        _renderSystem.ProcessFragmentTree(fragmentTree);
+        _eventAggregator.Received(1).Publish(Arg.Any<RenderCompletedEvent>());
+    }
+    [Fact]
+    public void NeedsRender_ReturnsFalse_ForInitialElement()
+    {
+        var element = TestHelpers.CreateMockElement();
+        var result = _renderSystem.NeedsRender(element);
+        Assert.False(result);
+    }
+    [Fact]
+    public void NeedsRender_ReturnsTrue_ForInvalidatedElement()
+    {
+        var element = TestHelpers.CreateMockElement();
+        _renderSystem.InvalidateRender(element, false);
+        var result = _renderSystem.NeedsRender(element);
+        Assert.True(result);
+    }
+    [Fact]
+    public void InvalidateRender_PublishesRenderInvalidatedEvent()
+    {
+        var element = TestHelpers.CreateMockElement();
+        _renderSystem.InvalidateRender(element, false);
+        _eventAggregator.Received(1).Publish(Arg.Any<RenderInvalidatedEvent>());
+    }
+    [Fact]
+    public void InvalidateRender_WithRecursive_InvalidatesChildRenders()
+    {
+        var child1 = TestHelpers.CreateMockElement("div");
+        var child2 = TestHelpers.CreateMockElement("span");
+        var parent = TestHelpers.CreateMockElement("div");
+        var children = new List<IElement> { child1, child2 };
+        var htmlCollection = new TestHtmlCollection(children);
+        parent.Children.Returns(htmlCollection);
+        Assert.Equal(2, parent.Children.Length);
+        _renderSystem.InvalidateRender(parent, true);
+        Assert.True(_renderSystem.NeedsRender(parent), "Parent element should need rendering");
+        Assert.True(_renderSystem.NeedsRender(child1), "First child element should need rendering");
+        Assert.True(_renderSystem.NeedsRender(child2), "Second child element should need rendering");
+    }
+    [Fact]
+    public void AttachRenderer_SetsRenderer()
+    {
+        var renderer = Substitute.For<IRenderer>();
+        _renderSystem.AttachRenderer(renderer);
+        Assert.Equal(renderer, _renderSystem.GetRenderer());
+    }
+    [Fact]
+    public void GetRenderer_ThrowsException_WhenNoRendererAttached()
+    {
+        Assert.Throws<InvalidOperationException>(() => _renderSystem.GetRenderer());
+    }
+    [Fact]
+    public void ProcessFragmentTree_MaintainsFragmentIdentity()
+    {
+        var element = TestHelpers.CreateMockElement();
+        var childElement = TestHelpers.CreateMockElement("span", element);
+        var childFragment = TestHelpers.CreateMockLayoutFragment(childElement);
+        var layoutFragment = TestHelpers.CreateMockLayoutFragment(element);
+        layoutFragment.Children.Returns(new List<ILayoutFragment> { childFragment });
+        var fragmentTree = TestHelpers.CreateMockFragmentTree(layoutFragment);
+        var commands1 = _renderSystem.ProcessFragmentTree(fragmentTree);
+        var commands2 = _renderSystem.ProcessFragmentTree(fragmentTree);
+        Assert.DoesNotContain(commands2, c => c.CommandType == RenderCommandType.Create);
+    }
+    [Fact]
+    public void OnLayoutInvalidated_InvalidatesRender()
+    {
+        var element = TestHelpers.CreateMockElement();
+        var layoutInvalidatedEvent = new LayoutInvalidatedEvent(new List<IElement> { element });
+        _eventAggregator.ClearReceivedCalls();
+        foreach (var el in layoutInvalidatedEvent.Elements)
+        {
+            _renderSystem.InvalidateRender(el, false);
+        }
+        Assert.True(_renderSystem.NeedsRender(element));
+        _eventAggregator.Received(1).Publish(Arg.Is<RenderInvalidatedEvent>(e =>
+            e.Elements.Contains(element)));
+    }
+}
+</file>
+
+<file path="StyleSystemTests.cs">
+namespace LayoutEngine.Core.Tests;
+using System.Collections.Generic;
+using System.Linq;
+using AngleSharp.Dom;
+using Infrastructure.EventAggregator.API.Aggregation;
+using LayoutEngine.Core.Events;
+using LayoutEngine.Core.Style;
+using NSubstitute;
+using Xunit;
+public class StyleSystemTests
+{
+    private readonly IEventAggregator _eventAggregator;
+    private readonly StyleSystem _styleSystem;
+    public StyleSystemTests()
+    {
+        _eventAggregator = Substitute.For<IEventAggregator>();
+        _styleSystem = new StyleSystem(_eventAggregator);
+    }
+    [Fact]
+    public void ComputeStyle_ReturnsComputedStyle()
+    {
+        var element = TestHelpers.CreateMockElement();
+        var result = _styleSystem.ComputeStyle(element);
+        Assert.NotNull(result);
+        Assert.Equal(element, result.Element);
+    }
+    [Fact]
+    public void ComputeStyle_SetsDefaultDisplayTypeBasedOnTag()
+    {
+        var divElement = TestHelpers.CreateMockElement("div");
+        var spanElement = TestHelpers.CreateMockElement("span");
+        var divStyle = _styleSystem.ComputeStyle(divElement);
+        var spanStyle = _styleSystem.ComputeStyle(spanElement);
+        Assert.Equal(DisplayType.Block, divStyle.Display);
+        Assert.Equal(DisplayType.Inline, spanStyle.Display);
+    }
+    [Fact]
+    public void ComputeDocumentStyles_PublishesEventEachTimeItsCalled()
+    {
+        var child1 = TestHelpers.CreateMockElement("div");
+        var child2 = TestHelpers.CreateMockElement("span");
+        var root = TestHelpers.CreateMockElement("html");
+        var children = new List<IElement> { child1, child2 };
+        var htmlCollection = new TestHtmlCollection(children);
+        root.Children.Returns(htmlCollection);
+        var document = TestHelpers.CreateMockDocument(root);
+        _styleSystem.ComputeDocumentStyles(document);
+        _styleSystem.ComputeDocumentStyles(document);
+        _eventAggregator.Received(2).Publish(Arg.Is<StyleComputedEvent>(e =>
+            e.Elements.Count >= 3 &&
+            e.ComputedStyles.Count >= 3));
+    }
+    [Fact]
+    public void GetComputedStyle_ReturnsNull_WhenStyleNotComputed()
+    {
+        var element = TestHelpers.CreateMockElement();
+        var result = _styleSystem.GetComputedStyle(element);
+        Assert.Null(result);
+    }
+    [Fact]
+    public void GetComputedStyle_ReturnsComputedStyle_WhenStyleComputed()
+    {
+        var element = TestHelpers.CreateMockElement();
+        _styleSystem.ComputeStyle(element);
+        var result = _styleSystem.GetComputedStyle(element);
+        Assert.NotNull(result);
+        Assert.Equal(element, result.Element);
+    }
+    [Fact]
+    public void NeedsStyleRecalc_ReturnsFalse_ForInitialElement()
+    {
+        var element = TestHelpers.CreateMockElement();
+        var result = _styleSystem.NeedsStyleRecalc(element);
+        Assert.False(result);
+    }
+    [Fact]
+    public void NeedsStyleRecalc_ReturnsTrue_ForInvalidatedElement()
+    {
+        var element = TestHelpers.CreateMockElement();
+        _styleSystem.InvalidateStyle(element, false);
+        var result = _styleSystem.NeedsStyleRecalc(element);
+        Assert.True(result);
+    }
+    [Fact]
+    public void InvalidateStyle_PublishesStyleInvalidatedEvent()
+    {
+        var element = TestHelpers.CreateMockElement();
+        _styleSystem.InvalidateStyle(element, false);
+        _eventAggregator.Received(1).Publish(Arg.Is<StyleInvalidatedEvent>(e =>
+            e.Elements.Count == 1 &&
+            e.Elements[0] == element));
+    }
+    [Fact]
+    public void InvalidateStyle_WithRecursive_InvalidatesChildrenStyles()
+    {
+        var child1 = TestHelpers.CreateMockElement("div");
+        var child2 = TestHelpers.CreateMockElement("span");
+        var parent = TestHelpers.CreateMockElement("div");
+        var childElements = new List<IElement> { child1, child2 };
+        var htmlCollection = new TestHtmlCollection(childElements);
+        parent.Children.Returns(htmlCollection);
+        _styleSystem.InvalidateStyle(parent, true);
+        _eventAggregator.Received(1).Publish(Arg.Is<StyleInvalidatedEvent>(e =>
+            e.Elements.Count == 3 &&
+            e.Elements.Contains(parent) &&
+            e.Elements.Contains(child1) &&
+            e.Elements.Contains(child2)));
+        Assert.True(_styleSystem.NeedsStyleRecalc(parent));
+        Assert.True(_styleSystem.NeedsStyleRecalc(child1));
+        Assert.True(_styleSystem.NeedsStyleRecalc(child2));
+    }
+    [Fact]
+    public void ClearStyles_RemovesAllComputedStyles()
+    {
+        var element1 = TestHelpers.CreateMockElement();
+        var element2 = TestHelpers.CreateMockElement();
+        _styleSystem.ComputeStyle(element1);
+        _styleSystem.ComputeStyle(element2);
+        Assert.NotNull(_styleSystem.GetComputedStyle(element1));
+        Assert.NotNull(_styleSystem.GetComputedStyle(element2));
+        _styleSystem.ClearStyles();
+        Assert.Null(_styleSystem.GetComputedStyle(element1));
+        Assert.Null(_styleSystem.GetComputedStyle(element2));
+    }
+}
+</file>
+
+<file path="TestHelpers.cs">
+namespace LayoutEngine.Core.Tests;
+using System.Collections.Generic;
+using AngleSharp.Dom;
+using LayoutEngine.Core.Layout;
+using LayoutEngine.Core.Style;
+using NSubstitute;
+public static class TestHelpers
+{
+    public static IElement CreateMockElement(string tagName = "div", IElement? parent = null)
+    {
+        var element = Substitute.For<IElement>();
+        element.TagName.Returns(tagName.ToUpperInvariant());
+        element.Parent.Returns(parent);
+        var children = Substitute.For<IHtmlCollection<IElement>>();
+        children.Length.Returns(0);
+        element.Children.Returns(children);
+        return element;
+    }
+    public static IDocument CreateMockDocument(IElement? documentElement = null)
+    {
+        var document = Substitute.For<IDocument>();
+        var docElement = documentElement ?? CreateMockElement("html");
+        document.DocumentElement.Returns(docElement);
+        return document;
+    }
+    public static IComputedStyle CreateMockComputedStyle(IElement element, string display = "block")
+    {
+        var style = Substitute.For<IComputedStyle>();
+        style.Element.Returns(element);
+        style.Display.Returns(GetDisplayType(display));
+        style.GetValue(Arg.Any<string>()).Returns(string.Empty);
+        style.GetValue("display").Returns(display);
+        return style;
+    }
+    private static DisplayType GetDisplayType(string display)
+    {
+        return display switch
+        {
+            "block" => DisplayType.Block,
+            "flex" => DisplayType.Flex,
+            "inline" => DisplayType.Inline,
+            "inline-block" => DisplayType.InlineBlock,
+            "none" => DisplayType.None,
+            _ => DisplayType.Block
+        };
+    }
+    public static ILayoutFragment CreateMockLayoutFragment(IElement? element = null, Rect bounds = default)
+    {
+        var fragment = Substitute.For<ILayoutFragment>();
+        fragment.Element.Returns(element);
+        fragment.Bounds.Returns(bounds.Equals(default) ? new Rect(0, 0, 100, 100) : bounds);
+        fragment.Children.Returns(new List<ILayoutFragment>());
+        fragment.VisualProperties.Returns(new VisualProperties());
+        return fragment;
+    }
+    public static ILayoutInfo CreateMockLayoutInfo(IElement? element = null, Rect contentRect = default)
+    {
+        var layoutInfo = Substitute.For<ILayoutInfo>();
+        layoutInfo.ContentRect.Returns(contentRect.Equals(default) ? new Rect(0, 0, 100, 100) : contentRect);
+        layoutInfo.PaddingRect.Returns(new Rect(0, 0, 110, 110));
+        layoutInfo.BorderRect.Returns(new Rect(0, 0, 120, 120));
+        layoutInfo.MarginRect.Returns(new Rect(0, 0, 130, 130));
+        layoutInfo.Position.Returns(new Point(0, 0));
+        var fragments = new List<ILayoutFragment>();
+        if (element != null)
+        {
+            var fragment = CreateMockLayoutFragment(element);
+            fragments.Add(fragment);
+        }
+        layoutInfo.Fragments.Returns(fragments);
+        return layoutInfo;
+    }
+    public static IFragmentTree CreateMockFragmentTree(ILayoutFragment? rootFragment = null)
+    {
+        var fragmentTree = Substitute.For<IFragmentTree>();
+        var root = rootFragment ?? CreateMockLayoutFragment();
+        fragmentTree.RootFragment.Returns(root);
+        fragmentTree.FindFragmentsForElement(Arg.Any<IElement>()).Returns(new List<ILayoutFragment>());
+        return fragmentTree;
+    }
+}
+</file>
+
+<file path="TestHtmlCollection.cs">
+using AngleSharp.Dom;
+namespace LayoutEngine.Core.Tests;
+public class TestHtmlCollection : IHtmlCollection<IElement>
+{
+    private readonly List<IElement> _elements;
+    public TestHtmlCollection(IEnumerable<IElement> elements)
+    {
+        _elements = new List<IElement>(elements);
+    }
+    public int Length => _elements.Count;
+    public IElement this[int index] => _elements[index];
+    public IElement? this[string id] => _elements.FirstOrDefault(e => e.Id == id || e.GetAttribute("name") == id);
+    public IEnumerator<IElement> GetEnumerator() => _elements.GetEnumerator();
+    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+}
+</file>
+
+</files>
