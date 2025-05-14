@@ -22,6 +22,17 @@ public class StyleSystem : IStyleSystem
     // Computes style for a specific element
     public IComputedStyle ComputeStyle(IElement element)
     {
+        if (MockLayoutData.UseMockData)
+        {
+            var style = new ComputedStyle(element, null);
+            style.SetProperty("background-color", "blue");
+            style.SetProperty("width", "300px");
+            style.SetProperty("height", "150px");
+            style.SetProperty("color", "white");
+            style.SetProperty("font-size", "24");
+            return style;
+        }
+
         // Check if parent needs style calculation
         IComputedStyle? parentStyle = null;
         if (element.Parent is IElement parentElement)

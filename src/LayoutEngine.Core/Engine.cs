@@ -70,36 +70,58 @@ public class Engine : IEngine, IDisposable
         SubscribeToEvents();
     }
 
+    // public async Task<IDocument> OpenAsync(string html, CancellationToken cancellation = default)
+    // {
+    //     var document = await _documentManager.OpenAsync(html, cancellation);
+    //
+    //     // Start tracking mutations for the loaded document
+    //     _mutationTracker.TrackDocument(document);
+    //
+    //     // Initialize the document lifecycle
+    //     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.StyleClean);
+    //
+    //     // Perform initial style calculation
+    //     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InStyleRecalc);
+    //     _styleSystem.ComputeDocumentStyles(document);
+    //
+    //     // Perform initial layout
+    //     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InLayout);
+    //     var layoutResult = _layoutSystem.PerformLayout(document);
+    //
+    //     // Perform initial render
+    //     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InRender);
+    //     var fragmentTree = _layoutSystem.GetFragmentTree();
+    //     _renderSystem.ProcessFragmentTree(fragmentTree);
+    //
+    //     // Set up DOM event listeners for scrolling
+    //     _domScrollEventBridge.AttachDomListeners();
+    //
+    //     _logger.LogInformation("Document initialized and rendered");
+    //
+    //     return document;
+    // }
+
     public async Task<IDocument> OpenAsync(string html, CancellationToken cancellation = default)
     {
         var document = await _documentManager.OpenAsync(html, cancellation);
-
-        // Start tracking mutations for the loaded document
         _mutationTracker.TrackDocument(document);
 
-        // Initialize the document lifecycle
         _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.StyleClean);
-
-        // Perform initial style calculation
         _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InStyleRecalc);
+
         _styleSystem.ComputeDocumentStyles(document);
 
-        // Perform initial layout
-        _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InLayout);
-        var layoutResult = _layoutSystem.PerformLayout(document);
+        // Let the event system and state machine handle the next transitions.
+        // Do NOT force InLayout here.
 
-        // Perform initial render
-        _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InRender);
-        var fragmentTree = _layoutSystem.GetFragmentTree();
-        _renderSystem.ProcessFragmentTree(fragmentTree);
+        // Optionally, you can process the lifecycle to let it advance naturally:
+        ProcessLifecycle();
 
-        // Set up DOM event listeners for scrolling
         _domScrollEventBridge.AttachDomListeners();
-
         _logger.LogInformation("Document initialized and rendered");
-
         return document;
     }
+
 
     public void Update(double deltaTime)
     {

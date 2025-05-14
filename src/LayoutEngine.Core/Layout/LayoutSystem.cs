@@ -25,6 +25,15 @@ public class LayoutSystem : ILayoutSystem
 
     public ILayoutResult PerformLayout(IDocument document)
     {
+        if (MockLayoutData.UseMockData)
+        {
+            var mockResult = MockLayoutData.GetMockLayoutResult();
+            _currentLayoutResult = mockResult;
+            _elementsNeedingLayout.Clear();
+            _eventAggregator.Publish(new FragmentTreeUpdatedEvent(mockResult));
+            return mockResult;
+        }
+
         // Create a new layout result
         var result = new LayoutResult();
 

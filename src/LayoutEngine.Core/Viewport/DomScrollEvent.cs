@@ -17,7 +17,7 @@ public class DomScrollEvent : EventBase
     }
 }
 
-public abstract class UnityScrollEvent : EventBase
+public class UnityScrollEvent : EventBase
 {
     public string ViewportId { get; }
     public Point NewScrollOffset { get; }

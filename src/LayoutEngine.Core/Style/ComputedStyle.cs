@@ -39,6 +39,11 @@ public class ComputedStyle : IComputedStyle
 
     public IReadOnlyDictionary<string, string> Properties => _properties;
 
+    public void SetProperty(string name, string value)
+    {
+        _properties[name] = value;
+    }
+
     // Computed properties
     public DisplayType Display
     {

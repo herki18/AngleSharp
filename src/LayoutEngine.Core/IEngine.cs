@@ -3,6 +3,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp;
+using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using Layout;
 using Style;
@@ -20,4 +21,6 @@ public interface IEngine
 
     // Current phase of the document lifecycle
     DocumentLifecyclePhase CurrentPhase { get; }
+
+    void Update(double deltaTIme);
 }
