@@ -1,11 +1,9 @@
 ﻿namespace LayoutEngine.Core;
 
 using AngleSharp;
-using Contracts.Platform.Lifecycle;
 using Infrastructure.CacheManager.DI;
 using Infrastructure.EventAggregator.DI;
 using Layout;
-using LayoutEngine.Contracts.Platform.Dom.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Render;
 using Style;
@@ -15,6 +13,9 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddLayoutEngine(this IServiceCollection services)
     {
+        services.AddEventAggregatorModule();
+        services.AddCacheManagerModule();
+
         var config = new LayoutEngineConfiguration
         {
             TargetFramesPerSecond = 60
@@ -58,8 +59,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IMutationObserverFactory, MutationObserverFactory>();
         services.AddSingleton<IDomMutationTracker, DomMutationTracker>();
 
-        services.AddEventAggregatorModule();
-        services.AddCacheManagerModule();
+
 
         return services;
     }

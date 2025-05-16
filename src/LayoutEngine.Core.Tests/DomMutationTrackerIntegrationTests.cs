@@ -1,13 +1,11 @@
 using AngleSharp.Dom;
-using LayoutEngine.Contracts.Platform.Events;
 using Microsoft.Extensions.DependencyInjection;
-using NSubstitute;
 using Infrastructure.EventAggregator.API.Aggregation;
 using System.Collections.Concurrent;
 
 namespace LayoutEngine.Core.Tests;
 
-using Infrastructure.EventAggregator.API.Events;
+using Events;
 
 public class DomMutationTrackerIntegrationTests
 {

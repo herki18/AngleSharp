@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Dom;
-using Contracts.Platform.Events;
 using Infrastructure.EventAggregator.API.Aggregation;
 using Style;
 using FragmentTreeUpdatedEvent = Events.FragmentTreeUpdatedEvent;

@@ -5,16 +5,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp;
 using AngleSharp.Dom;
-using Contracts.Platform.Events;
+using Events;
 using Infrastructure.EventAggregator.API.Aggregation;
 using Layout;
-using LayoutEngine.Contracts.Platform.Dom.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Render;
 using Style;
 using Viewport;
-using StyleInvalidatedEvent = Events.StyleInvalidatedEvent;
 
 public class Engine : IEngine, IDisposable
 {

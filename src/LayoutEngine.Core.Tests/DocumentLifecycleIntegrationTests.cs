@@ -1,122 +1,121 @@
 ﻿using AngleSharp.Dom;
 using LayoutEngine.Core.Events;
-using NSubstitute;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LayoutEngine.Core.Tests;
 
-using Infrastructure.EventAggregator.API.Aggregation;
+using Xunit.Abstractions;
 
 public class DocumentLifecycleIntegrationTests
 {
-    [Fact]
-    public void Full_StyleRecalc_Lifecycle_Advances_To_StyleClean_On_StyleComputedEvent()
+    private readonly ITestOutputHelper _testOutputHelper;
+
+    public DocumentLifecycleIntegrationTests(ITestOutputHelper testOutputHelper)
     {
-        // Arrange
-        var eventAggregator = Substitute.For<IEventAggregator>();
-        var stateMachine = new DocumentLifecycleStateMachine(eventAggregator);
-
-        // Start in Inactive, move to StyleClean, then InStyleRecalc
-        Assert.Equal(DocumentLifecyclePhase.Inactive, stateMachine.CurrentPhase);
-        Assert.True(stateMachine.TryTransitionTo(DocumentLifecyclePhase.StyleClean));
-        Assert.True(stateMachine.TryTransitionTo(DocumentLifecyclePhase.InStyleRecalc));
-        Assert.Equal(DocumentLifecyclePhase.InStyleRecalc, stateMachine.CurrentPhase);
-
-        // Mimic the DocumentLifecycleCoordinator's event subscription
-        eventAggregator
-            .When(x => x.Publish(Arg.Any<StyleComputedEvent>()))
-            .Do(call =>
-            {
-                // This is what the coordinator would do on StyleComputedEvent
-                if (stateMachine.CurrentPhase == DocumentLifecyclePhase.InStyleRecalc)
-                {
-                    stateMachine.ExitPhase(DocumentLifecyclePhase.InStyleRecalc);
-                }
-            });
-
-        // Act: Simulate style computation and event publishing
-        var fakeElements = new List<IElement>();
-        var fakeStyles = new Dictionary<IElement, LayoutEngine.Core.Style.IComputedStyle>();
-        var styleComputedEvent = new StyleComputedEvent(fakeElements, fakeStyles);
-
-        // This mimics what StyleSystem would do after computing styles
-        eventAggregator.Publish(styleComputedEvent);
-
-        // Assert: The phase should now be StyleDirty (or StyleClean, depending on your config)
-        Assert.Equal(DocumentLifecyclePhase.StyleDirty, stateMachine.CurrentPhase);
+        _testOutputHelper = testOutputHelper;
     }
 
     [Fact]
     public void Full_Lifecycle_Advances_Through_Style_Layout_Render()
     {
-        // Arrange
-        var eventAggregator = Substitute.For<IEventAggregator>();
-        var stateMachine = new DocumentLifecycleStateMachine(eventAggregator);
+        // Arrange: set up DI container
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddLayoutEngine(); // Your extension method that registers all real services
 
-        // Go to StyleClean
-        Assert.True(stateMachine.TryTransitionTo(DocumentLifecyclePhase.StyleClean));
-        // Go to InStyleRecalc
-        Assert.True(stateMachine.TryTransitionTo(DocumentLifecyclePhase.InStyleRecalc));
-        Assert.Equal(DocumentLifecyclePhase.InStyleRecalc, stateMachine.CurrentPhase);
+        // If you want to intercept or replace Unity parts, do it here:
+        // services.AddSingleton<IUnityRenderer, TestUnityRenderer>();
 
-        // Mimic StyleComputedEvent handling
-        eventAggregator
-            .When(x => x.Publish(Arg.Any<StyleComputedEvent>()))
-            .Do(call =>
-            {
-                if (stateMachine.CurrentPhase == DocumentLifecyclePhase.InStyleRecalc)
-                    stateMachine.ExitPhase(DocumentLifecyclePhase.InStyleRecalc);
-            });
+        var provider = services.BuildServiceProvider();
 
-        // Mimic FragmentTreeUpdatedEvent handling (layout done)
-        eventAggregator
-            .When(x => x.Publish(Arg.Any<FragmentTreeUpdatedEvent>()))
-            .Do(call =>
-            {
-                if (stateMachine.CurrentPhase == DocumentLifecyclePhase.InLayout)
-                    stateMachine.ExitPhase(DocumentLifecyclePhase.InLayout);
-            });
+        // Resolve the real coordinator and event aggregator
+        var coordinator = provider.GetRequiredService<IDocumentLifecycleCoordinator>();
+        var eventAggregator = provider.GetRequiredService<Infrastructure.EventAggregator.API.Aggregation.IEventAggregator>();
 
-        // Mimic RenderCompletedEvent handling (render done)
-        eventAggregator
-            .When(x => x.Publish(Arg.Any<RenderCompletedEvent>()))
-            .Do(call =>
-            {
-                if (stateMachine.CurrentPhase == DocumentLifecyclePhase.InRender)
-                    stateMachine.ExitPhase(DocumentLifecyclePhase.InRender);
-            });
+        // Act: drive the lifecycle with real events
+        Assert.Equal(DocumentLifecyclePhase.Inactive, coordinator.CurrentPhase);
 
-        // Simulate style computation
+        coordinator.EnterPhase(DocumentLifecyclePhase.StyleClean);
+        Assert.Equal(DocumentLifecyclePhase.StyleClean, coordinator.CurrentPhase);
+
+        eventAggregator.Publish(new StyleInvalidatedEvent(new List<IElement>()));
+        // Add these diagnostic lines right before the failing assertion
+        _testOutputHelper.WriteLine($"Current phase after StyleInvalidatedEvent: {coordinator.CurrentPhase}");
+        _testOutputHelper.WriteLine($"Is transition valid: {coordinator.IsValidTransition(DocumentLifecyclePhase.StyleClean, DocumentLifecyclePhase.InStyleRecalc)}");
+        _testOutputHelper.WriteLine($"Is style operation allowed: {coordinator.IsOperationAllowed(DocumentOperation.StyleModification)}");
+
+        Assert.Equal(DocumentLifecyclePhase.InStyleRecalc, coordinator.CurrentPhase);
+
         eventAggregator.Publish(new StyleComputedEvent(new List<IElement>(), new Dictionary<IElement, LayoutEngine.Core.Style.IComputedStyle>()));
-        Assert.Equal(DocumentLifecyclePhase.StyleDirty, stateMachine.CurrentPhase);
+        Assert.Equal(DocumentLifecyclePhase.StyleClean, coordinator.CurrentPhase);
 
-        // Complete style dirty phase
-        stateMachine.ExitPhase(DocumentLifecyclePhase.StyleDirty);
-        Assert.Equal(DocumentLifecyclePhase.StyleClean, stateMachine.CurrentPhase);
+        coordinator.EnterPhase(DocumentLifecyclePhase.LayoutClean);
+        Assert.Equal(DocumentLifecyclePhase.LayoutClean, coordinator.CurrentPhase);
 
-        // Go to layout
-        Assert.True(stateMachine.TryTransitionTo(DocumentLifecyclePhase.LayoutClean));
-        Assert.True(stateMachine.TryTransitionTo(DocumentLifecyclePhase.InLayout));
-        Assert.Equal(DocumentLifecyclePhase.InLayout, stateMachine.CurrentPhase);
+        eventAggregator.Publish(new LayoutInvalidatedEvent(new List<IElement>()));
+        Assert.Equal(DocumentLifecyclePhase.InLayout, coordinator.CurrentPhase);
 
-        // Simulate layout done
         eventAggregator.Publish(new FragmentTreeUpdatedEvent(new object()));
-        Assert.Equal(DocumentLifecyclePhase.LayoutDirty, stateMachine.CurrentPhase);
+        Assert.Equal(DocumentLifecyclePhase.LayoutClean, coordinator.CurrentPhase);
 
-        // Complete layout dirty phase
-        stateMachine.ExitPhase(DocumentLifecyclePhase.LayoutDirty);
-        Assert.Equal(DocumentLifecyclePhase.LayoutClean, stateMachine.CurrentPhase);
+        coordinator.EnterPhase(DocumentLifecyclePhase.RenderReady);
+        Assert.Equal(DocumentLifecyclePhase.RenderReady, coordinator.CurrentPhase);
 
-        // Go to render
-        Assert.True(stateMachine.TryTransitionTo(DocumentLifecyclePhase.RenderReady));
-        Assert.True(stateMachine.TryTransitionTo(DocumentLifecyclePhase.InRender));
-        Assert.Equal(DocumentLifecyclePhase.InRender, stateMachine.CurrentPhase);
+        eventAggregator.Publish(new RenderInvalidatedEvent(new List<IElement>()));
+        Assert.Equal(DocumentLifecyclePhase.InRender, coordinator.CurrentPhase);
 
-        // Simulate render done
         eventAggregator.Publish(new RenderCompletedEvent());
-        Assert.Equal(DocumentLifecyclePhase.RenderDirty, stateMachine.CurrentPhase);
+        Assert.Equal(DocumentLifecyclePhase.RenderReady, coordinator.CurrentPhase);
+    }
 
-        // Complete render dirty phase
-        stateMachine.ExitPhase(DocumentLifecyclePhase.RenderDirty);
-        Assert.Equal(DocumentLifecyclePhase.RenderReady, stateMachine.CurrentPhase);
+    [Fact]
+    public void StyleInvalidatedEvent_Triggers_EnterPhase()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddLayoutEngine();
+        var provider = services.BuildServiceProvider();
+        var coordinator = provider.GetRequiredService<IDocumentLifecycleCoordinator>();
+        var eventAggregator = provider.GetRequiredService<Infrastructure.EventAggregator.API.Aggregation.IEventAggregator>();
+
+        // Manually transition to StyleClean first
+        coordinator.EnterPhase(DocumentLifecyclePhase.StyleClean);
+
+        // Create a test event with high priority explicitly
+        var testEvent = new StyleInvalidatedEvent(new List<IElement>());
+        eventAggregator.Publish(testEvent, Infrastructure.EventAggregator.API.Events.EventPriority.High);
+
+        // Add these diagnostic lines right before the failing assertion
+        _testOutputHelper.WriteLine($"Current phase after StyleInvalidatedEvent: {coordinator.CurrentPhase}");
+        _testOutputHelper.WriteLine($"Is transition valid: {coordinator.IsValidTransition(DocumentLifecyclePhase.StyleClean, DocumentLifecyclePhase.InStyleRecalc)}");
+        _testOutputHelper.WriteLine($"Is style operation allowed: {coordinator.IsOperationAllowed(DocumentOperation.StyleModification)}");
+
+
+        // Verify the transition occurred
+        Assert.Equal(DocumentLifecyclePhase.InStyleRecalc, coordinator.CurrentPhase);
+    }
+
+    [Fact]
+    public void DirectCallToOnStyleInvalidated_Triggers_EnterPhase()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddLayoutEngine();
+        var provider = services.BuildServiceProvider();
+        var coordinator = provider.GetRequiredService<IDocumentLifecycleCoordinator>();
+
+        // Manually transition to StyleClean first
+        coordinator.EnterPhase(DocumentLifecyclePhase.StyleClean);
+
+        // Directly call the event handler method using reflection
+        var coordinatorType = coordinator.GetType();
+        var methodInfo = coordinatorType.GetMethod("OnStyleInvalidated",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+        var eventArg = new StyleInvalidatedEvent(new List<IElement>());
+        methodInfo!.Invoke(coordinator, new object[] { eventArg });
+
+        // Verify the transition occurred
+        Assert.Equal(DocumentLifecyclePhase.InStyleRecalc, coordinator.CurrentPhase);
     }
 }

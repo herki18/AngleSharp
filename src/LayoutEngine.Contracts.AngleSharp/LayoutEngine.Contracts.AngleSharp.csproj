@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+      <SignAssembly>false</SignAssembly>
+      <!--      <AssemblyOriginatorKeyFile>..\LayoutEngine.snk</AssemblyOriginatorKeyFile>-->
+      <TargetFramework>netstandard2.1</TargetFramework>
+      <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Infrastructure.CacheManager\Infrastructure.CacheManager.csproj" />
+    <ProjectReference Include="..\Infrastructure.EventAggregator\Infrastructure.EventAggregator.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nullable" Version="1.3.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

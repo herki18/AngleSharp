@@ -6,8 +6,6 @@ using System.Linq;
 using AngleSharp.Dom;
 using Infrastructure.EventAggregator.API.Aggregation;
 using Infrastructure.EventAggregator.API.Events;
-using LayoutEngine.Contracts.Platform.Dom.Abstractions;
-using LayoutEngine.Contracts.Platform.Events;
 using DomAttributeChangedEvent = Events.DomAttributeChangedEvent;
 using DomNodeAddedEvent = Events.DomNodeAddedEvent;
 using DomNodeRemovedEvent = Events.DomNodeRemovedEvent;

@@ -10,6 +10,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Infrastructure.CacheManager\Infrastructure.CacheManager.csproj" />
       <ProjectReference Include="..\Infrastructure.EventAggregator\Infrastructure.EventAggregator.csproj" />
+      <ProjectReference Include="..\LayoutEngine.Contracts.AngleSharp\LayoutEngine.Contracts.AngleSharp.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -21,10 +22,6 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="LayoutEngine.Platform.Tests" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Core\" />
   </ItemGroup>
 
 <!--  <ItemGroup>-->

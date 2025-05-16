@@ -91,6 +91,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LayoutEngine.Core", "Layout
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LayoutEngine.Core.Tests", "LayoutEngine.Core.Tests\LayoutEngine.Core.Tests.csproj", "{754CA230-B8CA-45BE-9306-6D9C797EF4EE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LayoutEngine.Contracts.AngleSharp", "LayoutEngine.Contracts.AngleSharp\LayoutEngine.Contracts.AngleSharp.csproj", "{CBC2AFC6-4781-4E77-845F-6AF435ED8E14}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -223,6 +225,10 @@ Global
 		{754CA230-B8CA-45BE-9306-6D9C797EF4EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{754CA230-B8CA-45BE-9306-6D9C797EF4EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{754CA230-B8CA-45BE-9306-6D9C797EF4EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CBC2AFC6-4781-4E77-845F-6AF435ED8E14}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CBC2AFC6-4781-4E77-845F-6AF435ED8E14}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CBC2AFC6-4781-4E77-845F-6AF435ED8E14}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CBC2AFC6-4781-4E77-845F-6AF435ED8E14}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -260,5 +266,6 @@ Global
 		{879510F0-AFAF-4BA4-8F91-D04576FB1C46} = {8141EB56-BB5B-4B13-9F5C-A05A58A0E228}
 		{754CA230-B8CA-45BE-9306-6D9C797EF4EE} = {548FC074-1D04-45A2-8725-5D908A5075A9}
 		{B9FB1CEA-8783-45F2-8DF0-30EE0BA0223B} = {8141EB56-BB5B-4B13-9F5C-A05A58A0E228}
+		{CBC2AFC6-4781-4E77-845F-6AF435ED8E14} = {8141EB56-BB5B-4B13-9F5C-A05A58A0E228}
 	EndGlobalSection
 EndGlobal

@@ -8,7 +8,7 @@ using Infrastructure.EventAggregator.API.Events;
 /// <summary>
 /// Event raised when styles are invalidated.
 /// </summary>
-public class StyleInvalidatedEvent : EventBase
+public class StyleInvalidatedEvent : PrioritizedEventBase
 {
     /// <summary>
     /// Gets the elements with invalidated styles.

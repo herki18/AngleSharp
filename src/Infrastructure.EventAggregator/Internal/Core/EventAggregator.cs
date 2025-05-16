@@ -18,7 +18,7 @@ public class EventAggregator : IEventAggregator, IDisposable
     // Track which concrete types can be published to which interface types
     private readonly Dictionary<Type, HashSet<Type>> _typeRegistry = new Dictionary<Type, HashSet<Type>>();
 
-    private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
+    private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
     private readonly CompositeDisposable _disposable = new CompositeDisposable();
     private bool _isDisposed;
 

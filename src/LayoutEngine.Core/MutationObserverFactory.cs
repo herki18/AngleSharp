@@ -2,7 +2,6 @@ namespace LayoutEngine.Core;
 
 using System;
 using AngleSharp.Dom;
-using LayoutEngine.Contracts.Platform.Dom.Abstractions;
 
 /// <summary>
 /// Factory for creating AngleSharp MutationObserver instances.

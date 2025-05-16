@@ -2,13 +2,10 @@
 
 using System;
 using System.Collections.Generic;
+using Events;
 using Infrastructure.EventAggregator.API.Aggregation;
 using Infrastructure.EventAggregator.API.Events;
-using LayoutEngine.Contracts.Platform.Events;
-using LayoutEngine.Contracts.Platform.Lifecycle;
-using Platform.Lifecycle;
 using Stateless;
-using PhaseChangedEvent = Events.PhaseChangedEvent;
 
 /// <summary>
 /// Manages the document lifecycle state machine with automatic transitions.

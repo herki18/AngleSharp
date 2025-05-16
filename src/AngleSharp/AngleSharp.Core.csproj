@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\LayoutEngine.Contracts\LayoutEngine.Contracts.csproj" />
+    <ProjectReference Include="..\LayoutEngine.Contracts.AngleSharp\LayoutEngine.Contracts.AngleSharp.csproj" />
   </ItemGroup>
 
   <ItemGroup>
