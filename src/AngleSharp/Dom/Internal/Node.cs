@@ -1,8 +1,10 @@
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 namespace AngleSharp.Dom
 {
     using AngleSharp.Text;
     using System;
     using System.IO;
+    using System.Linq;
     using Common;
     using Html.Construction;
     using Html.Parser.Tokens;

@@ -13,7 +13,6 @@ public class LayoutSystem : ILayoutSystem
 {
     private readonly IStyleSystem _styleSystem;
     private readonly IEventAggregator _eventAggregator;
-    private readonly HashSet<IElement> _elementsNeedingLayout = new();
     private ILayoutResult? _currentLayoutResult;
 
     public LayoutSystem(IStyleSystem styleSystem, IEventAggregator eventAggregator)
@@ -28,60 +27,54 @@ public class LayoutSystem : ILayoutSystem
         {
             var mockResult = MockLayoutData.GetMockLayoutResult();
             _currentLayoutResult = mockResult;
-            _elementsNeedingLayout.Clear();
+            ClearLayoutFlags(document.DocumentElement);
             _eventAggregator.Publish(new FragmentTreeUpdatedEvent(mockResult));
             return mockResult;
         }
 
-        // Create a new layout result
         var result = new LayoutResult();
-
-        // Ensure styles are computed
         _styleSystem.ComputeDocumentStyles(document);
 
         if (document.DocumentElement != null)
         {
-            // Determine viewport size
-            var viewportWidth = 800f; // Default, could be passed in
-            var viewportHeight = 600f; // Default, could be passed in
-
-            // Create layout context
+            var viewportWidth = 800f;
+            var viewportHeight = 600f;
             var context = new LayoutContext(viewportWidth, viewportHeight);
-
-            // Layout the document recursively
             var rootFragment = LayoutElement(document.DocumentElement, context, result);
             result.SetRootFragment(rootFragment);
         }
 
-        // Store result
         _currentLayoutResult = result;
-
-        // Clear pending layouts
-        _elementsNeedingLayout.Clear();
-
-        // Notify that fragment tree has been updated
+        ClearLayoutFlags(document.DocumentElement);
         _eventAggregator.Publish(new FragmentTreeUpdatedEvent(result));
-
         return result;
+    }
+
+    private void ClearLayoutFlags(IElement? element)
+    {
+        if (element == null) return;
+
+        element.ClearNeedsLayout();
+        foreach (var child in element.Children.OfType<IElement>())
+        {
+            ClearLayoutFlags(child);
+        }
     }
 
     private ILayoutFragment LayoutElement(IElement element, LayoutContext context, LayoutResult result)
     {
-        // Get computed style
         var style = _styleSystem.GetComputedStyle(element);
         if (style == null)
         {
             style = _styleSystem.ComputeStyle(element);
         }
 
-        // Create a new fragment for this element
         var fragment = new LayoutFragment
         {
             Element = element,
             VisualProperties = ExtractVisualProperties(style)
         };
 
-        // Handle layout based on display type
         switch (style.Display)
         {
             case DisplayType.Block:
@@ -97,14 +90,10 @@ public class LayoutSystem : ILayoutSystem
                 LayoutInlineElement(element, style, fragment, context, result);
                 break;
 
-            // Other display types...
-
             case DisplayType.None:
-                // Don't layout elements with display: none
                 break;
         }
 
-        // Register this fragment with the layout result
         result.AddFragment(element, fragment);
 
         return fragment;
@@ -112,13 +101,10 @@ public class LayoutSystem : ILayoutSystem
 
     private void LayoutBlockElement(IElement element, IComputedStyle style, LayoutFragment fragment, LayoutContext context, LayoutResult result)
     {
-        // Calculate element box model
         var boxModel = CalculateBoxModel(element, style, context);
 
-        // Set fragment bounds based on box model
         fragment.Bounds = boxModel.ContentRect;
 
-        // Store layout info in result
         var layoutInfo = new LayoutInfo
         {
             ContentRect = boxModel.ContentRect,
@@ -130,7 +116,6 @@ public class LayoutSystem : ILayoutSystem
         layoutInfo.AddFragment(fragment);
         result.SetLayoutInfo(element, layoutInfo);
 
-        // Create child context
         var childContext = new LayoutContext(
             boxModel.ContentRect.Width,
             boxModel.ContentRect.Height,
@@ -138,7 +123,6 @@ public class LayoutSystem : ILayoutSystem
             boxModel.ContentRect.Y
         );
 
-        // Process children
         var children = new List<ILayoutFragment>();
         foreach (var child in element.Children.OfType<IElement>())
         {
@@ -150,23 +134,16 @@ public class LayoutSystem : ILayoutSystem
 
     private void LayoutFlexElement(IElement element, IComputedStyle style, LayoutFragment fragment, LayoutContext context, LayoutResult result)
     {
-        // Similar to LayoutBlockElement, but with flex layout logic
-
         // For future implementation
-        // Flexbox is complex and would need its own dedicated algorithm
     }
 
     private void LayoutInlineElement(IElement element, IComputedStyle style, LayoutFragment fragment, LayoutContext context, LayoutResult result)
     {
-        // Similar to LayoutBlockElement, but with inline layout logic
-
         // For future implementation
-        // Inline layout requires line breaking algorithms
     }
 
     private BoxModel CalculateBoxModel(IElement element, IComputedStyle style, LayoutContext context)
     {
-        // Extract margin, border, padding from style
         var marginTop = ParseLength(style.GetValue("margin-top"), context.ContainerWidth, 0);
         var marginRight = ParseLength(style.GetValue("margin-right"), context.ContainerWidth, 0);
         var marginBottom = ParseLength(style.GetValue("margin-bottom"), context.ContainerWidth, 0);
@@ -182,7 +159,6 @@ public class LayoutSystem : ILayoutSystem
         var paddingBottom = ParseLength(style.GetValue("padding-bottom"), context.ContainerWidth, 0);
         var paddingLeft = ParseLength(style.GetValue("padding-left"), context.ContainerWidth, 0);
 
-        // Calculate element width
         float width;
         var widthValue = style.GetValue("width");
         if (!string.IsNullOrEmpty(widthValue))
@@ -191,19 +167,16 @@ public class LayoutSystem : ILayoutSystem
         }
         else
         {
-            // Auto width depends on display type
             if (style.Display == DisplayType.Block)
             {
                 width = context.ContainerWidth - marginLeft - marginRight - borderLeft - borderRight - paddingLeft - paddingRight;
             }
             else
             {
-                // For inline elements, width depends on content
-                width = 100; // Placeholder, would need text measurement
+                width = 100;
             }
         }
 
-        // Calculate element height
         float height;
         var heightValue = style.GetValue("height");
         if (!string.IsNullOrEmpty(heightValue))
@@ -212,15 +185,12 @@ public class LayoutSystem : ILayoutSystem
         }
         else
         {
-            // Auto height depends on content
-            height = 50; // Placeholder, would be calculated based on children
+            height = 50;
         }
 
-        // Calculate positions
         var x = context.X + marginLeft + borderLeft + paddingLeft;
         var y = context.Y + marginTop + borderTop + paddingTop;
 
-        // Create box model
         return new BoxModel
         {
             ContentRect = new Rect(x, y, width, height),
@@ -249,8 +219,6 @@ public class LayoutSystem : ILayoutSystem
     {
         if (string.IsNullOrEmpty(value)) return defaultValue;
 
-        // Parse numeric value and unit
-        // This is a simplified version
         if (value.EndsWith("px"))
         {
             if (float.TryParse(value.AsSpan(0, value.Length - 2), out var px))
@@ -297,40 +265,21 @@ public class LayoutSystem : ILayoutSystem
         };
     }
 
-    // ILayoutSystem interface methods
     public bool NeedsLayout(IElement element)
     {
-        return _elementsNeedingLayout.Contains(element);
+        return element.NeedsLayout();
     }
 
     public void InvalidateLayout(IElement element, bool recursive = true)
     {
-        var affectedElements = new List<IElement>();
-
-        // Add the element to the dirty list
-        _elementsNeedingLayout.Add(element);
-        affectedElements.Add(element);
+        element.SetNeedsLayout();
 
         if (recursive)
         {
             foreach (var child in element.Children.OfType<IElement>())
             {
-                InvalidateLayoutRecursive(child, affectedElements);
+                InvalidateLayout(child, true);
             }
-        }
-
-        // Publish layout invalidation event
-        _eventAggregator.Publish(new LayoutInvalidatedEvent(affectedElements));
-    }
-
-    private void InvalidateLayoutRecursive(IElement element, List<IElement> affectedElements)
-    {
-        _elementsNeedingLayout.Add(element);
-        affectedElements.Add(element);
-
-        foreach (var child in element.Children.OfType<IElement>())
-        {
-            InvalidateLayoutRecursive(child, affectedElements);
         }
     }
 
@@ -349,7 +298,6 @@ public class LayoutSystem : ILayoutSystem
         return _currentLayoutResult?.GetLayoutInfo(element);
     }
 
-    // Helper classes for layout
     private class LayoutContext
     {
         public float ContainerWidth { get; }

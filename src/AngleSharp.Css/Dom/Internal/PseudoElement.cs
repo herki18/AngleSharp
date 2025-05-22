@@ -357,5 +357,67 @@ namespace AngleSharp.Css.Dom
         }
 
         #endregion
+
+        #region LayoutEngine
+
+        public bool NeedsStyleRecalc()
+        {
+            return false;
+        }
+
+        public bool ChildNeedsStyleRecalc()
+        {
+            return false;
+        }
+
+        public void SetNeedsStyleRecalc()
+        {
+        }
+
+        public void ClearNeedsStyleRecalc()
+        {
+        }
+
+        public bool NeedsLayout()
+        {
+            return false;
+        }
+
+        public bool ChildNeedsLayout()
+        {
+            return false;
+        }
+
+        public void SetNeedsLayout()
+        {
+        }
+
+        public void ClearNeedsLayout()
+        {
+        }
+
+        public bool NeedsPaintInvalidation()
+        {
+            return false;
+        }
+
+        public void SetNeedsPaintInvalidation()
+        {
+        }
+
+        public void ClearNeedsPaintInvalidation()
+        {
+        }
+
+        public bool HasAnyInvalidation()
+        {
+            return false;
+        }
+
+        public void ClearAllInvalidation()
+        {
+        }
+
+        #endregion
     }
 }

@@ -176,7 +176,6 @@ public sealed class DomMutationTracker : IDomMutationTracker
         if (mutations == null || mutations.Length == 0)
             return;
 
-        // Process each mutation record and publish appropriate events
         var attributeChanges = new HashSet<IElement>();
         var structureChanges = new HashSet<IElement>();
         var textChanges = new HashSet<IElement>();
@@ -188,8 +187,21 @@ public sealed class DomMutationTracker : IDomMutationTracker
                 case "attributes":
                     if (mutation.Target is IElement element && mutation.AttributeName != null)
                     {
-                        // Publish attribute changed event
                         string? newValue = element.GetAttribute(mutation.AttributeName);
+
+                        if (IsStyleAttribute(mutation.AttributeName))
+                        {
+                            element.SetNeedsStyleRecalc();
+                        }
+
+                        if (IsLayoutAttribute(mutation.AttributeName))
+                        {
+                            element.SetNeedsLayout();
+                        }
+                        else
+                        {
+                            element.SetNeedsPaintInvalidation();
+                        }
 
                         _eventAggregator.Publish(new DomAttributeChangedEvent(
                             element,
@@ -197,15 +209,7 @@ public sealed class DomMutationTracker : IDomMutationTracker
                             mutation.PreviousValue,
                             newValue
                         ));
-
-                        // Track elements with attribute changes
                         attributeChanges.Add(element);
-
-                        // If the attribute affects layout, track it for layout changes too
-                        if (IsLayoutAffectingAttribute(mutation.AttributeName))
-                        {
-                            structureChanges.Add(element);
-                        }
                     }
                     break;
 
@@ -213,7 +217,9 @@ public sealed class DomMutationTracker : IDomMutationTracker
                     if (mutation.Target is ICharacterData charData &&
                         FindParentElement(mutation.Target) is IElement parentElement)
                     {
-                        // Publish text content changed event
+                        parentElement.SetNeedsLayout();
+                        parentElement.SetNeedsPaintInvalidation();
+
                         if (charData is IText textNode)
                         {
                             _eventAggregator.Publish(new DomTextChangedEvent(
@@ -222,11 +228,7 @@ public sealed class DomMutationTracker : IDomMutationTracker
                                 textNode.TextContent
                             ));
                         }
-
-                        // Track elements with text changes
                         textChanges.Add(parentElement);
-
-                        // Text changes often affect layout
                         structureChanges.Add(parentElement);
                     }
                     break;
@@ -234,11 +236,19 @@ public sealed class DomMutationTracker : IDomMutationTracker
                 case "childList":
                     if (mutation.Target is IElement parentNode)
                     {
-                        // Handle added nodes
+                        parentNode.SetNeedsStyleRecalc();
+                        parentNode.SetNeedsLayout();
+
                         if (mutation.Added != null && mutation.Added.Length > 0)
                         {
                             foreach (var addedNode in mutation.Added)
                             {
+                                if (addedNode is IElement addedElement)
+                                {
+                                    addedElement.SetNeedsStyleRecalc();
+                                    addedElement.SetNeedsLayout();
+                                }
+
                                 _eventAggregator.Publish(new DomNodeAddedEvent(
                                     addedNode,
                                     parentNode
@@ -246,7 +256,6 @@ public sealed class DomMutationTracker : IDomMutationTracker
                             }
                         }
 
-                        // Handle removed nodes
                         if (mutation.Removed != null && mutation.Removed.Length > 0)
                         {
                             foreach (var removedNode in mutation.Removed)
@@ -257,24 +266,32 @@ public sealed class DomMutationTracker : IDomMutationTracker
                                 ));
                             }
                         }
-
-                        // Track elements with structure changes
                         structureChanges.Add(parentNode);
                     }
                     break;
             }
         }
+    }
 
-        // Convert HashSet to List for the event parameters
-        if (attributeChanges.Count > 0)
-        {
-            _eventAggregator.Publish(new StyleInvalidatedEvent(attributeChanges.ToList()), EventPriority.High);
-        }
+    private bool IsStyleAttribute(string attributeName)
+    {
+        return attributeName.Equals("style", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.Equals("class", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.Equals("id", StringComparison.OrdinalIgnoreCase);
+    }
 
-        if (structureChanges.Count > 0)
-        {
-            _eventAggregator.Publish(new LayoutInvalidatedEvent(structureChanges.ToList()), EventPriority.High);
-        }
+    private bool IsLayoutAttribute(string attributeName)
+    {
+        return attributeName.Equals("style", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.Equals("class", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.Equals("width", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.Equals("height", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.Equals("display", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.Equals("position", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.Equals("margin", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.Equals("padding", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.StartsWith("margin-", StringComparison.OrdinalIgnoreCase) ||
+               attributeName.StartsWith("padding-", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -292,23 +309,6 @@ public sealed class DomMutationTracker : IDomMutationTracker
             parent = parent.Parent;
         }
         return null;
-    }
-
-    /// <summary>
-    /// Determines if an attribute affects element layout.
-    /// </summary>
-    private bool IsLayoutAffectingAttribute(string attributeName)
-    {
-        return attributeName.Equals("style", StringComparison.OrdinalIgnoreCase) ||
-               attributeName.Equals("class", StringComparison.OrdinalIgnoreCase) ||
-               attributeName.Equals("width", StringComparison.OrdinalIgnoreCase) ||
-               attributeName.Equals("height", StringComparison.OrdinalIgnoreCase) ||
-               attributeName.Equals("display", StringComparison.OrdinalIgnoreCase) ||
-               attributeName.Equals("position", StringComparison.OrdinalIgnoreCase) ||
-               attributeName.Equals("margin", StringComparison.OrdinalIgnoreCase) ||
-               attributeName.Equals("padding", StringComparison.OrdinalIgnoreCase) ||
-               attributeName.StartsWith("margin-", StringComparison.OrdinalIgnoreCase) ||
-               attributeName.StartsWith("padding-", StringComparison.OrdinalIgnoreCase);
     }
 
     private void ThrowIfDisposed()

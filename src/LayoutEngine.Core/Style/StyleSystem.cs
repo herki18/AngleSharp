@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 public class StyleSystem : IStyleSystem
 {
     private readonly Dictionary<IElement, IComputedStyle> _computedStyles = new();
-    private readonly HashSet<IElement> _elementsNeedingStyleRecalc = new();
+    // REMOVED: private readonly HashSet<IElement> _elementsNeedingStyleRecalc = new();
     private readonly IEventAggregator _eventAggregator;
     private readonly ILogger<StyleSystem> _logger;
 
@@ -51,36 +51,55 @@ public class StyleSystem : IStyleSystem
         // Create the computed style
         var computedStyle = new ComputedStyle(element, parentStyle);
 
-        // Store in cache and remove from dirty list
+        // Store in cache
         _computedStyles[element] = computedStyle;
-        _elementsNeedingStyleRecalc.Remove(element);
+        // REMOVED: _elementsNeedingStyleRecalc.Remove(element);
 
         return computedStyle;
     }
 
-    // Computes styles for the entire document
+    // MODIFIED: ComputeDocumentStyles to use node flags
     public void ComputeDocumentStyles(IDocument document)
     {
-        _logger.LogDebug("[StyleSystem] Publishing StyleComputedEvent");
-        // Process elements in document order (depth-first)
+        _logger.LogDebug("[StyleSystem] Computing document styles");
+
         if (document.DocumentElement != null)
         {
             ComputeStylesRecursive(document.DocumentElement);
         }
 
-        // Notify that style computation is complete
         var elements = _computedStyles.Keys.ToList();
         _eventAggregator.Publish(new StyleComputedEvent(elements, _computedStyles));
     }
 
-    // Helper to compute styles recursively
+    // NEW: Recursive method that respects node invalidation flags
     private void ComputeStylesRecursive(IElement element)
     {
-        ComputeStyle(element);
-
-        foreach (var child in element.Children.OfType<IElement>())
+        if (element.NeedsStyleRecalc())
         {
-            ComputeStylesRecursive(child);
+            var oldStyle = GetComputedStyle(element);
+            var newStyle = ComputeStyle(element);
+
+            // Check if style changes affect layout
+            if (oldStyle != null && StyleChangeAffectsLayout(oldStyle, newStyle))
+            {
+                element.SetNeedsLayout();
+            }
+
+            // Paint is always affected by style changes
+            element.SetNeedsPaintInvalidation();
+
+            // Clear the style flag since we just computed it
+            element.ClearNeedsStyleRecalc();
+        }
+
+        // Process children if they need style recalc
+        if (element.ChildNeedsStyleRecalc())
+        {
+            foreach (var child in element.Children.OfType<IElement>())
+            {
+                ComputeStylesRecursive(child);
+            }
         }
     }
 
@@ -91,40 +110,33 @@ public class StyleSystem : IStyleSystem
         return style;
     }
 
+    // MODIFIED: NeedsStyleRecalc to use node flags
     public bool NeedsStyleRecalc(IElement element)
     {
-        return _elementsNeedingStyleRecalc.Contains(element);
+        return element.NeedsStyleRecalc(); // Use node flag instead of internal collection
     }
 
+    // MODIFIED: InvalidateStyle to use node flags
     public void InvalidateStyle(IElement element, bool recursive = true)
     {
-        var affectedElements = new List<IElement>();
-
-        // Add the element to the dirty list
-        _elementsNeedingStyleRecalc.Add(element);
-        affectedElements.Add(element);
+        element.SetNeedsStyleRecalc(); // Set node flag instead of internal collection
 
         if (recursive)
         {
             foreach (var child in element.Children.OfType<IElement>())
             {
-                InvalidateStyleRecursive(child, affectedElements);
+                InvalidateStyle(child, true);
             }
         }
-
-        // Publish style invalidation event
-        _eventAggregator.Publish(new StyleInvalidatedEvent(affectedElements));
     }
 
-    private void InvalidateStyleRecursive(IElement element, List<IElement> affectedElements)
+    // NEW: Helper method to determine if style changes affect layout
+    private bool StyleChangeAffectsLayout(IComputedStyle oldStyle, IComputedStyle newStyle)
     {
-        _elementsNeedingStyleRecalc.Add(element);
-        affectedElements.Add(element);
+        var layoutProps = new[] { "width", "height", "margin", "padding", "border", "display", "position", "flex", "grid" };
 
-        foreach (var child in element.Children.OfType<IElement>())
-        {
-            InvalidateStyleRecursive(child, affectedElements);
-        }
+        return layoutProps.Any(prop =>
+            oldStyle.GetValue(prop) != newStyle.GetValue(prop));
     }
 
     public void ClearStyles()

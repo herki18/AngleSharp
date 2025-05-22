@@ -1,6 +1,7 @@
 namespace LayoutEngine.Core;
 
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp;
@@ -114,38 +115,49 @@ public class Engine : IEngine, IDisposable
     /// </summary>
     private void ProcessLifecycle()
     {
+        var root = Document?.DocumentElement;
+        if (root == null) return;
+
         var currentPhase = _lifecycleCoordinator.CurrentPhase;
-        // _logger.LogDebug($"Processing lifecycle phase: {currentPhase}");
+
         switch (currentPhase)
         {
             case DocumentLifecyclePhase.Inactive:
+                if (HasAnyInvalidation(root))
+                {
+                    _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.StyleClean);
+                }
                 break;
-            case DocumentLifecyclePhase.StyleDirty:
-                if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.StyleModification))
+
+            case DocumentLifecyclePhase.StyleClean:
+                // NEW: Check node flags instead of assuming we need phases
+                if (root.NeedsStyleRecalc() || root.ChildNeedsStyleRecalc())
                 {
                     _logger.LogDebug("Entering style calculation phase");
                     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InStyleRecalc);
                     _styleSystem.ComputeDocumentStyles(Document!);
                 }
-
-                break;
-            case DocumentLifecyclePhase.StyleClean:
-                if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.LayoutCalculation))
+                else if (root.NeedsLayout() || root.ChildNeedsLayout())
                 {
                     _logger.LogDebug("Entering layout calculation phase");
                     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InLayout);
                     _layoutSystem.PerformLayout(Document!);
                 }
-
-                break;
-            case DocumentLifecyclePhase.LayoutClean:
-                if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.LayoutReading))
+                else if (HasPaintInvalidation(root))
                 {
                     _logger.LogDebug("Transitioning to render ready phase");
                     _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.RenderReady);
                 }
-
                 break;
+
+            case DocumentLifecyclePhase.LayoutClean:
+                if (HasPaintInvalidation(root))
+                {
+                    _logger.LogDebug("Transitioning to render ready phase");
+                    _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.RenderReady);
+                }
+                break;
+
             case DocumentLifecyclePhase.RenderReady:
                 if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.Rendering))
                 {
@@ -154,36 +166,38 @@ public class Engine : IEngine, IDisposable
                     var fragmentTree = _layoutSystem.GetFragmentTree();
                     _renderSystem.ProcessFragmentTree(fragmentTree);
                 }
-
                 break;
-            case DocumentLifecyclePhase.RenderDirty:
-                if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.Rendering))
-                {
-                    _logger.LogDebug("Rendering from dirty state");
-                    _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InRender);
-                    var fragmentTree = _layoutSystem.GetFragmentTree();
-                    _renderSystem.ProcessFragmentTree(fragmentTree);
-                }
 
-                break;
+            // REMOVED: All dirty state cases (StyleDirty, LayoutDirty, RenderDirty)
+
             case DocumentLifecyclePhase.InStyleRecalc:
             case DocumentLifecyclePhase.InLayout:
             case DocumentLifecyclePhase.InRender:
+                // These phases handle themselves via event completion
                 break;
-            case DocumentLifecyclePhase.LayoutDirty:
-                if (_lifecycleCoordinator.IsOperationAllowed(DocumentOperation.LayoutCalculation))
-                {
-                    _lifecycleCoordinator.EnterPhase(DocumentLifecyclePhase.InLayout);
-                }
 
-                break;
             case DocumentLifecyclePhase.Disposed:
                 _logger.LogWarning("Attempted to process lifecycle on a disposed document");
                 break;
+
             default:
                 _logger.LogWarning($"Unknown document lifecycle phase: {currentPhase}");
                 break;
         }
+    }
+
+    // NEW: Helper methods to check node flags
+    private bool HasAnyInvalidation(IElement element)
+    {
+        return element.NeedsStyleRecalc() || element.ChildNeedsStyleRecalc() ||
+               element.NeedsLayout() || element.ChildNeedsLayout() ||
+               HasPaintInvalidation(element);
+    }
+
+    private bool HasPaintInvalidation(IElement element)
+    {
+        if (element.NeedsPaintInvalidation()) return true;
+        return element.Children.OfType<IElement>().Any(HasPaintInvalidation);
     }
 
     /// <summary>
@@ -196,43 +210,43 @@ public class Engine : IEngine, IDisposable
             _logger.LogDebug($"Document lifecycle phase changed: {e.Phase} ({e.ChangeType})");
         });
 
-        _eventAggregator.Subscribe<DomAttributeChangedEvent>(e =>
-        {
-            if (e.AttributeName == "style" || e.AttributeName == "class")
-            {
-                _styleSystem.InvalidateStyle(e.Element);
-            }
-        });
-
-        _eventAggregator.Subscribe<DomNodeAddedEvent>(e =>
-        {
-            if (e.Node is IElement addedElement)
-            {
-                _styleSystem.InvalidateStyle(addedElement);
-            }
-
-            if (e.Parent is IElement parentElement)
-            {
-                _styleSystem.InvalidateStyle(parentElement);
-            }
-        });
-
-        _eventAggregator.Subscribe<DomNodeRemovedEvent>(e =>
-        {
-            if (e.Parent is IElement parentElement)
-            {
-                _styleSystem.InvalidateStyle(parentElement);
-            }
-        });
-
-        // Subscribe to style invalidation events to cascade to layout
-        _eventAggregator.Subscribe<StyleInvalidatedEvent>(e =>
-        {
-            foreach (var element in e.Elements)
-            {
-                _layoutSystem.InvalidateLayout(element);
-            }
-        });
+        // _eventAggregator.Subscribe<DomAttributeChangedEvent>(e =>
+        // {
+        //     if (e.AttributeName == "style" || e.AttributeName == "class")
+        //     {
+        //         _styleSystem.InvalidateStyle(e.Element);
+        //     }
+        // });
+        //
+        // _eventAggregator.Subscribe<DomNodeAddedEvent>(e =>
+        // {
+        //     if (e.Node is IElement addedElement)
+        //     {
+        //         _styleSystem.InvalidateStyle(addedElement);
+        //     }
+        //
+        //     if (e.Parent is IElement parentElement)
+        //     {
+        //         _styleSystem.InvalidateStyle(parentElement);
+        //     }
+        // });
+        //
+        // _eventAggregator.Subscribe<DomNodeRemovedEvent>(e =>
+        // {
+        //     if (e.Parent is IElement parentElement)
+        //     {
+        //         _styleSystem.InvalidateStyle(parentElement);
+        //     }
+        // });
+        //
+        // // Subscribe to style invalidation events to cascade to layout
+        // _eventAggregator.Subscribe<StyleInvalidatedEvent>(e =>
+        // {
+        //     foreach (var element in e.Elements)
+        //     {
+        //         _layoutSystem.InvalidateLayout(element);
+        //     }
+        // });
     }
 
     /// <summary>

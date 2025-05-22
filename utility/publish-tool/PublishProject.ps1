@@ -3,9 +3,9 @@
 $projects = @(
     @{
         Name = "LayoutEngine"
-        ProjectPath = "C:\dev\Git\Training\AngleSharp\src\LayoutEngine.Core\LayoutEngine.Core.csproj"
+        ProjectPath = "D:\Development\Github\AngleSharp\src\LayoutEngine.Core\LayoutEngine.Core.csproj"
         Framework = "netstandard2.1"
-        PublishDir = "C:\dev\Git\Training\AngleSharp\publish\LayoutEngine.Core"
+        PublishDir = "D:\Development\Github\AngleSharp\publish\LayoutEngine.Core"
     }
 )
 

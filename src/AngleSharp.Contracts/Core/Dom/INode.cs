@@ -243,4 +243,6 @@ public interface INode : IEventTarget, IMarkupFormattable
     /// <returns>The old node, if any.</returns>
     [DomName("replaceChild")]
     INode ReplaceChild(INode newChild, INode oldChild);
+
+
 }

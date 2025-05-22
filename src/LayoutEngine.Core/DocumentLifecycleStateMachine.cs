@@ -34,11 +34,6 @@ public sealed class DocumentLifecycleStateMachine : IDisposable
         {
             DocumentOperation.DomReading
         },
-        [DocumentLifecyclePhase.StyleDirty] = new HashSet<DocumentOperation>
-        {
-            DocumentOperation.StyleModification,
-            DocumentOperation.DomReading
-        },
         [DocumentLifecyclePhase.LayoutClean] = new HashSet<DocumentOperation>
         {
             DocumentOperation.StyleReading,
@@ -46,12 +41,6 @@ public sealed class DocumentLifecycleStateMachine : IDisposable
             DocumentOperation.DomReading
         },
         [DocumentLifecyclePhase.InLayout] = new HashSet<DocumentOperation>
-        {
-            DocumentOperation.StyleReading,
-            DocumentOperation.LayoutCalculation,
-            DocumentOperation.DomReading
-        },
-        [DocumentLifecyclePhase.LayoutDirty] = new HashSet<DocumentOperation>
         {
             DocumentOperation.StyleReading,
             DocumentOperation.LayoutCalculation,
@@ -72,14 +61,6 @@ public sealed class DocumentLifecycleStateMachine : IDisposable
             DocumentOperation.Rendering,
             DocumentOperation.DomReading
         },
-        [DocumentLifecyclePhase.RenderDirty] = new HashSet<DocumentOperation>
-        {
-            DocumentOperation.StyleReading,
-            DocumentOperation.LayoutReading,
-            DocumentOperation.RenderReading,
-            DocumentOperation.Rendering,
-            DocumentOperation.DomReading
-        },
         [DocumentLifecyclePhase.Disposed] = new HashSet<DocumentOperation>()
     };
 
@@ -87,16 +68,13 @@ public sealed class DocumentLifecycleStateMachine : IDisposable
     private static readonly Dictionary<LifecycleTrigger, LifecycleTrigger> ExitToNextTrigger = new()
     {
         // Style phase
-        [LifecycleTrigger.ExitInStyleRecalc] = LifecycleTrigger.StyleChanged,
-        [LifecycleTrigger.ExitStyleDirty] = LifecycleTrigger.StyleComplete,
+        [LifecycleTrigger.ExitInStyleRecalc] = LifecycleTrigger.StyleComplete,
 
         // Layout phase
-        [LifecycleTrigger.ExitInLayout] = LifecycleTrigger.LayoutChanged,
-        [LifecycleTrigger.ExitLayoutDirty] = LifecycleTrigger.LayoutComplete,
+        [LifecycleTrigger.ExitInLayout] = LifecycleTrigger.LayoutComplete,
 
         // Render phase
-        [LifecycleTrigger.ExitInRender] = LifecycleTrigger.RenderChanged,
-        [LifecycleTrigger.ExitRenderDirty] = LifecycleTrigger.RenderComplete
+        [LifecycleTrigger.ExitInRender] = LifecycleTrigger.RenderComplete,
     };
 
     private bool _isDisposed;
@@ -202,18 +180,10 @@ public sealed class DocumentLifecycleStateMachine : IDisposable
 
         // Configure the InStyleRecalc state
         _stateMachine.Configure(DocumentLifecyclePhase.InStyleRecalc)
-            .Permit(LifecycleTrigger.StyleChanged, DocumentLifecyclePhase.StyleDirty)
+            .Permit(LifecycleTrigger.StyleChanged, DocumentLifecyclePhase.StyleClean)
             .Permit(LifecycleTrigger.NoStyleChanges, DocumentLifecyclePhase.StyleClean)
-            .Permit(LifecycleTrigger.ExitInStyleRecalc, DocumentLifecyclePhase.StyleDirty)
             .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.InStyleRecalc, PhaseChangeType.Enter))
             .OnExit(() => PublishPhaseEvent(DocumentLifecyclePhase.InStyleRecalc, PhaseChangeType.Exit));
-
-        // Configure the StyleDirty state
-        _stateMachine.Configure(DocumentLifecyclePhase.StyleDirty)
-            .Permit(LifecycleTrigger.StyleComplete, DocumentLifecyclePhase.StyleClean)
-            .Permit(LifecycleTrigger.ExitStyleDirty, DocumentLifecyclePhase.StyleClean)
-            .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.StyleDirty, PhaseChangeType.Enter))
-            .OnExit(() => PublishPhaseEvent(DocumentLifecyclePhase.StyleDirty, PhaseChangeType.Exit));
 
         // Configure the LayoutClean state
         _stateMachine.Configure(DocumentLifecyclePhase.LayoutClean)
@@ -225,18 +195,10 @@ public sealed class DocumentLifecycleStateMachine : IDisposable
 
         // Configure the InLayout state
         _stateMachine.Configure(DocumentLifecyclePhase.InLayout)
-            .Permit(LifecycleTrigger.LayoutChanged, DocumentLifecyclePhase.LayoutDirty)
+            .Permit(LifecycleTrigger.LayoutChanged, DocumentLifecyclePhase.LayoutClean)
             .Permit(LifecycleTrigger.NoLayoutChanges, DocumentLifecyclePhase.LayoutClean)
-            .Permit(LifecycleTrigger.ExitInLayout, DocumentLifecyclePhase.LayoutDirty)
             .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.InLayout, PhaseChangeType.Enter))
             .OnExit(() => PublishPhaseEvent(DocumentLifecyclePhase.InLayout, PhaseChangeType.Exit));
-
-        // Configure the LayoutDirty state
-        _stateMachine.Configure(DocumentLifecyclePhase.LayoutDirty)
-            .Permit(LifecycleTrigger.LayoutComplete, DocumentLifecyclePhase.LayoutClean)
-            .Permit(LifecycleTrigger.ExitLayoutDirty, DocumentLifecyclePhase.LayoutClean)
-            .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.LayoutDirty, PhaseChangeType.Enter))
-            .OnExit(() => PublishPhaseEvent(DocumentLifecyclePhase.LayoutDirty, PhaseChangeType.Exit));
 
         // Configure the RenderReady state
         _stateMachine.Configure(DocumentLifecyclePhase.RenderReady)
@@ -248,18 +210,10 @@ public sealed class DocumentLifecycleStateMachine : IDisposable
 
         // Configure the InRender state
         _stateMachine.Configure(DocumentLifecyclePhase.InRender)
-            .Permit(LifecycleTrigger.RenderChanged, DocumentLifecyclePhase.RenderDirty)
+            .Permit(LifecycleTrigger.RenderChanged, DocumentLifecyclePhase.RenderReady)
             .Permit(LifecycleTrigger.NoRenderChanges, DocumentLifecyclePhase.RenderReady)
-            .Permit(LifecycleTrigger.ExitInRender, DocumentLifecyclePhase.RenderDirty)
             .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.InRender, PhaseChangeType.Enter))
             .OnExit(() => PublishPhaseEvent(DocumentLifecyclePhase.InRender, PhaseChangeType.Exit));
-
-        // Configure the RenderDirty state
-        _stateMachine.Configure(DocumentLifecyclePhase.RenderDirty)
-            .Permit(LifecycleTrigger.RenderComplete, DocumentLifecyclePhase.RenderReady)
-            .Permit(LifecycleTrigger.ExitRenderDirty, DocumentLifecyclePhase.RenderReady)
-            .OnEntry(() => PublishPhaseEvent(DocumentLifecyclePhase.RenderDirty, PhaseChangeType.Enter))
-            .OnExit(() => PublishPhaseEvent(DocumentLifecyclePhase.RenderDirty, PhaseChangeType.Exit));
 
         // Configure the Disposed state (terminal state)
         _stateMachine.Configure(DocumentLifecyclePhase.Disposed)
@@ -293,11 +247,7 @@ public sealed class DocumentLifecycleStateMachine : IDisposable
             (DocumentLifecyclePhase.StyleClean, DocumentLifecyclePhase.Disposed) => LifecycleTrigger.Dispose,
 
             // From InStyleRecalc
-            (DocumentLifecyclePhase.InStyleRecalc, DocumentLifecyclePhase.StyleClean) => LifecycleTrigger.NoStyleChanges,
-            (DocumentLifecyclePhase.InStyleRecalc, DocumentLifecyclePhase.StyleDirty) => LifecycleTrigger.StyleChanged,
-
-            // From StyleDirty
-            (DocumentLifecyclePhase.StyleDirty, DocumentLifecyclePhase.StyleClean) => LifecycleTrigger.StyleComplete,
+            (DocumentLifecyclePhase.InStyleRecalc, DocumentLifecyclePhase.StyleClean) => LifecycleTrigger.StyleComplete,
 
             // From LayoutClean
             (DocumentLifecyclePhase.LayoutClean, DocumentLifecyclePhase.InLayout) => LifecycleTrigger.BeginLayoutCalculation,
@@ -305,11 +255,7 @@ public sealed class DocumentLifecycleStateMachine : IDisposable
             (DocumentLifecyclePhase.LayoutClean, DocumentLifecyclePhase.Disposed) => LifecycleTrigger.Dispose,
 
             // From InLayout
-            (DocumentLifecyclePhase.InLayout, DocumentLifecyclePhase.LayoutClean) => LifecycleTrigger.NoLayoutChanges,
-            (DocumentLifecyclePhase.InLayout, DocumentLifecyclePhase.LayoutDirty) => LifecycleTrigger.LayoutChanged,
-
-            // From LayoutDirty
-            (DocumentLifecyclePhase.LayoutDirty, DocumentLifecyclePhase.LayoutClean) => LifecycleTrigger.LayoutComplete,
+            (DocumentLifecyclePhase.InLayout, DocumentLifecyclePhase.LayoutClean) => LifecycleTrigger.LayoutComplete,
 
             // From RenderReady
             (DocumentLifecyclePhase.RenderReady, DocumentLifecyclePhase.InRender) => LifecycleTrigger.BeginRendering,
@@ -317,11 +263,7 @@ public sealed class DocumentLifecycleStateMachine : IDisposable
             (DocumentLifecyclePhase.RenderReady, DocumentLifecyclePhase.Disposed) => LifecycleTrigger.Dispose,
 
             // From InRender
-            (DocumentLifecyclePhase.InRender, DocumentLifecyclePhase.RenderReady) => LifecycleTrigger.NoRenderChanges,
-            (DocumentLifecyclePhase.InRender, DocumentLifecyclePhase.RenderDirty) => LifecycleTrigger.RenderChanged,
-
-            // From RenderDirty
-            (DocumentLifecyclePhase.RenderDirty, DocumentLifecyclePhase.RenderReady) => LifecycleTrigger.RenderComplete,
+            (DocumentLifecyclePhase.InRender, DocumentLifecyclePhase.RenderReady) => LifecycleTrigger.RenderComplete,
 
             // Default case for unsupported transitions
             _ => throw new InvalidOperationException($"No valid trigger defined for transition from {currentState} to {targetState}")
@@ -336,11 +278,8 @@ public sealed class DocumentLifecycleStateMachine : IDisposable
         return state switch
         {
             DocumentLifecyclePhase.InStyleRecalc => LifecycleTrigger.ExitInStyleRecalc,
-            DocumentLifecyclePhase.StyleDirty => LifecycleTrigger.ExitStyleDirty,
             DocumentLifecyclePhase.InLayout => LifecycleTrigger.ExitInLayout,
-            DocumentLifecyclePhase.LayoutDirty => LifecycleTrigger.ExitLayoutDirty,
             DocumentLifecyclePhase.InRender => LifecycleTrigger.ExitInRender,
-            DocumentLifecyclePhase.RenderDirty => LifecycleTrigger.ExitRenderDirty,
             _ => null
         };
     }

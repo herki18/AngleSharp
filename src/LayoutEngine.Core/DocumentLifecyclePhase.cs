@@ -23,7 +23,7 @@ public enum DocumentLifecyclePhase
     /// <summary>
     /// Styles requiring recalculation.
     /// </summary>
-    StyleDirty,
+    // StyleDirty,
 
     /// <summary>
     /// Document with clean (up-to-date) layout.
@@ -38,7 +38,7 @@ public enum DocumentLifecyclePhase
     /// <summary>
     /// Layout requiring recalculation.
     /// </summary>
-    LayoutDirty,
+    // LayoutDirty,
 
     /// <summary>
     /// Document ready for rendering via external frameworks.
@@ -53,7 +53,7 @@ public enum DocumentLifecyclePhase
     /// <summary>
     /// Render requiring update in framework.
     /// </summary>
-    RenderDirty,
+    // RenderDirty,
 
     /// <summary>
     /// Document has been shut down.

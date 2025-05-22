@@ -1,6 +1,6 @@
 {
   "globalSettings": {
-    "outputBaseDirectory": "C:\\dev\\AI Sanitized Code\\Data",
+    "outputBaseDirectory": "D:\\Development\\AI Sanitized Code\\Data",
     "outputFileNamePattern": "{dirName}.txt",
     "repomixOptions": {
       "style": "xml",
@@ -12,7 +12,8 @@
     "additionalIgnorePatterns": [
       "**/obj",
       "**/bin",
-      "**/*.csproj"
+      "**/*.csproj",
+      "**/*.meta"
     ]
   },
   "tasks": [
@@ -45,13 +46,13 @@
       "skip": true
     },
     {
-      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core"
+      "targetDirectory": "D:\\Development\\Github\\AngleSharp\\src\\LayoutEngine.Core"
     },
     {
-      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core.Tests"
+      "targetDirectory": "D:\\Development\\Github\\AngleSharp\\src\\LayoutEngine.Core.Tests"
     },
     {
-      "targetDirectory": "C:\\dev\\Git\\Training\\JSXEngine\\src\\JSXEngine4\\Assets\\V3\\Code",
+      "targetDirectory": "D:\\Development\\Azure Devops\\JSXEngine\\src\\JSXEngine4\\Assets\\V3\\Code",
       "outputFileNamePattern": "Unity.V3.txt"
     } 
   ]

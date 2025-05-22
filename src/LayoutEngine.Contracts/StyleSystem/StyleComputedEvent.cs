@@ -13,15 +13,12 @@ public class StyleComputedEvent : EventBase
 {
     public IReadOnlyList<IElement> Elements { get; }
     public IReadOnlyDictionary<IElement, IComputedStyle> ComputedStyles { get; }
-    public bool HasLayoutAffectingChanges { get; }
 
     public StyleComputedEvent(
         IReadOnlyList<IElement> elements,
-        IReadOnlyDictionary<IElement, IComputedStyle> computedStyles,
-        bool hasLayoutAffectingChanges)
+        IReadOnlyDictionary<IElement, IComputedStyle> computedStyles)
     {
         Elements = elements ?? throw new ArgumentNullException(nameof(elements));
         ComputedStyles = computedStyles ?? throw new ArgumentNullException(nameof(computedStyles));
-        HasLayoutAffectingChanges = hasLayoutAffectingChanges;
     }
 }

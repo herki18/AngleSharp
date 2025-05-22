@@ -1,730 +1,887 @@
-namespace AngleSharp.Dom
+namespace AngleSharp.Dom;
+
+using AngleSharp.Css.Parser;
+using AngleSharp.Dom.Events;
+using AngleSharp.Text;
+using System;
+using System.Linq;
+using Common;
+using Html.Construction;
+using Html.Parser;
+using Html.Parser.Tokens.Struct;
+
+/// <summary>
+/// Represents an element node.
+/// </summary>
+public abstract class Element : Node, IElement, IConstructableElement
 {
-    using AngleSharp.Css.Parser;
-    using AngleSharp.Dom.Events;
-    using AngleSharp.Text;
-    using System;
-    using System.Linq;
-    using Common;
-    using Html.Construction;
-    using Html.Parser;
-    using Html.Parser.Tokens.Struct;
+    #region Fields
 
-    /// <summary>
-    /// Represents an element node.
-    /// </summary>
-    public abstract class Element : Node, IElement, IConstructableElement
+    private readonly NamedNodeMap _attributes;
+    private readonly String _namespace;
+    private readonly String? _prefix;
+    private readonly String _localName;
+    private HtmlCollection<IElement>? _elements;
+    private TokenList? _classList;
+    private IShadowRoot? _shadowRoot;
+
+    #endregion
+
+    #region LayoutEngine
+
+    [Flags]
+    private enum InvalidationFlags : byte
     {
-        #region Fields
+        None = 0,
+        NeedsStyleRecalc = 1 << 0,
+        ChildNeedsStyleRecalc = 1 << 1,
+        NeedsLayout = 1 << 2,
+        ChildNeedsLayout = 1 << 3,
+        NeedsPaintInvalidation = 1 << 4,
+    }
 
-        private readonly NamedNodeMap _attributes;
-        private readonly String _namespace;
-        private readonly String? _prefix;
-        private readonly String _localName;
-        private HtmlCollection<IElement>? _elements;
-        private TokenList? _classList;
-        private IShadowRoot? _shadowRoot;
+    private InvalidationFlags _invalidationFlags = InvalidationFlags.None;
 
-        #endregion
+    ///<inheritdoc />
+    public bool NeedsStyleRecalc()
+    {
+        return (_invalidationFlags & InvalidationFlags.NeedsStyleRecalc) != 0;
+    }
 
-        #region ctor
+    ///<inheritdoc />
+    public bool ChildNeedsStyleRecalc()
+    {
+        return (_invalidationFlags & InvalidationFlags.ChildNeedsStyleRecalc) != 0;
+    }
 
-        /// <inheritdoc />
-        public Element(Document owner, String localName, String? prefix, String? namespaceUri, NodeFlags flags = NodeFlags.None)
-            : this(owner, prefix != null ? String.Concat(prefix, ":", localName) : localName, localName, prefix, namespaceUri!, flags)
+    ///<inheritdoc />
+    public void SetNeedsStyleRecalc()
+    {
+        if (!NeedsStyleRecalc())
         {
+            _invalidationFlags |= InvalidationFlags.NeedsStyleRecalc;
+            PropagateChildNeedsStyleRecalc();
         }
+    }
 
-        /// <inheritdoc />
-        public Element(Document owner, String name, String localName, String? prefix, String namespaceUri, NodeFlags flags = NodeFlags.None)
-            : base(owner, name, Dom.NodeType.Element, flags)
+    ///<inheritdoc />
+    public void ClearNeedsStyleRecalc()
+    {
+        _invalidationFlags &= ~InvalidationFlags.NeedsStyleRecalc;
+        if (!AnyChildNeedsStyleRecalc())
         {
-            _localName = localName;
-            _prefix = prefix;
-            _namespace = namespaceUri;
-            _attributes = new NamedNodeMap(this);
+            _invalidationFlags &= ~InvalidationFlags.ChildNeedsStyleRecalc;
         }
+    }
 
-        #endregion
+    ///<inheritdoc />
+    public bool NeedsLayout()
+    {
+        return (_invalidationFlags & InvalidationFlags.NeedsLayout) != 0;
+    }
 
-        #region Internal Properties
+    ///<inheritdoc />
+    public bool ChildNeedsLayout()
+    {
+        return (_invalidationFlags & InvalidationFlags.ChildNeedsLayout) != 0;
+    }
 
-        internal IBrowsingContext Context => Owner?.Context!;
-
-        internal NamedNodeMap Attributes => _attributes;
-
-        #endregion
-
-        #region Properties
-
-        /// <inheritdoc />
-        public IElement? AssignedSlot => ParentElement?.ShadowRoot?.GetAssignedSlot(Slot);
-
-        /// <inheritdoc />
-        public String? Slot
+    ///<inheritdoc />
+    public void SetNeedsLayout()
+    {
+        if (!NeedsLayout())
         {
-            get => this.GetOwnAttribute(AttributeNames.Slot);
-            set => this.SetOwnAttribute(AttributeNames.Slot, value);
+            _invalidationFlags |= InvalidationFlags.NeedsLayout;
+            PropagateChildNeedsLayout();
+            SetNeedsPaintInvalidation();
         }
+    }
 
-        /// <inheritdoc />
-        public IShadowRoot? ShadowRoot => _shadowRoot;
-
-        /// <inheritdoc />
-        public String? Prefix => _prefix;
-
-        /// <inheritdoc />
-        public String LocalName => _localName;
-
-        /// <inheritdoc />
-        public String? NamespaceUri => _namespace ?? this.GetNamespaceUri();
-
-        /// <inheritdoc />
-        public String? GivenNamespaceUri => _namespace;
-
-        /// <inheritdoc />
-        public override String TextContent
+    ///<inheritdoc />
+    public void ClearNeedsLayout()
+    {
+        _invalidationFlags &= ~InvalidationFlags.NeedsLayout;
+        if (!AnyChildNeedsLayout())
         {
-            get
+            _invalidationFlags &= ~InvalidationFlags.ChildNeedsLayout;
+        }
+    }
+
+    ///<inheritdoc />
+    public bool NeedsPaintInvalidation()
+    {
+        return (_invalidationFlags & InvalidationFlags.NeedsPaintInvalidation) != 0;
+    }
+
+    ///<inheritdoc />
+    public void SetNeedsPaintInvalidation()
+    {
+        _invalidationFlags |= InvalidationFlags.NeedsPaintInvalidation;
+    }
+
+    ///<inheritdoc />
+    public void ClearNeedsPaintInvalidation()
+    {
+        _invalidationFlags &= ~InvalidationFlags.NeedsPaintInvalidation;
+    }
+
+    ///<inheritdoc />
+    public bool HasAnyInvalidation()
+    {
+        return _invalidationFlags != InvalidationFlags.None;
+    }
+
+    ///<inheritdoc />
+    public void ClearAllInvalidation()
+    {
+        _invalidationFlags = InvalidationFlags.None;
+    }
+
+    private void PropagateChildNeedsStyleRecalc()
+    {
+        var parent = Parent;
+        while (parent != null && parent is Element parentElement && !parentElement.ChildNeedsStyleRecalc())
+        {
+            parentElement._invalidationFlags |= InvalidationFlags.ChildNeedsStyleRecalc;
+            parent = parent.Parent;
+        }
+    }
+
+    private void PropagateChildNeedsLayout()
+    {
+        var parent = Parent;
+        while (parent != null && parent is Element parentElement && !parentElement.ChildNeedsLayout())
+        {
+            parentElement._invalidationFlags |= InvalidationFlags.ChildNeedsLayout;
+            parent = parent.Parent;
+        }
+    }
+
+    private bool AnyChildNeedsStyleRecalc()
+    {
+        for (var i = 0; i < ChildNodes.Length; i++)
+        {
+            if (ChildNodes[i] is Element childElement &&
+                (childElement.NeedsStyleRecalc() || childElement.ChildNeedsStyleRecalc()))
             {
-                var sb = StringBuilderPool.Obtain();
-
-                foreach (var child in this.GetDescendants().OfType<IText>())
-                {
-                    sb.Append(child.Data);
-                }
-
-                return sb.ToPool();
+                return true;
             }
-            set
+        }
+
+        return false;
+    }
+
+    private bool AnyChildNeedsLayout()
+    {
+        for (var i = 0; i < ChildNodes.Length; i++)
+        {
+            if (ChildNodes[i] is Element childElement &&
+                (childElement.NeedsLayout() || childElement.ChildNeedsLayout()))
             {
-                if (!String.IsNullOrEmpty(value))
-                {
-                    var textNodeFactory = Owner.Context.GetService<ITextNodeFactory<Document, IText>>();
-                    ReplaceAll((Node?)textNodeFactory?.CreateTextNode(Owner, value), false);
-                }
-                else
-                {
-                    ReplaceAll(null, false);
-                }
+                return true;
             }
         }
 
-        /// <inheritdoc />
-        public ITokenList ClassList
-        {
-            get
-            {
-                if (_classList is null)
-                {
-                    _classList = new TokenList(this.GetOwnAttribute(AttributeNames.Class));
-                    _classList.Changed += value => UpdateAttribute(AttributeNames.Class, value);
-                }
+        return false;
+    }
 
-                return _classList;
+    #endregion
+
+    #region ctor
+
+    /// <inheritdoc />
+    public Element(Document owner, String localName, String? prefix, String? namespaceUri, NodeFlags flags = NodeFlags.None)
+        : this(owner, prefix != null ? String.Concat(prefix, ":", localName) : localName, localName, prefix, namespaceUri!, flags)
+    {
+    }
+
+    /// <inheritdoc />
+    public Element(Document owner, String name, String localName, String? prefix, String namespaceUri, NodeFlags flags = NodeFlags.None)
+        : base(owner, name, Dom.NodeType.Element, flags)
+    {
+        _localName = localName;
+        _prefix = prefix;
+        _namespace = namespaceUri;
+        _attributes = new NamedNodeMap(this);
+    }
+
+    #endregion
+
+    #region Internal Properties
+
+    internal IBrowsingContext Context => Owner?.Context!;
+
+    internal NamedNodeMap Attributes => _attributes;
+
+    #endregion
+
+    #region Properties
+
+    /// <inheritdoc />
+    public IElement? AssignedSlot => ParentElement?.ShadowRoot?.GetAssignedSlot(Slot);
+
+    /// <inheritdoc />
+    public String? Slot
+    {
+        get => this.GetOwnAttribute(AttributeNames.Slot);
+        set => this.SetOwnAttribute(AttributeNames.Slot, value);
+    }
+
+    /// <inheritdoc />
+    public IShadowRoot? ShadowRoot => _shadowRoot;
+
+    /// <inheritdoc />
+    public String? Prefix => _prefix;
+
+    /// <inheritdoc />
+    public String LocalName => _localName;
+
+    /// <inheritdoc />
+    public String? NamespaceUri => _namespace ?? this.GetNamespaceUri();
+
+    /// <inheritdoc />
+    public String? GivenNamespaceUri => _namespace;
+
+    /// <inheritdoc />
+    public override String TextContent
+    {
+        get
+        {
+            var sb = StringBuilderPool.Obtain();
+
+            foreach (var child in this.GetDescendants().OfType<IText>())
+            {
+                sb.Append(child.Data);
+            }
+
+            return sb.ToPool();
+        }
+        set
+        {
+            if (!String.IsNullOrEmpty(value))
+            {
+                var textNodeFactory = Owner.Context.GetService<ITextNodeFactory<Document, IText>>();
+                ReplaceAll((Node?)textNodeFactory?.CreateTextNode(Owner, value), false);
+            }
+            else
+            {
+                ReplaceAll(null, false);
             }
         }
+    }
 
-        /// <inheritdoc />
-        public String? ClassName
+    /// <inheritdoc />
+    public ITokenList ClassList
+    {
+        get
         {
-            get => this.GetOwnAttribute(AttributeNames.Class);
-            set => this.SetOwnAttribute(AttributeNames.Class, value);
-        }
-
-        /// <inheritdoc />
-        public String? Id
-        {
-            get => this.GetOwnAttribute(AttributeNames.Id);
-            set => this.SetOwnAttribute(AttributeNames.Id, value);
-        }
-
-        /// <inheritdoc />
-        public String TagName => NodeName;
-
-        /// <inheritdoc />
-        public ISourceReference? SourceReference { get; set; }
-
-        /// <inheritdoc />
-        public IElement? PreviousElementSibling
-        {
-            get
+            if (_classList is null)
             {
-                var parent = Parent;
+                _classList = new TokenList(this.GetOwnAttribute(AttributeNames.Class));
+                _classList.Changed += value => UpdateAttribute(AttributeNames.Class, value);
+            }
 
-                if (parent != null)
+            return _classList;
+        }
+    }
+
+    /// <inheritdoc />
+    public String? ClassName
+    {
+        get => this.GetOwnAttribute(AttributeNames.Class);
+        set => this.SetOwnAttribute(AttributeNames.Class, value);
+    }
+
+    /// <inheritdoc />
+    public String? Id
+    {
+        get => this.GetOwnAttribute(AttributeNames.Id);
+        set => this.SetOwnAttribute(AttributeNames.Id, value);
+    }
+
+    /// <inheritdoc />
+    public String TagName => NodeName;
+
+    /// <inheritdoc />
+    public ISourceReference? SourceReference { get; set; }
+
+    /// <inheritdoc />
+    public IElement? PreviousElementSibling
+    {
+        get
+        {
+            var parent = Parent;
+
+            if (parent != null)
+            {
+                var found = false;
+
+                for (var i = parent.ChildNodes.Length - 1; i >= 0; i--)
                 {
-                    var found = false;
-
-                    for (var i = parent.ChildNodes.Length - 1; i >= 0; i--)
+                    if (Object.ReferenceEquals(parent.ChildNodes[i], this))
                     {
-                        if (Object.ReferenceEquals(parent.ChildNodes[i], this))
-                        {
-                            found = true;
-                        }
-                        else if (found && parent.ChildNodes[i] is IElement previousElementSibling)
-                        {
-                            return previousElementSibling;
-                        }
+                        found = true;
                     }
-                }
-
-                return null;
-            }
-        }
-
-        /// <inheritdoc />
-        public IElement? NextElementSibling
-        {
-            get
-            {
-                var parent = Parent;
-
-                if (parent != null)
-                {
-                    var n = parent.ChildNodes.Length;
-                    var found = false;
-
-                    for (var i = 0; i < n; i++)
+                    else if (found && parent.ChildNodes[i] is IElement previousElementSibling)
                     {
-                        if (Object.ReferenceEquals(parent.ChildNodes[i], this))
-                        {
-                            found = true;
-                        }
-                        else if (found && parent.ChildNodes[i] is IElement childEl)
-                        {
-                            return childEl;
-                        }
+                        return previousElementSibling;
                     }
-                }
-
-                return null;
-            }
-        }
-
-        /// <inheritdoc />
-        public Int32 ChildElementCount
-        {
-            get
-            {
-                var children = ChildNodes;
-                var n = children.Length;
-                var count = 0;
-
-                for (var i = 0; i < n; i++)
-                {
-                    if (children[i].NodeType == (Int32)Dom.NodeType.Element)
-                    {
-                        count++;
-                    }
-                }
-
-                return count;
-            }
-        }
-
-        /// <inheritdoc />
-        public IHtmlCollection<IElement> Children => _elements ??= new HtmlCollection<IElement>(this, deep: false);
-
-        /// <inheritdoc />
-        public IElement? FirstElementChild
-        {
-            get
-            {
-                var children = ChildNodes;
-                var n = children.Length;
-
-                for (var i = 0; i < n; i++)
-                {
-                    if (children[i] is IElement child)
-                    {
-                        return child;
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        /// <inheritdoc />
-        public IElement? LastElementChild
-        {
-            get
-            {
-                var children = ChildNodes;
-
-                for (var i = children.Length - 1; i >= 0; i--)
-                {
-
-                    if (children[i] is IElement child)
-                    {
-                        return child;
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        /// <inheritdoc />
-        public String InnerHtml
-        {
-            get => ChildNodes.ToHtml();
-            set => ReplaceAll(new DocumentFragment(this, value), false);
-        }
-
-        /// <inheritdoc />
-        public String OuterHtml
-        {
-            get => this.ToHtml();
-            set
-            {
-                var parentNode = Parent;
-
-                if (parentNode != null)
-                {
-                    switch (parentNode.NodeType)
-                    {
-                        case (Int32)Dom.NodeType.Document:
-                            throw new DomException(DomError.NoModificationAllowed);
-                        case (Int32)Dom.NodeType.DocumentFragment:
-                            parentNode = new Html.Dom.HtmlBodyElement(Owner);
-                            break;
-                    }
-                }
-
-                var parent = parentNode as Element ?? throw new DomException(DomError.NotSupported);
-                parent.InsertChild(parent.IndexOf(this), new DocumentFragment(parent, value));
-                parent.RemoveChild(this);
-            }
-        }
-
-        INamedNodeMap IElement.Attributes => _attributes;
-
-        /// <inheritdoc />
-        public Boolean IsFocused
-        {
-            get => Object.ReferenceEquals(Owner?.FocusElement, this);
-            protected set
-            {
-                var document = Owner;
-                document?.QueueTask(() =>
-                {
-                    if (value)
-                    {
-                        document.SetFocus(this);
-                        this.Fire<FocusEvent>(m => m.Init(EventNames.Focus, false, false));
-                    }
-                    else
-                    {
-                        document.SetFocus(null);
-                        this.Fire<FocusEvent>(m => m.Init(EventNames.Blur, false, false));
-                    }
-                });
-            }
-        }
-
-        #endregion
-
-        #region Methods
-
-        /// <summary>
-        /// Takes a given string source and parses it into a subtree
-        /// using the current element as context.
-        /// Follows the fragment parsing strategy for the given namespace.
-        /// </summary>
-        /// <param name="source">The source to parse into a subtree.</param>
-        /// <returns>The documentElement of the new subtree.</returns>
-        public abstract IElement ParseSubtree(String source);
-
-        /// <inheritdoc />
-        public IShadowRoot AttachShadow(ShadowRootMode mode = ShadowRootMode.Open)
-        {
-            if (TagNames.AllNoShadowRoot.Contains(_localName))
-            {
-                throw new DomException(DomError.NotSupported);
-            }
-
-            if (ShadowRoot != null)
-            {
-                throw new DomException(DomError.InvalidState);
-            }
-
-            _shadowRoot = new ShadowRoot(this, mode);
-            return _shadowRoot;
-        }
-
-        /// <inheritdoc />
-        public IElement? QuerySelector(String selectors) => ChildNodes.QuerySelector(selectors, this);
-
-        /// <inheritdoc />
-        public IHtmlCollection<IElement> QuerySelectorAll(String selectors) => ChildNodes.QuerySelectorAll(selectors, this);
-
-        /// <inheritdoc />
-        public IHtmlCollection<IElement> GetElementsByClassName(String classNames) => ChildNodes.GetElementsByClassName(classNames);
-
-        /// <inheritdoc />
-        public IHtmlCollection<IElement> GetElementsByTagName(String tagName) => ChildNodes.GetElementsByTagName(tagName);
-
-        /// <inheritdoc />
-        public IHtmlCollection<IElement> GetElementsByTagNameNS(String? namespaceURI, String tagName) => ChildNodes.GetElementsByTagName(namespaceURI, tagName);
-
-        /// <inheritdoc />
-        public Boolean Matches(String selectorText)
-        {
-            var parser = Context.GetService<ICssSelectorParser>()!;
-            var sg = parser.ParseSelector(selectorText) ?? throw new DomException(DomError.Syntax);
-            return sg.Match(this, this);
-        }
-
-        /// <inheritdoc />
-        public IElement? Closest(String selectorText)
-        {
-            var parser = Context.GetService<ICssSelectorParser>()!;
-            var sg = parser.ParseSelector(selectorText) ?? throw new DomException(DomError.Syntax);
-            var node = (IElement)this;
-
-            while (node != null)
-            {
-                if (sg.Match(node, node))
-                {
-                    return node;
-                }
-                else
-                {
-                    node = node.ParentElement;
                 }
             }
 
             return null;
         }
+    }
 
-        /// <inheritdoc />
-        public Boolean HasAttribute(String name)
+    /// <inheritdoc />
+    public IElement? NextElementSibling
+    {
+        get
         {
-            if (_namespace.Is(NamespaceNames.HtmlUri))
+            var parent = Parent;
+
+            if (parent != null)
             {
-                name = name.HtmlLower();
-            }
+                var n = parent.ChildNodes.Length;
+                var found = false;
 
-            return _attributes.GetNamedItem(name) != null;
-        }
-
-        /// <inheritdoc />
-        public Boolean HasAttribute(StringOrMemory name)
-        {
-            if (_namespace.Is(NamespaceNames.HtmlUri))
-            {
-                name = name.HtmlLower();
-            }
-
-            return _attributes.GetNamedItem(name) != null;
-        }
-
-        /// <inheritdoc />
-        public Boolean HasAttribute(String? namespaceUri, String localName)
-        {
-            if (String.IsNullOrEmpty(namespaceUri))
-            {
-                namespaceUri = null;
-            }
-
-            return _attributes.GetNamedItem(namespaceUri, localName) != null;
-        }
-
-        /// <inheritdoc />
-        public String? GetAttribute(String name)
-        {
-            if (_namespace.Is(NamespaceNames.HtmlUri))
-            {
-                name = name.HtmlLower();
-            }
-
-            return _attributes.GetNamedItem(name)?.Value;
-        }
-
-        /// <inheritdoc />
-        public String? GetAttribute(String? namespaceUri, String localName)
-        {
-            if (String.IsNullOrEmpty(namespaceUri))
-            {
-                namespaceUri = null;
-            }
-
-            return _attributes.GetNamedItem(namespaceUri, localName)?.Value;
-        }
-
-        /// <inheritdoc />
-        public void SetAttribute(String name, String? value)
-        {
-            if (value != null)
-            {
-                if (!name.IsXmlName())
+                for (var i = 0; i < n; i++)
                 {
-                    throw new DomException(DomError.InvalidCharacter);
-                }
-
-                if (_namespace.Is(NamespaceNames.HtmlUri))
-                {
-                    name = name.HtmlLower();
-                }
-
-                this.SetOwnAttribute(name, value);
-
-                // ViewSync?.UpdateAttribute(name, this);
-            }
-            else
-            {
-                RemoveAttribute(name);
-                // ViewSync?.RemoveAttribute(name, this);
-            }
-        }
-
-        /// <inheritdoc />
-        public void SetAttribute(String? namespaceUri, String name, String? value)
-        {
-            if (value != null)
-            {
-                GetPrefixAndLocalName(name, ref namespaceUri, out var prefix, out var localName);
-                _attributes.SetNamedItem(new Attr(prefix, localName, value, namespaceUri));
-            }
-            else
-            {
-                RemoveAttribute(namespaceUri, name);
-            }
-        }
-
-        /// <summary>
-        /// Adds an attribute.
-        /// </summary>
-        /// <param name="attr">The attribute to add.</param>
-        public void AddAttribute(Attr attr)
-        {
-            attr.Container = _attributes;
-            _attributes.FastAddItem(attr);
-        }
-
-        /// <inheritdoc />
-        public Boolean RemoveAttribute(String name)
-        {
-            if (_namespace.Is(NamespaceNames.HtmlUri))
-            {
-                name = name.HtmlLower();
-            }
-
-            if (_attributes.RemoveNamedItemOrDefault(name) == null)
-            {
-                return false;
-            }
-
-            return true;
-
-        }
-
-        /// <inheritdoc />
-        public Boolean RemoveAttribute(String? namespaceUri, String localName)
-        {
-            if (String.IsNullOrEmpty(namespaceUri))
-            {
-                namespaceUri = null;
-            }
-
-            return _attributes.RemoveNamedItemOrDefault(namespaceUri, localName) != null;
-        }
-
-        /// <inheritdoc />
-        public void Prepend(params INode[] nodes)
-        {
-            this.PrependNodes(nodes);
-        }
-
-        /// <inheritdoc />
-        public void Append(params INode[] nodes)
-        {
-            this.AppendNodes(nodes);
-        }
-
-        /// <inheritdoc />
-        public override Boolean Equals(INode? otherNode)
-        {
-            if (otherNode is IElement otherElement)
-            {
-                return NamespaceUri.Is(otherElement.NamespaceUri) &&
-                    _attributes.SameAs(otherElement.Attributes) &&
-                    base.Equals(otherNode);
-            }
-
-            return false;
-        }
-
-        /// <inheritdoc />
-        public void Before(params INode[] nodes) => this.InsertBefore(nodes);
-
-        /// <inheritdoc />
-        public void After(params INode[] nodes) => this.InsertAfter(nodes);
-
-        /// <inheritdoc />
-        public void Replace(params INode[] nodes) => this.ReplaceWith(nodes);
-
-        /// <inheritdoc />
-        public void Remove() => this.RemoveFromParent();
-
-        /// <inheritdoc />
-        public void Insert(AdjacentPosition position, String html)
-        {
-            var useThis = position == AdjacentPosition.AfterBegin || position == AdjacentPosition.BeforeEnd;
-            var context = useThis ? this : Parent as Element ?? throw new DomException("The element has no parent.");
-            var nodes = new DocumentFragment(context, html);
-
-            switch (position)
-            {
-                case AdjacentPosition.BeforeBegin:
-                    Parent!.InsertBefore(nodes, this);
-                    break;
-
-                case AdjacentPosition.AfterEnd:
-                    Parent!.InsertChild(Parent.IndexOf(this) + 1, nodes);
-                    break;
-
-                case AdjacentPosition.AfterBegin:
-                    InsertChild(0, nodes);
-                    break;
-
-                case AdjacentPosition.BeforeEnd:
-                    AppendChild(nodes);
-                    break;
-            }
-        }
-
-        /// <inheritdoc />
-        public override Node Clone(Document owner, Boolean deep)
-        {
-            var node = new AnyElement(owner, LocalName, _prefix, _namespace, Flags);
-            CloneElement(node, owner, deep);
-            return node;
-        }
-
-        #endregion
-
-        #region Internal Methods
-
-        internal virtual void SetupElement()
-        {
-            var attrs = _attributes;
-
-            if (attrs.Length > 0)
-            {
-                var observers = Context.GetServices<IAttributeObserver>();
-
-                foreach (var attr in attrs)
-                {
-                    var name = attr.LocalName;
-                    var value = attr.Value;
-
-                    foreach (var observer in observers)
+                    if (Object.ReferenceEquals(parent.ChildNodes[i], this))
                     {
-                        observer.NotifyChange(this, name, value);
+                        found = true;
+                    }
+                    else if (found && parent.ChildNodes[i] is IElement childEl)
+                    {
+                        return childEl;
                     }
                 }
             }
+
+            return null;
         }
+    }
 
-        internal void AttributeChanged(String localName, String? namespaceUri, String? oldValue, String? newValue)
+    /// <inheritdoc />
+    public Int32 ChildElementCount
+    {
+        get
         {
-            if (namespaceUri is null)
-            {
-                var observers = Context.GetServices<IAttributeObserver>();
+            var children = ChildNodes;
+            var n = children.Length;
+            var count = 0;
 
-                foreach (var observer in observers)
+            for (var i = 0; i < n; i++)
+            {
+                if (children[i].NodeType == (Int32)Dom.NodeType.Element)
                 {
-                    observer.NotifyChange(this, localName, newValue);
+                    count++;
                 }
             }
 
-            Owner.QueueMutation(MutationRecord.Attributes(
-                target: this,
-                attributeName: localName,
-                attributeNamespace: namespaceUri,
-                previousValue: oldValue));
+            return count;
         }
-
-        internal void UpdateClassList(String value) => _classList?.Update(value);
-
-        #endregion
-
-        #region Helpers
-
-        /// <inheritdoc />
-        protected void UpdateAttribute(String name, String value) => this.SetOwnAttribute(name, value, suppressCallbacks: true);
-
-        /// <inheritdoc />
-        protected sealed override String? LocateNamespace(String prefix) => this.LocateNamespaceFor(prefix);
-
-        /// <inheritdoc />
-        protected sealed override String? LocatePrefix(String namespaceUri) => this.LocatePrefixFor(namespaceUri);
-
-        /// <inheritdoc />
-        protected void CloneElement(Element element, Document owner, Boolean deep)
-        {
-            CloneNode(element, owner, deep);
-
-            foreach (var attribute in _attributes)
-            {
-                var attr = new Attr(attribute.Prefix, attribute.LocalName, attribute.Value, attribute.NamespaceUri);
-                attr.Container = element._attributes;
-                element._attributes.FastAddItem(attr);
-            }
-
-            element.SetupElement();
-        }
-
-        #endregion
-
-        #region Construction
-
-        StringOrMemory IConstructableElement.LocalName => _localName;
-
-        IConstructableNamedNodeMap IConstructableElement.Attributes => _attributes;
-
-        StringOrMemory IConstructableElement.NamespaceUri => NamespaceUri ?? "";
-
-        void IConstructableElement.SetAttribute(String? ns, StringOrMemory name, StringOrMemory value)
-        {
-            SetAttribute(ns, name.ToString(), value.ToString());
-        }
-
-        void IConstructableElement.SetOwnAttribute(StringOrMemory name, StringOrMemory value)
-        {
-            this.SetOwnAttribute(name.ToString(), value.ToString());
-        }
-
-        StringOrMemory IConstructableElement.GetAttribute(StringOrMemory @namespace, StringOrMemory name)
-        {
-            var result = GetAttribute(@namespace.ToString(), name.ToString());
-            return result ?? StringOrMemory.Empty;
-        }
-
-        void IConstructableElement.SetAttributes(StructAttributes tagAttributes)
-        {
-            var container = Attributes;
-
-            for (var i = 0; i < tagAttributes.Count; i++)
-            {
-                var attribute = tagAttributes[i];
-                var item = new Attr(attribute.Name.ToString(), attribute.Value.ToString());
-                item.Container = container;
-                container.FastAddItem(item);
-            }
-        }
-
-        void IConstructableElement.SetupElement() => SetupElement();
-
-        void IConstructableElement.AddComment(ref StructHtmlToken token) => this.AddComment(ref token);
-
-        IConstructableNode IConstructableElement.ShallowCopy() => Clone(Owner, false);
-
-        StringOrMemory IConstructableElement.Prefix => Prefix ?? StringOrMemory.Empty;
-
-        #endregion
     }
+
+    /// <inheritdoc />
+    public IHtmlCollection<IElement> Children => _elements ??= new HtmlCollection<IElement>(this, deep: false);
+
+    /// <inheritdoc />
+    public IElement? FirstElementChild
+    {
+        get
+        {
+            var children = ChildNodes;
+            var n = children.Length;
+
+            for (var i = 0; i < n; i++)
+            {
+                if (children[i] is IElement child)
+                {
+                    return child;
+                }
+            }
+
+            return null;
+        }
+    }
+
+    /// <inheritdoc />
+    public IElement? LastElementChild
+    {
+        get
+        {
+            var children = ChildNodes;
+
+            for (var i = children.Length - 1; i >= 0; i--)
+            {
+                if (children[i] is IElement child)
+                {
+                    return child;
+                }
+            }
+
+            return null;
+        }
+    }
+
+    /// <inheritdoc />
+    public String InnerHtml
+    {
+        get => ChildNodes.ToHtml();
+        set => ReplaceAll(new DocumentFragment(this, value), false);
+    }
+
+    /// <inheritdoc />
+    public String OuterHtml
+    {
+        get => this.ToHtml();
+        set
+        {
+            var parentNode = Parent;
+
+            if (parentNode != null)
+            {
+                switch (parentNode.NodeType)
+                {
+                    case (Int32)Dom.NodeType.Document:
+                        throw new DomException(DomError.NoModificationAllowed);
+                    case (Int32)Dom.NodeType.DocumentFragment:
+                        parentNode = new Html.Dom.HtmlBodyElement(Owner);
+                        break;
+                }
+            }
+
+            var parent = parentNode as Element ?? throw new DomException(DomError.NotSupported);
+            parent.InsertChild(parent.IndexOf(this), new DocumentFragment(parent, value));
+            parent.RemoveChild(this);
+        }
+    }
+
+    INamedNodeMap IElement.Attributes => _attributes;
+
+    /// <inheritdoc />
+    public Boolean IsFocused
+    {
+        get => Object.ReferenceEquals(Owner?.FocusElement, this);
+        protected set
+        {
+            var document = Owner;
+            document?.QueueTask(() =>
+            {
+                if (value)
+                {
+                    document.SetFocus(this);
+                    this.Fire<FocusEvent>(m => m.Init(EventNames.Focus, false, false));
+                }
+                else
+                {
+                    document.SetFocus(null);
+                    this.Fire<FocusEvent>(m => m.Init(EventNames.Blur, false, false));
+                }
+            });
+        }
+    }
+
+    #endregion
+
+    #region Methods
+
+    /// <summary>
+    /// Takes a given string source and parses it into a subtree
+    /// using the current element as context.
+    /// Follows the fragment parsing strategy for the given namespace.
+    /// </summary>
+    /// <param name="source">The source to parse into a subtree.</param>
+    /// <returns>The documentElement of the new subtree.</returns>
+    public abstract IElement ParseSubtree(String source);
+
+    /// <inheritdoc />
+    public IShadowRoot AttachShadow(ShadowRootMode mode = ShadowRootMode.Open)
+    {
+        if (TagNames.AllNoShadowRoot.Contains(_localName))
+        {
+            throw new DomException(DomError.NotSupported);
+        }
+
+        if (ShadowRoot != null)
+        {
+            throw new DomException(DomError.InvalidState);
+        }
+
+        _shadowRoot = new ShadowRoot(this, mode);
+        return _shadowRoot;
+    }
+
+    /// <inheritdoc />
+    public IElement? QuerySelector(String selectors) => ChildNodes.QuerySelector(selectors, this);
+
+    /// <inheritdoc />
+    public IHtmlCollection<IElement> QuerySelectorAll(String selectors) => ChildNodes.QuerySelectorAll(selectors, this);
+
+    /// <inheritdoc />
+    public IHtmlCollection<IElement> GetElementsByClassName(String classNames) => ChildNodes.GetElementsByClassName(classNames);
+
+    /// <inheritdoc />
+    public IHtmlCollection<IElement> GetElementsByTagName(String tagName) => ChildNodes.GetElementsByTagName(tagName);
+
+    /// <inheritdoc />
+    public IHtmlCollection<IElement> GetElementsByTagNameNS(String? namespaceURI, String tagName) => ChildNodes.GetElementsByTagName(namespaceURI, tagName);
+
+    /// <inheritdoc />
+    public Boolean Matches(String selectorText)
+    {
+        var parser = Context.GetService<ICssSelectorParser>()!;
+        var sg = parser.ParseSelector(selectorText) ?? throw new DomException(DomError.Syntax);
+        return sg.Match(this, this);
+    }
+
+    /// <inheritdoc />
+    public IElement? Closest(String selectorText)
+    {
+        var parser = Context.GetService<ICssSelectorParser>()!;
+        var sg = parser.ParseSelector(selectorText) ?? throw new DomException(DomError.Syntax);
+        var node = (IElement)this;
+
+        while (node != null)
+        {
+            if (sg.Match(node, node))
+            {
+                return node;
+            }
+            else
+            {
+                node = node.ParentElement;
+            }
+        }
+
+        return null;
+    }
+
+    /// <inheritdoc />
+    public Boolean HasAttribute(String name)
+    {
+        if (_namespace.Is(NamespaceNames.HtmlUri))
+        {
+            name = name.HtmlLower();
+        }
+
+        return _attributes.GetNamedItem(name) != null;
+    }
+
+    /// <inheritdoc />
+    public Boolean HasAttribute(StringOrMemory name)
+    {
+        if (_namespace.Is(NamespaceNames.HtmlUri))
+        {
+            name = name.HtmlLower();
+        }
+
+        return _attributes.GetNamedItem(name) != null;
+    }
+
+    /// <inheritdoc />
+    public Boolean HasAttribute(String? namespaceUri, String localName)
+    {
+        if (String.IsNullOrEmpty(namespaceUri))
+        {
+            namespaceUri = null;
+        }
+
+        return _attributes.GetNamedItem(namespaceUri, localName) != null;
+    }
+
+    /// <inheritdoc />
+    public String? GetAttribute(String name)
+    {
+        if (_namespace.Is(NamespaceNames.HtmlUri))
+        {
+            name = name.HtmlLower();
+        }
+
+        return _attributes.GetNamedItem(name)?.Value;
+    }
+
+    /// <inheritdoc />
+    public String? GetAttribute(String? namespaceUri, String localName)
+    {
+        if (String.IsNullOrEmpty(namespaceUri))
+        {
+            namespaceUri = null;
+        }
+
+        return _attributes.GetNamedItem(namespaceUri, localName)?.Value;
+    }
+
+    /// <inheritdoc />
+    public void SetAttribute(String name, String? value)
+    {
+        if (value != null)
+        {
+            if (!name.IsXmlName())
+            {
+                throw new DomException(DomError.InvalidCharacter);
+            }
+
+            if (_namespace.Is(NamespaceNames.HtmlUri))
+            {
+                name = name.HtmlLower();
+            }
+
+            this.SetOwnAttribute(name, value);
+
+            // ViewSync?.UpdateAttribute(name, this);
+        }
+        else
+        {
+            RemoveAttribute(name);
+            // ViewSync?.RemoveAttribute(name, this);
+        }
+    }
+
+    /// <inheritdoc />
+    public void SetAttribute(String? namespaceUri, String name, String? value)
+    {
+        if (value != null)
+        {
+            GetPrefixAndLocalName(name, ref namespaceUri, out var prefix, out var localName);
+            _attributes.SetNamedItem(new Attr(prefix, localName, value, namespaceUri));
+        }
+        else
+        {
+            RemoveAttribute(namespaceUri, name);
+        }
+    }
+
+    /// <summary>
+    /// Adds an attribute.
+    /// </summary>
+    /// <param name="attr">The attribute to add.</param>
+    public void AddAttribute(Attr attr)
+    {
+        attr.Container = _attributes;
+        _attributes.FastAddItem(attr);
+    }
+
+    /// <inheritdoc />
+    public Boolean RemoveAttribute(String name)
+    {
+        if (_namespace.Is(NamespaceNames.HtmlUri))
+        {
+            name = name.HtmlLower();
+        }
+
+        if (_attributes.RemoveNamedItemOrDefault(name) == null)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <inheritdoc />
+    public Boolean RemoveAttribute(String? namespaceUri, String localName)
+    {
+        if (String.IsNullOrEmpty(namespaceUri))
+        {
+            namespaceUri = null;
+        }
+
+        return _attributes.RemoveNamedItemOrDefault(namespaceUri, localName) != null;
+    }
+
+    /// <inheritdoc />
+    public void Prepend(params INode[] nodes)
+    {
+        this.PrependNodes(nodes);
+    }
+
+    /// <inheritdoc />
+    public void Append(params INode[] nodes)
+    {
+        this.AppendNodes(nodes);
+    }
+
+    /// <inheritdoc />
+    public override Boolean Equals(INode? otherNode)
+    {
+        if (otherNode is IElement otherElement)
+        {
+            return NamespaceUri.Is(otherElement.NamespaceUri) &&
+                   _attributes.SameAs(otherElement.Attributes) &&
+                   base.Equals(otherNode);
+        }
+
+        return false;
+    }
+
+    /// <inheritdoc />
+    public void Before(params INode[] nodes) => this.InsertBefore(nodes);
+
+    /// <inheritdoc />
+    public void After(params INode[] nodes) => this.InsertAfter(nodes);
+
+    /// <inheritdoc />
+    public void Replace(params INode[] nodes) => this.ReplaceWith(nodes);
+
+    /// <inheritdoc />
+    public void Remove() => this.RemoveFromParent();
+
+    /// <inheritdoc />
+    public void Insert(AdjacentPosition position, String html)
+    {
+        var useThis = position == AdjacentPosition.AfterBegin || position == AdjacentPosition.BeforeEnd;
+        var context = useThis ? this : Parent as Element ?? throw new DomException("The element has no parent.");
+        var nodes = new DocumentFragment(context, html);
+
+        switch (position)
+        {
+            case AdjacentPosition.BeforeBegin:
+                Parent!.InsertBefore(nodes, this);
+                break;
+
+            case AdjacentPosition.AfterEnd:
+                Parent!.InsertChild(Parent.IndexOf(this) + 1, nodes);
+                break;
+
+            case AdjacentPosition.AfterBegin:
+                InsertChild(0, nodes);
+                break;
+
+            case AdjacentPosition.BeforeEnd:
+                AppendChild(nodes);
+                break;
+        }
+    }
+
+    /// <inheritdoc />
+    public override Node Clone(Document owner, Boolean deep)
+    {
+        var node = new AnyElement(owner, LocalName, _prefix, _namespace, Flags);
+        CloneElement(node, owner, deep);
+        return node;
+    }
+
+    #endregion
+
+    #region Internal Methods
+
+    internal virtual void SetupElement()
+    {
+        var attrs = _attributes;
+
+        if (attrs.Length > 0)
+        {
+            var observers = Context.GetServices<IAttributeObserver>();
+
+            foreach (var attr in attrs)
+            {
+                var name = attr.LocalName;
+                var value = attr.Value;
+
+                foreach (var observer in observers)
+                {
+                    observer.NotifyChange(this, name, value);
+                }
+            }
+        }
+    }
+
+    internal void AttributeChanged(String localName, String? namespaceUri, String? oldValue, String? newValue)
+    {
+        if (namespaceUri is null)
+        {
+            var observers = Context.GetServices<IAttributeObserver>();
+
+            foreach (var observer in observers)
+            {
+                observer.NotifyChange(this, localName, newValue);
+            }
+        }
+
+        Owner.QueueMutation(MutationRecord.Attributes(
+            target: this,
+            attributeName: localName,
+            attributeNamespace: namespaceUri,
+            previousValue: oldValue));
+    }
+
+    internal void UpdateClassList(String value) => _classList?.Update(value);
+
+    #endregion
+
+    #region Helpers
+
+    /// <inheritdoc />
+    protected void UpdateAttribute(String name, String value) => this.SetOwnAttribute(name, value, suppressCallbacks: true);
+
+    /// <inheritdoc />
+    protected sealed override String? LocateNamespace(String prefix) => this.LocateNamespaceFor(prefix);
+
+    /// <inheritdoc />
+    protected sealed override String? LocatePrefix(String namespaceUri) => this.LocatePrefixFor(namespaceUri);
+
+    /// <inheritdoc />
+    protected void CloneElement(Element element, Document owner, Boolean deep)
+    {
+        CloneNode(element, owner, deep);
+
+        foreach (var attribute in _attributes)
+        {
+            var attr = new Attr(attribute.Prefix, attribute.LocalName, attribute.Value, attribute.NamespaceUri);
+            attr.Container = element._attributes;
+            element._attributes.FastAddItem(attr);
+        }
+
+        element.SetupElement();
+    }
+
+    #endregion
+
+    #region Construction
+
+    StringOrMemory IConstructableElement.LocalName => _localName;
+
+    IConstructableNamedNodeMap IConstructableElement.Attributes => _attributes;
+
+    StringOrMemory IConstructableElement.NamespaceUri => NamespaceUri ?? "";
+
+    void IConstructableElement.SetAttribute(String? ns, StringOrMemory name, StringOrMemory value)
+    {
+        SetAttribute(ns, name.ToString(), value.ToString());
+    }
+
+    void IConstructableElement.SetOwnAttribute(StringOrMemory name, StringOrMemory value)
+    {
+        this.SetOwnAttribute(name.ToString(), value.ToString());
+    }
+
+    StringOrMemory IConstructableElement.GetAttribute(StringOrMemory @namespace, StringOrMemory name)
+    {
+        var result = GetAttribute(@namespace.ToString(), name.ToString());
+        return result ?? StringOrMemory.Empty;
+    }
+
+    void IConstructableElement.SetAttributes(StructAttributes tagAttributes)
+    {
+        var container = Attributes;
+
+        for (var i = 0; i < tagAttributes.Count; i++)
+        {
+            var attribute = tagAttributes[i];
+            var item = new Attr(attribute.Name.ToString(), attribute.Value.ToString());
+            item.Container = container;
+            container.FastAddItem(item);
+        }
+    }
+
+    void IConstructableElement.SetupElement() => SetupElement();
+
+    void IConstructableElement.AddComment(ref StructHtmlToken token) => this.AddComment(ref token);
+
+    IConstructableNode IConstructableElement.ShallowCopy() => Clone(Owner, false);
+
+    StringOrMemory IConstructableElement.Prefix => Prefix ?? StringOrMemory.Empty;
+
+    #endregion
 }

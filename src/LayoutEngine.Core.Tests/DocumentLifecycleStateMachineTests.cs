@@ -31,11 +31,11 @@ public class DocumentLifecycleStateMachineTests
 
         Assert.Equal(DocumentLifecyclePhase.InStyleRecalc, sm.CurrentPhase);
 
-        // Should be able to exit InStyleRecalc (ExitInStyleRecalc -> StyleDirty)
+        // Should be able to exit InStyleRecalc (ExitInStyleRecalc -> StyleClean)
         bool exited = sm.SignalPhaseExit();
 
         Assert.True(exited);
-        Assert.Equal(DocumentLifecyclePhase.StyleDirty, sm.CurrentPhase);
+        Assert.Equal(DocumentLifecyclePhase.StyleClean, sm.CurrentPhase); // FIX: StyleDirty -> StyleClean
     }
 
     // [Fact]
