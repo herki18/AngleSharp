@@ -19,6 +19,14 @@ public static class TestHelpers
         element.Children.Returns(children);
 
         // Set up invalidation flag methods with default behavior
+        SetupInvalidationFlags(element);
+
+        return element;
+    }
+
+    private static void SetupInvalidationFlags(IElement element)
+    {
+        // Set up boolean return methods with default false values
         element.NeedsStyleRecalc().Returns(false);
         element.ChildNeedsStyleRecalc().Returns(false);
         element.NeedsLayout().Returns(false);
@@ -26,7 +34,7 @@ public static class TestHelpers
         element.NeedsPaintInvalidation().Returns(false);
         element.HasAnyInvalidation().Returns(false);
 
-        // Set up void methods (these won't return values but we can verify they were called)
+        // Set up void methods - these don't return values but can be verified
         element.When(x => x.SetNeedsStyleRecalc()).Do(_ => { });
         element.When(x => x.ClearNeedsStyleRecalc()).Do(_ => { });
         element.When(x => x.SetNeedsLayout()).Do(_ => { });
@@ -34,8 +42,6 @@ public static class TestHelpers
         element.When(x => x.SetNeedsPaintInvalidation()).Do(_ => { });
         element.When(x => x.ClearNeedsPaintInvalidation()).Do(_ => { });
         element.When(x => x.ClearAllInvalidation()).Do(_ => { });
-
-        return element;
     }
 
     public static IDocument CreateMockDocument(IElement? documentElement = null)
@@ -108,8 +114,15 @@ public static class TestHelpers
     }
 
     /// <summary>
-    /// Sets up a mock element with specific invalidation flags for testing
+    /// Sets up a mock element with specific invalidation flags for testing.
+    /// Call this after CreateMockElement() to override default false values.
     /// </summary>
+    /// <param name="element">The mock element to configure</param>
+    /// <param name="needsStyle">Whether element needs style recalculation</param>
+    /// <param name="childNeedsStyle">Whether any child needs style recalculation</param>
+    /// <param name="needsLayout">Whether element needs layout calculation</param>
+    /// <param name="childNeedsLayout">Whether any child needs layout calculation</param>
+    /// <param name="needsPaint">Whether element needs paint invalidation</param>
     public static void SetupElementInvalidationFlags(IElement element,
         bool needsStyle = false,
         bool childNeedsStyle = false,
@@ -122,6 +135,98 @@ public static class TestHelpers
         element.NeedsLayout().Returns(needsLayout);
         element.ChildNeedsLayout().Returns(childNeedsLayout);
         element.NeedsPaintInvalidation().Returns(needsPaint);
-        element.HasAnyInvalidation().Returns(needsStyle || childNeedsStyle || needsLayout || childNeedsLayout || needsPaint);
+
+        bool hasAny = needsStyle || childNeedsStyle || needsLayout || childNeedsLayout || needsPaint;
+        element.HasAnyInvalidation().Returns(hasAny);
+    }
+
+    /// <summary>
+    /// Creates a mock element with children for testing hierarchical operations
+    /// </summary>
+    public static IElement CreateMockElementWithChildren(string tagName, params IElement[] children)
+    {
+        var element = CreateMockElement(tagName);
+        var htmlCollection = new TestHtmlCollection(children);
+        element.Children.Returns(htmlCollection);
+
+        // Set parent reference on children
+        foreach (var child in children)
+        {
+            child.Parent.Returns(element);
+        }
+
+        return element;
+    }
+
+    /// <summary>
+    /// Verifies that an element had its invalidation flags set
+    /// </summary>
+    public static void VerifyInvalidationFlagsSet(IElement element,
+        bool shouldHaveSetStyle = false,
+        bool shouldHaveSetLayout = false,
+        bool shouldHaveSetPaint = false)
+    {
+        if (shouldHaveSetStyle)
+        {
+            element.Received(1).SetNeedsStyleRecalc();
+        }
+        else
+        {
+            element.DidNotReceive().SetNeedsStyleRecalc();
+        }
+
+        if (shouldHaveSetLayout)
+        {
+            element.Received(1).SetNeedsLayout();
+        }
+        else
+        {
+            element.DidNotReceive().SetNeedsLayout();
+        }
+
+        if (shouldHaveSetPaint)
+        {
+            element.Received(1).SetNeedsPaintInvalidation();
+        }
+        else
+        {
+            element.DidNotReceive().SetNeedsPaintInvalidation();
+        }
+    }
+
+    /// <summary>
+    /// Verifies that an element had its invalidation flags cleared
+    /// </summary>
+    public static void VerifyInvalidationFlagsCleared(IElement element,
+        bool shouldHaveClearedStyle = false,
+        bool shouldHaveClearedLayout = false,
+        bool shouldHaveClearedPaint = false)
+    {
+        if (shouldHaveClearedStyle)
+        {
+            element.Received(1).ClearNeedsStyleRecalc();
+        }
+        else
+        {
+            element.DidNotReceive().ClearNeedsStyleRecalc();
+        }
+
+        if (shouldHaveClearedLayout)
+        {
+            element.Received(1).ClearNeedsLayout();
+        }
+        else
+        {
+            element.DidNotReceive().ClearNeedsLayout();
+        }
+
+        if (shouldHaveClearedPaint)
+        {
+            element.Received(1).ClearNeedsPaintInvalidation();
+        }
+        else
+        {
+            element.DidNotReceive().ClearNeedsPaintInvalidation();
+        }
     }
 }
