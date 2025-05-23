@@ -1,5 +1,4 @@
 ﻿namespace LayoutEngine.Core.Tests;
-
 using System.Collections.Generic;
 using AngleSharp.Dom;
 using LayoutEngine.Core.Layout;
@@ -18,7 +17,6 @@ public static class TestHelpers
         children.Length.Returns(0);
         element.Children.Returns(children);
 
-        // Set up invalidation flag methods with default behavior
         SetupInvalidationFlags(element);
 
         return element;
@@ -26,7 +24,7 @@ public static class TestHelpers
 
     private static void SetupInvalidationFlags(IElement element)
     {
-        // Set up boolean return methods with default false values
+        // Set up default return values
         element.NeedsStyleRecalc().Returns(false);
         element.ChildNeedsStyleRecalc().Returns(false);
         element.NeedsLayout().Returns(false);
@@ -34,10 +32,16 @@ public static class TestHelpers
         element.NeedsPaintInvalidation().Returns(false);
         element.HasAnyInvalidation().Returns(false);
 
-        // Set up void methods - these don't return values but can be verified
+        // Set up behavior: SetNeedsLayout should also call SetNeedsPaintInvalidation
+        element.When(x => x.SetNeedsLayout()).Do(callInfo =>
+        {
+            // When layout is invalidated, paint should also be invalidated
+            element.SetNeedsPaintInvalidation();
+        });
+
+        // Set up other flag behaviors
         element.When(x => x.SetNeedsStyleRecalc()).Do(_ => { });
         element.When(x => x.ClearNeedsStyleRecalc()).Do(_ => { });
-        element.When(x => x.SetNeedsLayout()).Do(_ => { });
         element.When(x => x.ClearNeedsLayout()).Do(_ => { });
         element.When(x => x.SetNeedsPaintInvalidation()).Do(_ => { });
         element.When(x => x.ClearNeedsPaintInvalidation()).Do(_ => { });
@@ -101,6 +105,7 @@ public static class TestHelpers
             fragments.Add(fragment);
         }
         layoutInfo.Fragments.Returns(fragments);
+
         return layoutInfo;
     }
 
@@ -113,16 +118,6 @@ public static class TestHelpers
         return fragmentTree;
     }
 
-    /// <summary>
-    /// Sets up a mock element with specific invalidation flags for testing.
-    /// Call this after CreateMockElement() to override default false values.
-    /// </summary>
-    /// <param name="element">The mock element to configure</param>
-    /// <param name="needsStyle">Whether element needs style recalculation</param>
-    /// <param name="childNeedsStyle">Whether any child needs style recalculation</param>
-    /// <param name="needsLayout">Whether element needs layout calculation</param>
-    /// <param name="childNeedsLayout">Whether any child needs layout calculation</param>
-    /// <param name="needsPaint">Whether element needs paint invalidation</param>
     public static void SetupElementInvalidationFlags(IElement element,
         bool needsStyle = false,
         bool childNeedsStyle = false,
@@ -140,16 +135,12 @@ public static class TestHelpers
         element.HasAnyInvalidation().Returns(hasAny);
     }
 
-    /// <summary>
-    /// Creates a mock element with children for testing hierarchical operations
-    /// </summary>
     public static IElement CreateMockElementWithChildren(string tagName, params IElement[] children)
     {
         var element = CreateMockElement(tagName);
         var htmlCollection = new TestHtmlCollection(children);
         element.Children.Returns(htmlCollection);
 
-        // Set parent reference on children
         foreach (var child in children)
         {
             child.Parent.Returns(element);
@@ -158,9 +149,6 @@ public static class TestHelpers
         return element;
     }
 
-    /// <summary>
-    /// Verifies that an element had its invalidation flags set
-    /// </summary>
     public static void VerifyInvalidationFlagsSet(IElement element,
         bool shouldHaveSetStyle = false,
         bool shouldHaveSetLayout = false,
@@ -194,9 +182,6 @@ public static class TestHelpers
         }
     }
 
-    /// <summary>
-    /// Verifies that an element had its invalidation flags cleared
-    /// </summary>
     public static void VerifyInvalidationFlagsCleared(IElement element,
         bool shouldHaveClearedStyle = false,
         bool shouldHaveClearedLayout = false,

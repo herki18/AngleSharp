@@ -1,5 +1,4 @@
 ﻿namespace LayoutEngine.Core.Layout;
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,9 +22,12 @@ public class LayoutSystem : ILayoutSystem
 
     public ILayoutResult PerformLayout(IDocument document)
     {
+        // Always compute document styles first
+        _styleSystem.ComputeDocumentStyles(document);
+
         if (MockLayoutData.UseMockData)
         {
-            var mockResult = MockLayoutData.GetMockLayoutResult();
+            var mockResult = CreateMockLayoutResult(document);
             _currentLayoutResult = mockResult;
             ClearLayoutFlags(document.DocumentElement);
             _eventAggregator.Publish(new FragmentTreeUpdatedEvent(mockResult));
@@ -33,7 +35,6 @@ public class LayoutSystem : ILayoutSystem
         }
 
         var result = new LayoutResult();
-        _styleSystem.ComputeDocumentStyles(document);
 
         if (document.DocumentElement != null)
         {
@@ -47,7 +48,64 @@ public class LayoutSystem : ILayoutSystem
         _currentLayoutResult = result;
         ClearLayoutFlags(document.DocumentElement);
         _eventAggregator.Publish(new FragmentTreeUpdatedEvent(result));
+
         return result;
+    }
+
+    private ILayoutResult CreateMockLayoutResult(IDocument document)
+    {
+        var result = new LayoutResult();
+
+        if (document.DocumentElement != null)
+        {
+            // Create layout fragments for the actual document structure
+            var rootFragment = CreateMockFragment(document.DocumentElement, new Rect(0, 0, 800, 600), result);
+            result.SetRootFragment(rootFragment);
+        }
+
+        return result;
+    }
+
+    private ILayoutFragment CreateMockFragment(IElement element, Rect bounds, LayoutResult result)
+    {
+        var fragment = new LayoutFragment
+        {
+            Element = element,
+            Bounds = bounds,
+            VisualProperties = new VisualProperties
+            {
+                BackgroundColor = "blue",
+                FontSize = 24,
+                Color = "white"
+            }
+        };
+
+        // Create layout info for the element
+        var layoutInfo = new LayoutInfo
+        {
+            ContentRect = bounds,
+            PaddingRect = new Rect(bounds.X - 5, bounds.Y - 5, bounds.Width + 10, bounds.Height + 10),
+            BorderRect = new Rect(bounds.X - 10, bounds.Y - 10, bounds.Width + 20, bounds.Height + 20),
+            MarginRect = new Rect(bounds.X - 15, bounds.Y - 15, bounds.Width + 30, bounds.Height + 30),
+            Position = new Point(bounds.X, bounds.Y)
+        };
+        layoutInfo.AddFragment(fragment);
+        result.SetLayoutInfo(element, layoutInfo);
+        result.AddFragment(element, fragment);
+
+        // Process children
+        var childFragments = new List<ILayoutFragment>();
+        var childY = 20f;
+        foreach (var child in element.Children.OfType<IElement>())
+        {
+            var childBounds = new Rect(20, childY, bounds.Width - 40, 50);
+            var childFragment = CreateMockFragment(child, childBounds, result);
+            childFragments.Add(childFragment);
+            childY += 60;
+        }
+        fragment.Children = childFragments;
+
+        return fragment;
     }
 
     private void ClearLayoutFlags(IElement? element)
@@ -55,6 +113,7 @@ public class LayoutSystem : ILayoutSystem
         if (element == null) return;
 
         element.ClearNeedsLayout();
+
         foreach (var child in element.Children.OfType<IElement>())
         {
             ClearLayoutFlags(child);
@@ -80,16 +139,13 @@ public class LayoutSystem : ILayoutSystem
             case DisplayType.Block:
                 LayoutBlockElement(element, style, fragment, context, result);
                 break;
-
             case DisplayType.Flex:
                 LayoutFlexElement(element, style, fragment, context, result);
                 break;
-
             case DisplayType.Inline:
             case DisplayType.InlineBlock:
                 LayoutInlineElement(element, style, fragment, context, result);
                 break;
-
             case DisplayType.None:
                 break;
         }
@@ -102,7 +158,6 @@ public class LayoutSystem : ILayoutSystem
     private void LayoutBlockElement(IElement element, IComputedStyle style, LayoutFragment fragment, LayoutContext context, LayoutResult result)
     {
         var boxModel = CalculateBoxModel(element, style, context);
-
         fragment.Bounds = boxModel.ContentRect;
 
         var layoutInfo = new LayoutInfo
@@ -134,12 +189,12 @@ public class LayoutSystem : ILayoutSystem
 
     private void LayoutFlexElement(IElement element, IComputedStyle style, LayoutFragment fragment, LayoutContext context, LayoutResult result)
     {
-        // For future implementation
+        // TODO: Implement flex layout
     }
 
     private void LayoutInlineElement(IElement element, IComputedStyle style, LayoutFragment fragment, LayoutContext context, LayoutResult result)
     {
-        // For future implementation
+        // TODO: Implement inline layout
     }
 
     private BoxModel CalculateBoxModel(IElement element, IComputedStyle style, LayoutContext context)
@@ -272,14 +327,31 @@ public class LayoutSystem : ILayoutSystem
 
     public void InvalidateLayout(IElement element, bool recursive = true)
     {
+        var invalidatedElements = new List<IElement>();
+
         element.SetNeedsLayout();
+        invalidatedElements.Add(element);
 
         if (recursive)
         {
             foreach (var child in element.Children.OfType<IElement>())
             {
-                InvalidateLayout(child, true);
+                InvalidateLayoutRecursive(child, invalidatedElements);
             }
+        }
+
+        // Publish the invalidation event with all affected elements
+        _eventAggregator.Publish(new LayoutInvalidatedEvent(invalidatedElements));
+    }
+
+    private void InvalidateLayoutRecursive(IElement element, List<IElement> invalidatedElements)
+    {
+        element.SetNeedsLayout();
+        invalidatedElements.Add(element);
+
+        foreach (var child in element.Children.OfType<IElement>())
+        {
+            InvalidateLayoutRecursive(child, invalidatedElements);
         }
     }
 

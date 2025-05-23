@@ -71,12 +71,20 @@ public class StyleSystem : IStyleSystem
             var oldStyle = GetComputedStyle(element);
             var newStyle = ComputeStyle(element);
 
-            if (oldStyle != null && StyleChangeAffectsLayout(oldStyle, newStyle))
+            // Set layout flags when:
+            // 1. There's no old style (new element or was display:none)
+            // 2. The style change affects layout properties
+            if (oldStyle == null || StyleChangeAffectsLayout(oldStyle, newStyle))
             {
                 element.SetNeedsLayout();
+                // Note: SetNeedsLayout automatically triggers SetNeedsPaintInvalidation
             }
-
-            element.SetNeedsPaintInvalidation();
+            else
+            {
+                // Style changed but doesn't affect layout (e.g., color change)
+                // Still needs paint invalidation
+                element.SetNeedsPaintInvalidation();
+            }
         }
 
         if (element.ChildNeedsStyleRecalc())

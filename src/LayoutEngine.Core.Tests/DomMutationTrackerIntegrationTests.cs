@@ -16,6 +16,7 @@ public class DomMutationTrackerIntegrationTests
     public DomMutationTrackerIntegrationTests()
     {
         var services = new ServiceCollection();
+        services.AddLogging();
         services.AddLayoutEngine();
         _serviceProvider = services.BuildServiceProvider();
         _engine = _serviceProvider.GetRequiredService<IEngine>();
