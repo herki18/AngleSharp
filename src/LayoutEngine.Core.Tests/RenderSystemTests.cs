@@ -1,6 +1,7 @@
 ﻿namespace LayoutEngine.Core.Tests;
 
 using System.Collections.Generic;
+using System.Linq;
 using AngleSharp.Dom;
 using Infrastructure.EventAggregator.API.Aggregation;
 using LayoutEngine.Core.Events;
@@ -74,24 +75,44 @@ public class RenderSystemTests
     }
 
     [Fact]
-    public void NeedsRender_ReturnsFalse_ForInitialElement()
+    public void ProcessFragmentTree_ClearsPaintFlags()
     {
         var element = TestHelpers.CreateMockElement();
+        // Set up the element to return true for NeedsPaintInvalidation initially
+        element.NeedsPaintInvalidation().Returns(true);
 
-        var result = _renderSystem.NeedsRender(element);
+        var layoutFragment = TestHelpers.CreateMockLayoutFragment(element);
+        var fragmentTree = TestHelpers.CreateMockFragmentTree(layoutFragment);
 
-        Assert.False(result);
+        _renderSystem.ProcessFragmentTree(fragmentTree);
+
+        // Verify that ClearNeedsPaintInvalidation was called
+        element.Received(1).ClearNeedsPaintInvalidation();
     }
 
     [Fact]
-    public void NeedsRender_ReturnsTrue_ForInvalidatedElement()
+    public void NeedsRender_UsesNodeFlags()
     {
         var element = TestHelpers.CreateMockElement();
+
+        // Set up mock to return false initially
+        element.NeedsPaintInvalidation().Returns(false);
+        Assert.False(_renderSystem.NeedsRender(element));
+
+        // Set up mock to return true after invalidation
+        element.NeedsPaintInvalidation().Returns(true);
+        Assert.True(_renderSystem.NeedsRender(element));
+    }
+
+    [Fact]
+    public void InvalidateRender_SetsNodeFlags()
+    {
+        var element = TestHelpers.CreateMockElement();
+
         _renderSystem.InvalidateRender(element, false);
 
-        var result = _renderSystem.NeedsRender(element);
-
-        Assert.True(result);
+        // Verify that SetNeedsPaintInvalidation was called
+        element.Received(1).SetNeedsPaintInvalidation();
     }
 
     [Fact]
@@ -110,7 +131,6 @@ public class RenderSystemTests
         var child1 = TestHelpers.CreateMockElement("div");
         var child2 = TestHelpers.CreateMockElement("span");
         var parent = TestHelpers.CreateMockElement("div");
-
         var children = new List<IElement> { child1, child2 };
         var htmlCollection = new TestHtmlCollection(children);
         parent.Children.Returns(htmlCollection);
@@ -119,9 +139,10 @@ public class RenderSystemTests
 
         _renderSystem.InvalidateRender(parent, true);
 
-        Assert.True(_renderSystem.NeedsRender(parent), "Parent element should need rendering");
-        Assert.True(_renderSystem.NeedsRender(child1), "First child element should need rendering");
-        Assert.True(_renderSystem.NeedsRender(child2), "Second child element should need rendering");
+        // Verify that SetNeedsPaintInvalidation was called on all elements
+        parent.Received(1).SetNeedsPaintInvalidation();
+        child1.Received(1).SetNeedsPaintInvalidation();
+        child2.Received(1).SetNeedsPaintInvalidation();
     }
 
     [Fact]
@@ -145,16 +166,15 @@ public class RenderSystemTests
     {
         var element = TestHelpers.CreateMockElement();
         var childElement = TestHelpers.CreateMockElement("span", element);
-
         var childFragment = TestHelpers.CreateMockLayoutFragment(childElement);
         var layoutFragment = TestHelpers.CreateMockLayoutFragment(element);
         layoutFragment.Children.Returns(new List<ILayoutFragment> { childFragment });
-
         var fragmentTree = TestHelpers.CreateMockFragmentTree(layoutFragment);
 
         var commands1 = _renderSystem.ProcessFragmentTree(fragmentTree);
         var commands2 = _renderSystem.ProcessFragmentTree(fragmentTree);
 
+        // On second run, elements shouldn't need to be created again
         Assert.DoesNotContain(commands2, c => c.CommandType == RenderCommandType.Create);
     }
 
@@ -164,14 +184,18 @@ public class RenderSystemTests
         var element = TestHelpers.CreateMockElement();
         var layoutInvalidatedEvent = new LayoutInvalidatedEvent(new List<IElement> { element });
 
+        // Clear any previous calls to setup clean test
         _eventAggregator.ClearReceivedCalls();
 
+        // Simulate what happens when layout invalidated event is received
         foreach (var el in layoutInvalidatedEvent.Elements)
         {
             _renderSystem.InvalidateRender(el, false);
         }
 
-        Assert.True(_renderSystem.NeedsRender(element));
+        // Verify SetNeedsPaintInvalidation was called
+        element.Received(1).SetNeedsPaintInvalidation();
+
         _eventAggregator.Received(1).Publish(Arg.Is<RenderInvalidatedEvent>(e =>
             e.Elements.Contains(element)));
     }

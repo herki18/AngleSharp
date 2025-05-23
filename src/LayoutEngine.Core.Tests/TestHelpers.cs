@@ -18,6 +18,23 @@ public static class TestHelpers
         children.Length.Returns(0);
         element.Children.Returns(children);
 
+        // Set up invalidation flag methods with default behavior
+        element.NeedsStyleRecalc().Returns(false);
+        element.ChildNeedsStyleRecalc().Returns(false);
+        element.NeedsLayout().Returns(false);
+        element.ChildNeedsLayout().Returns(false);
+        element.NeedsPaintInvalidation().Returns(false);
+        element.HasAnyInvalidation().Returns(false);
+
+        // Set up void methods (these won't return values but we can verify they were called)
+        element.When(x => x.SetNeedsStyleRecalc()).Do(_ => { });
+        element.When(x => x.ClearNeedsStyleRecalc()).Do(_ => { });
+        element.When(x => x.SetNeedsLayout()).Do(_ => { });
+        element.When(x => x.ClearNeedsLayout()).Do(_ => { });
+        element.When(x => x.SetNeedsPaintInvalidation()).Do(_ => { });
+        element.When(x => x.ClearNeedsPaintInvalidation()).Do(_ => { });
+        element.When(x => x.ClearAllInvalidation()).Do(_ => { });
+
         return element;
     }
 
@@ -34,10 +51,8 @@ public static class TestHelpers
         var style = Substitute.For<IComputedStyle>();
         style.Element.Returns(element);
         style.Display.Returns(GetDisplayType(display));
-
         style.GetValue(Arg.Any<string>()).Returns(string.Empty);
         style.GetValue("display").Returns(display);
-
         return style;
     }
 
@@ -79,7 +94,6 @@ public static class TestHelpers
             var fragment = CreateMockLayoutFragment(element);
             fragments.Add(fragment);
         }
-
         layoutInfo.Fragments.Returns(fragments);
         return layoutInfo;
     }
@@ -92,5 +106,22 @@ public static class TestHelpers
         fragmentTree.FindFragmentsForElement(Arg.Any<IElement>()).Returns(new List<ILayoutFragment>());
         return fragmentTree;
     }
-}
 
+    /// <summary>
+    /// Sets up a mock element with specific invalidation flags for testing
+    /// </summary>
+    public static void SetupElementInvalidationFlags(IElement element,
+        bool needsStyle = false,
+        bool childNeedsStyle = false,
+        bool needsLayout = false,
+        bool childNeedsLayout = false,
+        bool needsPaint = false)
+    {
+        element.NeedsStyleRecalc().Returns(needsStyle);
+        element.ChildNeedsStyleRecalc().Returns(childNeedsStyle);
+        element.NeedsLayout().Returns(needsLayout);
+        element.ChildNeedsLayout().Returns(childNeedsLayout);
+        element.NeedsPaintInvalidation().Returns(needsPaint);
+        element.HasAnyInvalidation().Returns(needsStyle || childNeedsStyle || needsLayout || childNeedsLayout || needsPaint);
+    }
+}

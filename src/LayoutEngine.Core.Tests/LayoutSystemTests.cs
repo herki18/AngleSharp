@@ -27,29 +27,22 @@ public class LayoutSystemTests
     [Fact]
     public void PerformLayout_ComputesDocumentStyles()
     {
-        // Arrange
         var document = TestHelpers.CreateMockDocument();
 
-        // Act
         var result = _layoutSystem.PerformLayout(document);
 
-        // Assert
         _styleSystem.Received(1).ComputeDocumentStyles(document);
     }
 
     [Fact]
     public void PerformLayout_ReturnsLayoutResult_WithRootFragment()
     {
-        // Arrange
         var rootElement = TestHelpers.CreateMockElement("html");
         var document = TestHelpers.CreateMockDocument(rootElement);
-
         SetUpStyleSystemForElement(rootElement);
 
-        // Act
         var result = _layoutSystem.PerformLayout(document);
 
-        // Assert
         Assert.NotNull(result);
         Assert.NotNull(result.RootFragment);
         Assert.Equal(rootElement, result.RootFragment.Element);
@@ -58,54 +51,59 @@ public class LayoutSystemTests
     [Fact]
     public void PerformLayout_PublishesFragmentTreeUpdatedEvent()
     {
-        // Arrange
         var document = TestHelpers.CreateMockDocument();
         SetUpStyleSystemForElement(document.DocumentElement);
 
-        // Act
         _layoutSystem.PerformLayout(document);
 
-        // Assert
         _eventAggregator.Received(1).Publish(Arg.Any<FragmentTreeUpdatedEvent>());
     }
 
     [Fact]
-    public void NeedsLayout_ReturnsFalse_ForInitialElement()
+    public void PerformLayout_ClearsLayoutFlags()
     {
-        // Arrange
-        var element = TestHelpers.CreateMockElement();
+        var rootElement = TestHelpers.CreateMockElement("html");
+        var document = TestHelpers.CreateMockDocument(rootElement);
+        SetUpStyleSystemForElement(rootElement);
 
-        // Act
-        var result = _layoutSystem.NeedsLayout(element);
+        _layoutSystem.PerformLayout(document);
 
-        // Assert
-        Assert.False(result);
+        // Verify that ClearNeedsLayout was called on the root element
+        rootElement.Received(1).ClearNeedsLayout();
     }
 
     [Fact]
-    public void NeedsLayout_ReturnsTrue_ForInvalidatedElement()
+    public void NeedsLayout_UsesNodeFlags()
     {
-        // Arrange
         var element = TestHelpers.CreateMockElement();
+
+        // Set up mock to return false initially
+        element.NeedsLayout().Returns(false);
+        Assert.False(_layoutSystem.NeedsLayout(element));
+
+        // Set up mock to return true after invalidation
+        element.NeedsLayout().Returns(true);
+        Assert.True(_layoutSystem.NeedsLayout(element));
+    }
+
+    [Fact]
+    public void InvalidateLayout_SetsNodeFlags()
+    {
+        var element = TestHelpers.CreateMockElement();
+
         _layoutSystem.InvalidateLayout(element, false);
 
-        // Act
-        var result = _layoutSystem.NeedsLayout(element);
-
-        // Assert
-        Assert.True(result);
+        // Verify that SetNeedsLayout was called
+        element.Received(1).SetNeedsLayout();
     }
 
     [Fact]
     public void InvalidateLayout_PublishesLayoutInvalidatedEvent()
     {
-        // Arrange
         var element = TestHelpers.CreateMockElement();
 
-        // Act
         _layoutSystem.InvalidateLayout(element, false);
 
-        // Assert
         _eventAggregator.Received(1).Publish(Arg.Is<LayoutInvalidatedEvent>(e =>
             e.Elements.Count == 1 &&
             e.Elements[0] == element));
@@ -114,52 +112,43 @@ public class LayoutSystemTests
     [Fact]
     public void InvalidateLayout_WithRecursive_InvalidatesChildLayouts()
     {
-        // Arrange
         var child1 = TestHelpers.CreateMockElement("div");
         var child2 = TestHelpers.CreateMockElement("span");
         var parent = TestHelpers.CreateMockElement("div");
-
-        // Set up element hierarchy using TestHtmlCollection
         var children = new List<IElement> { child1, child2 };
         var htmlCollection = new TestHtmlCollection(children);
-
-        // Configure the parent element to return our TestHtmlCollection
         parent.Children.Returns(htmlCollection);
 
-        // Act
         _layoutSystem.InvalidateLayout(parent, true);
 
-        // Assert
+        // Verify SetNeedsLayout was called on parent and all children
+        parent.Received(1).SetNeedsLayout();
+        child1.Received(1).SetNeedsLayout();
+        child2.Received(1).SetNeedsLayout();
+
         _eventAggregator.Received(1).Publish(Arg.Is<LayoutInvalidatedEvent>(e =>
             e.Elements.Count == 3 &&
             e.Elements.Contains(parent) &&
             e.Elements.Contains(child1) &&
             e.Elements.Contains(child2)));
-
-        Assert.True(_layoutSystem.NeedsLayout(parent));
-        Assert.True(_layoutSystem.NeedsLayout(child1));
-        Assert.True(_layoutSystem.NeedsLayout(child2));
     }
 
     [Fact]
     public void GetFragmentTree_ThrowsException_WhenNoLayoutPerformed()
     {
-        // Act & Assert
         Assert.Throws<InvalidOperationException>(() => _layoutSystem.GetFragmentTree());
     }
 
     [Fact]
     public void GetFragmentTree_ReturnsFragmentTree_AfterLayoutPerformed()
     {
-        // Arrange
         var document = TestHelpers.CreateMockDocument();
         SetUpStyleSystemForElement(document.DocumentElement);
+
         _layoutSystem.PerformLayout(document);
 
-        // Act
         var result = _layoutSystem.GetFragmentTree();
 
-        // Assert
         Assert.NotNull(result);
         Assert.NotNull(result.RootFragment);
     }
@@ -167,30 +156,21 @@ public class LayoutSystemTests
     [Fact]
     public void GetLayoutInfo_ReturnsNull_WhenNoLayoutPerformed()
     {
-        // Arrange
         var element = TestHelpers.CreateMockElement();
 
-        // Act
         var result = _layoutSystem.GetLayoutInfo(element);
 
-        // Assert
         Assert.Null(result);
     }
 
     [Fact]
     public void GetLayoutInfo_ReturnsLayoutInfo_AfterLayoutPerformed()
     {
-        // Arrange
         var rootElement = TestHelpers.CreateMockElement("html");
         var childElement = TestHelpers.CreateMockElement("div", rootElement);
-
-        // Set up element hierarchy using TestHtmlCollection
         var children = new List<IElement> { childElement };
         var htmlCollection = new TestHtmlCollection(children);
-
-        // Configure the root element to return our TestHtmlCollection
         rootElement.Children.Returns(htmlCollection);
-
         var document = TestHelpers.CreateMockDocument(rootElement);
 
         SetUpStyleSystemForElement(rootElement);
@@ -198,12 +178,56 @@ public class LayoutSystemTests
 
         _layoutSystem.PerformLayout(document);
 
-        // Act
         var result = _layoutSystem.GetLayoutInfo(childElement);
 
-        // Assert
         Assert.NotNull(result);
+        Assert.NotEmpty(result.Fragments);
         Assert.Equal(childElement, result.Fragments[0].Element);
+    }
+
+    [Fact]
+    public void PerformLayout_WithChildElements_ClearsAllLayoutFlags()
+    {
+        var child1 = TestHelpers.CreateMockElement("div");
+        var child2 = TestHelpers.CreateMockElement("span");
+        var rootElement = TestHelpers.CreateMockElement("html");
+        var children = new List<IElement> { child1, child2 };
+        var htmlCollection = new TestHtmlCollection(children);
+        rootElement.Children.Returns(htmlCollection);
+
+        // Set up children to have empty collections too
+        var emptyCollection = new TestHtmlCollection(new List<IElement>());
+        child1.Children.Returns(emptyCollection);
+        child2.Children.Returns(emptyCollection);
+
+        var document = TestHelpers.CreateMockDocument(rootElement);
+
+        SetUpStyleSystemForElement(rootElement);
+        SetUpStyleSystemForElement(child1);
+        SetUpStyleSystemForElement(child2);
+
+        _layoutSystem.PerformLayout(document);
+
+        // Verify that ClearNeedsLayout was called on all elements
+        rootElement.Received(1).ClearNeedsLayout();
+        child1.Received(1).ClearNeedsLayout();
+        child2.Received(1).ClearNeedsLayout();
+    }
+
+    [Fact]
+    public void InvalidateLayout_WithoutRecursive_OnlyInvalidatesTargetElement()
+    {
+        var child = TestHelpers.CreateMockElement("div");
+        var parent = TestHelpers.CreateMockElement("div");
+        var children = new List<IElement> { child };
+        var htmlCollection = new TestHtmlCollection(children);
+        parent.Children.Returns(htmlCollection);
+
+        _layoutSystem.InvalidateLayout(parent, false);
+
+        // Only parent should be invalidated
+        parent.Received(1).SetNeedsLayout();
+        child.DidNotReceive().SetNeedsLayout();
     }
 
     private void SetUpStyleSystemForElement(IElement element, string display = "block")
