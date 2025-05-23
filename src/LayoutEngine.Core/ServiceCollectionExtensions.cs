@@ -38,6 +38,7 @@ public static class ServiceCollectionExtensions
 
         // Lifecycle management
         services.AddSingleton<IDocumentLifecycleCoordinator, DocumentLifecycleCoordinator>();
+        services.AddSingleton<DocumentLifecycleStateMachine>();
 
         // Core systems
         services.AddSingleton<IStyleSystem, StyleSystem>();
