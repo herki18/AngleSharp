@@ -256,7 +256,7 @@ public class AngleSharpElementIntegrationTests
         // The flag is only cleared during style recalc tree traversal, not on individual clear calls
         Assert.True(parent.ChildNeedsStyleRecalc());
     }
-    
+
     [Fact]
     public async Task RealElement_FlagIndependence_WorksCorrectly()
     {
