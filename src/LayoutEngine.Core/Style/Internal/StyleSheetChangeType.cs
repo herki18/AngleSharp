@@ -1,4 +1,4 @@
-namespace LayoutEngine.Core.Style;
+namespace LayoutEngine.Core.Style.Internal;
 
 /// <summary>
 /// Type of stylesheet change.

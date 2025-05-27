@@ -1,9 +1,9 @@
-﻿using AngleSharp.Dom;
-using AngleSharp.Css.Dom;
-
-namespace LayoutEngine.Core.Style;
+﻿namespace LayoutEngine.Core.Style.Internal;
 
 using System;
+using AngleSharp.Css.Dom;
+using AngleSharp.Dom;
+using LayoutEngine.Core.Style.Public;
 
 /// <summary>
 /// Context during style recalculation - carries parent style and document info

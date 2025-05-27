@@ -1,18 +1,10 @@
-﻿using AngleSharp.Css.Dom;
-using Microsoft.Extensions.Logging;
-
-namespace LayoutEngine.Core.Style;
+﻿namespace LayoutEngine.Core.Style.Internal;
 
 using System;
 using System.Collections.Generic;
-
-/// <summary>
-/// Handles CSS property inheritance
-/// </summary>
-public interface IInheritanceResolver
-{
-    void ApplyInheritance(ICssStyleDeclaration childDeclaration, ICssStyleDeclaration parentDeclaration);
-}
+using AngleSharp.Css.Dom;
+using Microsoft.Extensions.Logging;
+using Public;
 
 public class InheritanceResolver : IInheritanceResolver
 {

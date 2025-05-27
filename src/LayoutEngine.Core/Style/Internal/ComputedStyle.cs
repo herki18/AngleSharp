@@ -1,9 +1,9 @@
-﻿namespace LayoutEngine.Core.Style;
+﻿namespace LayoutEngine.Core.Style.Internal;
 
 using System;
-using System.Collections.Generic;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
+using LayoutEngine.Core.Style.Public;
 
 /// <summary>
 /// Immutable computed style data holder using ICssStyleDeclaration

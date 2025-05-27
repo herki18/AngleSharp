@@ -1,5 +1,7 @@
-﻿using AngleSharp.Dom;
-using AngleSharp.Css.Dom;
+﻿using AngleSharp.Css.Dom;
+using AngleSharp.Dom;
+
+namespace LayoutEngine.Core.Style.Public;
 
 /// <summary>
 /// Context during style recalculation - mirrors Blink's StyleRecalcContext

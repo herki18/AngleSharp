@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Render;
 using Style;
+using Style.Public;
 using Viewport;
 
 public class Engine : IEngine, IDisposable

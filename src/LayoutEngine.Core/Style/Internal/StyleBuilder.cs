@@ -1,12 +1,12 @@
-﻿using AngleSharp.Dom;
-using AngleSharp.Css.Dom;
-using Microsoft.Extensions.Logging;
-
-namespace LayoutEngine.Core.Style;
+﻿namespace LayoutEngine.Core.Style.Internal;
 
 using System;
 using System.Collections.Generic;
 using AngleSharp.Css;
+using AngleSharp.Css.Dom;
+using AngleSharp.Dom;
+using LayoutEngine.Core.Style.Public;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Builds final computed style - mirrors Blink's StyleBuilder

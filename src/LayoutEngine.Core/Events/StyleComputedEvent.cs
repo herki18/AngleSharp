@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using AngleSharp.Dom;
 using Infrastructure.EventAggregator.API.Events;
 using Style;
+using Style.Public;
 
 /// <summary>
 /// Event published when styles have been computed for elements.

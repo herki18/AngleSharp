@@ -46,7 +46,25 @@
       "skip": true
     },
     {
-      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core"
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\Style",
+      "outputFileNamePattern": "LayoutEngine.Core.Style.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false
+      }
     },
     {
       "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core.Tests"

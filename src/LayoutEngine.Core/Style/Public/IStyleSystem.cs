@@ -1,4 +1,4 @@
-﻿namespace LayoutEngine.Core.Style;
+﻿namespace LayoutEngine.Core.Style.Public;
 
 using AngleSharp.Dom;
 

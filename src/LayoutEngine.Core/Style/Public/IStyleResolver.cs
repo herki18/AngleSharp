@@ -1,6 +1,6 @@
 ﻿using AngleSharp.Dom;
-using AngleSharp.Css.Dom;
-using LayoutEngine.Core.Style;
+
+namespace LayoutEngine.Core.Style.Public;
 
 /// <summary>
 /// Main style resolution orchestrator - mirrors Blink's StyleResolver

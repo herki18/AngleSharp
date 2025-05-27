@@ -1,6 +1,7 @@
-﻿using AngleSharp.Dom;
-using AngleSharp.Css.Dom;
-using LayoutEngine.Core.Style;
+﻿using AngleSharp.Css.Dom;
+using AngleSharp.Dom;
+
+namespace LayoutEngine.Core.Style.Public;
 
 /// <summary>
 /// Builds final computed style - mirrors Blink's StyleBuilder

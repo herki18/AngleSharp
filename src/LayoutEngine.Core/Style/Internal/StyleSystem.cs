@@ -1,11 +1,13 @@
-﻿namespace LayoutEngine.Core.Style;
+﻿namespace LayoutEngine.Core.Style.Internal;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
-using Events;
 using Infrastructure.EventAggregator.API.Aggregation;
+using LayoutEngine.Core.Events;
+using LayoutEngine.Core.Style.Public;
 using Microsoft.Extensions.Logging;
 
 public class StyleSystem : IStyleSystem

@@ -5,6 +5,7 @@ using System.Linq;
 using AngleSharp.Dom;
 using Infrastructure.EventAggregator.API.Aggregation;
 using Style;
+using Style.Public;
 using FragmentTreeUpdatedEvent = Events.FragmentTreeUpdatedEvent;
 using LayoutInvalidatedEvent = Events.LayoutInvalidatedEvent;
 

@@ -11,6 +11,7 @@ using LayoutEngine.Core.Render.Commands;
 using LayoutEngine.Core.Viewport;
 using NSubstitute;
 using Style;
+using Style.Public;
 using Xunit;
 
 public class RenderSystemTests

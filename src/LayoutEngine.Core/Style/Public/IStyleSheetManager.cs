@@ -1,9 +1,10 @@
-namespace LayoutEngine.Core.Style;
+namespace LayoutEngine.Core.Style.Public;
 
 using System;
 using System.Collections.Generic;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
+using Internal;
 
 /// <summary>
 /// Manages stylesheets within the style system.

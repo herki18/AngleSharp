@@ -1,13 +1,15 @@
-﻿using AngleSharp.Dom;
-using AngleSharp.Css.Dom;
-using AngleSharp.Css;
-using Microsoft.Extensions.Logging;
-
-namespace LayoutEngine.Core.Style;
+﻿namespace LayoutEngine.Core.Style;
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using AngleSharp.Css;
+using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
+using AngleSharp.Dom;
+using Internal;
+using Microsoft.Extensions.Logging;
+using Public;
 
 /// <summary>
 /// Collects CSS rules that match an element - mirrors Blink's ElementRuleCollector
@@ -15,18 +17,15 @@ using AngleSharp.Css.Parser;
 public class ElementRuleCollector : IElementRuleCollector
 {
     private readonly ICssParser _cssParser;
-    private readonly IUserAgentStyleProvider _userAgentStyles;
     private readonly IStyleSheetManager _styleSheetManager;
     private readonly ILogger<ElementRuleCollector> _logger;
 
     public ElementRuleCollector(
         ICssParser cssParser,
-        IUserAgentStyleProvider userAgentStyles,
         IStyleSheetManager styleSheetManager,
         ILogger<ElementRuleCollector> logger)
     {
         _cssParser = cssParser ?? throw new ArgumentNullException(nameof(cssParser));
-        _userAgentStyles = userAgentStyles ?? throw new ArgumentNullException(nameof(userAgentStyles));
         _styleSheetManager = styleSheetManager ?? throw new ArgumentNullException(nameof(styleSheetManager));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -46,28 +45,25 @@ public class ElementRuleCollector : IElementRuleCollector
         return new MatchResult(userAgentRules, authorRules, inlineStyle);
     }
 
-    private IReadOnlyList<IMatchedRule> CollectUserAgentRules(IElement element)
+    private IReadOnlyList<MatchedRule> CollectUserAgentRules(IElement element)
     {
-        var rules = new List<IMatchedRule>();
-        var userAgentRule = _userAgentStyles.GetRuleForElement(element);
+        var rules = new List<MatchedRule>();
+        int ruleIndex = 0;
 
-        if (userAgentRule != null)
+        // Get user agent stylesheets from StyleSheetManager (which includes AngleSharp's defaults)
+        var userAgentStylesheets = _styleSheetManager.GetStylesheetsByOrigin(StylesheetOrigin.UserAgent);
+
+        foreach (var stylesheet in userAgentStylesheets)
         {
-            rules.Add(new MatchedRule
-            {
-                Rule = userAgentRule,
-                Specificity = Priority.Zero,
-                Origin = StylesheetOrigin.UserAgent,
-                OriginalIndex = 0
-            });
+            CollectRulesFromStylesheet(stylesheet, element, rules, ref ruleIndex, StylesheetOrigin.UserAgent);
         }
 
         return rules;
     }
 
-    private IReadOnlyList<IMatchedRule> CollectAuthorRules(IElement element)
+    private IReadOnlyList<MatchedRule> CollectAuthorRules(IElement element)
     {
-        var matchedRules = new List<IMatchedRule>();
+        var matchedRules = new List<MatchedRule>();
         int ruleIndex = 0;
 
         // Get all author stylesheets from the StyleSheetManager
@@ -75,7 +71,7 @@ public class ElementRuleCollector : IElementRuleCollector
 
         foreach (var stylesheet in authorStylesheets)
         {
-            CollectRulesFromStylesheet(stylesheet, element, matchedRules, ref ruleIndex);
+            CollectRulesFromStylesheet(stylesheet, element, matchedRules, ref ruleIndex, StylesheetOrigin.Author);
         }
 
         return matchedRules;
@@ -84,33 +80,35 @@ public class ElementRuleCollector : IElementRuleCollector
     private void CollectRulesFromStylesheet(
         ICssStyleSheet stylesheet,
         IElement element,
-        List<IMatchedRule> matchedRules,
-        ref int ruleIndex)
+        List<MatchedRule> matchedRules,
+        ref int ruleIndex,
+        StylesheetOrigin origin)
     {
         foreach (var rule in stylesheet.Rules)
         {
-            CollectRulesRecursive(rule, element, matchedRules, ref ruleIndex);
+            CollectRulesRecursive(rule, element, matchedRules, ref ruleIndex, origin);
         }
     }
 
     private void CollectRulesRecursive(
         ICssRule rule,
         IElement element,
-        List<IMatchedRule> matchedRules,
-        ref int ruleIndex)
+        List<MatchedRule> matchedRules,
+        ref int ruleIndex,
+        StylesheetOrigin origin)
     {
         switch (rule.Type)
         {
             case CssRuleType.Style:
                 if (rule is ICssStyleRule styleRule)
                 {
-                    if (styleRule.TryMatch(element, element.Owner.DocumentElement, out var specificity))
+                    if (styleRule.TryMatch(element, element.OwnerDocument!.DocumentElement, out var specificity))
                     {
                         matchedRules.Add(new MatchedRule
                         {
                             Rule = styleRule,
                             Specificity = specificity,
-                            Origin = StylesheetOrigin.Author,
+                            Origin = origin,
                             OriginalIndex = ruleIndex++
                         });
                     }
@@ -124,7 +122,7 @@ public class ElementRuleCollector : IElementRuleCollector
                 {
                     foreach (var nestedRule in groupingRule.Rules)
                     {
-                        CollectRulesRecursive(nestedRule, element, matchedRules, ref ruleIndex);
+                        CollectRulesRecursive(nestedRule, element, matchedRules, ref ruleIndex, origin);
                     }
                 }
                 break;

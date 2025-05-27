@@ -12,6 +12,8 @@ using Xunit;
 
 namespace LayoutEngine.Core.Tests;
 
+using Style.Public;
+
 /// <summary>
 /// Tests the interaction between Style, Layout, and Render systems using node flags.
 /// Critical for ensuring the end-to-end invalidation flow works correctly.

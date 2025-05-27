@@ -7,6 +7,7 @@ using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using Layout;
 using Style;
+using Style.Public;
 
 public interface IEngine
 {

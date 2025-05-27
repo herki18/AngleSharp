@@ -8,6 +8,7 @@ using LayoutEngine.Core.Events;
 using LayoutEngine.Core.Style;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
+using Style.Internal;
 using Xunit;
 
 public class StyleSystemTests

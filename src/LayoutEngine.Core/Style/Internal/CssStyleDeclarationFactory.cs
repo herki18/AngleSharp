@@ -1,10 +1,11 @@
-namespace LayoutEngine.Core.Style;
+namespace LayoutEngine.Core.Style.Internal;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp;
 using AngleSharp.Css.Dom;
+using LayoutEngine.Core.Style.Public;
 
 public class CssStyleDeclarationFactory : ICssStyleDeclarationFactory
 {

@@ -11,6 +11,8 @@ using Xunit;
 
 namespace LayoutEngine.Core.Tests;
 
+using Style.Public;
+
 public class LayoutSystemTests
 {
     private readonly IStyleSystem _styleSystem;

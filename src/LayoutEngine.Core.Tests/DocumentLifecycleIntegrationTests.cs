@@ -5,6 +5,8 @@ using Xunit.Abstractions;
 
 namespace LayoutEngine.Core.Tests;
 
+using Style.Public;
+
 public class DocumentLifecycleIntegrationTests
 {
     private readonly ITestOutputHelper _testOutputHelper;
@@ -37,7 +39,7 @@ public class DocumentLifecycleIntegrationTests
         Assert.Equal(DocumentLifecyclePhase.InStyleRecalc, coordinator.CurrentPhase);
 
         // Complete style calculation
-        eventAggregator.Publish(new StyleComputedEvent(new List<IElement>(), new Dictionary<IElement, LayoutEngine.Core.Style.IComputedStyle>()));
+        eventAggregator.Publish(new StyleComputedEvent(new List<IElement>(), new Dictionary<IElement, IComputedStyle>()));
         Assert.Equal(DocumentLifecyclePhase.StyleClean, coordinator.CurrentPhase);
 
         // Move to layout phase

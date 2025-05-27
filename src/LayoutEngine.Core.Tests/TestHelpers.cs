@@ -4,6 +4,7 @@ using AngleSharp.Dom;
 using LayoutEngine.Core.Layout;
 using LayoutEngine.Core.Style;
 using NSubstitute;
+using Style.Public;
 
 public static class TestHelpers
 {

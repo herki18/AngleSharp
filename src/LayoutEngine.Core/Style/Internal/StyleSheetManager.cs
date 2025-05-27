@@ -1,4 +1,4 @@
-﻿namespace LayoutEngine.Core.Style;
+﻿namespace LayoutEngine.Core.Style.Internal;
 
 using System;
 using System.Collections.Generic;
@@ -9,6 +9,7 @@ using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
 using AngleSharp.Dom;
 using Infrastructure.EventAggregator.API.Aggregation;
+using LayoutEngine.Core.Style.Public;
 
 public sealed class StyleSheetManager : IStyleSheetManager
 {

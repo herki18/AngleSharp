@@ -7,6 +7,8 @@ using Layout;
 using Microsoft.Extensions.DependencyInjection;
 using Render;
 using Style;
+using Style.Internal;
+using Style.Public;
 using Viewport;
 
 public static class ServiceCollectionExtensions

@@ -1,13 +1,13 @@
-﻿namespace AngleSharp.StyleSystem.Computation;
+﻿namespace LayoutEngine.Core.Style.Internal;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using AngleSharp.Css;
 using AngleSharp.Css.Dom;
+using AngleSharp.Css.Parser;
 using AngleSharp.Dom;
-using Css.Parser;
 using LayoutEngine.Core.Style;
+using LayoutEngine.Core.Style.Public;
 
 /// <summary>
 /// Resolves the CSS cascade by applying the proper order of style rules based on origin,

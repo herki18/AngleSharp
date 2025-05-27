@@ -1,14 +1,13 @@
-﻿using AngleSharp.Dom;
-using AngleSharp.Css.Dom;
-using Microsoft.Extensions.Logging;
-using Infrastructure.EventAggregator.API.Aggregation;
-using LayoutEngine.Core.Events;
-
-namespace LayoutEngine.Core.Style;
+﻿namespace LayoutEngine.Core.Style.Internal;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AngleSharp.Dom;
+using Infrastructure.EventAggregator.API.Aggregation;
+using LayoutEngine.Core.Events;
+using LayoutEngine.Core.Style.Public;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Main style resolution orchestrator - mirrors Blink's StyleResolver

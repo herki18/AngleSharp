@@ -6,6 +6,8 @@ using LayoutEngine.Core.Style;
 
 namespace LayoutEngine.Core.Viewport;
 
+using Style.Public;
+
 public class ViewportManager
 {
     private readonly IStyleSystem _styleSystem;
