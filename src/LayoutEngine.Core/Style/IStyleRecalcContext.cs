@@ -20,4 +20,7 @@ public interface IStyleRecalcContext
     /// Current element being processed
     /// </summary>
     IElement? CurrentElement { get; }
+
+    IStyleRecalcContext WithParent(ICssStyleDeclaration parentStyle);
+    IStyleRecalcContext WithElement(IElement element);
 }

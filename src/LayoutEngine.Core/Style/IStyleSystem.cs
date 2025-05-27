@@ -11,7 +11,7 @@ public interface IStyleSystem
     void ComputeDocumentStyles(IDocument document);
 
     // Get computed style for an element (if already calculated)
-    IComputedStyle GetComputedStyle(IElement element);
+    IComputedStyle? GetComputedStyle(IElement element);
 
     // Check if an element needs style recalculation
     bool NeedsStyleRecalc(IElement element);

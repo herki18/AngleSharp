@@ -14,18 +14,18 @@ public class StyleRecalcContext : IStyleRecalcContext
     public IDocument Document { get; }
     public IElement? CurrentElement { get; set; }
 
-    public StyleRecalcContext(IDocument document, ICssStyleDeclaration? parentStyle = null)
+    public StyleRecalcContext(IDocument? document, ICssStyleDeclaration? parentStyle = null)
     {
         Document = document ?? throw new ArgumentNullException(nameof(document));
         ParentStyle = parentStyle;
     }
 
-    public StyleRecalcContext WithParent(ICssStyleDeclaration parentStyle)
+    public IStyleRecalcContext WithParent(ICssStyleDeclaration parentStyle)
     {
         return new StyleRecalcContext(Document, parentStyle) { CurrentElement = CurrentElement };
     }
 
-    public StyleRecalcContext WithElement(IElement element)
+    public IStyleRecalcContext WithElement(IElement element)
     {
         return new StyleRecalcContext(Document, ParentStyle) { CurrentElement = element };
     }

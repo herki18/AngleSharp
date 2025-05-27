@@ -29,16 +29,41 @@ public class MatchResult : IMatchResult
 /// <summary>
 /// A matched CSS rule with specificity and document order
 /// </summary>
-public class MatchedRule : IMatchedRule
-{
-    public ICssRule Rule { get; }
-    public int Specificity { get; }
-    public int DocumentOrder { get; }
 
-    public MatchedRule(ICssRule rule, int specificity, int documentOrder)
+public class MatchedRule
+{
+    // The CSS style rule that matched
+    public ICssStyleRule? Rule { get; set; }
+
+    // The specificity of the matching selector (for cascade ordering)
+    public Priority Specificity { get; set; }
+
+    // The origin of the stylesheet (user agent, user, or author)
+    public StylesheetOrigin Origin { get; set; }
+
+    // The original index for stable sorting
+    public int OriginalIndex { get; set; }
+
+    public MatchedRule()
     {
-        Rule = rule ?? throw new ArgumentNullException(nameof(rule));
-        Specificity = specificity;
-        DocumentOrder = documentOrder;
+
     }
+
+    public MatchedRule(ICssStyleRule? rule, Priority priority, StylesheetOrigin author, Int32 originalIndex)
+    {
+        Rule = rule;
+        Specificity = priority;
+        Origin = author;
+        OriginalIndex = originalIndex;
+    }
+}
+
+/// <summary>
+/// The origin of a stylesheet.
+/// </summary>
+public enum StylesheetOrigin
+{
+    UserAgent,
+    User,
+    Author
 }

@@ -7,4 +7,7 @@ public interface IComputedStyle
 {
     IElement Element { get; }
     ICssStyleDeclaration Declaration { get; }
+    string GetPropertyValue(string propertyName);
+    void SetProperty(string propertyName, string value);
+    DisplayMode Display { get; }
 }

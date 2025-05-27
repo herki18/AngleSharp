@@ -4,6 +4,10 @@ using Microsoft.Extensions.Logging;
 
 namespace LayoutEngine.Core.Style;
 
+using System;
+using System.Collections.Generic;
+using AngleSharp.Css;
+
 /// <summary>
 /// Builds final computed style - mirrors Blink's StyleBuilder
 /// </summary>
