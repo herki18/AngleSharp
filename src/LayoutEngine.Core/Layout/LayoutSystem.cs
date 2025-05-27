@@ -1,10 +1,11 @@
 ﻿namespace LayoutEngine.Core.Layout;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Dom;
+using Core;
 using Infrastructure.EventAggregator.API.Aggregation;
-using Style;
 using Style.Public;
 using FragmentTreeUpdatedEvent = Events.FragmentTreeUpdatedEvent;
 using LayoutInvalidatedEvent = Events.LayoutInvalidatedEvent;
@@ -104,6 +105,7 @@ public class LayoutSystem : ILayoutSystem
             childFragments.Add(childFragment);
             childY += 60;
         }
+
         fragment.Children = childFragments;
 
         return fragment;
@@ -135,28 +137,33 @@ public class LayoutSystem : ILayoutSystem
             VisualProperties = ExtractVisualProperties(style)
         };
 
-        switch (style.Display)
+        var displayValue = style.GetPropertyValue("display");
+        switch (displayValue)
         {
-            case DisplayType.Block:
+            case "block":
                 LayoutBlockElement(element, style, fragment, context, result);
                 break;
-            case DisplayType.Flex:
+            case "flex":
                 LayoutFlexElement(element, style, fragment, context, result);
                 break;
-            case DisplayType.Inline:
-            case DisplayType.InlineBlock:
+            case "inline":
+            case "inline-block":
                 LayoutInlineElement(element, style, fragment, context, result);
                 break;
-            case DisplayType.None:
+            case "none":
+                break;
+            default:
+                // Default to block layout for unknown display types
+                LayoutBlockElement(element, style, fragment, context, result);
                 break;
         }
 
         result.AddFragment(element, fragment);
-
         return fragment;
     }
 
-    private void LayoutBlockElement(IElement element, IComputedStyle style, LayoutFragment fragment, LayoutContext context, LayoutResult result)
+    private void LayoutBlockElement(IElement element, IComputedStyle style, LayoutFragment fragment,
+        LayoutContext context, LayoutResult result)
     {
         var boxModel = CalculateBoxModel(element, style, context);
         fragment.Bounds = boxModel.ContentRect;
@@ -185,47 +192,52 @@ public class LayoutSystem : ILayoutSystem
             var childFragment = LayoutElement(child, childContext, result);
             children.Add(childFragment);
         }
+
         fragment.Children = children;
     }
 
-    private void LayoutFlexElement(IElement element, IComputedStyle style, LayoutFragment fragment, LayoutContext context, LayoutResult result)
+    private void LayoutFlexElement(IElement element, IComputedStyle style, LayoutFragment fragment,
+        LayoutContext context, LayoutResult result)
     {
         // TODO: Implement flex layout
     }
 
-    private void LayoutInlineElement(IElement element, IComputedStyle style, LayoutFragment fragment, LayoutContext context, LayoutResult result)
+    private void LayoutInlineElement(IElement element, IComputedStyle style, LayoutFragment fragment,
+        LayoutContext context, LayoutResult result)
     {
         // TODO: Implement inline layout
     }
 
     private BoxModel CalculateBoxModel(IElement element, IComputedStyle style, LayoutContext context)
     {
-        var marginTop = ParseLength(style.GetValue("margin-top"), context.ContainerWidth, 0);
-        var marginRight = ParseLength(style.GetValue("margin-right"), context.ContainerWidth, 0);
-        var marginBottom = ParseLength(style.GetValue("margin-bottom"), context.ContainerWidth, 0);
-        var marginLeft = ParseLength(style.GetValue("margin-left"), context.ContainerWidth, 0);
+        var marginTop = ParseLength(style.GetPropertyValue("margin-top"), context.ContainerWidth, 0);
+        var marginRight = ParseLength(style.GetPropertyValue("margin-right"), context.ContainerWidth, 0);
+        var marginBottom = ParseLength(style.GetPropertyValue("margin-bottom"), context.ContainerWidth, 0);
+        var marginLeft = ParseLength(style.GetPropertyValue("margin-left"), context.ContainerWidth, 0);
 
-        var borderTop = ParseLength(style.GetValue("border-top-width"), context.ContainerWidth, 0);
-        var borderRight = ParseLength(style.GetValue("border-right-width"), context.ContainerWidth, 0);
-        var borderBottom = ParseLength(style.GetValue("border-bottom-width"), context.ContainerWidth, 0);
-        var borderLeft = ParseLength(style.GetValue("border-left-width"), context.ContainerWidth, 0);
+        var borderTop = ParseLength(style.GetPropertyValue("border-top-width"), context.ContainerWidth, 0);
+        var borderRight = ParseLength(style.GetPropertyValue("border-right-width"), context.ContainerWidth, 0);
+        var borderBottom = ParseLength(style.GetPropertyValue("border-bottom-width"), context.ContainerWidth, 0);
+        var borderLeft = ParseLength(style.GetPropertyValue("border-left-width"), context.ContainerWidth, 0);
 
-        var paddingTop = ParseLength(style.GetValue("padding-top"), context.ContainerWidth, 0);
-        var paddingRight = ParseLength(style.GetValue("padding-right"), context.ContainerWidth, 0);
-        var paddingBottom = ParseLength(style.GetValue("padding-bottom"), context.ContainerWidth, 0);
-        var paddingLeft = ParseLength(style.GetValue("padding-left"), context.ContainerWidth, 0);
+        var paddingTop = ParseLength(style.GetPropertyValue("padding-top"), context.ContainerWidth, 0);
+        var paddingRight = ParseLength(style.GetPropertyValue("padding-right"), context.ContainerWidth, 0);
+        var paddingBottom = ParseLength(style.GetPropertyValue("padding-bottom"), context.ContainerWidth, 0);
+        var paddingLeft = ParseLength(style.GetPropertyValue("padding-left"), context.ContainerWidth, 0);
 
         float width;
-        var widthValue = style.GetValue("width");
+        var widthValue = style.GetPropertyValue("width");
         if (!string.IsNullOrEmpty(widthValue))
         {
             width = ParseLength(widthValue, context.ContainerWidth, context.ContainerWidth);
         }
         else
         {
-            if (style.Display == DisplayType.Block)
+            var displayValue = style.GetPropertyValue("display");
+            if (displayValue == "block")
             {
-                width = context.ContainerWidth - marginLeft - marginRight - borderLeft - borderRight - paddingLeft - paddingRight;
+                width = context.ContainerWidth - marginLeft - marginRight - borderLeft - borderRight - paddingLeft -
+                        paddingRight;
             }
             else
             {
@@ -234,7 +246,7 @@ public class LayoutSystem : ILayoutSystem
         }
 
         float height;
-        var heightValue = style.GetValue("height");
+        var heightValue = style.GetPropertyValue("height");
         if (!string.IsNullOrEmpty(heightValue))
         {
             height = ParseLength(heightValue, context.ContainerHeight, context.ContainerHeight);
@@ -305,19 +317,19 @@ public class LayoutSystem : ILayoutSystem
     {
         return new VisualProperties
         {
-            BackgroundColor = style.GetValue("background-color"),
-            BorderTopWidth = float.TryParse(style.GetValue("border-top-width"), out var btw) ? btw : 0,
-            BorderRightWidth = float.TryParse(style.GetValue("border-right-width"), out var brw) ? brw : 0,
-            BorderBottomWidth = float.TryParse(style.GetValue("border-bottom-width"), out var bbw) ? bbw : 0,
-            BorderLeftWidth = float.TryParse(style.GetValue("border-left-width"), out var blw) ? blw : 0,
-            BorderTopColor = style.GetValue("border-top-color"),
-            BorderRightColor = style.GetValue("border-right-color"),
-            BorderBottomColor = style.GetValue("border-bottom-color"),
-            BorderLeftColor = style.GetValue("border-left-color"),
-            Color = style.GetValue("color"),
-            FontFamily = style.GetValue("font-family"),
-            FontSize = float.TryParse(style.GetValue("font-size"), out var fs) ? fs : 16,
-            FontWeight = style.GetValue("font-weight")
+            BackgroundColor = style.GetPropertyValue("background-color"),
+            BorderTopWidth = float.TryParse(style.GetPropertyValue("border-top-width"), out var btw) ? btw : 0,
+            BorderRightWidth = float.TryParse(style.GetPropertyValue("border-right-width"), out var brw) ? brw : 0,
+            BorderBottomWidth = float.TryParse(style.GetPropertyValue("border-bottom-width"), out var bbw) ? bbw : 0,
+            BorderLeftWidth = float.TryParse(style.GetPropertyValue("border-left-width"), out var blw) ? blw : 0,
+            BorderTopColor = style.GetPropertyValue("border-top-color"),
+            BorderRightColor = style.GetPropertyValue("border-right-color"),
+            BorderBottomColor = style.GetPropertyValue("border-bottom-color"),
+            BorderLeftColor = style.GetPropertyValue("border-left-color"),
+            Color = style.GetPropertyValue("color"),
+            FontFamily = style.GetPropertyValue("font-family"),
+            FontSize = float.TryParse(style.GetPropertyValue("font-size"), out var fs) ? fs : 16,
+            FontWeight = style.GetPropertyValue("font-weight")
         };
     }
 

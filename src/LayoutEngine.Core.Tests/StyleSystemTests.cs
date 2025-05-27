@@ -1,33 +1,42 @@
 ﻿namespace LayoutEngine.Core.Tests;
-
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Dom;
 using Infrastructure.EventAggregator.API.Aggregation;
 using LayoutEngine.Core.Events;
 using LayoutEngine.Core.Style;
+using LayoutEngine.Core.Style.Internal;
+using LayoutEngine.Core.Style.Public;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using Style.Internal;
 using Xunit;
 
 public class StyleSystemTests
 {
+    private readonly IStyleResolver _styleResolver;
+    private readonly IStyleSheetManager _styleSheetManager;
     private readonly IEventAggregator _eventAggregator;
     private readonly ILogger<StyleSystem> _logger;
     private readonly StyleSystem _styleSystem;
 
     public StyleSystemTests()
     {
+        _styleResolver = Substitute.For<IStyleResolver>();
+        _styleSheetManager = Substitute.For<IStyleSheetManager>();
         _eventAggregator = Substitute.For<IEventAggregator>();
         _logger = Substitute.For<ILogger<StyleSystem>>();
-        _styleSystem = new StyleSystem(_eventAggregator, _logger);
+
+        _styleSystem = new StyleSystem(_styleResolver, _styleSheetManager, _eventAggregator, _logger);
     }
 
     [Fact]
     public void ComputeStyle_ReturnsComputedStyle()
     {
         var element = TestHelpers.CreateMockElement();
+        var expectedStyle = TestHelpers.CreateMockComputedStyle(element);
+
+        // Setup the resolver to return the expected style
+        _styleResolver.ResolveStyle(element, Arg.Any<IStyleRecalcContext>()).Returns(expectedStyle);
 
         var result = _styleSystem.ComputeStyle(element);
 
@@ -40,14 +49,12 @@ public class StyleSystemTests
     {
         var rootElement = TestHelpers.CreateMockElement("html");
         var document = TestHelpers.CreateMockDocument(rootElement);
-
-        // Set up element to need style recalc
         TestHelpers.SetupElementInvalidationFlags(rootElement, needsStyle: true);
 
         _styleSystem.ComputeDocumentStyles(document);
 
-        // Verify that ClearNeedsStyleRecalc was called
-        rootElement.Received(1).ClearNeedsStyleRecalc();
+        _styleSheetManager.Received(1).AttachToDocument(document);
+        _styleResolver.Received(1).RecalcDocumentStyle(document);
     }
 
     [Fact]
@@ -58,20 +65,24 @@ public class StyleSystemTests
 
         _styleSystem.ComputeDocumentStyles(document);
 
-        _eventAggregator.Received(1).Publish(Arg.Any<StyleComputedEvent>());
+        // The event is published by the StyleResolver, so we verify it was called
+        _styleResolver.Received(1).RecalcDocumentStyle(document);
     }
 
     [Fact]
     public void NeedsStyleRecalc_UsesNodeFlags()
     {
         var element = TestHelpers.CreateMockElement();
-
-        // Set up mock to return false initially
         element.NeedsStyleRecalc().Returns(false);
+        element.ChildNeedsStyleRecalc().Returns(false);
+
         Assert.False(_styleSystem.NeedsStyleRecalc(element));
 
-        // Set up mock to return true
         element.NeedsStyleRecalc().Returns(true);
+        Assert.True(_styleSystem.NeedsStyleRecalc(element));
+
+        element.NeedsStyleRecalc().Returns(false);
+        element.ChildNeedsStyleRecalc().Returns(true);
         Assert.True(_styleSystem.NeedsStyleRecalc(element));
     }
 
@@ -82,8 +93,8 @@ public class StyleSystemTests
 
         _styleSystem.InvalidateStyle(element, false);
 
-        // Verify that SetNeedsStyleRecalc was called
         element.Received(1).SetNeedsStyleRecalc();
+        _eventAggregator.Received(1).Publish(Arg.Any<StyleInvalidatedEvent>());
     }
 
     [Fact]
@@ -98,7 +109,6 @@ public class StyleSystemTests
 
         _styleSystem.InvalidateStyle(parent, true);
 
-        // Verify that SetNeedsStyleRecalc was called on all elements
         parent.Received(1).SetNeedsStyleRecalc();
         child1.Received(1).SetNeedsStyleRecalc();
         child2.Received(1).SetNeedsStyleRecalc();
@@ -108,14 +118,13 @@ public class StyleSystemTests
     public void GetComputedStyle_ReturnsStoredStyle()
     {
         var element = TestHelpers.CreateMockElement();
+        var expectedStyle = TestHelpers.CreateMockComputedStyle(element);
 
-        // First compute a style
-        var computedStyle = _styleSystem.ComputeStyle(element);
+        _styleResolver.GetComputedStyle(element).Returns(expectedStyle);
 
-        // Then retrieve it
-        var retrievedStyle = _styleSystem.GetComputedStyle(element);
+        var result = _styleSystem.GetComputedStyle(element);
 
-        Assert.Equal(computedStyle, retrievedStyle);
+        Assert.Equal(expectedStyle, result);
     }
 
     [Fact]
@@ -123,61 +132,18 @@ public class StyleSystemTests
     {
         var element = TestHelpers.CreateMockElement();
 
+        _styleResolver.GetComputedStyle(element).Returns((IComputedStyle?)null);
+
         var result = _styleSystem.GetComputedStyle(element);
 
         Assert.Null(result);
     }
 
     [Fact]
-    public void ComputeDocumentStyles_ProcessesChildElements()
-    {
-        var child = TestHelpers.CreateMockElement("div");
-        var parent = TestHelpers.CreateMockElement("html");
-        var children = new List<IElement> { child };
-        var htmlCollection = new TestHtmlCollection(children);
-        parent.Children.Returns(htmlCollection);
-        var document = TestHelpers.CreateMockDocument(parent);
-
-        // Set up parent to have child that needs style recalc
-        TestHelpers.SetupElementInvalidationFlags(parent, childNeedsStyle: true);
-        TestHelpers.SetupElementInvalidationFlags(child, needsStyle: true);
-
-        _styleSystem.ComputeDocumentStyles(document);
-
-        // Both parent and child should have their flags cleared
-        parent.Received(1).ClearNeedsStyleRecalc();
-        child.Received(1).ClearNeedsStyleRecalc();
-    }
-
-    [Fact]
-    public void ComputeDocumentStyles_SetsLayoutFlags_WhenStyleAffectsLayout()
-    {
-        var element = TestHelpers.CreateMockElement();
-        var document = TestHelpers.CreateMockDocument(element);
-
-        // Set up element to need style recalc
-        TestHelpers.SetupElementInvalidationFlags(element, needsStyle: true);
-
-        _styleSystem.ComputeDocumentStyles(document);
-
-        // Should set layout and paint invalidation flags when style changes
-        element.Received(1).SetNeedsLayout();
-        element.Received(1).SetNeedsPaintInvalidation();
-    }
-
-    [Fact]
     public void ClearStyles_RemovesAllComputedStyles()
     {
-        var element = TestHelpers.CreateMockElement();
-
-        // Compute a style first
-        _styleSystem.ComputeStyle(element);
-        Assert.NotNull(_styleSystem.GetComputedStyle(element));
-
-        // Clear all styles
         _styleSystem.ClearStyles();
 
-        // Style should be gone
-        Assert.Null(_styleSystem.GetComputedStyle(element));
+        _styleResolver.Received(1).ClearStyles();
     }
 }

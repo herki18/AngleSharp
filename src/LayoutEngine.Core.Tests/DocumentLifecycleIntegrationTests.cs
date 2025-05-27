@@ -5,6 +5,7 @@ using Xunit.Abstractions;
 
 namespace LayoutEngine.Core.Tests;
 
+using Core;
 using Style.Public;
 
 public class DocumentLifecycleIntegrationTests

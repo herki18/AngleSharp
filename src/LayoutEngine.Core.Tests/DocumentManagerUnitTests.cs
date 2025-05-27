@@ -8,7 +8,9 @@ using LayoutEngine.Core; // Assumes DocumentManager is here
 using System;
 using MartinCostello.Logging.XUnit;
 
-namespace LayoutEngine.Core.Tests; // Corrected Namespace for the test class
+namespace LayoutEngine.Core.Tests;
+
+using Core; // Corrected Namespace for the test class
 
 public class DocumentManagerUnitTests
 {

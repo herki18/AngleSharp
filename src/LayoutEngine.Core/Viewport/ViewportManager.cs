@@ -50,7 +50,7 @@ public class ViewportManager
         if (fragment.Element != null)
         {
             var style = _styleSystem.GetComputedStyle(fragment.Element);
-            if (IsScrollContainer(style))
+            if (style != null && IsScrollContainer(style))
             {
                 var viewportId = Guid.NewGuid().ToString();
                 var viewport = new Viewport(viewportId, fragment.Element);

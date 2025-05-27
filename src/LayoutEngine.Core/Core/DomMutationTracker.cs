@@ -1,17 +1,13 @@
-namespace LayoutEngine.Core;
+namespace LayoutEngine.Core.Core;
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using AngleSharp.Dom;
 using Infrastructure.EventAggregator.API.Aggregation;
-using Infrastructure.EventAggregator.API.Events;
 using DomAttributeChangedEvent = Events.DomAttributeChangedEvent;
 using DomNodeAddedEvent = Events.DomNodeAddedEvent;
 using DomNodeRemovedEvent = Events.DomNodeRemovedEvent;
 using DomTextChangedEvent = Events.DomTextChangedEvent;
-using LayoutInvalidatedEvent = Events.LayoutInvalidatedEvent;
-using StyleInvalidatedEvent = Events.StyleInvalidatedEvent;
 
 /// <summary>
 /// Implements DOM mutation tracking using AngleSharp's MutationObserver.

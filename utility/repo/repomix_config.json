@@ -56,8 +56,63 @@
       }
     },
     {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\Core",
+      "outputFileNamePattern": "LayoutEngine.Core.Core.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\Events",
+      "outputFileNamePattern": "LayoutEngine.Core.Events.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\Layout",
+      "outputFileNamePattern": "LayoutEngine.Core.Layout.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\Render",
+      "outputFileNamePattern": "LayoutEngine.Core.Render.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false
+      }
+    },
+    {
       "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\Style",
       "outputFileNamePattern": "LayoutEngine.Core.Style.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\Viewport",
+      "outputFileNamePattern": "LayoutEngine.Core.Viewport.txt",
       "repomixOptions": {
         "style": "xml",
         "removeComments": false,

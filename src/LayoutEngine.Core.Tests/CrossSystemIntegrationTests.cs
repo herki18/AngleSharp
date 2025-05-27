@@ -12,6 +12,7 @@ using Xunit;
 
 namespace LayoutEngine.Core.Tests;
 
+using Core;
 using Style.Public;
 
 /// <summary>

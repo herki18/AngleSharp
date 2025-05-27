@@ -1,15 +1,15 @@
-﻿namespace LayoutEngine.Core;
+﻿namespace LayoutEngine.Core.Core;
 
 using AngleSharp;
 using Infrastructure.CacheManager.DI;
 using Infrastructure.EventAggregator.DI;
-using Layout;
+using LayoutEngine.Core.Layout;
+using LayoutEngine.Core.Render;
+using LayoutEngine.Core.Style.Internal;
+using LayoutEngine.Core.Style.Public;
+using LayoutEngine.Core.Viewport;
 using Microsoft.Extensions.DependencyInjection;
-using Render;
 using Style;
-using Style.Internal;
-using Style.Public;
-using Viewport;
 
 public static class ServiceCollectionExtensions
 {
@@ -43,7 +43,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<DocumentLifecycleStateMachine>();
 
         // Core systems
-        services.AddSingleton<IStyleSystem, StyleSystem>();
+        services.AddStyleSystem();
         services.AddSingleton<ILayoutSystem, LayoutSystem>();
 
         // Register all dependencies for RenderSystem

@@ -1,6 +1,6 @@
-﻿namespace LayoutEngine.Core;
+﻿namespace LayoutEngine.Core.Core;
 
-using Layout;
+using LayoutEngine.Core.Layout;
 
 public static class MockLayoutData
 {

@@ -1,4 +1,4 @@
-﻿namespace LayoutEngine.Core;
+﻿namespace LayoutEngine.Core.Core;
 
 /// <summary>
 /// Defines triggers that cause state transitions in the document lifecycle state machine.

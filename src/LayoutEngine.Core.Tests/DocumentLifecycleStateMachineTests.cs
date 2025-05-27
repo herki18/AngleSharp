@@ -9,6 +9,8 @@ using System; // Required for Func
 
 namespace LayoutEngine.Core.Tests;
 
+using Core;
+
 public class DocumentLifecycleStateMachineTests
 {
     private IEventAggregator CreateStubAggregator() => Substitute.For<IEventAggregator>();

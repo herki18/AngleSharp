@@ -1,4 +1,4 @@
-﻿namespace LayoutEngine.Core;
+﻿namespace LayoutEngine.Core.Core;
 
 /// <summary>
 /// Defines the type of phase change event.

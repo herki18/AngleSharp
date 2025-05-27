@@ -1,13 +1,11 @@
-﻿namespace LayoutEngine.Core;
+﻿namespace LayoutEngine.Core.Core;
 
 using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp;
-using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
-using Layout;
-using Style;
-using Style.Public;
+using LayoutEngine.Core.Layout;
+using LayoutEngine.Core.Style.Public;
 
 public interface IEngine
 {

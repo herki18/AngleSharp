@@ -1,12 +1,13 @@
-﻿namespace LayoutEngine.Core;
+﻿namespace LayoutEngine.Core.Core;
 
 using System;
 using System.Collections.Generic;
-using Events;
 using Infrastructure.EventAggregator.API.Aggregation;
 using Infrastructure.EventAggregator.API.Events;
-using Microsoft.Extensions.Logging; // Added for ILogger
+using LayoutEngine.Core.Events;
+using Microsoft.Extensions.Logging;
 using Stateless;
+// Added for ILogger
 
 /// <summary>
 /// Manages the document lifecycle state machine with automatic transitions.

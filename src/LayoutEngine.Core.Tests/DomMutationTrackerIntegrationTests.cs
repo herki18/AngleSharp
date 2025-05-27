@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 
 namespace LayoutEngine.Core.Tests;
 
+using Core;
 using Events;
 
 public class DomMutationTrackerIntegrationTests

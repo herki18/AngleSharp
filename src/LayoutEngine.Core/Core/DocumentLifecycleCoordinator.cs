@@ -1,11 +1,11 @@
-namespace LayoutEngine.Core;
+namespace LayoutEngine.Core.Core;
 
 using System;
 using System.Collections.Generic;
-using Events;
 using Infrastructure.EventAggregator.API.Aggregation;
-// Note: Infrastructure.EventAggregator.API.Events is not directly used here, but kept if other parts rely on it.
+using LayoutEngine.Core.Events;
 using Microsoft.Extensions.Logging;
+// Note: Infrastructure.EventAggregator.API.Events is not directly used here, but kept if other parts rely on it.
 
 /// <summary>
 /// Coordinates the document lifecycle phases using a state machine.

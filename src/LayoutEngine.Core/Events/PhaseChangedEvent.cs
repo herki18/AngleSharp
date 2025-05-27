@@ -1,5 +1,6 @@
 namespace LayoutEngine.Core.Events;
 
+using Core;
 using Infrastructure.EventAggregator.API.Events;
 
 /// <summary>

@@ -1,4 +1,4 @@
-namespace LayoutEngine.Core;
+namespace LayoutEngine.Core.Core;
 
 using System;
 using System.Linq;
@@ -6,15 +6,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp;
 using AngleSharp.Dom;
-using Events;
 using Infrastructure.EventAggregator.API.Aggregation;
-using Layout;
+using LayoutEngine.Core.Events;
+using LayoutEngine.Core.Layout;
+using LayoutEngine.Core.Render;
+using LayoutEngine.Core.Style.Public;
+using LayoutEngine.Core.Viewport;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Render;
-using Style;
-using Style.Public;
-using Viewport;
 
 public class Engine : IEngine, IDisposable
 {

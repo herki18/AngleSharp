@@ -1,4 +1,4 @@
-﻿namespace LayoutEngine.Core;
+﻿namespace LayoutEngine.Core.Core;
 
 /// <summary>
 /// Defines operations that can be performed on a document.

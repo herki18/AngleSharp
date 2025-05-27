@@ -1,4 +1,4 @@
-namespace LayoutEngine.Core;
+namespace LayoutEngine.Core.Core;
 
 using System;
 

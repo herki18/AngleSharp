@@ -61,23 +61,9 @@ public static class TestHelpers
     {
         var style = Substitute.For<IComputedStyle>();
         style.Element.Returns(element);
-        style.Display.Returns(GetDisplayType(display));
-        style.GetValue(Arg.Any<string>()).Returns(string.Empty);
-        style.GetValue("display").Returns(display);
+        style.GetPropertyValue(Arg.Any<string>()).Returns(string.Empty);
+        style.GetPropertyValue("display").Returns(display);
         return style;
-    }
-
-    private static DisplayType GetDisplayType(string display)
-    {
-        return display switch
-        {
-            "block" => DisplayType.Block,
-            "flex" => DisplayType.Flex,
-            "inline" => DisplayType.Inline,
-            "inline-block" => DisplayType.InlineBlock,
-            "none" => DisplayType.None,
-            _ => DisplayType.Block
-        };
     }
 
     public static ILayoutFragment CreateMockLayoutFragment(IElement? element = null, Rect bounds = default)

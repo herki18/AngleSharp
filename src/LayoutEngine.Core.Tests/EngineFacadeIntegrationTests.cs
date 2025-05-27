@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LayoutEngine.Core.Tests;
 
+using Core;
 using MartinCostello.Logging.XUnit;
 using Xunit.Abstractions;
 
