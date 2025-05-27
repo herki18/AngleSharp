@@ -1,5 +1,4 @@
 ﻿using AngleSharp.Dom;
-
 namespace LayoutEngine.Core.Style.Public;
 
 /// <summary>
@@ -16,4 +15,14 @@ public interface IStyleResolver
     /// Computes styles for entire document tree (Blink: Document::RecalcStyle)
     /// </summary>
     void RecalcDocumentStyle(IDocument document);
+
+    /// <summary>
+    /// Gets the computed style for an element if already calculated
+    /// </summary>
+    IComputedStyle? GetComputedStyle(IElement element);
+
+    /// <summary>
+    /// Clears all cached computed styles
+    /// </summary>
+    void ClearStyles();
 }

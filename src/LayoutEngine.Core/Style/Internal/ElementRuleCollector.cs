@@ -50,7 +50,6 @@ public class ElementRuleCollector : IElementRuleCollector
         var rules = new List<MatchedRule>();
         int ruleIndex = 0;
 
-        // Get user agent stylesheets from StyleSheetManager (which includes AngleSharp's defaults)
         var userAgentStylesheets = _styleSheetManager.GetStylesheetsByOrigin(StylesheetOrigin.UserAgent);
 
         foreach (var stylesheet in userAgentStylesheets)
@@ -66,7 +65,6 @@ public class ElementRuleCollector : IElementRuleCollector
         var matchedRules = new List<MatchedRule>();
         int ruleIndex = 0;
 
-        // Get all author stylesheets from the StyleSheetManager
         var authorStylesheets = _styleSheetManager.GetStylesheetsByOrigin(StylesheetOrigin.Author);
 
         foreach (var stylesheet in authorStylesheets)
@@ -100,18 +98,10 @@ public class ElementRuleCollector : IElementRuleCollector
         switch (rule.Type)
         {
             case CssRuleType.Style:
-                if (rule is ICssStyleRule styleRule)
+                if (rule is ICssStyleRule styleRule &&
+                    styleRule.TryMatch(element, element.OwnerDocument!.DocumentElement, out var specificity))
                 {
-                    if (styleRule.TryMatch(element, element.OwnerDocument!.DocumentElement, out var specificity))
-                    {
-                        matchedRules.Add(new MatchedRule
-                        {
-                            Rule = styleRule,
-                            Specificity = specificity,
-                            Origin = origin,
-                            OriginalIndex = ruleIndex++
-                        });
-                    }
+                    matchedRules.Add(new MatchedRule(styleRule, specificity, origin, ruleIndex++));
                 }
                 break;
 
@@ -139,8 +129,7 @@ public class ElementRuleCollector : IElementRuleCollector
 
         try
         {
-            var inlineDeclaration = _cssParser.ParseDeclaration(styleAttribute);
-            return inlineDeclaration;
+            return _cssParser.ParseDeclaration(styleAttribute);
         }
         catch (Exception ex)
         {

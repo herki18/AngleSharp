@@ -28,28 +28,4 @@ public class ComputedStyle : IComputedStyle
     {
         Declaration.SetProperty(propertyName, value);
     }
-
-    public DisplayMode Display
-    {
-        get
-        {
-            var displayValue = GetPropertyValue("display");
-            return displayValue switch
-            {
-                "none" => DisplayMode.None,
-                "block" => DisplayMode.Block,
-                "inline" => DisplayMode.Inline,
-                "inline-block" => DisplayMode.InlineBlock,
-                "flex" => DisplayMode.Flex,
-                "inline-flex" => DisplayMode.InlineFlex,
-                "grid" => DisplayMode.Grid,
-                "inline-grid" => DisplayMode.InlineGrid,
-                "table" => DisplayMode.Table,
-                "table-row" => DisplayMode.TableRow,
-                "table-cell" => DisplayMode.TableCell,
-                "list-item" => DisplayMode.ListItem,
-                _ => DisplayMode.Block
-            };
-        }
-    }
 }

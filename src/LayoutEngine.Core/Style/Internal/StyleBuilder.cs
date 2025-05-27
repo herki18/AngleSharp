@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using LayoutEngine.Core.Style.Public;
@@ -17,7 +16,6 @@ public class StyleBuilder : IStyleBuilder
     private readonly ICascadeResolver _cascadeResolver;
     private readonly IInheritanceResolver _inheritanceResolver;
     private readonly ILogger<StyleBuilder> _logger;
-
     private ICssStyleDeclaration? _currentDeclaration;
 
     public StyleBuilder(
@@ -39,10 +37,10 @@ public class StyleBuilder : IStyleBuilder
         // Create new style declaration
         _currentDeclaration = _styleDeclarationFactory.Create();
 
-        // Convert IMatchResult to format expected by your existing CascadeResolver
+        // Convert IMatchResult to format expected by CascadeResolver
         var allMatchedRules = ConvertToMatchedRules(matchResult);
 
-        // Use your existing cascade resolver
+        // Use cascade resolver to resolve the final declarations
         var resolvedDeclaration = _cascadeResolver.ResolveCascade(allMatchedRules, context.CurrentElement!);
 
         // Copy resolved properties to current declaration
@@ -55,7 +53,6 @@ public class StyleBuilder : IStyleBuilder
             throw new InvalidOperationException("Must call ApplyMatchedProperties first");
 
         _logger.LogDebug("Applying inheritance from parent style");
-
         _inheritanceResolver.ApplyInheritance(_currentDeclaration, parentDeclaration);
     }
 
@@ -66,49 +63,20 @@ public class StyleBuilder : IStyleBuilder
 
         var result = new ComputedStyle(element, _currentDeclaration);
         _currentDeclaration = null; // Clear for next use
-
         return result;
     }
 
     private IEnumerable<MatchedRule> ConvertToMatchedRules(IMatchResult matchResult)
     {
         var rules = new List<MatchedRule>();
-        int index = 0;
 
-        // Convert user agent rules
-        foreach (var rule in matchResult.UserAgentRules)
-        {
-            if (rule.Rule is ICssStyleRule styleRule)
-            {
-                rules.Add(new MatchedRule(
-                    styleRule,
-                    new Priority(0, 0, 0, 0), // User agent has lowest specificity
-                    StylesheetOrigin.UserAgent,
-                    index++));
-            }
-        }
+        // Add user agent rules
+        rules.AddRange(matchResult.UserAgentRules);
 
-        // Convert author rules
-        foreach (var rule in matchResult.AuthorRules)
-        {
-            if (rule.Rule is ICssStyleRule styleRule)
-            {
-                rules.Add(new MatchedRule(
-                    styleRule,
-                    CalculateSpecificity(rule.Specificity),
-                    StylesheetOrigin.Author,
-                    index++));
-            }
-        }
+        // Add author rules
+        rules.AddRange(matchResult.AuthorRules);
 
         return rules;
-    }
-
-    private Priority CalculateSpecificity(int specificity)
-    {
-        // Convert simple int specificity to Priority object
-        // This is a simplified conversion - you might need to adjust based on your needs
-        return new Priority(0, 0, 0, specificity);
     }
 
     private void CopyDeclaration(ICssStyleDeclaration source, ICssStyleDeclaration target)
@@ -118,7 +86,6 @@ public class StyleBuilder : IStyleBuilder
             var propertyName = source[i];
             var value = source.GetPropertyValue(propertyName);
             var priority = source.GetPropertyPriority(propertyName);
-
             target.SetProperty(propertyName, value, priority);
         }
     }

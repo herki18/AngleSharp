@@ -7,31 +7,23 @@ using AngleSharp.Css.Dom;
 /// <summary>
 /// A matched CSS rule with specificity and document order
 /// </summary>
-
 public class MatchedRule
 {
-    // The CSS style rule that matched
     public ICssStyleRule? Rule { get; set; }
-
-    // The specificity of the matching selector (for cascade ordering)
     public Priority Specificity { get; set; }
-
-    // The origin of the stylesheet (user agent, user, or author)
     public StylesheetOrigin Origin { get; set; }
-
-    // The original index for stable sorting
     public int OriginalIndex { get; set; }
 
     public MatchedRule()
     {
-
+        Specificity = new Priority(0, 0, 0, 0);
     }
 
-    public MatchedRule(ICssStyleRule? rule, Priority priority, StylesheetOrigin author, Int32 originalIndex)
+    public MatchedRule(ICssStyleRule? rule, Priority specificity, StylesheetOrigin origin, int originalIndex)
     {
         Rule = rule;
-        Specificity = priority;
-        Origin = author;
+        Specificity = specificity;
+        Origin = origin;
         OriginalIndex = originalIndex;
     }
 }

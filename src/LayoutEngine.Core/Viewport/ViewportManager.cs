@@ -56,11 +56,11 @@ public class ViewportManager
                 var viewport = new Viewport(viewportId, fragment.Element);
                 viewport.ViewportRect = fragment.Bounds;
                 viewport.Parent = parentViewport;
-                var overflowX = style.GetValue("overflow-x");
-                var overflowY = style.GetValue("overflow-y");
+                var overflowX = style.GetPropertyValue("overflow-x");
+                var overflowY = style.GetPropertyValue("overflow-y");
                 viewport.CanScrollHorizontally = overflowX == "auto" || overflowX == "scroll";
                 viewport.CanScrollVertically = overflowY == "auto" || overflowY == "scroll";
-                var scrollBehavior = style.GetValue("scroll-behavior");
+                var scrollBehavior = style.GetPropertyValue("scroll-behavior");
                 viewport.UseSmoothScrolling = scrollBehavior == "smooth";
                 _viewportsById[viewportId] = viewport;
                 _elementToViewportId[fragment.Element] = viewportId;
@@ -101,9 +101,9 @@ public class ViewportManager
 
     private bool IsScrollContainer(IComputedStyle style)
     {
-        var overflow = style.GetValue("overflow");
-        var overflowX = style.GetValue("overflow-x");
-        var overflowY = style.GetValue("overflow-y");
+        var overflow = style.GetPropertyValue("overflow");
+        var overflowX = style.GetPropertyValue("overflow-x");
+        var overflowY = style.GetPropertyValue("overflow-y");
         return overflow == "auto" || overflow == "scroll" ||
                overflowX == "auto" || overflowX == "scroll" ||
                overflowY == "auto" || overflowY == "scroll";

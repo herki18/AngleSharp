@@ -17,14 +17,14 @@ public class StylesheetChangedEvent : EventBase
     /// <summary>
     /// Gets the type of change that occurred.
     /// </summary>
-    public StylesheetChangeType ChangeType { get; }
+    public StyleSheetChangeType ChangeType { get; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="StylesheetChangedEvent"/> class.
     /// </summary>
     /// <param name="stylesheet">The stylesheet that was changed.</param>
     /// <param name="changeType">The type of change that occurred.</param>
-    public StylesheetChangedEvent(ICssStyleSheet stylesheet, StylesheetChangeType changeType)
+    public StylesheetChangedEvent(ICssStyleSheet stylesheet, StyleSheetChangeType changeType)
     {
         Stylesheet = stylesheet ?? throw new ArgumentNullException(nameof(stylesheet));
         ChangeType = changeType;

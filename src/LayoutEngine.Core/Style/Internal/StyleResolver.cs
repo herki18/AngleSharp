@@ -74,6 +74,16 @@ public class StyleResolver : IStyleResolver
         _eventAggregator.Publish(new StyleComputedEvent(elements, _computedStyleCache));
     }
 
+    public IComputedStyle? GetComputedStyle(IElement element)
+    {
+        return _computedStyleCache.TryGetValue(element, out var style) ? style : null;
+    }
+
+    public void ClearStyles()
+    {
+        _computedStyleCache.Clear();
+    }
+
     private void RecalcStyleRecursive(IElement element, IStyleRecalcContext context)
     {
         // Step 1: Resolve style for this element
@@ -93,15 +103,5 @@ public class StyleResolver : IStyleResolver
                 RecalcStyleRecursive(child, childContext);
             }
         }
-    }
-
-    public IComputedStyle? GetComputedStyle(IElement element)
-    {
-        return _computedStyleCache.TryGetValue(element, out var style) ? style : null;
-    }
-
-    public void ClearStyles()
-    {
-        _computedStyleCache.Clear();
     }
 }
