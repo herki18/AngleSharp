@@ -1,6 +1,8 @@
 ﻿namespace LayoutEngine.Core.Tests;
 using System.Collections.Generic;
 using AngleSharp.Dom;
+using Layout.Internal;
+using Layout.Public;
 using LayoutEngine.Core.Layout;
 using LayoutEngine.Core.Style;
 using NSubstitute;

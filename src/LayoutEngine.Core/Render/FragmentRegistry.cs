@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Layout;
+using Layout.Public;
 
 /// <summary>
 /// Manages the registration and tracking of layout fragments.

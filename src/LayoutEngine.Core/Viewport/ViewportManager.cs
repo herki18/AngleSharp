@@ -6,6 +6,8 @@ using LayoutEngine.Core.Style;
 
 namespace LayoutEngine.Core.Viewport;
 
+using Layout.Internal;
+using Layout.Public;
 using Style.Public;
 
 public class ViewportManager

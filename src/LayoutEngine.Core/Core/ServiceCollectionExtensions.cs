@@ -1,8 +1,11 @@
 ﻿namespace LayoutEngine.Core.Core;
 
 using AngleSharp;
+using AngleSharp.Css.Parser;
 using Infrastructure.CacheManager.DI;
 using Infrastructure.EventAggregator.DI;
+using Layout.Internal;
+using Layout.Public;
 using LayoutEngine.Core.Layout;
 using LayoutEngine.Core.Render;
 using LayoutEngine.Core.Style.Internal;
@@ -33,6 +36,18 @@ public static class ServiceCollectionExtensions
                 .WithDefaultLoader();
 
             return config;
+        });
+
+        services.AddSingleton<IBrowsingContext>(provider =>
+        {
+            var config = provider.GetRequiredService<IConfiguration>();
+            return BrowsingContext.New(config);
+        });
+
+        services.AddSingleton<ICssParser>(provider =>
+        {
+            var context = provider.GetRequiredService<IBrowsingContext>();
+            return context.GetService<ICssParser>() ?? new CssParser();
         });
 
         // Register the engine

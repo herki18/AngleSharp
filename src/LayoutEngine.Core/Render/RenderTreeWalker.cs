@@ -7,6 +7,7 @@ using LayoutEngine.Core.Render.Commands;
 
 namespace LayoutEngine.Core.Render;
 
+using Layout.Public;
 using Viewport = Viewport.Viewport;
 
 public class RenderTreeWalker

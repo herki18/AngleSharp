@@ -1,4 +1,4 @@
-﻿namespace LayoutEngine.Core.Layout;
+﻿namespace LayoutEngine.Core.Layout.Internal;
 
 public struct Rect
 {

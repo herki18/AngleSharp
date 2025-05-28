@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using AngleSharp.Dom;
 using Infrastructure.EventAggregator.API.Aggregation;
 using Layout;
+using Layout.Internal;
 
 public class DomScrollEventBridge : IDisposable
 {

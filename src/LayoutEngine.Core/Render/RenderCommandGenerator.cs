@@ -5,6 +5,8 @@ using LayoutEngine.Core.Render.Commands;
 
 namespace LayoutEngine.Core.Render;
 
+using Layout.Public;
+
 public class RenderCommandGenerator
 {
     public IEnumerable<IRenderCommand> GenerateFragmentCommands(

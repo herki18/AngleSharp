@@ -1,6 +1,7 @@
-﻿namespace LayoutEngine.Core.Layout;
+﻿namespace LayoutEngine.Core.Layout.Internal;
 
 using System.Collections.Generic;
+using LayoutEngine.Core.Layout.Public;
 
 public class LayoutInfo : ILayoutInfo
 {

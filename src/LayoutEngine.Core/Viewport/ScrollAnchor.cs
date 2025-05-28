@@ -3,6 +3,8 @@
 using System;
 using AngleSharp.Dom;
 using Layout;
+using Layout.Internal;
+using Layout.Public;
 
 public class ScrollAnchor
 {

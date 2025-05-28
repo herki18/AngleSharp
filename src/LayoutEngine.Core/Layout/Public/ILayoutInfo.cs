@@ -1,6 +1,8 @@
-﻿namespace LayoutEngine.Core.Layout;
+﻿namespace LayoutEngine.Core.Layout.Public;
 
 using System.Collections.Generic;
+using Internal;
+using Public;
 
 public interface ILayoutInfo
 {
@@ -9,10 +11,10 @@ public interface ILayoutInfo
     Rect PaddingRect { get; }
     Rect BorderRect { get; }
     Rect MarginRect { get; }
-    
+
     // Position in parent coordinate space
     Point Position { get; }
-    
+
     // All fragments for this element (could be multiple, e.g., for text)
     IReadOnlyList<ILayoutFragment> Fragments { get; }
 }

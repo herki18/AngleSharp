@@ -1,5 +1,7 @@
 ﻿namespace LayoutEngine.Core.Core;
 
+using Layout.Internal;
+using Layout.Public;
 using LayoutEngine.Core.Layout;
 
 public static class MockLayoutData

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AngleSharp.Dom;
 using Commands;
 using Layout;
+using Layout.Public;
 
 /// <summary>
 /// Interface for the render system that generates render commands from a fragment tree

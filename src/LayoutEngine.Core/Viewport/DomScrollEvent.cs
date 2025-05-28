@@ -2,6 +2,7 @@
 
 using Infrastructure.EventAggregator.API.Events;
 using Layout;
+using Layout.Internal;
 
 public class DomScrollEvent : EventBase
 {

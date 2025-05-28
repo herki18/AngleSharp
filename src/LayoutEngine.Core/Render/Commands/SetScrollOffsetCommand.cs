@@ -1,6 +1,8 @@
 ﻿namespace LayoutEngine.Core.Render.Commands;
 
 using System;
+using Layout.Internal;
+using Layout.Public;
 using LayoutEngine.Core.Layout;
 
 public class SetScrollOffsetCommand : IRenderCommand

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using AngleSharp;
 using AngleSharp.Dom;
 using Infrastructure.EventAggregator.API.Aggregation;
+using Layout.Public;
 using LayoutEngine.Core.Events;
 using LayoutEngine.Core.Layout;
 using LayoutEngine.Core.Render;

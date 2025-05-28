@@ -86,16 +86,33 @@ public class StyleResolver : IStyleResolver
 
     private void RecalcStyleRecursive(IElement element, IStyleRecalcContext context)
     {
-        // Step 1: Resolve style for this element
-        var computedStyle = ResolveStyle(element, context);
+        IComputedStyle? computedStyle;
 
-        // Step 2: Clear invalidation flag
-        element.ClearNeedsStyleRecalc();
+        // Step 1: Compute style if needed
+        if (element.NeedsStyleRecalc())
+        {
+            // Element explicitly needs recalc
+            computedStyle = ResolveStyle(element, context);
+            element.ClearNeedsStyleRecalc();
+        }
+        else
+        {
+            // Element doesn't need recalc, but we might need its style for inheritance
+            computedStyle = GetComputedStyle(element);
 
-        // Step 3: Create context for children with this element's style as parent
+            if (computedStyle == null)
+            {
+                // No existing style - compute it for inheritance context
+                // This happens when we traverse elements to reach children that need recalc
+                computedStyle = ResolveStyle(element, context);
+                // Don't clear the flag since this element didn't explicitly need recalc
+            }
+        }
+
+        // Step 2: Create context for children
         var childContext = context.WithParent(computedStyle.Declaration);
 
-        // Step 4: Recursively process children
+        // Step 3: Recursively process children that need recalc
         foreach (var child in element.Children.OfType<IElement>())
         {
             if (child.NeedsStyleRecalc() || child.ChildNeedsStyleRecalc())
@@ -104,4 +121,25 @@ public class StyleResolver : IStyleResolver
             }
         }
     }
+
+    // private void RecalcStyleRecursive(IElement element, IStyleRecalcContext context)
+    // {
+    //     // Step 1: Resolve style for this element
+    //     var computedStyle = ResolveStyle(element, context);
+    //
+    //     // Step 2: Clear invalidation flag
+    //     element.ClearNeedsStyleRecalc();
+    //
+    //     // Step 3: Create context for children with this element's style as parent
+    //     var childContext = context.WithParent(computedStyle.Declaration);
+    //
+    //     // Step 4: Recursively process children
+    //     foreach (var child in element.Children.OfType<IElement>())
+    //     {
+    //         if (child.NeedsStyleRecalc() || child.ChildNeedsStyleRecalc())
+    //         {
+    //             RecalcStyleRecursive(child, childContext);
+    //         }
+    //     }
+    // }
 }

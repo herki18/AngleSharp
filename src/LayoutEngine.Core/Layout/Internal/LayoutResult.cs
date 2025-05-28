@@ -1,7 +1,8 @@
-﻿namespace LayoutEngine.Core.Layout;
+﻿namespace LayoutEngine.Core.Layout.Internal;
 
 using System.Collections.Generic;
 using AngleSharp.Dom;
+using LayoutEngine.Core.Layout.Public;
 
 public class LayoutResult : ILayoutResult
 {

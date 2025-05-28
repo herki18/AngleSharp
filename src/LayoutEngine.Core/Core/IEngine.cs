@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp;
 using AngleSharp.Dom;
+using Layout.Public;
 using LayoutEngine.Core.Layout;
 using LayoutEngine.Core.Style.Public;
 

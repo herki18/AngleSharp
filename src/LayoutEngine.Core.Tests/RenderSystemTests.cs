@@ -4,13 +4,13 @@ using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Dom;
 using Infrastructure.EventAggregator.API.Aggregation;
+using Layout.Public;
 using LayoutEngine.Core.Events;
 using LayoutEngine.Core.Layout;
 using LayoutEngine.Core.Render;
 using LayoutEngine.Core.Render.Commands;
 using LayoutEngine.Core.Viewport;
 using NSubstitute;
-using Style;
 using Style.Public;
 using Xunit;
 

@@ -1,5 +1,6 @@
 ﻿namespace LayoutEngine.Core.Render.Commands;
 
+using Layout.Public;
 using LayoutEngine.Core.Layout;
 
 /// <summary>

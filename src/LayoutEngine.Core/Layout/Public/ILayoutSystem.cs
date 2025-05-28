@@ -1,4 +1,4 @@
-﻿namespace LayoutEngine.Core.Layout;
+﻿namespace LayoutEngine.Core.Layout.Public;
 
 using AngleSharp.Dom;
 
@@ -19,6 +19,3 @@ public interface ILayoutSystem
     // Get layout information for a specific element
     ILayoutInfo? GetLayoutInfo(IElement element);
 }
-
-
-// Interface for layout results

@@ -1,4 +1,6 @@
-﻿namespace LayoutEngine.Core.Layout;
+﻿namespace LayoutEngine.Core.Layout.Internal;
+
+using LayoutEngine.Core.Layout.Public;
 
 public class VisualProperties : IVisualProperties
 {

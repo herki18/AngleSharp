@@ -1,12 +1,13 @@
-﻿namespace LayoutEngine.Core.Layout;
+﻿namespace LayoutEngine.Core.Layout.Internal;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Dom;
-using Core;
 using Infrastructure.EventAggregator.API.Aggregation;
-using Style.Public;
+using LayoutEngine.Core.Core;
+using LayoutEngine.Core.Layout.Public;
+using LayoutEngine.Core.Style.Public;
 using FragmentTreeUpdatedEvent = Events.FragmentTreeUpdatedEvent;
 using LayoutInvalidatedEvent = Events.LayoutInvalidatedEvent;
 

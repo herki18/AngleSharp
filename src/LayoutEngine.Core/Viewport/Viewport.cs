@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using AngleSharp.Dom;
 using Layout;
+using Layout.Internal;
 
 public class Viewport
 {
