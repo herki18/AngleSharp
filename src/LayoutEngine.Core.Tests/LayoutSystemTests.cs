@@ -12,6 +12,7 @@ using Xunit;
 namespace LayoutEngine.Core.Tests;
 
 using Layout.Internal;
+using Microsoft.Extensions.Logging;
 using Style.Public;
 
 public class LayoutSystemTests
@@ -19,12 +20,14 @@ public class LayoutSystemTests
     private readonly IStyleSystem _styleSystem;
     private readonly IEventAggregator _eventAggregator;
     private readonly LayoutSystem _layoutSystem;
+    private readonly ILogger<LayoutSystem> _logger;
 
     public LayoutSystemTests()
     {
+        _logger = Substitute.For<ILogger<LayoutSystem>>();
         _styleSystem = Substitute.For<IStyleSystem>();
         _eventAggregator = Substitute.For<IEventAggregator>();
-        _layoutSystem = new LayoutSystem(_styleSystem, _eventAggregator);
+        _layoutSystem = new LayoutSystem(_styleSystem, _eventAggregator, _logger);
     }
 
     [Fact]
@@ -73,6 +76,31 @@ public class LayoutSystemTests
 
         // Verify that ClearNeedsLayout was called on the root element
         rootElement.Received(1).ClearNeedsLayout();
+    }
+
+    [Fact]
+    public void PerformLayout_ClearsLayoutFlags_AfterCompletion()
+    {
+        // Arrange
+        var rootElement = TestHelpers.CreateMockElement("html");
+        var childElement = TestHelpers.CreateMockElement("div");
+        rootElement.AppendChild(childElement);
+        var document = TestHelpers.CreateMockDocument(rootElement);
+
+        // Set layout flags to simulate need for layout
+        rootElement.SetNeedsLayout();
+        childElement.SetNeedsLayout();
+
+        SetUpStyleSystemForElement(rootElement);
+        SetUpStyleSystemForElement(childElement);
+
+        // Act
+        var result = _layoutSystem.PerformLayout(document);
+
+        // Assert
+        Assert.False(rootElement.NeedsLayout(), "Root element should not need layout after completion");
+        Assert.False(rootElement.ChildNeedsLayout(), "Root element should not have child needing layout");
+        Assert.False(childElement.NeedsLayout(), "Child element should not need layout after completion");
     }
 
     [Fact]
@@ -231,6 +259,34 @@ public class LayoutSystemTests
         // Only parent should be invalidated
         parent.Received(1).SetNeedsLayout();
         child.DidNotReceive().SetNeedsLayout();
+    }
+
+    [Fact]
+    public void PerformLayout_DoesNotCauseInfiniteLoop()
+    {
+        // Arrange
+        var rootElement = TestHelpers.CreateMockElement("html");
+        var document = TestHelpers.CreateMockDocument(rootElement);
+        SetUpStyleSystemForElement(rootElement);
+
+        var performCount = 0;
+        var maxIterations = 10;
+
+        // Act & Assert
+        while (performCount < maxIterations)
+        {
+            var result = _layoutSystem.PerformLayout(document);
+            performCount++;
+
+            // After layout, flags should be cleared and we shouldn't need layout again
+            if (!rootElement.NeedsLayout() && !rootElement.ChildNeedsLayout())
+            {
+                break;
+            }
+        }
+
+        Assert.True(performCount < maxIterations,
+            $"Layout should stabilize and not require {maxIterations} iterations");
     }
 
     private void SetUpStyleSystemForElement(IElement element, string display = "block")

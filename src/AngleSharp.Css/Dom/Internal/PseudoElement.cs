@@ -41,6 +41,11 @@ namespace AngleSharp.Css.Dom
 
         public IShadowRoot ShadowRoot => _host.ShadowRoot;
 
+        public void ClearChildNeedsLayout()
+        {
+            throw new NotImplementedException();
+        }
+
         public String Prefix => _host.Prefix;
 
         public String PseudoName => _name;
@@ -415,6 +420,18 @@ namespace AngleSharp.Css.Dom
         }
 
         public void ClearAllInvalidation()
+        {
+        }
+
+        public void SetChildNeedsStyleRecalc()
+        {
+        }
+
+        public void ClearChildNeedsStyleRecalc()
+        {
+        }
+
+        public void SetChildNeedsLayout()
         {
         }
 

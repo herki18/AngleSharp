@@ -137,6 +137,30 @@ public abstract class Element : Node, IElement, IConstructableElement
         _invalidationFlags = InvalidationFlags.None;
     }
 
+    ///<inheritdoc />
+    public void SetChildNeedsStyleRecalc()
+    {
+        _invalidationFlags |= InvalidationFlags.ChildNeedsStyleRecalc;
+    }
+
+    ///<inheritdoc />
+    public void ClearChildNeedsStyleRecalc()
+    {
+        _invalidationFlags &= ~InvalidationFlags.ChildNeedsStyleRecalc;
+    }
+
+    ///<inheritdoc />
+    public void SetChildNeedsLayout()
+    {
+        _invalidationFlags |= InvalidationFlags.ChildNeedsLayout;
+    }
+
+    ///<inheritdoc />
+    public void ClearChildNeedsLayout()
+    {
+        _invalidationFlags &= ~InvalidationFlags.ChildNeedsLayout;
+    }
+
     private void PropagateChildNeedsStyleRecalc()
     {
         var parent = Parent;

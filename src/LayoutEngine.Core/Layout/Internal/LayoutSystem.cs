@@ -1,5 +1,4 @@
 ﻿namespace LayoutEngine.Core.Layout.Internal;
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,6 +7,7 @@ using Infrastructure.EventAggregator.API.Aggregation;
 using LayoutEngine.Core.Core;
 using LayoutEngine.Core.Layout.Public;
 using LayoutEngine.Core.Style.Public;
+using Microsoft.Extensions.Logging;
 using FragmentTreeUpdatedEvent = Events.FragmentTreeUpdatedEvent;
 using LayoutInvalidatedEvent = Events.LayoutInvalidatedEvent;
 
@@ -15,21 +15,29 @@ public class LayoutSystem : ILayoutSystem
 {
     private readonly IStyleSystem _styleSystem;
     private readonly IEventAggregator _eventAggregator;
+    private readonly ILogger<LayoutSystem> _logger;
     private ILayoutResult? _currentLayoutResult;
 
-    public LayoutSystem(IStyleSystem styleSystem, IEventAggregator eventAggregator)
+    public LayoutSystem(
+        IStyleSystem styleSystem,
+        IEventAggregator eventAggregator,
+        ILogger<LayoutSystem> logger)
     {
-        _styleSystem = styleSystem;
-        _eventAggregator = eventAggregator;
+        _styleSystem = styleSystem ?? throw new ArgumentNullException(nameof(styleSystem));
+        _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public ILayoutResult PerformLayout(IDocument document)
     {
+        _logger.LogDebug("Starting layout for document");
+
         // Always compute document styles first
         _styleSystem.ComputeDocumentStyles(document);
 
         if (MockLayoutData.UseMockData)
         {
+            _logger.LogDebug("Using mock layout data");
             var mockResult = CreateMockLayoutResult(document);
             _currentLayoutResult = mockResult;
             ClearLayoutFlags(document.DocumentElement);
@@ -38,7 +46,6 @@ public class LayoutSystem : ILayoutSystem
         }
 
         var result = new LayoutResult();
-
         if (document.DocumentElement != null)
         {
             var viewportWidth = 800f;
@@ -51,37 +58,75 @@ public class LayoutSystem : ILayoutSystem
         _currentLayoutResult = result;
         ClearLayoutFlags(document.DocumentElement);
         _eventAggregator.Publish(new FragmentTreeUpdatedEvent(result));
-
         return result;
     }
 
     private ILayoutResult CreateMockLayoutResult(IDocument document)
     {
         var result = new LayoutResult();
-
         if (document.DocumentElement != null)
         {
             // Create layout fragments for the actual document structure
             var rootFragment = CreateMockFragment(document.DocumentElement, new Rect(0, 0, 800, 600), result);
             result.SetRootFragment(rootFragment);
         }
-
         return result;
     }
 
     private ILayoutFragment CreateMockFragment(IElement element, Rect bounds, LayoutResult result)
     {
+        // Create visual properties based on element type and inline styles
+        var visualProps = new VisualProperties
+        {
+            BackgroundColor = "white", // Default white background
+            FontSize = 16,
+            Color = "black"
+        };
+
+        // Parse inline styles if present
+        var styleAttr = element.GetAttribute("style");
+        if (!string.IsNullOrEmpty(styleAttr))
+        {
+            var stylePairs = styleAttr.Split(';', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var pair in stylePairs)
+            {
+                var parts = pair.Split(':', 2).Select(p => p.Trim()).ToArray();
+                if (parts.Length == 2)
+                {
+                    var property = parts[0].ToLower();
+                    var value = parts[1].Trim();
+
+                    switch (property)
+                    {
+                        case "background-color":
+                            visualProps.BackgroundColor = value;
+                            _logger.LogDebug("Setting background-color: {Value} for {TagName}", value, element.TagName);
+                            break;
+                        case "color":
+                            visualProps.Color = value;
+                            _logger.LogDebug("Setting color: {Value} for {TagName}", value, element.TagName);
+                            break;
+                        case "font-size":
+                            if (value.EndsWith("px") && float.TryParse(value.AsSpan(0, value.Length - 2), out var fontSize))
+                            {
+                                visualProps.FontSize = fontSize;
+                                _logger.LogDebug("Setting font-size: {FontSize} for {TagName}", fontSize, element.TagName);
+                            }
+                            break;
+                    }
+                }
+            }
+        }
+
         var fragment = new LayoutFragment
         {
             Element = element,
             Bounds = bounds,
-            VisualProperties = new VisualProperties
-            {
-                BackgroundColor = "blue",
-                FontSize = 24,
-                Color = "white"
-            }
+            VisualProperties = visualProps
         };
+
+        _logger.LogDebug("Created fragment for {TagName} at {X},{Y} {Width}x{Height} with bg: {BackgroundColor}",
+            element.TagName, bounds.X, bounds.Y, bounds.Width, bounds.Height, visualProps.BackgroundColor);
 
         // Create layout info for the element
         var layoutInfo = new LayoutInfo
@@ -99,6 +144,7 @@ public class LayoutSystem : ILayoutSystem
         // Process children
         var childFragments = new List<ILayoutFragment>();
         var childY = 20f;
+
         foreach (var child in element.Children.OfType<IElement>())
         {
             var childBounds = new Rect(20, childY, bounds.Width - 40, 50);
@@ -107,8 +153,40 @@ public class LayoutSystem : ILayoutSystem
             childY += 60;
         }
 
-        fragment.Children = childFragments;
+        // Also process text nodes
+        foreach (var child in element.ChildNodes)
+        {
+            if (child.NodeType == (int)NodeType.Text && !string.IsNullOrWhiteSpace(child.TextContent))
+            {
+                var textBounds = new Rect(20, childY, bounds.Width - 40, 30);
+                var textFragment = new LayoutFragment
+                {
+                    Element = null, // Text nodes don't have an element
+                    Bounds = textBounds,
+                    VisualProperties = new VisualProperties
+                    {
+                        Color = visualProps.Color,
+                        FontSize = visualProps.FontSize,
+                        BackgroundColor = "transparent"
+                    }
+                };
 
+                // Store text content in a custom property for now
+                // This is a limitation of the current design
+                if (textFragment.VisualProperties is VisualProperties vp)
+                {
+                    // We need to pass text content through somehow
+                    // For now, just log it
+                    _logger.LogDebug("Created text fragment: '{TextContent}' at {X},{Y}",
+                        child.TextContent, textBounds.X, textBounds.Y);
+                }
+
+                childFragments.Add(textFragment);
+                childY += 40;
+            }
+        }
+
+        fragment.Children = childFragments;
         return fragment;
     }
 
@@ -117,6 +195,7 @@ public class LayoutSystem : ILayoutSystem
         if (element == null) return;
 
         element.ClearNeedsLayout();
+        element.ClearChildNeedsLayout();
 
         foreach (var child in element.Children.OfType<IElement>())
         {
@@ -201,12 +280,16 @@ public class LayoutSystem : ILayoutSystem
         LayoutContext context, LayoutResult result)
     {
         // TODO: Implement flex layout
+        _logger.LogDebug("Flex layout not implemented, falling back to block layout");
+        LayoutBlockElement(element, style, fragment, context, result);
     }
 
     private void LayoutInlineElement(IElement element, IComputedStyle style, LayoutFragment fragment,
         LayoutContext context, LayoutResult result)
     {
         // TODO: Implement inline layout
+        _logger.LogDebug("Inline layout not implemented, falling back to block layout");
+        LayoutBlockElement(element, style, fragment, context, result);
     }
 
     private BoxModel CalculateBoxModel(IElement element, IComputedStyle style, LayoutContext context)
@@ -342,7 +425,6 @@ public class LayoutSystem : ILayoutSystem
     public void InvalidateLayout(IElement element, bool recursive = true)
     {
         var invalidatedElements = new List<IElement>();
-
         element.SetNeedsLayout();
         invalidatedElements.Add(element);
 

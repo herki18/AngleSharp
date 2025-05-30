@@ -2,10 +2,11 @@
 using AngleSharp.Dom;
 using LayoutEngine.Core.Layout;
 using LayoutEngine.Core.Render.Commands;
+using LayoutEngine.Core.Layout.Public;
 
 namespace LayoutEngine.Core.Render;
 
-using Layout.Public;
+using System.Linq;
 
 public class RenderCommandGenerator
 {
@@ -22,11 +23,14 @@ public class RenderCommandGenerator
             commands.Add(new CreateElementCommand(fragment, elementType));
         }
 
+        // Set layout bounds
         commands.Add(new SetLayoutCommand(fragment, fragment.Bounds));
 
+        // Set visual properties
         if (!string.IsNullOrEmpty(props.BackgroundColor) && props.BackgroundColor != "transparent")
             commands.Add(new SetPropertyCommand(fragment, "backgroundColor", props.BackgroundColor));
 
+        // Set border properties
         if (props.BorderTopWidth > 0)
         {
             commands.Add(new SetPropertyCommand(fragment, "borderTopWidth", props.BorderTopWidth));
@@ -48,6 +52,7 @@ public class RenderCommandGenerator
             commands.Add(new SetPropertyCommand(fragment, "borderLeftColor", props.BorderLeftColor));
         }
 
+        // Set text properties
         commands.Add(new SetPropertyCommand(fragment, "color", props.Color));
         commands.Add(new SetPropertyCommand(fragment, "fontSize", props.FontSize));
         if (!string.IsNullOrEmpty(props.FontFamily))
@@ -55,18 +60,54 @@ public class RenderCommandGenerator
         if (!string.IsNullOrEmpty(props.FontWeight))
             commands.Add(new SetPropertyCommand(fragment, "fontWeight", props.FontWeight));
 
+        // Set z-index
         commands.Add(new SetPropertyCommand(fragment, "zIndex", props.ZIndex));
 
-        if (fragment.Element?.NodeType == (int)NodeType.Text)
-            commands.Add(new SetPropertyCommand(fragment, "textContent", fragment.Element.TextContent));
+        // Handle text content
+        if (fragment.Element != null)
+        {
+            // Check if the element has text content
+            if (!string.IsNullOrWhiteSpace(fragment.Element.TextContent) &&
+                fragment.Element.ChildNodes.Length > 0 &&
+                fragment.Element.ChildNodes.Any(n => n.NodeType == (int)NodeType.Text))
+            {
+                // Get just the direct text content (not from child elements)
+                var directTextContent = GetDirectTextContent(fragment.Element);
+                if (!string.IsNullOrWhiteSpace(directTextContent))
+                {
+                    commands.Add(new SetPropertyCommand(fragment, "textContent", directTextContent));
+                }
+            }
+        }
+        else
+        {
+            // This might be a text fragment without an element
+            // In mock layout, text fragments have null elements
+            // We need a way to pass the text content through the fragment
+            // For now, we'll skip this case as it needs a design change
+        }
 
         return commands;
+    }
+
+    private string GetDirectTextContent(IElement element)
+    {
+        var directText = "";
+        foreach (var node in element.ChildNodes)
+        {
+            if (node.NodeType == (int)NodeType.Text)
+            {
+                directText += node.TextContent;
+            }
+        }
+        return directText.Trim();
     }
 
     private string DetermineElementType(ILayoutFragment fragment)
     {
         if (fragment.Element == null)
             return "container";
+
         switch (fragment.Element.TagName?.ToUpperInvariant())
         {
             case "DIV": return "container";
@@ -76,6 +117,13 @@ public class RenderCommandGenerator
                 var type = fragment.Element.GetAttribute("type") ?? "text";
                 return $"input-{type}";
             case "BUTTON": return "button";
+            case "P": return "paragraph";
+            case "H1":
+            case "H2":
+            case "H3":
+            case "H4":
+            case "H5":
+            case "H6": return "heading";
             default: return "container";
         }
     }

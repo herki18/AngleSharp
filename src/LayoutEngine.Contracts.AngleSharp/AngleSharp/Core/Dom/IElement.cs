@@ -82,6 +82,26 @@ public interface IElement : INode, IParentNode, IChildNode, INonDocumentTypeChil
     /// </summary>
     void ClearAllInvalidation();
 
+    /// <summary>
+    ///     Marks this element as having children that need style recalculation.
+    /// </summary>
+    void SetChildNeedsStyleRecalc();
+
+    /// <summary>
+    ///     Clears the child needs style recalculation flag for this element.
+    /// </summary>
+    void ClearChildNeedsStyleRecalc();
+
+    /// <summary>
+    ///     Marks this element as having children that need layout.
+    /// </summary>
+    void SetChildNeedsLayout();
+
+    /// <summary>
+    ///     Clears the child needs layout flag for this element.
+    /// </summary>
+    void ClearChildNeedsLayout();
+
     #endregion
 
 

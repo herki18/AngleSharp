@@ -6,6 +6,7 @@ using Xunit.Abstractions;
 namespace LayoutEngine.Core.Tests;
 
 using Core;
+using Microsoft.Extensions.Logging;
 using Style.Public;
 
 public class DocumentLifecycleIntegrationTests
@@ -204,5 +205,48 @@ public class DocumentLifecycleIntegrationTests
         Assert.True(coordinator.IsOperationAllowed(DocumentOperation.DomReading));
         Assert.False(coordinator.IsOperationAllowed(DocumentOperation.StyleModification));
         Assert.False(coordinator.IsOperationAllowed(DocumentOperation.DomModification));
+    }
+
+    [Fact]
+    public async Task Engine_ShouldCompleteFullLifecycle_WithoutInfiniteLoops()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLayoutEngine();
+        services.AddLogging(builder => builder.AddXUnit(_testOutputHelper));
+        
+        var serviceProvider = services.BuildServiceProvider();
+        var engine = serviceProvider.GetRequiredService<IEngine>();
+
+        var html = @"
+            <!DOCTYPE html>
+            <html>
+            <head></head>
+            <body>
+                <div style='background-color: white; width: 100%; height: 100%;'>
+                    <div style='color: blue; font-size: 20px; margin: 20px;'>Test Content</div>
+                </div>
+            </body>
+            </html>";
+
+        // Act
+        var document = await engine.OpenAsync(html);
+        
+        // Wait for engine to process (with timeout to prevent infinite loops)
+        var timeout = TimeSpan.FromSeconds(5);
+        var startTime = DateTime.UtcNow;
+        
+        while (engine.CurrentPhase != DocumentLifecyclePhase.RenderReady && 
+               DateTime.UtcNow - startTime < timeout)
+        {
+            await Task.Delay(10);
+        }
+
+        // Assert
+        Assert.Equal(DocumentLifecyclePhase.RenderReady, engine.CurrentPhase);
+        Assert.NotNull(document);
+        
+        // Verify that we didn't timeout (no infinite loop)
+        Assert.True(DateTime.UtcNow - startTime < timeout, "Engine should complete lifecycle within timeout");
     }
 }

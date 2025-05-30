@@ -94,6 +94,8 @@ public class StyleResolver : IStyleResolver
             // Element explicitly needs recalc
             computedStyle = ResolveStyle(element, context);
             element.ClearNeedsStyleRecalc();
+
+            element.SetNeedsLayout();
         }
         else
         {
@@ -120,6 +122,9 @@ public class StyleResolver : IStyleResolver
                 RecalcStyleRecursive(child, childContext);
             }
         }
+
+        // Step 4: Clear the child needs recalc flag after processing all children
+        element.ClearChildNeedsStyleRecalc();
     }
 
     // private void RecalcStyleRecursive(IElement element, IStyleRecalcContext context)
