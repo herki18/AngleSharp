@@ -16,4 +16,6 @@ public enum RenderCommandType
     CreateViewport,
     PopViewport,
     SetScrollOffset,
+    PushContainer,
+    PopContainer
 }
