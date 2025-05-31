@@ -20,5 +20,9 @@
     <ItemGroup>
       <internalsVisibleTo Include="LayoutEngine.Core.Tests" />
     </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="StyleNG\Internal\" />
+    </ItemGroup>
   
 </Project>

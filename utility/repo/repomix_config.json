@@ -122,6 +122,28 @@
       }
     },
     {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\LayoutNG",
+      "outputFileNamePattern": "LayoutEngine.Core.LayoutNG.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\StyleNG",
+      "outputFileNamePattern": "LayoutEngine.Core.StyleNG.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false
+      }
+    },
+    {
       "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core.Tests"
     },
     {
