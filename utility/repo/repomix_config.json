@@ -144,6 +144,50 @@
       }
     },
     {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.NG\\Core",
+      "outputFileNamePattern": "LayoutEngine.NG.Core.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.NG\\Style",
+      "outputFileNamePattern": "LayoutEngine.NG.Style.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.NG\\Layout",
+      "outputFileNamePattern": "LayoutEngine.NG.Layout.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.NG\\Paint",
+      "outputFileNamePattern": "LayoutEngine.NG.Paint.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false
+      }
+    },
+    {
       "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core.Tests"
     },
     {
