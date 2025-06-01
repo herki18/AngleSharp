@@ -102,7 +102,7 @@ public class LocalFrame : Frame
         if (_layoutView == null)
             return (0, 0, 0, 0);
 
-        return (_layoutView.ScrollX, _layoutView.ScrollY,
+        return (_layoutView.ScrollOffset.Left, _layoutView.ScrollOffset.Top,
                 _layoutView.ViewportWidth, _layoutView.ViewportHeight);
     }
 }
