@@ -12,6 +12,61 @@ namespace AngleSharp.Dom
     /// </summary>
     public sealed class Attr : IAttr, IConstructableAttr
     {
+        #region LayoutEngine
+
+        // Layout/Style invalidation (no-op for Attr)
+        /// <inheritdoc />
+        public bool NeedsStyleRecalc() => false;
+
+        /// <inheritdoc />
+        public bool ChildNeedsStyleRecalc() => false;
+
+        /// <inheritdoc />
+        public void SetNeedsStyleRecalc() { }
+
+        /// <inheritdoc />
+        public void ClearNeedsStyleRecalc() { }
+
+        /// <inheritdoc />
+        public bool NeedsLayout() => false;
+
+        /// <inheritdoc />
+        public bool ChildNeedsLayout() => false;
+
+        /// <inheritdoc />
+        public void SetNeedsLayout() { }
+
+        /// <inheritdoc />
+        public void ClearNeedsLayout() { }
+
+        /// <inheritdoc />
+        public bool NeedsPaintInvalidation() => false;
+
+        /// <inheritdoc />
+        public void SetNeedsPaintInvalidation() { }
+
+        /// <inheritdoc />
+        public void ClearNeedsPaintInvalidation() { }
+
+        /// <inheritdoc />
+        public bool HasAnyInvalidation() => false;
+
+        /// <inheritdoc />
+        public void ClearAllInvalidation() { }
+
+        /// <inheritdoc />
+        public void SetChildNeedsStyleRecalc() { }
+
+        /// <inheritdoc />
+        public void ClearChildNeedsStyleRecalc() { }
+
+        /// <inheritdoc />
+        public void SetChildNeedsLayout() { }
+
+        /// <inheritdoc />
+        public void ClearChildNeedsLayout() { }
+
+        #endregion
         #region Fields
 
         private readonly String _localName;

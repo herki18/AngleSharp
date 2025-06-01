@@ -15,6 +15,174 @@ namespace AngleSharp.Dom
     /// </summary>
     public abstract class Node : EventTarget, INode, IEquatable<INode>, IConstructableNode
     {
+        #region LayoutEngine
+
+        [Flags]
+        private enum InvalidationFlags : byte
+        {
+            None = 0,
+            NeedsStyleRecalc = 1 << 0,
+            ChildNeedsStyleRecalc = 1 << 1,
+            NeedsLayout = 1 << 2,
+            ChildNeedsLayout = 1 << 3,
+            NeedsPaintInvalidation = 1 << 4,
+        }
+
+        private InvalidationFlags _invalidationFlags = InvalidationFlags.None;
+
+        public bool NeedsStyleRecalc()
+        {
+            return (_invalidationFlags & InvalidationFlags.NeedsStyleRecalc) != 0;
+        }
+
+        public bool ChildNeedsStyleRecalc()
+        {
+            return (_invalidationFlags & InvalidationFlags.ChildNeedsStyleRecalc) != 0;
+        }
+
+        public void SetNeedsStyleRecalc()
+        {
+            if (!NeedsStyleRecalc())
+            {
+                _invalidationFlags |= InvalidationFlags.NeedsStyleRecalc;
+                PropagateChildNeedsStyleRecalc();
+            }
+        }
+
+        public void ClearNeedsStyleRecalc()
+        {
+            _invalidationFlags &= ~InvalidationFlags.NeedsStyleRecalc;
+            if (!AnyChildNeedsStyleRecalc())
+            {
+                _invalidationFlags &= ~InvalidationFlags.ChildNeedsStyleRecalc;
+            }
+        }
+
+        public bool NeedsLayout()
+        {
+            return (_invalidationFlags & InvalidationFlags.NeedsLayout) != 0;
+        }
+
+        public bool ChildNeedsLayout()
+        {
+            return (_invalidationFlags & InvalidationFlags.ChildNeedsLayout) != 0;
+        }
+
+        public void SetNeedsLayout()
+        {
+            if (!NeedsLayout())
+            {
+                _invalidationFlags |= InvalidationFlags.NeedsLayout;
+                PropagateChildNeedsLayout();
+                SetNeedsPaintInvalidation();
+            }
+        }
+
+        public void ClearNeedsLayout()
+        {
+            _invalidationFlags &= ~InvalidationFlags.NeedsLayout;
+            if (!AnyChildNeedsLayout())
+            {
+                _invalidationFlags &= ~InvalidationFlags.ChildNeedsLayout;
+            }
+        }
+
+        public bool NeedsPaintInvalidation()
+        {
+            return (_invalidationFlags & InvalidationFlags.NeedsPaintInvalidation) != 0;
+        }
+
+        public void SetNeedsPaintInvalidation()
+        {
+            _invalidationFlags |= InvalidationFlags.NeedsPaintInvalidation;
+        }
+
+        public void ClearNeedsPaintInvalidation()
+        {
+            _invalidationFlags &= ~InvalidationFlags.NeedsPaintInvalidation;
+        }
+
+        public bool HasAnyInvalidation()
+        {
+            return _invalidationFlags != InvalidationFlags.None;
+        }
+
+        public void ClearAllInvalidation()
+        {
+            _invalidationFlags = InvalidationFlags.None;
+        }
+
+        public void SetChildNeedsStyleRecalc()
+        {
+            _invalidationFlags |= InvalidationFlags.ChildNeedsStyleRecalc;
+        }
+
+        public void ClearChildNeedsStyleRecalc()
+        {
+            _invalidationFlags &= ~InvalidationFlags.ChildNeedsStyleRecalc;
+        }
+
+        public void SetChildNeedsLayout()
+        {
+            _invalidationFlags |= InvalidationFlags.ChildNeedsLayout;
+        }
+
+        public void ClearChildNeedsLayout()
+        {
+            _invalidationFlags &= ~InvalidationFlags.ChildNeedsLayout;
+        }
+
+        // Propagation and child-check helpers
+        private void PropagateChildNeedsStyleRecalc()
+        {
+            var parent = Parent;
+            while (parent != null && !parent.ChildNeedsStyleRecalc())
+            {
+                parent._invalidationFlags |= InvalidationFlags.ChildNeedsStyleRecalc;
+                parent = parent.Parent;
+            }
+        }
+
+        private void PropagateChildNeedsLayout()
+        {
+            var parent = Parent;
+            while (parent != null && !parent.ChildNeedsLayout())
+            {
+                parent._invalidationFlags |= InvalidationFlags.ChildNeedsLayout;
+                parent = parent.Parent;
+            }
+        }
+
+        private bool AnyChildNeedsStyleRecalc()
+        {
+            for (var i = 0; i < ChildNodes.Length; i++)
+            {
+                if (ChildNodes[i] != null &&
+                    (ChildNodes[i].NeedsStyleRecalc() || ChildNodes[i].ChildNeedsStyleRecalc()))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool AnyChildNeedsLayout()
+        {
+            for (var i = 0; i < ChildNodes.Length; i++)
+            {
+                if (ChildNodes[i] != null &&
+                    (ChildNodes[i].NeedsLayout() || ChildNodes[i].ChildNeedsLayout()))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        #endregion
+
         #region Fields
 
         private readonly NodeType _type;
@@ -31,7 +199,8 @@ namespace AngleSharp.Dom
         #region ctor
 
         /// <inheritdoc />
-        public Node(Document? owner, String name, NodeType type = AngleSharp.Dom.NodeType.Element, NodeFlags flags = NodeFlags.None)
+        public Node(Document? owner, String name, NodeType type = AngleSharp.Dom.NodeType.Element,
+            NodeFlags flags = NodeFlags.None)
         {
             _owner = owner;
             _name = name ?? String.Empty;
@@ -285,6 +454,7 @@ namespace AngleSharp.Dom
                     {
                         m.StartWith(this, m.Start + count);
                     }
+
                     if (m.Tail == this && m.End > childIndex)
                     {
                         m.EndWith(this, m.End + count);
@@ -358,14 +528,17 @@ namespace AngleSharp.Dom
                     {
                         m.StartWith(this, index);
                     }
+
                     if (m.Tail.IsInclusiveDescendantOf(node))
                     {
                         m.EndWith(this, index);
                     }
+
                     if (m.Head == this && m.Start > index)
                     {
                         m.StartWith(this, m.Start - 1);
                     }
+
                     if (m.Tail == this && m.End > index)
                     {
                         m.EndWith(this, m.End - 1);
@@ -458,7 +631,9 @@ namespace AngleSharp.Dom
         /// <summary>
         /// Called when ReplaceAll was run.
         /// </summary>
-        protected virtual void ReplacedAll() {}
+        protected virtual void ReplacedAll()
+        {
+        }
 
         #endregion
 
@@ -561,7 +736,8 @@ namespace AngleSharp.Dom
                     var selfClosing = flags.HasFlag(NodeFlags.SelfClosing);
                     writer.Write(formatter.OpenTag(element, selfClosing));
 
-                    if (!selfClosing && flags.HasFlag(NodeFlags.LineTolerance) && element.FirstChild is IText text && text.Data.Has(Symbols.LineFeed))
+                    if (!selfClosing && flags.HasFlag(NodeFlags.LineTolerance) && element.FirstChild is IText text &&
+                        text.Data.Has(Symbols.LineFeed))
                     {
                         writer.Write(Symbols.LineFeed);
                     }
@@ -601,10 +777,12 @@ namespace AngleSharp.Dom
         }
 
         /// <inheritdoc />
-        public INode InsertBefore(INode newElement, INode? referenceElement) => this.PreInsert(newElement, referenceElement);
+        public INode InsertBefore(INode newElement, INode? referenceElement) =>
+            this.PreInsert(newElement, referenceElement);
 
         /// <inheritdoc />
-        public INode ReplaceChild(INode newChild, INode oldChild) => this.ReplaceChild((Node)newChild, (Node)oldChild, false);
+        public INode ReplaceChild(INode newChild, INode oldChild) =>
+            this.ReplaceChild((Node)newChild, (Node)oldChild, false);
 
 
         /// <inheritdoc />
@@ -622,7 +800,9 @@ namespace AngleSharp.Dom
             }
             else if (!Object.ReferenceEquals(Owner, otherNode.OwnerDocument))
             {
-                var relative = otherNode.GetHashCode() > GetHashCode() ? DocumentPositions.Following : DocumentPositions.Preceding;
+                var relative = otherNode.GetHashCode() > GetHashCode()
+                    ? DocumentPositions.Following
+                    : DocumentPositions.Preceding;
                 return DocumentPositions.Disconnected | DocumentPositions.ImplementationSpecific | relative;
             }
             else if (otherNode.IsAncestorOf(this))
@@ -676,14 +856,17 @@ namespace AngleSharp.Dom
                                 {
                                     m.StartWith(text, length);
                                 }
+
                                 if (m.Tail == sibling)
                                 {
                                     m.EndWith(text, length);
                                 }
+
                                 if (m.Head == sibling.Parent && m.Start == end)
                                 {
                                     m.StartWith(text, length);
                                 }
+
                                 if (m.Tail == sibling.Parent && m.End == end)
                                 {
                                     m.EndWith(text, length);
@@ -745,7 +928,8 @@ namespace AngleSharp.Dom
         /// <inheritdoc cref="IEquatable{T}.Equals(T)" />
         public virtual Boolean Equals(INode? otherNode)
         {
-            if (BaseUri.Is(otherNode?.BaseUri) && NodeName.Is(otherNode?.NodeName) && ChildNodes.Length == otherNode?.ChildNodes.Length)
+            if (BaseUri.Is(otherNode?.BaseUri) && NodeName.Is(otherNode?.NodeName) &&
+                ChildNodes.Length == otherNode?.ChildNodes.Length)
             {
                 for (var i = 0; i < _children.Length; i++)
                 {
@@ -777,7 +961,8 @@ namespace AngleSharp.Dom
 
                 case Dom.NodeType.DocumentFragment:
                     var elements = node.GetElementCount();
-                    return elements > 1 || node.HasTextNodes() || (elements == 1 && (parent.DocumentElement != child || child.IsFollowedByDoctype()));
+                    return elements > 1 || node.HasTextNodes() ||
+                           (elements == 1 && (parent.DocumentElement != child || child.IsFollowedByDoctype()));
 
                 default:
                     return false;
@@ -788,7 +973,8 @@ namespace AngleSharp.Dom
         /// For more information, see:
         /// https://dom.spec.whatwg.org/#validate-and-extract
         /// </summary>
-        protected static void GetPrefixAndLocalName(String qualifiedName, ref String? namespaceUri, out String? prefix, out String localName)
+        protected static void GetPrefixAndLocalName(String qualifiedName, ref String? namespaceUri, out String? prefix,
+            out String localName)
         {
             if (!qualifiedName.IsXmlName())
             {
@@ -827,9 +1013,12 @@ namespace AngleSharp.Dom
         /// <inheritdoc />
         protected static Boolean IsNamespaceError(String? prefix, String? namespaceUri, String qualifiedName)
         {
-            return (prefix is not null && namespaceUri is null) || (prefix.Is(NamespaceNames.XmlPrefix) && !namespaceUri.Is(NamespaceNames.XmlUri)) ||
-                ((qualifiedName.Is(NamespaceNames.XmlNsPrefix) || prefix.Is(NamespaceNames.XmlNsPrefix)) && !namespaceUri.Is(NamespaceNames.XmlNsUri)) ||
-                (namespaceUri.Is(NamespaceNames.XmlNsUri) && (!qualifiedName.Is(NamespaceNames.XmlNsPrefix) && !prefix.Is(NamespaceNames.XmlNsPrefix)));
+            return (prefix is not null && namespaceUri is null) ||
+                   (prefix.Is(NamespaceNames.XmlPrefix) && !namespaceUri.Is(NamespaceNames.XmlUri)) ||
+                   ((qualifiedName.Is(NamespaceNames.XmlNsPrefix) || prefix.Is(NamespaceNames.XmlNsPrefix)) &&
+                    !namespaceUri.Is(NamespaceNames.XmlNsUri)) ||
+                   (namespaceUri.Is(NamespaceNames.XmlNsUri) && (!qualifiedName.Is(NamespaceNames.XmlNsPrefix) &&
+                                                                 !prefix.Is(NamespaceNames.XmlNsPrefix)));
         }
 
         /// <inheritdoc />
@@ -854,7 +1043,8 @@ namespace AngleSharp.Dom
         /// <summary>
         /// Specifications may define removing steps for all or some nodes.
         /// </summary>
-        protected virtual void NodeIsRemoved(Node removedNode, Node? oldPreviousSibling) => removedNode.OnParentChanged();
+        protected virtual void NodeIsRemoved(Node removedNode, Node? oldPreviousSibling) =>
+            removedNode.OnParentChanged();
 
         /// <inheritdoc />
         protected virtual void OnParentChanged()
