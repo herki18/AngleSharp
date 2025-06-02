@@ -3,7 +3,7 @@
 using AngleSharp.Dom;
 using LayoutEngine.NG.Layout;
 using System;
-using Layout.Dom;
+using LayoutEngine.NG.Layout.Dom;
 using Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
@@ -16,6 +16,7 @@ public class StyleEngine
     private readonly LayoutDataManager _layoutDataManager;
     private readonly IStyleResolver _styleResolver;
     private readonly LayoutTreeBuilder _layoutTreeBuilder;
+
     internal readonly StyleRecalcRoot StyleRecalcRoot;
     internal readonly StyleRecalcRoot LayoutTreeRebuildRoot;
 
@@ -155,6 +156,7 @@ public class StyleEngine
 
         var elementLayout = _layoutDataManager.GetOrCreate(docElement);
         var style = elementLayout.GetComputedStyle();
+
         if (style == null)
             return;
 
@@ -182,7 +184,7 @@ public class StyleEngine
 
         // Update the recalc root
         // In BlinkNG: style_recalc_root_.Update(parent, node)
-        StyleRecalcRoot.Update(node.ParentNode, node);
+        StyleRecalcRoot.Update(node.Parent, node);
     }
 
     /// <summary>
@@ -192,7 +194,7 @@ public class StyleEngine
     public void SetNeedsLayoutTreeRebuild(INode node)
     {
         // Update the rebuild root
-        LayoutTreeRebuildRoot.Update(node.ParentNode, node);
+        LayoutTreeRebuildRoot.Update(node.Parent, node);
     }
 
     /// <summary>
@@ -204,6 +206,7 @@ public class StyleEngine
         // Set up for container query recalc
         var containerLayout = _layoutDataManager.GetOrCreate(container);
         containerLayout.SetChildNeedsStyleRecalc();
+
         StyleRecalcRoot.Update(null, container);
 
         var context = StyleRecalcContext.FromAncestors(container, _layoutDataManager);
@@ -317,12 +320,12 @@ public class StyleRecalcRoot
 
     private bool IsAncestor(INode possibleAncestor, INode node)
     {
-        var current = node.ParentNode;
+        var current = node.Parent;
         while (current != null)
         {
             if (current == possibleAncestor)
                 return true;
-            current = current.ParentNode;
+            current = current.Parent;
         }
         return false;
     }
@@ -335,7 +338,7 @@ public class StyleRecalcRoot
         while (current != null)
         {
             path1.Add(current);
-            current = current.ParentNode;
+            current = current.Parent;
         }
 
         // Find first node in path that is ancestor of node2

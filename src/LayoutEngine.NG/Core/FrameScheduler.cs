@@ -1,6 +1,7 @@
 ﻿namespace LayoutEngine.NG.Core;
 
 using LayoutEngine.NG.Layout;
+using LayoutEngine.NG.Layout.Dom;
 
 /// <summary>
 /// Responsible for advancing the lifecycle of its associated Frame.
@@ -28,12 +29,22 @@ public class FrameScheduler
         // In BlinkNG, only LocalFrame has a layout tree
         var localFrame = _frame as LocalFrame;
 
+        // Get the layout data manager from DI (in real implementation)
+        // For now, assume it's available through the frame
+        var layoutDataManager = localFrame?.LayoutDataManager;
+        if (layoutDataManager == null)
+            return;
+
+        // Get the document's StyleEngine through DocumentLayout
+        var docLayout = layoutDataManager.GetOrCreate(_frame.Document);
+        var styleEngine = docLayout.StyleEngine;
+
         // Advance through phases following BlinkNG's lifecycle model
         switch (currentPhase)
         {
             case DocumentLifecyclePhase.Inactive:
                 // Initial state - advance to style calculation
-                if (_frame.StyleEngine.NeedsStyleRecalc(_frame.Document))
+                if (styleEngine.NeedsStyleRecalc())
                 {
                     coordinator.TransitionTo(DocumentLifecyclePhase.InStyleRecalc);
                 }
@@ -45,7 +56,7 @@ public class FrameScheduler
 
             case DocumentLifecyclePhase.InStyleRecalc:
                 // Perform style calculation
-                _frame.StyleEngine.RecalcStyle(_frame.Document);
+                styleEngine.UpdateStyleAndLayoutTree();
                 coordinator.TransitionTo(DocumentLifecyclePhase.StyleClean);
                 break;
 
@@ -97,7 +108,7 @@ public class FrameScheduler
                 _frame.PaintSystem.Render(_frame.Document);
 
                 // After render, check if we need to restart the cycle
-                if (_frame.StyleEngine.NeedsStyleRecalc(_frame.Document))
+                if (styleEngine.NeedsStyleRecalc())
                 {
                     coordinator.TransitionTo(DocumentLifecyclePhase.InStyleRecalc);
                 }

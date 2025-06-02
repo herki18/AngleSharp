@@ -2,8 +2,9 @@
 
 using AngleSharp.Dom;
 using LayoutEngine.NG.Layout;
+using LayoutEngine.NG.Layout.Dom;
 using LayoutEngine.NG.Paint;
-using LayoutEngine.NG.Style;
+using System;
 
 /// <summary>
 /// Represents a local browsing context (e.g., top-level frame or iframe) with a local document.
@@ -13,15 +14,25 @@ using LayoutEngine.NG.Style;
 public class LocalFrame : Frame
 {
     private LayoutView? _layoutView;
+    private readonly LayoutDataManager _layoutDataManager;
 
     public LocalFrame(
         IDocument document,
-        IPaintSystem paintSystem)
+        IPaintSystem paintSystem,
+        IServiceProvider serviceProvider)
         : base(document, paintSystem)
     {
+        // Create the layout data manager for this frame
+        _layoutDataManager = new LayoutDataManager(serviceProvider);
+
         // In BlinkNG, the LocalFrame creates and owns the LayoutView
         InitializeLayoutView();
     }
+
+    /// <summary>
+    /// Gets the layout data manager for this frame.
+    /// </summary>
+    public LayoutDataManager LayoutDataManager => _layoutDataManager;
 
     /// <summary>
     /// Gets the layout view (root of the layout tree) for this frame.
@@ -76,8 +87,12 @@ public class LocalFrame : Frame
     /// </summary>
     public bool NeedsLifecycleUpdate()
     {
+        // Get the document's StyleEngine through DocumentLayout
+        var docLayout = _layoutDataManager.GetOrCreate(Document);
+        var styleEngine = docLayout.StyleEngine;
+
         // Check style recalc needs
-        if (StyleEngine.NeedsStyleRecalc(Document))
+        if (styleEngine.NeedsStyleRecalc())
             return true;
 
         // Check layout needs directly on LayoutView

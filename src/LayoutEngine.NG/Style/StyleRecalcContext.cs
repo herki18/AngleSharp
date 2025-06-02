@@ -1,6 +1,7 @@
 ﻿namespace LayoutEngine.NG.Style;
 
 using AngleSharp.Dom;
+using LayoutEngine.NG.Layout.Dom;
 
 /// <summary>
 /// Context for style recalculation, following BlinkNG's style recalc architecture.
@@ -71,5 +72,28 @@ public class StyleRecalcContext
             ContainerElement = ContainerElement,
             ForcedColorsMode = ForcedColorsMode
         };
+    }
+
+    /// <summary>
+    /// Creates a style recalc context from ancestor styles.
+    /// In BlinkNG, this is used to initialize context for style recalculation.
+    /// </summary>
+    public static StyleRecalcContext FromAncestors(IElement? element, LayoutDataManager layoutDataManager)
+    {
+        var context = new StyleRecalcContext();
+
+        if (element == null)
+            return context;
+
+        // Find parent style
+        var parent = element.ParentElement;
+        if (parent != null)
+        {
+            var parentLayout = layoutDataManager.GetOrCreate(parent);
+            context.ParentStyle = parentLayout.GetComputedStyle();
+            context.LayoutParentStyle = context.ParentStyle;
+        }
+
+        return context;
     }
 }

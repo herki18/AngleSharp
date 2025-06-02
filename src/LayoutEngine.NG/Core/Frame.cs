@@ -2,7 +2,6 @@
 
 using AngleSharp.Dom;
 using LayoutEngine.NG.Paint;
-using LayoutEngine.NG.Style;
 
 /// <summary>
 /// Represents a single document context (e.g., a page or iframe).

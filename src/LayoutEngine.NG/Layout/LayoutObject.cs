@@ -1,5 +1,4 @@
 ﻿namespace LayoutEngine.NG.Layout;
-
 using AngleSharp.Dom;
 using LayoutEngine.NG.Style;
 
@@ -98,6 +97,22 @@ public class LayoutObject
                type == LayoutObjectType.GridContainer ||
                type == LayoutObjectType.Table;
     }
+
+    /// <summary>
+    /// Marks this layout object as needing layout.
+    /// In BlinkNG, this propagates up the tree to ensure ancestors are also marked.
+    /// </summary>
+    public void SetNeedsLayout()
+    {
+        if (NeedsLayout)
+            return;
+
+        NeedsLayout = true;
+
+        // Propagate up the tree
+        // In BlinkNG, this ensures that ancestors know they have a descendant that needs layout
+        Parent?.SetNeedsLayout();
+    }
 }
 
 /// <summary>
@@ -113,7 +128,6 @@ public enum LayoutObjectType
     Inline,      // Inline-level box
     InlineBlock, // Inline-block box
     Text,        // Text node
-
     // Complex layout types (to be implemented later)
     FlexContainer,
     FlexItem,

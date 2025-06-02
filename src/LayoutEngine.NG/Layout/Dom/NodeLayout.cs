@@ -52,9 +52,9 @@ public class NodeLayout
         _childNeedsStyleRecalc = true;
 
         // Propagate up the tree
-        if (_node.ParentNode != null)
+        if (_node.Parent != null)
         {
-            var parentLayout = _manager.GetOrCreate(_node.ParentNode);
+            var parentLayout = _manager.GetOrCreate(_node.Parent);
             parentLayout.SetChildNeedsStyleRecalc();
         }
     }
@@ -71,16 +71,16 @@ public class NodeLayout
         _styleChangeType = changeType;
 
         // Notify document's style engine about the dirty node
-        if (_node.Owner is IDocument doc && changeType != StyleChangeType.NoChange)
+        if (_node.OwnerDocument is IDocument doc && changeType != StyleChangeType.NoChange)
         {
             var docLayout = _manager.GetOrCreate(doc);
             docLayout.StyleEngine.SetNeedsStyleRecalc(_node, changeType);
         }
 
         // Mark parent as having dirty children
-        if (_node.ParentNode != null)
+        if (_node.Parent != null)
         {
-            var parentLayout = _manager.GetOrCreate(_node.ParentNode);
+            var parentLayout = _manager.GetOrCreate(_node.Parent);
             parentLayout.SetChildNeedsStyleRecalc();
         }
     }
@@ -101,16 +101,16 @@ public class NodeLayout
         _needsReattachLayoutTree = true;
 
         // Notify document's rebuild root
-        if (_node.Owner is IDocument doc)
+        if (_node.OwnerDocument is IDocument doc)
         {
             var docLayout = _manager.GetOrCreate(doc);
             docLayout.SetNeedsLayoutTreeRebuild(_node);
         }
 
         // Mark parent as having children that need reattachment
-        if (_node.ParentNode != null)
+        if (_node.Parent != null)
         {
-            var parentLayout = _manager.GetOrCreate(_node.ParentNode);
+            var parentLayout = _manager.GetOrCreate(_node.Parent);
             parentLayout.SetChildNeedsReattach();
         }
     }
@@ -128,9 +128,9 @@ public class NodeLayout
         _childNeedsReattach = true;
 
         // Propagate up
-        if (_node.ParentNode != null)
+        if (_node.Parent != null)
         {
-            var parentLayout = _manager.GetOrCreate(_node.ParentNode);
+            var parentLayout = _manager.GetOrCreate(_node.Parent);
             parentLayout.SetChildNeedsReattach();
         }
     }

@@ -2,20 +2,22 @@
 
 using LayoutEngine.NG.Style;
 using System;
-using System.Net.Mime;
 using AngleSharp.Dom;
+using LayoutEngine.NG.Layout.Dom;
 
 /// <summary>
 /// Manages layout tree building, attachment, and detachment following BlinkNG patterns.
 /// In BlinkNG: layout_tree_builder.cc
 /// </summary>
-internal class LayoutTreeBuilder
+public class LayoutTreeBuilder
 {
     private readonly IDocument _document;
+    private readonly LayoutDataManager _layoutDataManager;
 
-    public LayoutTreeBuilder(IDocument document)
+    public LayoutTreeBuilder(IDocument document, LayoutDataManager layoutDataManager)
     {
         _document = document;
+        _layoutDataManager = layoutDataManager;
     }
 
     /// <summary>
@@ -24,7 +26,8 @@ internal class LayoutTreeBuilder
     /// </summary>
     public void Rebuild()
     {
-        var rebuildRoot = _document.LayoutData.LayoutTreeRebuildRoot.GetRootNode();
+        var docLayout = _layoutDataManager.GetOrCreate(_document);
+        var rebuildRoot = docLayout.LayoutTreeRebuildRoot.GetRootNode();
         if (rebuildRoot == null)
             return;
 
@@ -35,32 +38,32 @@ internal class LayoutTreeBuilder
         RebuildInternal(rebuildRoot, context);
 
         // Clear the rebuild root
-        _document.LayoutData.LayoutTreeRebuildRoot.Clear();
+        docLayout.LayoutTreeRebuildRoot.Clear();
     }
 
-    private void RebuildInternal(Node node, AttachmentContext context)
+    private void RebuildInternal(INode node, AttachmentContext context)
     {
         if (node is IElement element)
         {
-            var style = element.LayoutData.GetComputedStyle();
+            var style = _layoutDataManager.GetOrCreate(element).GetComputedStyle();
 
             // Update layout object based on current style
             UpdateLayoutObject(element, style, context);
 
             // Process children if needed
-            if (element.LayoutData.ChildNeedsReattach())
+            if (_layoutDataManager.GetOrCreate(element).ChildNeedsReattach())
             {
                 RebuildChildrenInternal(element, context);
             }
         }
-        else if (node is MediaTypeNames.Text textNode)
+        else if (node is IText textNode)
         {
             // Handle text node attachment
             UpdateTextLayoutObject(textNode, context);
         }
 
         // Clear reattachment flags
-        node.LayoutData.ClearNeedsReattach();
+        _layoutDataManager.GetOrCreate(node).ClearNeedsReattach();
     }
 
     private void RebuildChildrenInternal(IElement element, AttachmentContext context)
@@ -71,7 +74,7 @@ internal class LayoutTreeBuilder
             RebuildInternal(child, context);
         }
 
-        element.LayoutData.ClearChildNeedsReattach();
+        _layoutDataManager.GetOrCreate(element).ClearChildNeedsReattach();
     }
 
     /// <summary>
@@ -79,8 +82,9 @@ internal class LayoutTreeBuilder
     /// </summary>
     private void UpdateLayoutObject(IElement element, ComputedStyle? style, AttachmentContext context)
     {
-        var currentLayoutObject = element.LayoutData.LayoutObject;
-        var shouldHaveLayoutObject = style != null && ShouldCreateLayoutObject(element, style);
+        var elementLayout = _layoutDataManager.GetOrCreate(element);
+        var currentLayoutObject = elementLayout.LayoutObject;
+        var shouldHaveLayoutObject = style != null && ShouldCreateLayoutObject(element, style, _layoutDataManager);
 
         if (shouldHaveLayoutObject && currentLayoutObject == null)
         {
@@ -95,7 +99,7 @@ internal class LayoutTreeBuilder
         else if (currentLayoutObject != null && style != null)
         {
             // Update existing layout object's style
-            currentLayoutObject.SetStyle(style);
+            currentLayoutObject.Style = style;
         }
     }
 
@@ -104,7 +108,8 @@ internal class LayoutTreeBuilder
     /// </summary>
     private void UpdateTextLayoutObject(IText textNode, AttachmentContext context)
     {
-        var currentLayoutObject = textNode.LayoutData.LayoutObject;
+        var textLayout = _layoutDataManager.GetOrCreate(textNode);
+        var currentLayoutObject = textLayout.LayoutObject;
         var shouldHaveLayoutObject = ShouldCreateLayoutObjectForText(textNode);
 
         if (shouldHaveLayoutObject && currentLayoutObject == null)
@@ -123,7 +128,7 @@ internal class LayoutTreeBuilder
     /// Determines if an element needs a layout object.
     /// In BlinkNG: Element::LayoutObjectIsNeeded()
     /// </summary>
-    private bool ShouldCreateLayoutObject(IElement element, ComputedStyle style)
+    public static bool ShouldCreateLayoutObject(IElement element, ComputedStyle style, LayoutDataManager layoutDataManager)
     {
         // display:none elements don't get layout objects
         if (style.Display == DisplayType.None)
@@ -134,7 +139,7 @@ internal class LayoutTreeBuilder
             return false;
 
         // Check if we're in a context that allows layout objects
-        if (!CanAttachLayoutObject(element))
+        if (!CanAttachLayoutObject(element, layoutDataManager))
             return false;
 
         return true;
@@ -143,47 +148,48 @@ internal class LayoutTreeBuilder
     /// <summary>
     /// Checks if we can attach a layout object in the current context.
     /// </summary>
-    private bool CanAttachLayoutObject(IElement element)
+    private static bool CanAttachLayoutObject(IElement element, LayoutDataManager layoutDataManager)
     {
         // Check if we have a parent layout object to attach to
-        var parent = element.ParentNode as IElement;
+        var parent = element.ParentElement;
         while (parent != null)
         {
-            if (parent.LayoutData.LayoutObject != null)
+            var parentLayout = layoutDataManager.GetOrCreate(parent);
+            if (parentLayout.LayoutObject != null)
                 return true;
 
             // display:contents parents are transparent to layout tree
-            var parentStyle = parent.LayoutData.GetComputedStyle();
+            var parentStyle = parentLayout.GetComputedStyle();
             if (parentStyle?.Display != DisplayType.Contents)
                 return false;
 
-            parent = parent.ParentNode as IElement;
+            parent = parent.ParentElement;
         }
 
         // Document element can always attach
-        return element == _document.DocumentElement;
+        return element == element.OwnerDocument?.DocumentElement;
     }
 
     /// <summary>
     /// Creates and attaches a layout object for the element.
     /// </summary>
-    private void AttachLayoutObject(IElement element, ComputedStyle style, AttachmentContext context)
+    public void AttachLayoutObject(IElement element, ComputedStyle style, AttachmentContext context)
     {
         // Create appropriate layout object based on display type
         var layoutObject = CreateLayoutObject(element, style);
 
         // Set the style
-        layoutObject.SetStyle(style);
+        layoutObject.Style = style;
 
         // Store in element
-        element.LayoutData.LayoutObject = layoutObject;
+        _layoutDataManager.GetOrCreate(element).LayoutObject = layoutObject;
 
         // Attach to parent
         var parentLayoutObject = FindParentLayoutObject(element);
         if (parentLayoutObject != null)
         {
             var beforeChild = FindNextLayoutObject(element);
-            parentLayoutObject.AddChild(layoutObject, beforeChild);
+            AddChild(parentLayoutObject, layoutObject, beforeChild);
         }
 
         // Attach children
@@ -195,17 +201,22 @@ internal class LayoutTreeBuilder
     /// </summary>
     private LayoutObject CreateLayoutObject(IElement element, ComputedStyle style)
     {
-        return style.Display switch
+        // Simplified - in real implementation would create proper subclasses
+        switch (style.Display)
         {
-            DisplayType.Block => new LayoutBlock(element),
-            DisplayType.Inline => new LayoutInline(element),
-            DisplayType.InlineBlock => new LayoutBlock(element) { IsInlineBlock = true },
-            DisplayType.Flex => new LayoutBlock(element), // Simplified
-            DisplayType.Grid => new LayoutBlock(element), // Simplified
-            DisplayType.Table => new LayoutBlock(element), // Simplified
-            DisplayType.ListItem => new LayoutBlock(element), // Simplified
-            _ => new LayoutBlock(element)
-        };
+            case DisplayType.Block:
+                return new LayoutBlockFlow { Node = element };
+            case DisplayType.Inline:
+                return new LayoutInline { Node = element };
+            case DisplayType.InlineBlock:
+                return new LayoutInlineBlock { Node = element };
+            case DisplayType.Flex:
+            case DisplayType.Grid: // Simplified
+            case DisplayType.Table: // Simplified
+            case DisplayType.ListItem: // Simplified
+            default:
+                return new LayoutBlockFlow { Node = element }; // Simplified
+        }
     }
 
     /// <summary>
@@ -213,7 +224,8 @@ internal class LayoutTreeBuilder
     /// </summary>
     private void DetachLayoutObject(IElement element, AttachmentContext context)
     {
-        var layoutObject = element.LayoutData.LayoutObject;
+        var elementLayout = _layoutDataManager.GetOrCreate(element);
+        var layoutObject = elementLayout.LayoutObject;
         if (layoutObject == null)
             return;
 
@@ -221,11 +233,10 @@ internal class LayoutTreeBuilder
         DetachChildLayoutObjects(element, context);
 
         // Remove from parent
-        layoutObject.Parent?.RemoveChild(layoutObject);
+        RemoveChild(layoutObject.Parent, layoutObject);
 
-        // Destroy the layout object
-        layoutObject.Destroy();
-        element.LayoutData.LayoutObject = null;
+        // Clear the layout object
+        elementLayout.LayoutObject = null;
     }
 
     /// <summary>
@@ -237,7 +248,8 @@ internal class LayoutTreeBuilder
         {
             if (child is IElement childElement)
             {
-                var childStyle = childElement.LayoutData.GetComputedStyle();
+                var childLayout = _layoutDataManager.GetOrCreate(childElement);
+                var childStyle = childLayout.GetComputedStyle();
                 UpdateLayoutObject(childElement, childStyle, context);
             }
             else if (child is IText textNode)
@@ -254,13 +266,21 @@ internal class LayoutTreeBuilder
     {
         foreach (var child in element.ChildNodes)
         {
-            if (child is IElement childElement && childElement.LayoutData.LayoutObject != null)
+            if (child is IElement childElement)
             {
-                DetachLayoutObject(childElement, context);
+                var childLayout = _layoutDataManager.GetOrCreate(childElement);
+                if (childLayout.LayoutObject != null)
+                {
+                    DetachLayoutObject(childElement, context);
+                }
             }
-            else if (child is IText textNode && textNode.LayoutData.LayoutObject != null)
+            else if (child is IText textNode)
             {
-                DetachTextLayoutObject(textNode, context);
+                var textLayout = _layoutDataManager.GetOrCreate(textNode);
+                if (textLayout.LayoutObject != null)
+                {
+                    DetachTextLayoutObject(textNode, context);
+                }
             }
         }
     }
@@ -272,7 +292,7 @@ internal class LayoutTreeBuilder
     private bool ShouldCreateLayoutObjectForText(IText textNode)
     {
         // Empty text nodes don't need layout objects
-        if (textNode.Length == 0)
+        if (string.IsNullOrEmpty(textNode.TextContent))
             return false;
 
         // Check if it's all whitespace and can be collapsed
@@ -284,10 +304,6 @@ internal class LayoutTreeBuilder
         if (parent == null)
             return false;
 
-        // Some layout objects can't have text children
-        if (!parent.CanHaveChildren())
-            return false;
-
         return true;
     }
 
@@ -296,18 +312,22 @@ internal class LayoutTreeBuilder
     /// </summary>
     private bool IsCollapsibleWhitespace(IText textNode)
     {
-        if (!textNode.IsWhitespaceOnly)
+        if (!string.IsNullOrWhiteSpace(textNode.TextContent))
             return false;
 
         // Check parent's white-space style
-        var parent = textNode.ParentNode as IElement;
-        var style = parent?.LayoutData.GetComputedStyle();
-
-        // Preserve whitespace for pre/pre-wrap
-        if (style?.WhiteSpace == WhiteSpaceType.Pre ||
-            style?.WhiteSpace == WhiteSpaceType.PreWrap)
+        var parent = textNode.ParentElement;
+        if (parent != null)
         {
-            return false;
+            var parentLayout = _layoutDataManager.GetOrCreate(parent);
+            var style = parentLayout.GetComputedStyle();
+
+            // Preserve whitespace for pre/pre-wrap
+            if (style?.GetPropertyValue("white-space") is string ws &&
+                (ws == "pre" || ws == "pre-wrap"))
+            {
+                return false;
+            }
         }
 
         return true;
@@ -318,15 +338,20 @@ internal class LayoutTreeBuilder
     /// </summary>
     private void AttachTextLayoutObject(IText textNode, AttachmentContext context)
     {
-        var layoutText = new LayoutText(textNode);
-        textNode.LayoutData.LayoutObject = layoutText;
+        var layoutText = new LayoutText
+        {
+            Node = textNode,
+            Text = textNode.TextContent
+        };
+
+        _layoutDataManager.GetOrCreate(textNode).LayoutObject = layoutText;
 
         // Attach to parent
         var parentLayout = FindParentLayoutObject(textNode);
         if (parentLayout != null)
         {
             var beforeChild = FindNextLayoutObject(textNode);
-            parentLayout.AddChild(layoutText, beforeChild);
+            AddChild(parentLayout, layoutText, beforeChild);
         }
     }
 
@@ -335,13 +360,13 @@ internal class LayoutTreeBuilder
     /// </summary>
     private void DetachTextLayoutObject(IText textNode, AttachmentContext context)
     {
-        var layoutObject = textNode.LayoutData.LayoutObject;
+        var textLayout = _layoutDataManager.GetOrCreate(textNode);
+        var layoutObject = textLayout.LayoutObject;
         if (layoutObject == null)
             return;
 
-        layoutObject.Parent?.RemoveChild(layoutObject);
-        layoutObject.Destroy();
-        textNode.LayoutData.LayoutObject = null;
+        RemoveChild(layoutObject.Parent, layoutObject);
+        textLayout.LayoutObject = null;
     }
 
     /// <summary>
@@ -349,24 +374,23 @@ internal class LayoutTreeBuilder
     /// </summary>
     private LayoutObject? FindParentLayoutObject(INode node)
     {
-        var parent = node.ParentNode;
+        var parent = node.Parent;
         while (parent != null)
         {
             if (parent is IElement parentElement)
             {
-                var parentLayoutObject = parentElement.LayoutData.LayoutObject;
+                var parentLayout = _layoutDataManager.GetOrCreate(parentElement);
+                var parentLayoutObject = parentLayout.LayoutObject;
                 if (parentLayoutObject != null)
                     return parentLayoutObject;
 
                 // Skip display:contents parents
-                var parentStyle = parentElement.LayoutData.GetComputedStyle();
+                var parentStyle = parentLayout.GetComputedStyle();
                 if (parentStyle?.Display != DisplayType.Contents)
                     return null;
             }
-
-            parent = parent.ParentNode;
+            parent = parent.Parent;
         }
-
         return null;
     }
 
@@ -378,14 +402,73 @@ internal class LayoutTreeBuilder
         var sibling = node.NextSibling;
         while (sibling != null)
         {
-            var siblingLayout = sibling.LayoutData.LayoutObject;
-            if (siblingLayout != null)
-                return siblingLayout;
-
+            var siblingLayout = _layoutDataManager.GetOrCreate(sibling);
+            var siblingLayoutObject = siblingLayout.LayoutObject;
+            if (siblingLayoutObject != null)
+                return siblingLayoutObject;
             sibling = sibling.NextSibling;
         }
-
         return null;
+    }
+
+    /// <summary>
+    /// Adds a child to a parent layout object.
+    /// </summary>
+    private void AddChild(LayoutObject parent, LayoutObject child, LayoutObject? beforeChild)
+    {
+        child.Parent = parent;
+
+        if (beforeChild != null)
+        {
+            // Insert before the specified child
+            child.NextSibling = beforeChild;
+            child.PreviousSibling = beforeChild.PreviousSibling;
+
+            if (beforeChild.PreviousSibling != null)
+                beforeChild.PreviousSibling.NextSibling = child;
+            else
+                parent.FirstChild = child;
+
+            beforeChild.PreviousSibling = child;
+        }
+        else
+        {
+            // Append to the end
+            if (parent.FirstChild == null)
+            {
+                parent.FirstChild = child;
+            }
+            else
+            {
+                var lastChild = parent.FirstChild;
+                while (lastChild.NextSibling != null)
+                    lastChild = lastChild.NextSibling;
+
+                lastChild.NextSibling = child;
+                child.PreviousSibling = lastChild;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Removes a child from its parent.
+    /// </summary>
+    private void RemoveChild(LayoutObject? parent, LayoutObject child)
+    {
+        if (parent == null)
+            return;
+
+        if (child.PreviousSibling != null)
+            child.PreviousSibling.NextSibling = child.NextSibling;
+        else if (parent.FirstChild == child)
+            parent.FirstChild = child.NextSibling;
+
+        if (child.NextSibling != null)
+            child.NextSibling.PreviousSibling = child.PreviousSibling;
+
+        child.Parent = null;
+        child.NextSibling = null;
+        child.PreviousSibling = null;
     }
 }
 
@@ -393,7 +476,7 @@ internal class LayoutTreeBuilder
 /// Context for layout tree attachment operations.
 /// In BlinkNG: AttachContext
 /// </summary>
-internal class AttachmentContext
+public class AttachmentContext
 {
     /// <summary>
     /// Whether we're doing a full document attachment.

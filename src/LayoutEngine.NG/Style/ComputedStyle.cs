@@ -5,6 +5,19 @@ using System.Collections.Generic;
 using AngleSharp.Css.Values;
 
 /// <summary>
+/// CSS white-space property values.
+/// </summary>
+public enum WhiteSpaceType
+{
+    Normal,
+    NoWrap,
+    Pre,
+    PreWrap,
+    PreLine,
+    BreakSpaces
+}
+
+/// <summary>
 /// Represents the computed CSS style for a node, following BlinkNG's ComputedStyle.
 /// In BlinkNG, ComputedStyle is immutable after style recalc and contains all resolved CSS values.
 /// </summary>
@@ -34,6 +47,12 @@ public class ComputedStyle
     /// Position type following CSS Positioning Module.
     /// </summary>
     public PositionType Position { get; set; } = PositionType.Static;
+
+    /// <summary>
+    /// White-space handling for text content.
+    /// In BlinkNG, affects text layout and whitespace collapsing.
+    /// </summary>
+    public WhiteSpaceType WhiteSpace { get; set; } = WhiteSpaceType.Normal;
 
     /// <summary>
     /// Whether this style creates a new stacking context.
@@ -90,9 +109,15 @@ public class ComputedStyle
             ParentComputedStyle = ParentComputedStyle,
             Display = Display,
             Position = Position,
+            WhiteSpace = WhiteSpace,
             CreatesStackingContext = CreatesStackingContext,
             CreatesContainingBlock = CreatesContainingBlock,
-            NeedsLayout = NeedsLayout
+            NeedsLayout = NeedsLayout,
+            Margin = Margin,
+            Padding = Padding,
+            Border = Border,
+            BackgroundColor = BackgroundColor,
+            Color = Color
         };
 
         foreach (var kvp in _properties)
@@ -112,6 +137,14 @@ public class ComputedStyle
         // Skeleton implementation - actual logic would be complex
         return false;
     }
+
+    // Container query dependency methods (simplified stubs)
+    public bool DependsOnSizeContainerQueries() => false;
+    public bool DependsOnStyleContainerQueries() => false;
+    public bool DependsOnScrollStateContainerQueries() => false;
+    public bool DependsOnAnchoredContainerQueries() => false;
+    public bool HighlightPseudoElementStylesDependOnContainerUnits() => false;
+    public bool CanMatchSizeContainerQueries(IElement element) => false;
 }
 
 public struct LengthBox

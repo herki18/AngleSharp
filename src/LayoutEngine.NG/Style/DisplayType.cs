@@ -12,5 +12,18 @@ public enum DisplayType
     Flex,
     Grid,
     Table,
-    // Additional display types would be added here
+    TableRow,
+    TableCell,
+    ListItem,
+    Contents,
+    FlowRoot,
+    InlineFlex,
+    InlineGrid,
+    InlineTable,
+    TableRowGroup,
+    TableHeaderGroup,
+    TableFooterGroup,
+    TableColumn,
+    TableColumnGroup,
+    TableCaption
 }

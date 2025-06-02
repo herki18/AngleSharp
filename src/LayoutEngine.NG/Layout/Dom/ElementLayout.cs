@@ -1,7 +1,5 @@
 ﻿using AngleSharp.Dom;
-
 namespace LayoutEngine.NG.Layout.Dom;
-
 using Style;
 
 /// <summary>
@@ -56,7 +54,7 @@ public class ElementLayout : NodeLayout
     private ComputedStyle? ResolveStyle(StyleRecalcContext context)
     {
         // Get style resolver from document
-        var docLayout = _manager.GetOrCreate(Node.Owner!);
+        var docLayout = _manager.GetOrCreate(Node.OwnerDocument!);
         var styleResolver = docLayout.StyleEngine.StyleResolver;
 
         // Resolve style for this element
@@ -130,7 +128,7 @@ public class ElementLayout : NodeLayout
 
     private void RecalcStyleForChildren(StyleRecalcChange change, StyleRecalcContext context)
     {
-        var childChange = change.ForChildren(Node);
+        var childChange = change.ForChildren(Node, _manager);
         var childContext = context.CreateChildContext(GetComputedStyle());
 
         foreach (var child in Node.ChildNodes)
@@ -140,7 +138,7 @@ public class ElementLayout : NodeLayout
                 var childLayout = _manager.GetOrCreate(childElement);
                 childLayout.RecalcStyle(childChange, childContext);
             }
-            else if (child is IText textNode && childChange.ShouldRecalcStyleFor(textNode))
+            else if (child is IText textNode && childChange.ShouldRecalcStyleFor(textNode, _manager))
             {
                 // Text nodes might need reattachment based on parent style changes
                 HandleTextNodeStyleChange(textNode, childContext);
