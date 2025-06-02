@@ -12,18 +12,15 @@ using LayoutEngine.NG.Style;
 public class Frame
 {
     private readonly IDocument _document;
-    private readonly IStyleEngine _styleEngine;
     private readonly IPaintSystem _paintSystem;
     private readonly DocumentLifecycleCoordinator _lifecycleCoordinator;
     private readonly FrameScheduler _frameScheduler;
 
     public Frame(
         IDocument document,
-        IStyleEngine styleEngine,
         IPaintSystem paintSystem)
     {
         _document = document;
-        _styleEngine = styleEngine;
         _paintSystem = paintSystem;
         _lifecycleCoordinator = new DocumentLifecycleCoordinator();
         _frameScheduler = new FrameScheduler(this);
@@ -33,11 +30,6 @@ public class Frame
     /// Gets the DOM document associated with this frame.
     /// </summary>
     public IDocument Document => _document;
-
-    /// <summary>
-    /// Gets the style calculation subsystem.
-    /// </summary>
-    public IStyleEngine StyleEngine => _styleEngine;
 
     /// <summary>
     /// Gets the paint/rendering subsystem.

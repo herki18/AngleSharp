@@ -2,6 +2,7 @@
 
 using AngleSharp.Dom;
 using System.Collections.Generic;
+using AngleSharp.Css.Values;
 
 /// <summary>
 /// Represents the computed CSS style for a node, following BlinkNG's ComputedStyle.
@@ -51,6 +52,12 @@ public class ComputedStyle
     /// In BlinkNG, this is part of the dirty bit tracking.
     /// </summary>
     public bool NeedsLayout { get; set; }
+
+    public LengthBox Margin { get; set; } = LengthBox.Zero;
+    public LengthBox Padding { get; set; } = LengthBox.Zero;
+    public BorderBox Border { get; set; } = BorderBox.Zero;
+    public CssColorValue BackgroundColor { get; set; } = CssColorValue.Transparent;
+    public CssColorValue Color { get; set; } = CssColorValue.Black;
 
     /// <summary>
     /// Gets a CSS property value by name.
@@ -105,4 +112,40 @@ public class ComputedStyle
         // Skeleton implementation - actual logic would be complex
         return false;
     }
+}
+
+public struct LengthBox
+{
+    public CssLengthValue Top { get; }
+    public CssLengthValue Right { get; }
+    public CssLengthValue Bottom { get; }
+    public CssLengthValue Left { get; }
+
+    public LengthBox(CssLengthValue top, CssLengthValue right, CssLengthValue bottom, CssLengthValue left)
+    {
+        Top = top;
+        Right = right;
+        Bottom = bottom;
+        Left = left;
+    }
+
+    public static LengthBox Zero => new(CssLengthValue.Zero, CssLengthValue.Zero, CssLengthValue.Zero, CssLengthValue.Zero);
+}
+
+public struct BorderBox
+{
+    public CssLengthValue Top { get; }
+    public CssLengthValue Right { get; }
+    public CssLengthValue Bottom { get; }
+    public CssLengthValue Left { get; }
+
+    public BorderBox(CssLengthValue top, CssLengthValue right, CssLengthValue bottom, CssLengthValue left)
+    {
+        Top = top;
+        Right = right;
+        Bottom = bottom;
+        Left = left;
+    }
+
+    public static BorderBox Zero => new(CssLengthValue.Zero, CssLengthValue.Zero, CssLengthValue.Zero, CssLengthValue.Zero);
 }

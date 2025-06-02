@@ -13,7 +13,6 @@ public static class StyleServiceCollectionExtensions
     public static IServiceCollection AddStyleSystem(this IServiceCollection services)
     {
         // Register the main interfaces and implementations
-        services.AddSingleton<IStyleEngine, StyleEngine>();
         services.AddSingleton<IStyleResolver, StyleResolver>();
 
         services.AddSingleton<ICascadeResolver, CascadeResolver>();

@@ -16,9 +16,8 @@ public class LocalFrame : Frame
 
     public LocalFrame(
         IDocument document,
-        IStyleEngine styleEngine,
         IPaintSystem paintSystem)
-        : base(document, styleEngine, paintSystem)
+        : base(document, paintSystem)
     {
         // In BlinkNG, the LocalFrame creates and owns the LayoutView
         InitializeLayoutView();

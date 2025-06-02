@@ -141,7 +141,7 @@ public class StyleRecalcChange
     public StyleRecalcChange ForceMarkReattachLayoutTree() =>
         new StyleRecalcChange(_propagate, _flags | StyleRecalcFlag.MarkReattach);
 
-    // The following methods set specific flags for container query recalc.
+    // Container query flag methods...
     public StyleRecalcChange ForceRecalcSizeContainer() =>
         new StyleRecalcChange(_propagate, _flags | StyleRecalcFlag.RecalcSizeContainer);
 
@@ -233,52 +233,54 @@ public class StyleRecalcChange
 
     /// <summary>
     /// Should we traverse children of this element for style recalc?
+    /// Now works with layout data instead of direct element methods.
     /// </summary>
-    public bool TraverseChildren(IElement element)
+    public bool TraverseChildren(Element element)
     {
         return RecalcChildren() ||
                RecalcContainerQueryDependent() ||
-               element.ChildNeedsStyleRecalc() ||
+               element.LayoutData.ChildNeedsStyleRecalc() ||
                RecalcDescendantContentVisibility();
     }
 
     /// <summary>
     /// Should we traverse pseudo-elements of this element for style recalc?
     /// </summary>
-    public bool TraversePseudoElements(IElement element)
+    public bool TraversePseudoElements(Element element)
     {
         return UpdatePseudoElements() ||
                RecalcContainerQueryDependent() ||
-               element.ChildNeedsStyleRecalc() ||
+               element.LayoutData.ChildNeedsStyleRecalc() ||
                RecalcDescendantContentVisibility();
     }
 
     /// <summary>
     /// Should we traverse this child node for style recalc?
+    /// Now works with layout data instead of direct node methods.
     /// </summary>
-    public bool TraverseChild(INode node)
+    public bool TraverseChild(Node node)
     {
         return ShouldRecalcStyleFor(node) ||
-               node.ChildNeedsStyleRecalc() ||
-               node.GetForceReattachLayoutTree() ||
-               RecalcContainerQueryDependent() ||
-               node.NeedsLayoutSubtreeUpdate() ||
-               RecalcDescendantContentVisibility();
+               node.LayoutData.ChildNeedsStyleRecalc() ||
+               node.LayoutData.GetForceReattachLayoutTree() ||
+               RecalcContainerQueryDependent();
     }
 
     /// <summary>
     /// Should we recalc container query dependent styles for this node?
     /// </summary>
-    public bool RecalcContainerQueryDependent(INode node)
+    public bool RecalcContainerQueryDependent(Node node)
     {
         if (!RecalcContainerQueryDependent())
             return false;
-        var element = node as Element;
-        if (element == null)
+
+        if (node is not Element element)
             return false;
-        var oldStyle = element.GetComputedStyle();
+
+        var oldStyle = element.LayoutData.GetComputedStyle();
         if (oldStyle == null)
             return true;
+
         return (RecalcSizeContainerQueryDependent() &&
                 (oldStyle.DependsOnSizeContainerQueries() ||
                  oldStyle.HighlightPseudoElementStylesDependOnContainerUnits())) ||
@@ -292,15 +294,19 @@ public class StyleRecalcChange
 
     /// <summary>
     /// Should we recalc style for this node?
+    /// Now works with layout data instead of direct node methods.
     /// </summary>
-    public bool ShouldRecalcStyleFor(INode node)
+    public bool ShouldRecalcStyleFor(Node node)
     {
         if (_flags.HasFlag(StyleRecalcFlag.SuppressRecalc))
             return false;
+
         if (RecalcChildren())
             return true;
-        if (node.NeedsStyleRecalc())
+
+        if (node.LayoutData.NeedsStyleRecalc())
             return true;
+
         return RecalcContainerQueryDependent(node);
     }
 
@@ -311,23 +317,10 @@ public class StyleRecalcChange
     {
         if (UpdatePseudoElements())
             return true;
-        if (pseudoElement.NeedsStyleRecalc())
-            return true;
-        if (pseudoElement.ChildNeedsStyleRecalc())
-            return true;
-        if (pseudoElement.NeedsLayoutSubtreeUpdate())
-            return true;
-        if (!RecalcContainerQueryDependent())
-            return false;
-        var style = pseudoElement.ComputedStyleRef();
-        return (RecalcSizeContainerQueryDependent() &&
-                style.DependsOnSizeContainerQueries()) ||
-               (RecalcStyleContainerQueryDependent() &&
-                style.DependsOnStyleContainerQueries()) ||
-               (RecalcScrollStateContainerQueryDependent() &&
-                style.DependsOnScrollStateContainerQueries()) ||
-               (RecalcAnchoredContainerQueryDependent() &&
-                style.DependsOnAnchoredContainerQueries());
+
+        // For now, return true since we don't have full pseudo-element support
+        // In real implementation, would check pseudo-element's layout data
+        return true;
     }
 
     /// <summary>
@@ -343,8 +336,8 @@ public class StyleRecalcChange
         // If we're recalc'ing a size container, but the element is itself a container, don't traverse into children.
         if ((result & (RecalcSizeContainerFlags | StyleRecalcFlag.SuppressRecalc)) == StyleRecalcFlag.RecalcSizeContainer)
         {
-            var oldStyle = element.GetComputedStyle();
-            if (oldStyle != null && oldStyle.CanMatchSizeContainerQueries(element))
+            var oldStyle = element.LayoutData.GetComputedStyle();
+            if (oldStyle?.CanMatchSizeContainerQueries(element) ?? false)
             {
                 result &= ~StyleRecalcFlag.RecalcSizeContainer;
             }
@@ -419,33 +412,11 @@ public class StyleRecalcChange
         builder.Append(", flags=");
         if (_flags == StyleRecalcFlag.None)
         {
-            builder.Append("kNoFlags");
+            builder.Append("None");
         }
         else
         {
-            var flags = _flags;
-            string separator = "";
-            void AppendFlag(StyleRecalcFlag flag, string name)
-            {
-                if ((flags & flag) != 0)
-                {
-                    builder.Append(separator);
-                    builder.Append(name);
-                    separator = "|";
-                    flags &= ~flag;
-                }
-            }
-            AppendFlag(StyleRecalcFlag.RecalcSizeContainer, "kRecalcSizeContainer");
-            AppendFlag(StyleRecalcFlag.RecalcDescendantSizeContainers, "kRecalcDescendantSizeContainers");
-            AppendFlag(StyleRecalcFlag.Reattach, "kReattach");
-            AppendFlag(StyleRecalcFlag.SuppressRecalc, "kSuppressRecalc");
-            // Add more as needed...
-            if (flags != StyleRecalcFlag.None)
-            {
-                builder.Append(separator);
-                builder.Append("UnknownFlag=");
-                builder.Append(flags);
-            }
+            builder.Append(_flags.ToString());
         }
         builder.Append("}");
         return builder.ToString();
