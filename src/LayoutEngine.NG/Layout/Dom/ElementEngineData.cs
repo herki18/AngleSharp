@@ -1,5 +1,4 @@
 ﻿namespace LayoutEngine.NG.Layout.Dom;
-
 using System.Collections.Generic;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
@@ -348,7 +347,11 @@ public class ElementEngineData : NodeEngineData
                 var options = new CssParserOptions
                 {
                     IsIncludingUnknownDeclarations = true,
-                    IsToleratingInvalidValues = true
+                    IsIncludingUnknownRules = true,
+                    // Note: These properties might not exist in the current version
+                    // Commented out to fix build errors
+                    // IsToleratingInvalidValues = true,
+                    // IsToleratingInvalidConstraints = true
                 };
                 cssParser = new CssParser(options);
             }

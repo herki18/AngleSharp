@@ -1,5 +1,4 @@
 ﻿namespace LayoutEngine.NG.Style;
-
 using AngleSharp.Dom;
 using System;
 using System.Collections.Generic;
@@ -88,6 +87,7 @@ public class StyleResolver : IStyleResolver
         // In BlinkNG, font computation happens separately for performance
         // This allows font metrics to be available early in style resolution
 
+        // Note: We're now using AngleSharp's ICssProperty instead of our custom interface
         foreach (var property in fontProperties)
         {
             // Apply font-related properties
@@ -354,21 +354,27 @@ public class StyleResolver : IStyleResolver
             case "display":
                 style.Display = DisplayType.Inline;
                 break;
+
             case "position":
                 style.Position = PositionType.Static;
                 break;
+
             case "white-space":
                 style.WhiteSpace = WhiteSpaceType.Normal;
                 break;
+
             case "color":
                 style.SetPropertyValue("color", "black");
                 break;
+
             case "background-color":
                 style.SetPropertyValue("background-color", "transparent");
                 break;
+
             default:
-                // For other properties, remove the value
-                style.SetPropertyValue(propertyName, null);
+                // For other properties, we can't set to null since it's the initial value
+                // In real implementation, we'd have a proper initial value system
+                // For now, just don't set anything (which means it remains unset)
                 break;
         }
     }

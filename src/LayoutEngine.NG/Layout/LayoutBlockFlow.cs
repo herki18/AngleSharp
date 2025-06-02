@@ -1,5 +1,4 @@
 ﻿namespace LayoutEngine.NG.Layout;
-
 using Style;
 
 /// <summary>
@@ -118,11 +117,6 @@ public class LayoutBlockFlow : LayoutBlock
                 {
                     childBlockFlow.LayoutBlock(childConstraintSpace);
                 }
-                else if (childBox is LayoutInline childInline)
-                {
-                    // Inline layout - simplified
-                    LayoutInlineChild(childInline, childConstraintSpace);
-                }
                 else
                 {
                     // Generic box layout
@@ -139,6 +133,14 @@ public class LayoutBlockFlow : LayoutBlock
 
                 // Create fragment for child
                 childBox.Fragment = childBox.CreateFragment();
+            }
+            else if (child is LayoutInline childInline)
+            {
+                // Handle inline layout
+                // Note: In BlinkNG, inline elements don't inherit from LayoutBox
+                LayoutInlineChild(childInline, constraintSpace);
+                // For now, we'll add a small amount to currentY for inline content
+                currentY += 20; // Simplified - in real LayoutNG this would be based on line boxes
             }
             else if (child is LayoutText textChild)
             {
@@ -210,7 +212,6 @@ public class LayoutBlockFlow : LayoutBlock
     {
         // Simplified width calculation
         // In real LayoutNG, this would handle auto, percentages, etc.
-
         float availableWidth = constraintSpace.AvailableWidth;
 
         // Subtract margins, borders, and padding
@@ -235,6 +236,14 @@ public class LayoutBlockFlow : LayoutBlock
         var inlineWidth = constraintSpace.AvailableWidth;
         var inlineHeight = inline.LineHeight;
 
+        // Create a fragment for the inline
+        inline.Fragment = new Fragment
+        {
+            LayoutObject = inline,
+            Offset = new PhysicalOffset(Padding.Left, 0), // Simplified positioning
+            Size = new PhysicalSize(inlineWidth, inlineHeight)
+        };
+
         // Note: In real implementation, we'd measure text and create line boxes
         HasInlineContent = true;
     }
@@ -249,11 +258,9 @@ public class LayoutBlockFlow : LayoutBlock
 
         // Simplified text layout
         // In real LayoutNG, this would use text shaping and line breaking
-
         float lineHeight = 20; // Default line height
         int estimatedCharsPerLine = (int)(availableWidth / 8); // Rough estimate
         int lines = (text.Text.Length + estimatedCharsPerLine - 1) / estimatedCharsPerLine;
-
         float textHeight = lines * lineHeight;
 
         // Create a fragment for the text
@@ -275,7 +282,6 @@ public class LayoutBlockFlow : LayoutBlock
     {
         // Simplified baseline calculation
         // In real LayoutNG, this would consider first line box, etc.
-
         if (HasInlineContent)
         {
             Baseline = Padding.Top + 20; // Assume first line baseline

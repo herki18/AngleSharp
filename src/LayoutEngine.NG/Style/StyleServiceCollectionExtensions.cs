@@ -1,5 +1,4 @@
 ﻿namespace LayoutEngine.NG.Style;
-
 using AngleSharp;
 using AngleSharp.Css;
 using AngleSharp.Css.Parser;
@@ -37,21 +36,29 @@ public static class StyleServiceCollectionExtensions
         // Register CSS parser
         services.AddSingleton<ICssParser>(provider =>
         {
+            // Note: The older property names might not exist in the current version
+            // Using the available properties based on AngleSharp.Css documentation
             var options = new CssParserOptions
             {
                 IsIncludingUnknownDeclarations = true,
-                IsToleratingInvalidValues = true,
-                IsToleratingInvalidConstraints = true
+                IsIncludingUnknownRules = true,
+                // These properties might not exist in the current version
+                // Commented out to fix build errors
+                // IsToleratingInvalidValues = true,
+                // IsToleratingInvalidConstraints = true
             };
+
+            // Alternative: If the properties don't exist, we can use default options
+            // or create the parser without specific options
             return new CssParser(options);
         });
 
         // Register CSS style declaration factory
         services.AddSingleton<ICssStyleDeclarationFactory>(provider =>
         {
-            var cssParser = provider.GetRequiredService<ICssParser>();
             var context = provider.GetRequiredService<IBrowsingContext>();
-            return new CssStyleDeclarationFactory(cssParser, context);
+            // CssStyleDeclarationFactory only takes IBrowsingContext, not ICssParser
+            return new CssStyleDeclarationFactory(context);
         });
 
         // Register cascade resolver

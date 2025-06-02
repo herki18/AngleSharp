@@ -1,5 +1,4 @@
 ﻿namespace LayoutEngine.NG.Style;
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,9 +36,10 @@ public class CssStyleDeclarationFactory : ICssStyleDeclarationFactory
     }
 
     /// <inheritdoc />
-    public ICssStyleDeclaration Create(IEnumerable<AngleSharp.Css.Dom.ICssProperty> properties)
+    public ICssStyleDeclaration Create(IEnumerable<ICssProperty> properties)
     {
         var declaration = new CssStyleDeclaration(_context);
+
         if (declaration is CssStyleDeclaration cssDeclaration && properties != null)
         {
             cssDeclaration.SetDeclarations(properties.ToList());
@@ -54,6 +54,7 @@ public class CssStyleDeclarationFactory : ICssStyleDeclarationFactory
                     property.IsImportant ? "important" : null);
             }
         }
+
         return declaration;
     }
 
@@ -64,6 +65,7 @@ public class CssStyleDeclarationFactory : ICssStyleDeclarationFactory
             throw new ArgumentNullException(nameof(source));
 
         var declaration = new CssStyleDeclaration(_context);
+
         if (declaration is CssStyleDeclaration cssDeclaration)
         {
             cssDeclaration.SetDeclarations(source.ToList());
@@ -78,6 +80,7 @@ public class CssStyleDeclarationFactory : ICssStyleDeclarationFactory
                     source.GetPropertyPriority(property.Name));
             }
         }
+
         return declaration;
     }
 }
