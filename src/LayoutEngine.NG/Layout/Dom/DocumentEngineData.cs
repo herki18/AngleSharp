@@ -6,11 +6,11 @@ using AngleSharp.Dom;
 /// <summary>
 /// Layout data specific to documents.
 /// </summary>
-public class DocumentLayout : NodeLayout
+public class DocumentEngineData : NodeEngineData
 {
     private readonly Style.StyleEngine _styleEngine;
 
-    public DocumentLayout(IDocument document, LayoutDataManager manager, IServiceProvider serviceProvider)
+    public DocumentEngineData(IDocument document, LayoutDataManager manager, IServiceProvider serviceProvider)
         : base(document, manager)
     {
         // In BlinkNG, Document creates and owns StyleEngine

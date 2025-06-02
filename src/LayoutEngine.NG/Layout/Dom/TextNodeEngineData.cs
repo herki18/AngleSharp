@@ -5,9 +5,9 @@ using AngleSharp.Dom;
 /// <summary>
 /// Layout data specific to text nodes.
 /// </summary>
-public class TextNodeLayout : NodeLayout
+public class TextNodeEngineData : NodeEngineData
 {
-    public TextNodeLayout(IText textNode, LayoutDataManager manager) : base(textNode, manager)
+    public TextNodeEngineData(IText textNode, LayoutDataManager manager) : base(textNode, manager)
     {
     }
 

@@ -1,22 +1,39 @@
 ﻿namespace LayoutEngine.NG.Style;
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using AngleSharp.Css;
+using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using LayoutEngine.NG.Layout;
-using System;
 using LayoutEngine.NG.Layout.Dom;
 using Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
 /// Style engine implementation following BlinkNG patterns.
+/// Manages stylesheets, rule indexing, and style invalidation for a document.
 /// Works with AngleSharp DOM nodes through LayoutDataManager.
 /// </summary>
 public class StyleEngine
 {
-    private readonly DocumentLayout _documentLayout;
+    private readonly DocumentEngineData _documentEngineData;
     private readonly LayoutDataManager _layoutDataManager;
     private readonly IStyleResolver _styleResolver;
     private readonly LayoutTreeBuilder _layoutTreeBuilder;
 
+    // Stylesheet collections by origin
+    private readonly List<StyleSheetContents> _userAgentStyleSheets = new();
+    private readonly List<StyleSheetContents> _userStyleSheets = new();
+    private readonly List<StyleSheetContents> _authorStyleSheets = new();
+
+    // Maps ICssStyleSheet to our wrapper for quick lookup
+    private readonly Dictionary<ICssStyleSheet, StyleSheetContents> _styleSheetMap = new();
+
+    // Element rule collector for style resolution
+    private readonly ElementRuleCollector _elementRuleCollector;
+
+    // Existing recalc roots
     internal readonly StyleRecalcRoot StyleRecalcRoot;
     internal readonly StyleRecalcRoot LayoutTreeRebuildRoot;
 
@@ -24,9 +41,12 @@ public class StyleEngine
     /// Creates a StyleEngine for the given document layout.
     /// In BlinkNG: StyleEngine::StyleEngine(Document& document)
     /// </summary>
-    public StyleEngine(DocumentLayout documentLayout, LayoutDataManager layoutDataManager, IServiceProvider serviceProvider)
+    public StyleEngine(
+        DocumentEngineData documentEngineData,
+        LayoutDataManager layoutDataManager,
+        IServiceProvider serviceProvider)
     {
-        _documentLayout = documentLayout ?? throw new ArgumentNullException(nameof(documentLayout));
+        _documentEngineData = documentEngineData ?? throw new ArgumentNullException(nameof(documentEngineData));
         _layoutDataManager = layoutDataManager ?? throw new ArgumentNullException(nameof(layoutDataManager));
 
         // Get the style resolver from DI
@@ -34,11 +54,185 @@ public class StyleEngine
             ?? throw new InvalidOperationException("IStyleResolver not registered");
 
         // Create layout tree builder
-        _layoutTreeBuilder = new LayoutTreeBuilder(_documentLayout.Document, _layoutDataManager);
+        _layoutTreeBuilder = new LayoutTreeBuilder(_documentEngineData.Document, _layoutDataManager);
+
+        // Create element rule collector
+        _elementRuleCollector = new ElementRuleCollector(this, _layoutDataManager);
 
         StyleRecalcRoot = new StyleRecalcRoot();
         LayoutTreeRebuildRoot = new StyleRecalcRoot();
+
+        // Initialize user agent stylesheets
+        InitializeUserAgentStyleSheets(serviceProvider);
+
+        // Watch for document stylesheets
+        WatchDocumentStyleSheets();
     }
+
+    #region Stylesheet Management
+
+    /// <summary>
+    /// Called when a stylesheet is added to the document.
+    /// In BlinkNG: StyleEngine::AddStyleSheet
+    /// </summary>
+    internal void DidAddStyleSheet(ICssStyleSheet styleSheet, StylesheetOrigin origin)
+    {
+        // Check if already tracked
+        if (_styleSheetMap.ContainsKey(styleSheet))
+            return;
+
+        // Create wrapper
+        var contents = new StyleSheetContents(styleSheet, origin);
+        _styleSheetMap[styleSheet] = contents;
+
+        // Add to appropriate collection
+        switch (origin)
+        {
+            case StylesheetOrigin.UserAgent:
+                _userAgentStyleSheets.Add(contents);
+                break;
+            case StylesheetOrigin.User:
+                _userStyleSheets.Add(contents);
+                break;
+            case StylesheetOrigin.Author:
+                _authorStyleSheets.Add(contents);
+                break;
+        }
+
+        // Mark entire document for style recalc
+        MarkAllElementsForStyleRecalc();
+    }
+
+    /// <summary>
+    /// Called when a stylesheet is removed from the document.
+    /// In BlinkNG: StyleEngine::RemoveStyleSheet
+    /// </summary>
+    internal void DidRemoveStyleSheet(ICssStyleSheet styleSheet)
+    {
+        if (!_styleSheetMap.TryGetValue(styleSheet, out var contents))
+            return;
+
+        // Remove from collections
+        _userAgentStyleSheets.Remove(contents);
+        _userStyleSheets.Remove(contents);
+        _authorStyleSheets.Remove(contents);
+        _styleSheetMap.Remove(styleSheet);
+
+        // Mark entire document for style recalc
+        MarkAllElementsForStyleRecalc();
+    }
+
+    /// <summary>
+    /// Called when a stylesheet's content changes.
+    /// In BlinkNG: StyleEngine::SetNeedsStyleRecalc
+    /// </summary>
+    internal void DidModifyStyleSheet(ICssStyleSheet styleSheet)
+    {
+        if (_styleSheetMap.TryGetValue(styleSheet, out var contents))
+        {
+            // Invalidate parsed rules
+            contents.InvalidateRules();
+
+            // TODO: Use invalidation analysis to mark only affected elements
+            MarkAllElementsForStyleRecalc();
+        }
+    }
+
+    /// <summary>
+    /// Gets active author stylesheets for the current document state.
+    /// In BlinkNG: StyleEngine::GetActiveAuthorStyleSheets
+    /// </summary>
+    internal IEnumerable<StyleSheetContents> GetActiveAuthorStyleSheets()
+    {
+        return _authorStyleSheets.Where(s => !s.IsDisabled);
+    }
+
+    /// <summary>
+    /// Gets user agent stylesheets.
+    /// </summary>
+    internal IEnumerable<StyleSheetContents> GetUserAgentStyleSheets()
+    {
+        return _userAgentStyleSheets;
+    }
+
+    /// <summary>
+    /// Gets user stylesheets.
+    /// </summary>
+    internal IEnumerable<StyleSheetContents> GetUserStyleSheets()
+    {
+        return _userStyleSheets;
+    }
+
+    #endregion
+
+    #region Initialization
+
+    /// <summary>
+    /// Initializes user agent stylesheets from AngleSharp's defaults.
+    /// </summary>
+    private void InitializeUserAgentStyleSheets(IServiceProvider serviceProvider)
+    {
+        // Get AngleSharp's default stylesheets
+        var context = _documentEngineData.Document.Context;
+        if (context != null)
+        {
+            var defaultProviders = context.GetServices<ICssDefaultStyleSheetProvider>();
+            foreach (var provider in defaultProviders)
+            {
+                if (provider.Default != null)
+                {
+                    DidAddStyleSheet(provider.Default, StylesheetOrigin.UserAgent);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sets up watching for document stylesheet changes.
+    /// </summary>
+    private void WatchDocumentStyleSheets()
+    {
+        // Process existing stylesheets
+        foreach (var sheet in _documentEngineData.Document.StyleSheets.OfType<ICssStyleSheet>())
+        {
+            DidAddStyleSheet(sheet, StylesheetOrigin.Author);
+        }
+
+        // TODO: Set up mutation observer for stylesheet changes
+    }
+
+    #endregion
+
+    #region Style Resolution Support
+
+    /// <summary>
+    /// Gets the element rule collector for style resolution.
+    /// Used by StyleResolver to collect matching rules.
+    /// </summary>
+    public ElementRuleCollector ElementRuleCollector => _elementRuleCollector;
+
+    #endregion
+
+    #region Element Style Data (using ElementLayout)
+
+    /// <summary>
+    /// Notifies that an element's inline style changed.
+    /// In BlinkNG, this is handled by Element::StyleAttributeChanged
+    /// </summary>
+    public void ElementInlineStyleChanged(IElement element, string? oldValue, string? newValue)
+    {
+        var elementLayout = _layoutDataManager.GetOrCreate(element);
+
+        // Mark element for style recalc
+        elementLayout.SetNeedsStyleRecalc(StyleChangeType.LocalStyleChange);
+
+        // Clear any cached inline style in ElementLayout
+        // TODO: Implement inline style caching in ElementLayout
+    }
+
+    #endregion
+
+    #region Style and Layout Tree Update Logic
 
     /// <summary>
     /// Gets the style resolver.
@@ -47,7 +241,6 @@ public class StyleEngine
 
     /// <summary>
     /// Checks if style recalc is needed.
-    /// In BlinkNG: bool NeedsStyleRecalc() const { return style_recalc_root_.GetRootNode(); }
     /// </summary>
     public bool NeedsStyleRecalc()
     {
@@ -56,7 +249,6 @@ public class StyleEngine
 
     /// <summary>
     /// Checks if layout tree rebuild is needed.
-    /// In BlinkNG: bool NeedsLayoutTreeRebuild() const { return layout_tree_rebuild_root_.GetRootNode(); }
     /// </summary>
     public bool NeedsLayoutTreeRebuild()
     {
@@ -65,7 +257,6 @@ public class StyleEngine
 
     /// <summary>
     /// Updates style and layout tree.
-    /// In BlinkNG: void UpdateStyleAndLayoutTree()
     /// </summary>
     public void UpdateStyleAndLayoutTree()
     {
@@ -87,7 +278,6 @@ public class StyleEngine
 
     /// <summary>
     /// Performs style recalculation.
-    /// In BlinkNG: void RecalcStyle()
     /// </summary>
     public void RecalcStyle()
     {
@@ -137,7 +327,6 @@ public class StyleEngine
 
     /// <summary>
     /// Rebuilds the layout tree.
-    /// In BlinkNG: void RebuildLayoutTree()
     /// </summary>
     public void RebuildLayoutTree()
     {
@@ -150,7 +339,7 @@ public class StyleEngine
     /// </summary>
     private void EnsureDocumentElementLayoutObject()
     {
-        var docElement = _documentLayout.Document.DocumentElement;
+        var docElement = _documentEngineData.Document.DocumentElement;
         if (docElement == null)
             return;
 
@@ -183,7 +372,6 @@ public class StyleEngine
             return;
 
         // Update the recalc root
-        // In BlinkNG: style_recalc_root_.Update(parent, node)
         StyleRecalcRoot.Update(node.Parent, node);
     }
 
@@ -199,7 +387,6 @@ public class StyleEngine
 
     /// <summary>
     /// Container query style recalc.
-    /// In BlinkNG: void UpdateStyleForContainer(Element& container, ...)
     /// </summary>
     public void UpdateStyleForContainer(IElement container)
     {
@@ -218,7 +405,6 @@ public class StyleEngine
 
     /// <summary>
     /// Updates viewport-dependent styles.
-    /// In BlinkNG: void UpdateViewport()
     /// </summary>
     public void UpdateViewport()
     {
@@ -228,7 +414,7 @@ public class StyleEngine
         // 3. Mark affected elements for style recalc
 
         // For now, mark document element for recalc if it exists
-        var docElement = _documentLayout.Document.DocumentElement;
+        var docElement = _documentEngineData.Document.DocumentElement;
         if (docElement != null)
         {
             var elementLayout = _layoutDataManager.GetOrCreate(docElement);
@@ -242,7 +428,7 @@ public class StyleEngine
     /// </summary>
     public void MarkAllElementsForStyleRecalc()
     {
-        var docElement = _documentLayout.Document.DocumentElement;
+        var docElement = _documentEngineData.Document.DocumentElement;
         if (docElement != null)
         {
             // Mark entire document tree
@@ -263,6 +449,8 @@ public class StyleEngine
             }
         }
     }
+
+    #endregion
 }
 
 /// <summary>
@@ -333,7 +521,7 @@ public class StyleRecalcRoot
     private INode? FindCommonAncestor(INode node1, INode node2)
     {
         // Build path from node1 to root
-        var path1 = new System.Collections.Generic.List<INode>();
+        var path1 = new List<INode>();
         var current = node1;
         while (current != null)
         {

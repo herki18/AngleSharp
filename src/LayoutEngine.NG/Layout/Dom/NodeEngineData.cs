@@ -1,12 +1,20 @@
-﻿namespace LayoutEngine.NG.Layout.Dom;
+﻿using AngleSharp.Dom;
+using LayoutEngine.NG.Style;
 
-using AngleSharp.Dom;
-using Style;
+namespace LayoutEngine.NG.Layout.Dom;
 
 /// <summary>
-/// Base layout data for all nodes.
+/// Per-node engine state container for DOM nodes (elements, text, document, etc).
+/// This class stores all engine-specific data needed for style, layout, and rendering,
+/// such as dirty flags, computed style, and other internal state.
+///
+/// This data is kept separate from the DOM node itself (e.g., AngleSharp's INode)
+/// to avoid polluting the DOM implementation and to keep engine concerns decoupled.
+///
+/// This is NOT a layout object and NOT a DOM node.
+/// It is purely an internal data holder for the engine.
 /// </summary>
-public class NodeLayout
+public class NodeEngineData
 {
     protected readonly INode _node;
     protected readonly LayoutDataManager _manager;
@@ -17,7 +25,7 @@ public class NodeLayout
     private bool _needsReattachLayoutTree = false;
     private LayoutEngine.NG.Layout.LayoutObject? _layoutObject;
 
-    public NodeLayout(INode node, LayoutDataManager manager)
+    public NodeEngineData(INode node, LayoutDataManager manager)
     {
         _node = node;
         _manager = manager;
@@ -25,18 +33,12 @@ public class NodeLayout
 
     public INode Node => _node;
 
-    /// <summary>
-    /// The style change type for this node.
-    /// </summary>
     public StyleChangeType StyleChangeType
     {
         get => _styleChangeType;
         set => _styleChangeType = value;
     }
 
-    /// <summary>
-    /// Layout object for this node.
-    /// </summary>
     public virtual LayoutEngine.NG.Layout.LayoutObject? LayoutObject
     {
         get => _layoutObject;
@@ -50,8 +52,6 @@ public class NodeLayout
     public void SetChildNeedsStyleRecalc()
     {
         _childNeedsStyleRecalc = true;
-
-        // Propagate up the tree
         if (_node.Parent != null)
         {
             var parentLayout = _manager.GetOrCreate(_node.Parent);
@@ -66,18 +66,18 @@ public class NodeLayout
 
     public bool NeedsStyleRecalc() => _styleChangeType != StyleChangeType.NoChange;
 
+    /// <summary>
+    /// Notifies the style engine when this node needs style recalc.
+    /// This is the integration point between layout data and style engine.
+    /// </summary>
     public void SetNeedsStyleRecalc(StyleChangeType changeType)
     {
         _styleChangeType = changeType;
-
-        // Notify document's style engine about the dirty node
         if (_node.OwnerDocument is IDocument doc && changeType != StyleChangeType.NoChange)
         {
             var docLayout = _manager.GetOrCreate(doc);
             docLayout.StyleEngine.SetNeedsStyleRecalc(_node, changeType);
         }
-
-        // Mark parent as having dirty children
         if (_node.Parent != null)
         {
             var parentLayout = _manager.GetOrCreate(_node.Parent);
@@ -99,15 +99,11 @@ public class NodeLayout
     public void SetNeedsReattachLayoutTree()
     {
         _needsReattachLayoutTree = true;
-
-        // Notify document's rebuild root
         if (_node.OwnerDocument is IDocument doc)
         {
             var docLayout = _manager.GetOrCreate(doc);
             docLayout.SetNeedsLayoutTreeRebuild(_node);
         }
-
-        // Mark parent as having children that need reattachment
         if (_node.Parent != null)
         {
             var parentLayout = _manager.GetOrCreate(_node.Parent);
@@ -126,8 +122,6 @@ public class NodeLayout
     public void SetChildNeedsReattach()
     {
         _childNeedsReattach = true;
-
-        // Propagate up
         if (_node.Parent != null)
         {
             var parentLayout = _manager.GetOrCreate(_node.Parent);

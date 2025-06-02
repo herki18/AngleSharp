@@ -1,94 +1,238 @@
 ﻿namespace LayoutEngine.NG.Style;
 
-using AngleSharp.Css.Dom;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using AngleSharp.Css;
+using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 
 /// <summary>
-/// Represents a collection of CSS rules organized for efficient matching.
-/// In BlinkNG, RuleSet partitions and indexes rules for fast selector matching.
+/// Indexes CSS rules by selector type for efficient matching during style resolution.
+/// In BlinkNG, this is critical for performance when matching thousands of rules.
 /// </summary>
-public class RuleSet
+internal class RuleSet
 {
-    /// <summary>
-    /// Rules indexed by class name.
-    /// In BlinkNG, this allows fast lookup for class selectors.
-    /// </summary>
-    public Dictionary<string, List<RuleData>> ClassRules { get; } = new();
+    // Rules indexed by ID selector (e.g., #header)
+    private readonly Dictionary<string, List<RuleData>> _idRules = new();
+
+    // Rules indexed by class selector (e.g., .container)
+    private readonly Dictionary<string, List<RuleData>> _classRules = new();
+
+    // Rules indexed by tag selector (e.g., div)
+    private readonly Dictionary<string, List<RuleData>> _tagRules = new();
+
+    // Rules with pseudo-class selectors (e.g., :hover)
+    private readonly List<RuleData> _pseudoRules = new();
+
+    // Universal rules and complex selectors
+    private readonly List<RuleData> _universalRules = new();
+
+    // All rules in document order (for cascade)
+    private readonly List<RuleData> _allRules = new();
 
     /// <summary>
-    /// Rules indexed by ID.
-    /// In BlinkNG, ID selectors are kept separate for performance.
+    /// Adds a style rule to the rule set with appropriate indexing.
     /// </summary>
-    public Dictionary<string, List<RuleData>> IdRules { get; } = new();
-
-    /// <summary>
-    /// Rules indexed by tag name.
-    /// </summary>
-    public Dictionary<string, List<RuleData>> TagRules { get; } = new();
-
-    /// <summary>
-    /// Universal rules that apply to all elements.
-    /// </summary>
-    public List<RuleData> UniversalRules { get; } = new();
-
-    /// <summary>
-    /// Rules with pseudo-classes.
-    /// In BlinkNG, pseudo-classes need special handling.
-    /// </summary>
-    public List<RuleData> PseudoRules { get; } = new();
-
-    /// <summary>
-    /// Adds a rule to the appropriate index.
-    /// In BlinkNG, this is FindBestRuleSetAndAdd.
-    /// </summary>
-    public void AddRule(ICssStyleRule rule, int index, StylesheetOrigin origin)
+    /// <param name="rule">The CSS style rule to add.</param>
+    /// <param name="position">The position in document order.</param>
+    /// <param name="origin">The stylesheet origin.</param>
+    internal void AddRule(ICssStyleRule rule, int position, StylesheetOrigin origin)
     {
-        // Skeleton implementation
-        // In BlinkNG, this would analyze the selector and add to appropriate buckets
+        if (rule.Selector == null)
+            return;
+
+        // Create rule data
+        var ruleData = new RuleData(rule, position, origin);
+        _allRules.Add(ruleData);
+
+        // Analyze selector and add to appropriate indexes
+        // In BlinkNG, this is done by RuleSet::AddRule and SelectorChecker
+        IndexRule(ruleData);
     }
 
     /// <summary>
-    /// Gets all rules that could potentially match an element.
-    /// In BlinkNG, this is used during style resolution.
+    /// Gets candidate rules that might match the given element.
+    /// This is a performance-critical method in style resolution.
     /// </summary>
-    public IEnumerable<RuleData> GetCandidateRules(IElement element)
+    /// <param name="element">The element to find matching rules for.</param>
+    /// <returns>Rules that potentially match the element.</returns>
+    internal IEnumerable<RuleData> GetCandidateRules(IElement element)
     {
-        // Skeleton implementation
-        yield break;
+        // Collect from ID rules
+        var id = element.Id;
+        if (!string.IsNullOrEmpty(id) && _idRules.TryGetValue(id, out var idMatches))
+        {
+            foreach (var rule in idMatches)
+                yield return rule;
+        }
+
+        // Collect from class rules
+        foreach (var className in element.ClassList)
+        {
+            if (_classRules.TryGetValue(className, out var classMatches))
+            {
+                foreach (var rule in classMatches)
+                    yield return rule;
+            }
+        }
+
+        // Collect from tag rules
+        var tagName = element.LocalName.ToLowerInvariant();
+        if (_tagRules.TryGetValue(tagName, out var tagMatches))
+        {
+            foreach (var rule in tagMatches)
+                yield return rule;
+        }
+
+        // Always check universal rules
+        foreach (var rule in _universalRules)
+            yield return rule;
+
+        // Check pseudo rules if element has any pseudo states
+        // TODO: Only return if element actually has the pseudo state
+        foreach (var rule in _pseudoRules)
+            yield return rule;
+    }
+
+    /// <summary>
+    /// Clears all indexed rules.
+    /// </summary>
+    internal void Clear()
+    {
+        _idRules.Clear();
+        _classRules.Clear();
+        _tagRules.Clear();
+        _pseudoRules.Clear();
+        _universalRules.Clear();
+        _allRules.Clear();
+    }
+
+    /// <summary>
+    /// Gets all rules in document order.
+    /// </summary>
+    internal IReadOnlyList<RuleData> AllRules => _allRules;
+
+    /// <summary>
+    /// Analyzes a rule's selector and adds it to the appropriate indexes.
+    /// In BlinkNG, this is done by CSSSelectorParser and RuleFeatureSet.
+    /// </summary>
+    private void IndexRule(RuleData ruleData)
+    {
+        var selector = ruleData.Rule.Selector;
+
+        // Handle selector lists (comma-separated)
+        if (selector is ISelectorList selectorList)
+        {
+            // For now, just use the rightmost selector for indexing
+            // In BlinkNG, this would be more sophisticated
+            var rightmostSelector = GetRightmostSelector(selectorList.First());
+            IndexByRightmostSelector(ruleData, rightmostSelector);
+        }
+        else
+        {
+            var rightmostSelector = GetRightmostSelector(selector);
+            IndexByRightmostSelector(ruleData, rightmostSelector);
+        }
+    }
+
+    /// <summary>
+    /// Gets the rightmost simple selector for indexing.
+    /// In BlinkNG, this is the "subject" of the selector.
+    /// </summary>
+    private string GetRightmostSelector(ISelector selector)
+    {
+        // Simplified - in reality would parse selector structure
+        var text = selector.Text.Trim();
+
+        // Extract the rightmost simple selector
+        var parts = text.Split(new[] { ' ', '>', '+', '~' }, StringSplitOptions.RemoveEmptyEntries);
+        return parts.LastOrDefault() ?? "*";
+    }
+
+    /// <summary>
+    /// Indexes a rule based on its rightmost selector.
+    /// </summary>
+    private void IndexByRightmostSelector(RuleData ruleData, string rightmost)
+    {
+        // ID selector
+        if (rightmost.StartsWith("#"))
+        {
+            var id = rightmost.Substring(1);
+            if (!_idRules.TryGetValue(id, out var list))
+            {
+                list = new List<RuleData>();
+                _idRules[id] = list;
+            }
+            list.Add(ruleData);
+        }
+        // Class selector
+        else if (rightmost.StartsWith("."))
+        {
+            var className = rightmost.Substring(1);
+            if (!_classRules.TryGetValue(className, out var list))
+            {
+                list = new List<RuleData>();
+                _classRules[className] = list;
+            }
+            list.Add(ruleData);
+        }
+        // Pseudo-class selector
+        else if (rightmost.Contains(":"))
+        {
+            _pseudoRules.Add(ruleData);
+        }
+        // Universal selector
+        else if (rightmost == "*")
+        {
+            _universalRules.Add(ruleData);
+        }
+        // Tag selector
+        else
+        {
+            var tagName = rightmost.ToLowerInvariant();
+            if (!_tagRules.TryGetValue(tagName, out var list))
+            {
+                list = new List<RuleData>();
+                _tagRules[tagName] = list;
+            }
+            list.Add(ruleData);
+        }
     }
 }
 
 /// <summary>
-/// Wrapper for a CSS rule with metadata.
-/// In BlinkNG, RuleData contains the rule and additional matching information.
+/// Represents a CSS rule with metadata for matching and cascade resolution.
 /// </summary>
-public class RuleData
+internal class RuleData
 {
     /// <summary>
-    /// The CSS rule.
+    /// The CSS style rule.
     /// </summary>
-    public ICssStyleRule? Rule { get; set; }
+    public ICssStyleRule Rule { get; }
 
     /// <summary>
-    /// The specificity of the rule's selector.
+    /// Position in document order (for cascade).
     /// </summary>
-    public Priority Specificity { get; set; }
-
-    /// <summary>
-    /// The position in the stylesheet (for cascade order).
-    /// </summary>
-    public int Position { get; set; }
+    public int Position { get; }
 
     /// <summary>
     /// The origin of the stylesheet containing this rule.
     /// </summary>
-    public StylesheetOrigin Origin { get; set; }
+    public StylesheetOrigin Origin { get; }
 
     /// <summary>
-    /// Whether this rule has any important declarations.
-    /// In BlinkNG, this is cached for performance.
+    /// Cached specificity of the rule's selector.
     /// </summary>
-    public bool HasImportantDeclarations { get; set; }
+    public Priority Specificity { get; }
+
+    public RuleData(ICssStyleRule rule, int position, StylesheetOrigin origin)
+    {
+        Rule = rule;
+        Position = position;
+        Origin = origin;
+
+        // Cache specificity
+        Specificity = rule.Selector?.Specificity ?? new Priority(0, 0, 0);
+    }
 }

@@ -11,7 +11,7 @@ using LayoutEngine.NG.Style;
 /// </summary>
 public class LayoutDataManager
 {
-    private readonly ConditionalWeakTable<INode, NodeLayout> _nodeLayoutData = new();
+    private readonly ConditionalWeakTable<INode, NodeEngineData> _nodeLayoutData = new();
     private readonly IServiceProvider _serviceProvider;
 
     public LayoutDataManager(IServiceProvider serviceProvider)
@@ -22,7 +22,7 @@ public class LayoutDataManager
     /// <summary>
     /// Gets or creates layout data for a node.
     /// </summary>
-    public NodeLayout GetOrCreate(INode node)
+    public NodeEngineData GetOrCreate(INode node)
     {
         return _nodeLayoutData.GetValue(node, key => CreateLayoutData(key));
     }
@@ -30,31 +30,31 @@ public class LayoutDataManager
     /// <summary>
     /// Gets element-specific layout data.
     /// </summary>
-    public ElementLayout GetOrCreate(IElement element)
+    public ElementEngineData GetOrCreate(IElement element)
     {
-        return (ElementLayout)GetOrCreate((INode)element);
+        return (ElementEngineData)GetOrCreate((INode)element);
     }
 
     /// <summary>
     /// Gets document-specific layout data.
     /// </summary>
-    public DocumentLayout GetOrCreate(IDocument document)
+    public DocumentEngineData GetOrCreate(IDocument document)
     {
-        return (DocumentLayout)GetOrCreate((INode)document);
+        return (DocumentEngineData)GetOrCreate((INode)document);
     }
 
     /// <summary>
     /// Gets text node-specific layout data.
     /// </summary>
-    public TextNodeLayout GetOrCreate(IText textNode)
+    public TextNodeEngineData GetOrCreate(IText textNode)
     {
-        return (TextNodeLayout)GetOrCreate((INode)textNode);
+        return (TextNodeEngineData)GetOrCreate((INode)textNode);
     }
 
     /// <summary>
     /// Gets layout data if it exists, null otherwise.
     /// </summary>
-    public NodeLayout? GetIfExists(INode node)
+    public NodeEngineData? GetIfExists(INode node)
     {
         return _nodeLayoutData.TryGetValue(node, out var layout) ? layout : null;
     }
@@ -62,14 +62,14 @@ public class LayoutDataManager
     /// <summary>
     /// Creates appropriate layout data based on node type.
     /// </summary>
-    private NodeLayout CreateLayoutData(INode node)
+    private NodeEngineData CreateLayoutData(INode node)
     {
         return node switch
         {
-            IDocument document => new DocumentLayout(document, this, _serviceProvider),
-            IElement element => new ElementLayout(element, this),
-            IText text => new TextNodeLayout(text, this),
-            _ => new NodeLayout(node, this)
+            IDocument document => new DocumentEngineData(document, this, _serviceProvider),
+            IElement element => new ElementEngineData(element, this),
+            IText text => new TextNodeEngineData(text, this),
+            _ => new NodeEngineData(node, this)
         };
     }
 
