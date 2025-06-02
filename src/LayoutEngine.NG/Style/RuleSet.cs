@@ -121,29 +121,42 @@ internal class RuleSet
     {
         var selector = ruleData.Rule.Selector;
 
-        // Handle selector lists (comma-separated)
-        if (selector is ISelectorList selectorList)
+        // Handle different selector types
+        // In AngleSharp, the selector might be a single selector or a group
+        var selectorText = selector.Text;
+
+        // If it contains comma, it's a selector list
+        if (selectorText.Contains(","))
         {
-            // For now, just use the rightmost selector for indexing
-            // In BlinkNG, this would be more sophisticated
-            var rightmostSelector = GetRightmostSelector(selectorList.First());
-            IndexByRightmostSelector(ruleData, rightmostSelector);
+            // For selector lists, we index based on the first selector
+            // In real BlinkNG, each selector would be indexed separately
+            var firstSelector = selectorText.Split(',')[0].Trim();
+            IndexBySelectorText(ruleData, firstSelector);
         }
         else
         {
-            var rightmostSelector = GetRightmostSelector(selector);
-            IndexByRightmostSelector(ruleData, rightmostSelector);
+            IndexBySelectorText(ruleData, selectorText);
         }
+    }
+
+    /// <summary>
+    /// Indexes a rule based on its selector text.
+    /// </summary>
+    private void IndexBySelectorText(RuleData ruleData, string selectorText)
+    {
+        // Get the rightmost simple selector for indexing
+        var rightmost = GetRightmostSelector(selectorText);
+        IndexByRightmostSelector(ruleData, rightmost);
     }
 
     /// <summary>
     /// Gets the rightmost simple selector for indexing.
     /// In BlinkNG, this is the "subject" of the selector.
     /// </summary>
-    private string GetRightmostSelector(ISelector selector)
+    private string GetRightmostSelector(string selectorText)
     {
         // Simplified - in reality would parse selector structure
-        var text = selector.Text.Trim();
+        var text = selectorText.Trim();
 
         // Extract the rightmost simple selector
         var parts = text.Split(new[] { ' ', '>', '+', '~' }, StringSplitOptions.RemoveEmptyEntries);
@@ -233,6 +246,17 @@ internal class RuleData
         Origin = origin;
 
         // Cache specificity
-        Specificity = rule.Selector?.Specificity ?? new Priority(0, 0, 0);
+        // In AngleSharp, specificity is a Priority struct
+        // If the selector doesn't have specificity, use a default value
+        if (rule.Selector != null)
+        {
+            Specificity = rule.Selector.Specificity;
+        }
+        else
+        {
+            // Default specificity (0,0,0,0)
+            // Priority constructor takes: inline, id, class, type
+            Specificity = new Priority(0, 0, 0, 0);
+        }
     }
 }

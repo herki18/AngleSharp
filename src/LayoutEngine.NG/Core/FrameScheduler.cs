@@ -29,13 +29,12 @@ public class FrameScheduler
         // In BlinkNG, only LocalFrame has a layout tree
         var localFrame = _frame as LocalFrame;
 
-        // Get the layout data manager from DI (in real implementation)
-        // For now, assume it's available through the frame
+        // Get the layout data manager from LocalFrame
         var layoutDataManager = localFrame?.LayoutDataManager;
         if (layoutDataManager == null)
             return;
 
-        // Get the document's StyleEngine through DocumentLayout
+        // Get the document's StyleEngine through DocumentEngineData
         var docLayout = layoutDataManager.GetOrCreate(_frame.Document);
         var styleEngine = docLayout.StyleEngine;
 
@@ -78,14 +77,8 @@ public class FrameScheduler
                 // In BlinkNG, layout is triggered on the LayoutView
                 if (localFrame?.LayoutView != null)
                 {
-                    // Mark that we're in layout to prevent re-entrancy
-                    localFrame.LayoutView.IsInLayout = true;
-
-                    // In real BlinkNG, this would call LayoutView::UpdateLayout()
-                    // or similar method that performs the actual layout algorithm
-                    PerformLayout(localFrame.LayoutView);
-
-                    localFrame.LayoutView.IsInLayout = false;
+                    // Perform the layout using the enhanced Layout method
+                    localFrame.LayoutView.Layout();
                 }
                 coordinator.TransitionTo(DocumentLifecyclePhase.LayoutClean);
                 break;
@@ -95,6 +88,14 @@ public class FrameScheduler
                 if (_frame.PaintSystem.HasDirtyNodes(_frame.Document))
                 {
                     coordinator.TransitionTo(DocumentLifecyclePhase.RenderReady);
+                }
+                else
+                {
+                    // No paint needed, check if we need to restart the cycle
+                    if (styleEngine.NeedsStyleRecalc())
+                    {
+                        coordinator.TransitionTo(DocumentLifecyclePhase.InStyleRecalc);
+                    }
                 }
                 break;
 
@@ -122,25 +123,5 @@ public class FrameScheduler
                 // Frame is disposed, do nothing
                 break;
         }
-    }
-
-    /// <summary>
-    /// Performs layout starting from the LayoutView.
-    /// In BlinkNG, this would be LayoutView::UpdateLayout() or Document::UpdateLayout().
-    /// </summary>
-    private void PerformLayout(LayoutView layoutView)
-    {
-        // Skeleton implementation
-        // In real BlinkNG, this would:
-        // 1. Traverse the layout tree from the root
-        // 2. Call the appropriate layout algorithm for each LayoutObject
-        // 3. Generate fragments
-        // 4. Clear NeedsLayout flags
-
-        // For now, just clear the needs layout flag
-        layoutView.NeedsLayout = false;
-
-        // Update overflow after layout
-        layoutView.UpdateLayoutOverflow();
     }
 }

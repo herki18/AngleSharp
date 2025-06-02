@@ -104,29 +104,87 @@ public class LayoutView : LayoutBlockFlow
         if (IsInLayout)
         {
             // Prevent re-entrancy
-            // In BlinkNG, this would be an assertion or early return
             return;
         }
 
         IsInLayout = true;
-
         try
         {
-            // In real LayoutNG, this would:
-            // 1. Create constraint space for the root
-            // 2. Run the block layout algorithm
-            // 3. Position all descendants
-            // 4. Generate fragments
+            // Set the view's own size from viewport
+            ContentSize = new PhysicalSize(ViewportWidth, ViewportHeight);
+            Location = PhysicalOffset.Zero;
 
-            // For this skeleton, just clear the flag
+            // Create initial constraint space
+            var constraintSpace = new LayoutConstraintSpace
+            {
+                AvailableWidth = ViewportWidth,
+                AvailableHeight = ViewportHeight,
+                IsFixedWidth = true,
+                IsFixedHeight = true,
+                IsNewFormattingContext = true
+            };
+
+            // Layout children
+            LayoutChildren(constraintSpace);
+
+            // Clear the needs layout flag
             NeedsLayout = false;
 
             // Update overflow after layout
             UpdateLayoutOverflow();
+
+            // Create fragment for this view
+            Fragment = CreateFragment();
         }
         finally
         {
             IsInLayout = false;
+        }
+    }
+
+    /// <summary>
+    /// Layouts the children of this view.
+    /// </summary>
+    private void LayoutChildren(LayoutConstraintSpace constraintSpace)
+    {
+        float currentY = 0;
+        var child = FirstChild;
+
+        while (child != null)
+        {
+            if (child is LayoutBox box)
+            {
+                // Simplified block layout
+                // In real LayoutNG, this would use the appropriate layout algorithm
+
+                // Set position
+                box.Location = new PhysicalOffset(0, currentY);
+
+                // Layout the child
+                if (box is LayoutBlockFlow blockFlow)
+                {
+                    blockFlow.LayoutBlock(constraintSpace);
+                }
+                else
+                {
+                    // Simple box layout
+                    box.ContentSize = new PhysicalSize(
+                        constraintSpace.AvailableWidth,
+                        100 // Default height
+                    );
+                }
+
+                // Update current Y position
+                currentY += box.BorderBoxSize.Height;
+
+                // Clear needs layout
+                box.NeedsLayout = false;
+
+                // Create fragment for child
+                box.Fragment = box.CreateFragment();
+            }
+
+            child = child.NextSibling;
         }
     }
 
@@ -148,17 +206,21 @@ public class LayoutView : LayoutBlockFlow
         // Start with viewport size
         LayoutOverflowSize = new PhysicalSize(ViewportWidth, ViewportHeight);
 
-        // In real LayoutNG, this would traverse children and compute
-        // the union of all overflow rectangles
-        if (FirstChild?.Fragment != null)
+        // Compute union of all child overflow rectangles
+        var child = FirstChild;
+        while (child != null)
         {
-            var childBounds = FirstChild.Fragment;
-            LayoutOverflowSize = new PhysicalSize(
-                System.Math.Max(LayoutOverflowSize.Width,
-                    childBounds.Offset.Left + childBounds.Size.Width),
-                System.Math.Max(LayoutOverflowSize.Height,
-                    childBounds.Offset.Top + childBounds.Size.Height)
-            );
+            if (child.Fragment != null)
+            {
+                var childBounds = child.Fragment;
+                LayoutOverflowSize = new PhysicalSize(
+                    System.Math.Max(LayoutOverflowSize.Width,
+                        childBounds.Offset.Left + childBounds.Size.Width),
+                    System.Math.Max(LayoutOverflowSize.Height,
+                        childBounds.Offset.Top + childBounds.Size.Height)
+                );
+            }
+            child = child.NextSibling;
         }
     }
 
@@ -176,4 +238,19 @@ public class LayoutView : LayoutBlockFlow
             NeedsPaint = true;
         }
     }
+}
+
+/// <summary>
+/// Represents layout constraints passed during layout.
+/// In LayoutNG, this is NGConstraintSpace.
+/// </summary>
+public class LayoutConstraintSpace
+{
+    public float AvailableWidth { get; set; }
+    public float AvailableHeight { get; set; }
+    public bool IsFixedWidth { get; set; }
+    public bool IsFixedHeight { get; set; }
+    public bool IsNewFormattingContext { get; set; }
+
+    // Simplified - in real LayoutNG this would have many more properties
 }

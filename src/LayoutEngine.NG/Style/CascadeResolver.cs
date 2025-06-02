@@ -40,7 +40,6 @@ public class CascadeResolver : ICascadeResolver
 
             if (HasImportantProperties(rule))
                 importantRules.Add(rule);
-
             if (HasNormalProperties(rule))
                 normalRules.Add(rule);
         }
@@ -48,8 +47,9 @@ public class CascadeResolver : ICascadeResolver
         // Apply normal declarations first (user agent -> user -> author)
         ApplyRulesByOriginAndSpecificity(normalRules, resolvedStyle, false);
 
-        // Apply important declarations (user agent -> user -> author)
-        ApplyRulesByOriginAndSpecificity(importantRules, resolvedStyle, true);
+        // Apply important declarations (author -> user -> user agent for !important)
+        // Note: For !important, the cascade order is reversed
+        ApplyImportantRulesByOrigin(importantRules, resolvedStyle);
 
         // Apply inline styles last (highest specificity for normal declarations)
         ApplyInlineStyles(element, resolvedStyle);
@@ -65,12 +65,29 @@ public class CascadeResolver : ICascadeResolver
         // Sort by: origin (user agent -> user -> author), then specificity, then document order
         var sortedRules = rules
             .OrderBy(GetOriginPriority)
-            .ThenBy(r => r.Specificity) // Priority struct has built-in comparison operators
-            .ThenBy(r => r.OriginalIndex);
+            .ThenBy(r => r.Specificity)
+            .ThenBy(r => r.Position); // Use Position instead of OriginalIndex
 
         foreach (var rule in sortedRules)
         {
             ApplyRuleProperties(resolvedStyle, rule, onlyImportant);
+        }
+    }
+
+    private void ApplyImportantRulesByOrigin(
+        IEnumerable<MatchedRule> rules,
+        ICssStyleDeclaration resolvedStyle)
+    {
+        // For !important declarations, the order is reversed:
+        // author -> user -> user agent
+        var sortedRules = rules
+            .OrderBy(GetImportantOriginPriority)
+            .ThenBy(r => r.Specificity)
+            .ThenBy(r => r.Position);
+
+        foreach (var rule in sortedRules)
+        {
+            ApplyRuleProperties(resolvedStyle, rule, true);
         }
     }
 
@@ -82,6 +99,18 @@ public class CascadeResolver : ICascadeResolver
             StylesheetOrigin.User => 2,
             StylesheetOrigin.Author => 3,
             _ => 3
+        };
+    }
+
+    private int GetImportantOriginPriority(MatchedRule rule)
+    {
+        // For !important, author rules have highest priority
+        return rule.Origin switch
+        {
+            StylesheetOrigin.Author => 1,
+            StylesheetOrigin.User => 2,
+            StylesheetOrigin.UserAgent => 3,
+            _ => 1
         };
     }
 

@@ -2,8 +2,11 @@
 
 using System.Collections.Generic;
 using AngleSharp.Css.Dom;
+using AngleSharp.Css.Parser;
 using AngleSharp.Dom;
 using LayoutEngine.NG.Style;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 
 /// <summary>
 /// Per-element engine state container, attached to each DOM element.
@@ -25,9 +28,6 @@ public class ElementEngineData : NodeEngineData
 
     // Pseudo-element styles (::before, ::after, etc.)
     private Dictionary<string, ComputedStyle>? _pseudoElementStyles;
-
-    // Animation/transition state (future)
-    private object? _animationData;
 
     public ElementEngineData(IElement element, LayoutDataManager manager) : base(element, manager)
     {
@@ -75,11 +75,9 @@ public class ElementEngineData : NodeEngineData
     private void UpdateInlineStyleCache()
     {
         var styleAttr = Node.GetAttribute("style");
-
         if (styleAttr != _lastStyleAttributeValue)
         {
             _lastStyleAttributeValue = styleAttr;
-
             if (string.IsNullOrWhiteSpace(styleAttr))
             {
                 _inlineStyle = null;
@@ -87,11 +85,9 @@ public class ElementEngineData : NodeEngineData
             else
             {
                 // Parse inline style
-                // TODO: Use AngleSharp's CSS parser
                 _inlineStyle = ParseInlineStyle(styleAttr);
             }
         }
-
         _inlineStyleDirty = false;
     }
 
@@ -125,7 +121,7 @@ public class ElementEngineData : NodeEngineData
 
     #endregion
 
-    #region Existing ElementLayout Methods
+    #region Style Recalculation
 
     /// <summary>
     /// Gets the computed style from the layout object.
@@ -163,20 +159,208 @@ public class ElementEngineData : NodeEngineData
         }
     }
 
-    // ... other existing methods ...
+    /// <summary>
+    /// Resolves the style for this element.
+    /// In BlinkNG: StyleResolver::ResolveStyle
+    /// </summary>
+    private ComputedStyle ResolveStyle(StyleRecalcContext context)
+    {
+        // Get the document's style engine
+        var docLayout = _manager.GetOrCreate(Node.OwnerDocument!);
+        var styleEngine = docLayout.StyleEngine;
+        var styleResolver = styleEngine.StyleResolver;
+
+        // Resolve style using the style resolver
+        var resolvedStyle = styleResolver.ResolveStyle(Node, context);
+
+        // Store parent style reference for inheritance
+        resolvedStyle.ParentComputedStyle = context.ParentStyle;
+
+        return resolvedStyle;
+    }
+
+    /// <summary>
+    /// Computes the difference between old and new styles.
+    /// In BlinkNG: ComputedStyle::ComputeDifference
+    /// </summary>
+    private StyleDifference ComputeStyleChange(ComputedStyle? oldStyle, ComputedStyle? newStyle)
+    {
+        // No old style means we need to attach layout tree
+        if (oldStyle == null)
+            return StyleDifference.NeedsReattachLayoutTree;
+
+        // No new style means we need to detach
+        if (newStyle == null)
+            return StyleDifference.NeedsReattachLayoutTree;
+
+        // Compare display values - display change requires reattach
+        if (oldStyle.Display != newStyle.Display)
+            return StyleDifference.NeedsReattachLayoutTree;
+
+        // Compare position values - position change might require reattach
+        if (oldStyle.Position != newStyle.Position)
+        {
+            // Static <-> non-static requires reattach
+            if ((oldStyle.Position == PositionType.Static) != (newStyle.Position == PositionType.Static))
+                return StyleDifference.NeedsReattachLayoutTree;
+        }
+
+        // Check if layout is needed
+        // Simplified - in real BlinkNG this would check many properties
+        if (!AreBoxPropertiesEqual(oldStyle, newStyle))
+            return StyleDifference.NeedsFullLayout;
+
+        // Check if only paint is needed
+        if (oldStyle.Color != newStyle.Color || oldStyle.BackgroundColor != newStyle.BackgroundColor)
+            return StyleDifference.NeedsSimplifiedLayout;
+
+        return StyleDifference.Equal;
+    }
+
+    /// <summary>
+    /// Handles the style change by updating the layout tree as needed.
+    /// In BlinkNG: Element::RecalcStyle continuation
+    /// </summary>
+    private void HandleStyleChange(
+        StyleDifference difference,
+        ComputedStyle? newStyle,
+        StyleRecalcChange change,
+        StyleRecalcContext context)
+    {
+        switch (difference)
+        {
+            case StyleDifference.Equal:
+                // No change needed, but update the style reference
+                if (LayoutObject != null && newStyle != null)
+                {
+                    LayoutObject.Style = newStyle;
+                }
+                break;
+
+            case StyleDifference.NeedsReattachLayoutTree:
+                // Mark for layout tree rebuild
+                SetNeedsReattachLayoutTree();
+                // Force children to be recalced too
+                change = change.ForceRecalcDescendants();
+                break;
+
+            case StyleDifference.NeedsFullLayout:
+            case StyleDifference.NeedsPositionedMovementLayout:
+            case StyleDifference.NeedsSimplifiedLayout:
+                // Update the style
+                if (LayoutObject != null && newStyle != null)
+                {
+                    LayoutObject.Style = newStyle;
+                    LayoutObject.SetNeedsLayout();
+                }
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Recalculates styles for children.
+    /// In BlinkNG: Element::RecalcStyleForChildren
+    /// </summary>
+    private void RecalcStyleForChildren(StyleRecalcChange change, StyleRecalcContext context)
+    {
+        // Create child context with this element's computed style as parent
+        var childContext = context.CreateChildContext(GetComputedStyle());
+
+        // Get change for children
+        var childChange = change.ForChildren(Node, _manager);
+
+        // Process each child
+        foreach (var child in Node.ChildNodes)
+        {
+            if (child is IElement childElement)
+            {
+                var childLayout = _manager.GetOrCreate(childElement);
+                childLayout.RecalcStyle(childChange, childContext);
+            }
+            else if (child is IText textNode)
+            {
+                // Text nodes might need reattachment based on parent style changes
+                if (childChange.TraverseChild(textNode, _manager))
+                {
+                    var textLayout = _manager.GetOrCreate(textNode);
+                    // Check if text node needs reattachment
+                    // In BlinkNG, this checks whitespace handling, etc.
+                    if (ShouldReattachTextNode(textNode, _oldStyle, GetComputedStyle()))
+                    {
+                        textLayout.SetNeedsReattachLayoutTree();
+                    }
+                    textLayout.ClearNeedsStyleRecalc();
+                }
+            }
+        }
+
+        // Clear child needs style recalc flag
+        ClearChildNeedsStyleRecalc();
+    }
+
+    /// <summary>
+    /// Checks if a text node needs reattachment due to style changes.
+    /// </summary>
+    private bool ShouldReattachTextNode(IText textNode, ComputedStyle? oldStyle, ComputedStyle? newStyle)
+    {
+        if (oldStyle == null || newStyle == null)
+            return true;
+
+        // Check if white-space handling changed
+        if (oldStyle.WhiteSpace != newStyle.WhiteSpace)
+            return true;
+
+        // Check if display changed in a way that affects text
+        if (oldStyle.Display != newStyle.Display)
+        {
+            // Block to inline or vice versa affects text layout
+            if ((IsBlockLevel(oldStyle.Display) != IsBlockLevel(newStyle.Display)))
+                return true;
+        }
+
+        return false;
+    }
 
     #endregion
 
     #region Helper Methods
 
     /// <summary>
-    /// Parses inline style text.
-    /// TODO: Implement using AngleSharp's CSS parser.
+    /// Parses inline style text using AngleSharp's CSS parser.
     /// </summary>
     private ICssStyleDeclaration? ParseInlineStyle(string styleText)
     {
-        // Placeholder - should use AngleSharp's CSS parser
-        return null;
+        if (string.IsNullOrWhiteSpace(styleText))
+            return null;
+
+        try
+        {
+            // Get the CSS parser from the document's context
+            var context = Node.OwnerDocument?.Context;
+            if (context == null)
+                return null;
+
+            // Try to get ICssParser from the context
+            var cssParser = context.GetService<ICssParser>();
+            if (cssParser == null)
+            {
+                // Create a default CSS parser if not available
+                var options = new CssParserOptions
+                {
+                    IsIncludingUnknownDeclarations = true,
+                    IsToleratingInvalidValues = true
+                };
+                cssParser = new CssParser(options);
+            }
+
+            // Parse the inline style declaration
+            return cssParser.ParseDeclaration(styleText);
+        }
+        catch
+        {
+            // Return null on parse errors
+            return null;
+        }
     }
 
     /// <summary>
@@ -209,6 +393,30 @@ public class ElementEngineData : NodeEngineData
                 SetNeedsStyleRecalc(StyleChangeType.LocalStyleChange);
                 break;
         }
+    }
+
+    /// <summary>
+    /// Checks if two styles have equal box properties.
+    /// </summary>
+    private bool AreBoxPropertiesEqual(ComputedStyle style1, ComputedStyle style2)
+    {
+        // Simplified comparison - in real BlinkNG this would be comprehensive
+        return style1.Margin.Equals(style2.Margin) &&
+               style1.Padding.Equals(style2.Padding) &&
+               style1.Border.Equals(style2.Border);
+    }
+
+    /// <summary>
+    /// Checks if a display type is block-level.
+    /// </summary>
+    private bool IsBlockLevel(DisplayType display)
+    {
+        return display == DisplayType.Block ||
+               display == DisplayType.Flex ||
+               display == DisplayType.Grid ||
+               display == DisplayType.Table ||
+               display == DisplayType.ListItem ||
+               display == DisplayType.FlowRoot;
     }
 
     #endregion
