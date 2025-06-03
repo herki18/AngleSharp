@@ -172,9 +172,6 @@ public class ElementEngineData : NodeEngineData
         // Resolve style using the style resolver
         var resolvedStyle = styleResolver.ResolveStyle(Node, context);
 
-        // Store parent style reference for inheritance
-        resolvedStyle.ParentComputedStyle = context.ParentStyle;
-
         return resolvedStyle;
     }
 
@@ -200,7 +197,7 @@ public class ElementEngineData : NodeEngineData
         if (oldStyle.Position != newStyle.Position)
         {
             // Static <-> non-static requires reattach
-            if ((oldStyle.Position == PositionType.Static) != (newStyle.Position == PositionType.Static))
+            if ((oldStyle.Position == PositionMode.Static) != (newStyle.Position == PositionMode.Static))
                 return StyleDifference.NeedsReattachLayoutTree;
         }
 
@@ -412,14 +409,14 @@ public class ElementEngineData : NodeEngineData
     /// <summary>
     /// Checks if a display type is block-level.
     /// </summary>
-    private bool IsBlockLevel(DisplayType display)
+    private bool IsBlockLevel(DisplayMode display)
     {
-        return display == DisplayType.Block ||
-               display == DisplayType.Flex ||
-               display == DisplayType.Grid ||
-               display == DisplayType.Table ||
-               display == DisplayType.ListItem ||
-               display == DisplayType.FlowRoot;
+        return display == DisplayMode.Block ||
+               display == DisplayMode.Flex ||
+               display == DisplayMode.Grid ||
+               display == DisplayMode.Table ||
+               display == DisplayMode.ListItem ||
+               display == DisplayMode.FlowRoot;
     }
 
     #endregion

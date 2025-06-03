@@ -1,5 +1,8 @@
 ﻿namespace LayoutEngine.NG.Layout;
+
+using AngleSharp.Css.Dom;
 using Style;
+using AngleSharp.Css.Values;
 
 /// <summary>
 /// Represents a block flow layout object.
@@ -73,9 +76,9 @@ public class LayoutBlockFlow : LayoutBlock
         // - Has display: flow-root (in our case, we'll check other conditions)
 
         return (OverflowX != Overflow.Visible || OverflowY != Overflow.Visible) ||
-               (Style.Position == PositionType.Absolute || Style.Position == PositionType.Fixed) ||
-               Style.Display == DisplayType.InlineBlock ||
-               Style.Display == DisplayType.FlowRoot;
+               (Style.Position == PositionMode.Absolute || Style.Position == PositionMode.Fixed) ||
+               Style.Display == DisplayMode.InlineBlock ||
+               Style.Display == DisplayMode.FlowRoot;
     }
 
     /// <summary>
@@ -139,6 +142,7 @@ public class LayoutBlockFlow : LayoutBlock
                 // Handle inline layout
                 // Note: In BlinkNG, inline elements don't inherit from LayoutBox
                 LayoutInlineChild(childInline, constraintSpace);
+
                 // For now, we'll add a small amount to currentY for inline content
                 currentY += 20; // Simplified - in real LayoutNG this would be based on line boxes
             }
@@ -164,44 +168,113 @@ public class LayoutBlockFlow : LayoutBlock
 
     /// <summary>
     /// Applies box model properties from computed style.
+    /// In LayoutNG, this converts CSS values to physical pixel values.
     /// </summary>
     private void ApplyBoxModelFromStyle()
     {
         if (Style == null)
             return;
 
-        // Apply margins (simplified - in real implementation would parse CSS values)
-        Margin = new BoxSpacing
-        {
-            Top = 10,    // Default margin
-            Right = 10,
-            Bottom = 10,
-            Left = 10
-        };
+        // Convert margin values from CssLengthValue to pixels
+        Margin = ConvertLengthBoxToPixels(Style.Margin, 0); // TODO: Pass containing block size for percentage resolution
 
-        // Apply padding
-        Padding = new BoxSpacing
-        {
-            Top = 5,     // Default padding
-            Right = 5,
-            Bottom = 5,
-            Left = 5
-        };
+        // Convert padding values
+        Padding = ConvertLengthBoxToPixels(Style.Padding, 0);
 
-        // Apply borders
-        Border = new BoxSpacing
-        {
-            Top = 1,     // Default border
-            Right = 1,
-            Bottom = 1,
-            Left = 1
-        };
+        // Convert border values
+        Border = ConvertBorderBoxToPixels(Style.Border);
 
         // Apply overflow
         var overflowValue = Style.GetPropertyValue("overflow")?.ToString();
         if (!string.IsNullOrEmpty(overflowValue))
         {
             OverflowX = OverflowY = ParseOverflow(overflowValue);
+        }
+
+        // Handle overflow-x and overflow-y separately if set
+        var overflowXValue = Style.GetPropertyValue("overflow-x")?.ToString();
+        if (!string.IsNullOrEmpty(overflowXValue))
+        {
+            OverflowX = ParseOverflow(overflowXValue);
+        }
+
+        var overflowYValue = Style.GetPropertyValue("overflow-y")?.ToString();
+        if (!string.IsNullOrEmpty(overflowYValue))
+        {
+            OverflowY = ParseOverflow(overflowYValue);
+        }
+    }
+
+    /// <summary>
+    /// Converts a LengthBox to pixel values.
+    /// In LayoutNG, this is part of resolving computed values to used values.
+    /// </summary>
+    private BoxSpacing ConvertLengthBoxToPixels(LengthBox lengthBox, float containingBlockSize)
+    {
+        return new BoxSpacing
+        {
+            Top = ConvertLengthToPixels(lengthBox.Top, containingBlockSize),
+            Right = ConvertLengthToPixels(lengthBox.Right, containingBlockSize),
+            Bottom = ConvertLengthToPixels(lengthBox.Bottom, containingBlockSize),
+            Left = ConvertLengthToPixels(lengthBox.Left, containingBlockSize)
+        };
+    }
+
+    /// <summary>
+    /// Converts a BorderBox to pixel values.
+    /// </summary>
+    private BoxSpacing ConvertBorderBoxToPixels(BorderBox borderBox)
+    {
+        // Border widths don't support percentages, so we don't need containing block size
+        return new BoxSpacing
+        {
+            Top = ConvertLengthToPixels(borderBox.Top, 0),
+            Right = ConvertLengthToPixels(borderBox.Right, 0),
+            Bottom = ConvertLengthToPixels(borderBox.Bottom, 0),
+            Left = ConvertLengthToPixels(borderBox.Left, 0)
+        };
+    }
+
+    /// <summary>
+    /// Converts a single CssLengthValue to pixels.
+    /// In LayoutNG, this is the core of value resolution.
+    /// </summary>
+    private float ConvertLengthToPixels(CssLengthValue length, float containingBlockSize)
+    {
+        switch (length.Type)
+        {
+            case CssLengthValue.Unit.Px:
+                // Pixels are already in the correct unit
+                return (float)length.Value;
+
+            case CssLengthValue.Unit.Em:
+                // TODO: Resolve em units based on computed font size
+                // For now, assume 1em = 16px
+                return (float)(length.Value * 16);
+
+            case CssLengthValue.Unit.Rem:
+                // TODO: Resolve rem units based on root element font size
+                // For now, assume 1rem = 16px
+                return (float)(length.Value * 16);
+
+            case CssLengthValue.Unit.Percent:
+                // Percentages are relative to containing block
+                return (float)((length.Value / 100) * containingBlockSize);
+
+            case CssLengthValue.Unit.Vw:
+                // TODO: Get actual viewport width
+                // For now, assume 1vw = 10px
+                return (float)(length.Value * 10);
+
+            case CssLengthValue.Unit.Vh:
+                // TODO: Get actual viewport height
+                // For now, assume 1vh = 10px
+                return (float)(length.Value * 10);
+
+            default:
+                // For unhandled units, return the raw value
+                // TODO: Implement proper unit conversion
+                return (float)length.Value;
         }
     }
 
@@ -211,10 +284,18 @@ public class LayoutBlockFlow : LayoutBlock
     private float CalculateContentWidth(LayoutConstraintSpace constraintSpace)
     {
         // Simplified width calculation
-        // In real LayoutNG, this would handle auto, percentages, etc.
+        // In real LayoutNG, this would handle auto, percentages, min/max-width, etc.
         float availableWidth = constraintSpace.AvailableWidth;
 
-        // Subtract margins, borders, and padding
+        // Check for explicit width in style
+        var widthProperty = Style?.GetPropertyValue("width")?.ToString();
+        if (!string.IsNullOrEmpty(widthProperty) && widthProperty != "auto")
+        {
+            // TODO: Parse width value properly
+            // For now, use available width
+        }
+
+        // Subtract margins, borders, and padding from available width
         float contentWidth = availableWidth -
             (Margin.Left + Margin.Right +
              Border.Left + Border.Right +

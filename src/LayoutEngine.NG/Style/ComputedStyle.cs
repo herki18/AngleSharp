@@ -1,152 +1,157 @@
 ﻿namespace LayoutEngine.NG.Style;
 
-using AngleSharp.Dom;
-using System.Collections.Generic;
+using System;
+using AngleSharp.Css;
+using AngleSharp.Css.Dom;
 using AngleSharp.Css.Values;
 
 /// <summary>
-/// CSS white-space property values.
-/// </summary>
-public enum WhiteSpaceType
-{
-    Normal,
-    NoWrap,
-    Pre,
-    PreWrap,
-    PreLine,
-    BreakSpaces
-}
-
-/// <summary>
-/// Represents the computed CSS style for a node, following BlinkNG's ComputedStyle.
-/// In BlinkNG, ComputedStyle is immutable after style recalc and contains all resolved CSS values.
+/// ComputedStyle is an immutable, typed, read-only wrapper around AngleSharp's ICssStyleDeclaration.
+/// It provides ergonomic, browser-like access to computed CSS property values for a DOM element.
+///
+/// - All property values are resolved via AngleSharp's cascade, inheritance, and initial value logic.
+/// - No property is ever missing: if not set by cascade or inheritance, the CSS initial value is returned.
+/// - Typed accessors (e.g., Display, Position, Color, Margin) are provided for engine ergonomics.
+/// - The underlying ICssStyleDeclaration is exposed via the Raw property for advanced use.
+/// - This class is fully immutable and should not be mutated after construction.
 /// </summary>
 public class ComputedStyle
 {
-    private readonly Dictionary<string, object> _properties = new();
+    private readonly ICssStyleDeclaration _declaration;
 
-    /// <summary>
-    /// The DOM element associated with this computed style.
-    /// In BlinkNG, this connection helps with inheritance and invalidation.
-    /// </summary>
-    public IElement? Element { get; set; }
-
-    /// <summary>
-    /// Parent computed style for inheritance.
-    /// In BlinkNG, many properties inherit from parent styles.
-    /// </summary>
-    public ComputedStyle? ParentComputedStyle { get; set; }
-
-    /// <summary>
-    /// Display type following CSS Display Module.
-    /// In BlinkNG, this determines the layout algorithm to use.
-    /// </summary>
-    public DisplayType Display { get; set; } = DisplayType.Block;
-
-    /// <summary>
-    /// Position type following CSS Positioning Module.
-    /// </summary>
-    public PositionType Position { get; set; } = PositionType.Static;
-
-    /// <summary>
-    /// White-space handling for text content.
-    /// In BlinkNG, affects text layout and whitespace collapsing.
-    /// </summary>
-    public WhiteSpaceType WhiteSpace { get; set; } = WhiteSpaceType.Normal;
-
-    /// <summary>
-    /// Whether this style creates a new stacking context.
-    /// In BlinkNG, computed from opacity, transform, and other properties.
-    /// </summary>
-    public bool CreatesStackingContext { get; set; }
-
-    /// <summary>
-    /// Whether this style creates a new containing block.
-    /// In BlinkNG, computed from position and other properties.
-    /// </summary>
-    public bool CreatesContainingBlock { get; set; }
-
-    /// <summary>
-    /// Whether this element needs layout.
-    /// In BlinkNG, this is part of the dirty bit tracking.
-    /// </summary>
-    public bool NeedsLayout { get; set; }
-
-    public LengthBox Margin { get; set; } = LengthBox.Zero;
-    public LengthBox Padding { get; set; } = LengthBox.Zero;
-    public BorderBox Border { get; set; } = BorderBox.Zero;
-    public CssColorValue BackgroundColor { get; set; } = CssColorValue.Transparent;
-    public CssColorValue Color { get; set; } = CssColorValue.Black;
-
-    /// <summary>
-    /// Gets a CSS property value by name.
-    /// In BlinkNG, this would access the internal property storage.
-    /// </summary>
-    public object? GetPropertyValue(string propertyName)
+    public ComputedStyle(ICssStyleDeclaration declaration)
     {
-        return _properties.TryGetValue(propertyName, out var value) ? value : null;
+        _declaration = declaration ?? throw new ArgumentNullException(nameof(declaration));
     }
 
     /// <summary>
-    /// Sets a CSS property value.
-    /// Note: In real BlinkNG, ComputedStyle is immutable after creation.
-    /// This is simplified for the skeleton implementation.
+    /// Exposes the underlying ICssStyleDeclaration for advanced use.
     /// </summary>
-    public void SetPropertyValue(string propertyName, object value)
-    {
-        _properties[propertyName] = value;
-    }
+    public ICssStyleDeclaration Raw => _declaration;
 
     /// <summary>
-    /// Creates a copy of this ComputedStyle.
-    /// In BlinkNG, used for style sharing and caching.
+    /// Gets the display type as AngleSharp's DisplayMode enum.
     /// </summary>
-    public ComputedStyle Clone()
+    public DisplayMode Display
     {
-        var clone = new ComputedStyle
+        get
         {
-            Element = Element,
-            ParentComputedStyle = ParentComputedStyle,
-            Display = Display,
-            Position = Position,
-            WhiteSpace = WhiteSpace,
-            CreatesStackingContext = CreatesStackingContext,
-            CreatesContainingBlock = CreatesContainingBlock,
-            NeedsLayout = NeedsLayout,
-            Margin = Margin,
-            Padding = Padding,
-            Border = Border,
-            BackgroundColor = BackgroundColor,
-            Color = Color
-        };
-
-        foreach (var kvp in _properties)
-        {
-            clone._properties[kvp.Key] = kvp.Value;
+            var value = _declaration.GetPropertyValue(PropertyNames.Display);
+            if (Enum.TryParse<DisplayMode>(value, true, out var result))
+                return result;
+            return DisplayMode.Inline;
         }
-
-        return clone;
     }
 
     /// <summary>
-    /// Checks if this style can be shared with another element.
-    /// In BlinkNG, style sharing is an important optimization.
+    /// Gets the position type as AngleSharp's PositionMode enum.
     /// </summary>
-    public bool CanShare(IElement element)
+    public PositionMode Position
     {
-        // Skeleton implementation - actual logic would be complex
-        return false;
+        get
+        {
+            var value = _declaration.GetPropertyValue(PropertyNames.Position);
+            if (Enum.TryParse<PositionMode>(value, true, out var result))
+                return result;
+            return PositionMode.Static;
+        }
     }
 
-    // Container query dependency methods (simplified stubs)
-    public bool DependsOnSizeContainerQueries() => false;
-    public bool DependsOnStyleContainerQueries() => false;
-    public bool DependsOnScrollStateContainerQueries() => false;
-    public bool DependsOnAnchoredContainerQueries() => false;
-    public bool HighlightPseudoElementStylesDependOnContainerUnits() => false;
-    public bool CanMatchSizeContainerQueries(IElement element) => false;
+    /// <summary>
+    /// Gets the color as a CssColorValue, if possible.
+    /// </summary>
+    public CssColorValue Color
+    {
+        get
+        {
+            var prop = _declaration.GetProperty(PropertyNames.Color);
+            if (prop?.RawValue is CssColorValue color)
+                return color;
+            return CssColorValue.Black;
+        }
+    }
+
+    /// <summary>
+    /// Gets the background color as a CssColorValue, if possible.
+    /// </summary>
+    public CssColorValue BackgroundColor
+    {
+        get
+        {
+            var prop = _declaration.GetProperty(PropertyNames.BackgroundColor);
+            if (prop?.RawValue is CssColorValue color)
+                return color;
+            return CssColorValue.Transparent;
+        }
+    }
+
+    public Whitespace WhiteSpace
+    {
+        get
+        {
+            var value = _declaration.GetPropertyValue("white-space");
+            if (Enum.TryParse<Whitespace>(value, true, out var result))
+                return result;
+            return Whitespace.Normal;
+        }
+    }
+
+    /// <summary>
+    /// Gets the margin as a LengthBox (top, right, bottom, left).
+    /// </summary>
+    public LengthBox Margin => GetBox(PropertyNames.Margin);
+
+    /// <summary>
+    /// Gets the padding as a LengthBox (top, right, bottom, left).
+    /// </summary>
+    public LengthBox Padding => GetBox(PropertyNames.Padding);
+
+    /// <summary>
+    /// Gets the border width as a BorderBox (top, right, bottom, left).
+    /// </summary>
+    public BorderBox Border => GetBorderBox();
+
+    private LengthBox GetBox(string property)
+    {
+        var top = GetLength($"{property}-top");
+        var right = GetLength($"{property}-right");
+        var bottom = GetLength($"{property}-bottom");
+        var left = GetLength($"{property}-left");
+        return new LengthBox(top, right, bottom, left);
+    }
+
+    private BorderBox GetBorderBox()
+    {
+        var top = GetLength("border-top-width");
+        var right = GetLength("border-right-width");
+        var bottom = GetLength("border-bottom-width");
+        var left = GetLength("border-left-width");
+        return new BorderBox(top, right, bottom, left);
+    }
+
+    private CssLengthValue GetLength(string property)
+    {
+        var prop = _declaration.GetProperty(property);
+        if (prop?.RawValue is CssLengthValue len)
+            return len;
+        var str = _declaration.GetPropertyValue(property);
+        if (CssLengthValue.TryParse(str, out var parsed))
+            return parsed;
+        return CssLengthValue.Zero;
+    }
+
+    /// <summary>
+    /// Gets a raw property value by name.
+    /// </summary>
+    public string? GetPropertyValue(string propertyName) => _declaration.GetPropertyValue(propertyName);
+
+    /// <summary>
+    /// Gets a raw property object by name.
+    /// </summary>
+    public ICssProperty? GetProperty(string propertyName) => _declaration.GetProperty(propertyName);
 }
 
+// Example LengthBox and BorderBox structs (adjust as needed for your codebase)
 public struct LengthBox
 {
     public CssLengthValue Top { get; }
@@ -162,7 +167,8 @@ public struct LengthBox
         Left = left;
     }
 
-    public static LengthBox Zero => new(CssLengthValue.Zero, CssLengthValue.Zero, CssLengthValue.Zero, CssLengthValue.Zero);
+    public static LengthBox Zero =>
+        new(CssLengthValue.Zero, CssLengthValue.Zero, CssLengthValue.Zero, CssLengthValue.Zero);
 }
 
 public struct BorderBox
@@ -180,5 +186,6 @@ public struct BorderBox
         Left = left;
     }
 
-    public static BorderBox Zero => new(CssLengthValue.Zero, CssLengthValue.Zero, CssLengthValue.Zero, CssLengthValue.Zero);
+    public static BorderBox Zero =>
+        new(CssLengthValue.Zero, CssLengthValue.Zero, CssLengthValue.Zero, CssLengthValue.Zero);
 }

@@ -46,7 +46,7 @@ public struct PhysicalSize
     /// Gets the area (width * height).
     /// In LayoutNG, this might be used for paint optimization decisions.
     /// </summary>
-    public float Area => Width * Height;
+    public double Area => Width * Height;
 
     /// <summary>
     /// Checks equality between two sizes.

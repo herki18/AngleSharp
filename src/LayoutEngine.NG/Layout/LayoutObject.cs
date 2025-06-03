@@ -1,4 +1,6 @@
 ﻿namespace LayoutEngine.NG.Layout;
+
+using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using LayoutEngine.NG.Style;
 
@@ -73,13 +75,13 @@ public class LayoutObject
 
         return Style.Display switch
         {
-            DisplayType.Block => LayoutObjectType.Block,
-            DisplayType.Inline => LayoutObjectType.Inline,
-            DisplayType.InlineBlock => LayoutObjectType.InlineBlock,
-            DisplayType.Flex => LayoutObjectType.FlexContainer,
-            DisplayType.Grid => LayoutObjectType.GridContainer,
-            DisplayType.Table => LayoutObjectType.Table,
-            DisplayType.None => LayoutObjectType.None,
+            DisplayMode.Block => LayoutObjectType.Block,
+            DisplayMode.Inline => LayoutObjectType.Inline,
+            DisplayMode.InlineBlock => LayoutObjectType.InlineBlock,
+            DisplayMode.Flex => LayoutObjectType.FlexContainer,
+            DisplayMode.Grid => LayoutObjectType.GridContainer,
+            DisplayMode.Table => LayoutObjectType.Table,
+            DisplayMode.None => LayoutObjectType.None,
             _ => LayoutObjectType.Unknown
         };
     }

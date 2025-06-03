@@ -2,6 +2,7 @@
 
 using LayoutEngine.NG.Style;
 using System;
+using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using LayoutEngine.NG.Layout.Dom;
 
@@ -131,11 +132,11 @@ public class LayoutTreeBuilder
     public static bool ShouldCreateLayoutObject(IElement element, ComputedStyle style, LayoutDataManager layoutDataManager)
     {
         // display:none elements don't get layout objects
-        if (style.Display == DisplayType.None)
+        if (style.Display == DisplayMode.None)
             return false;
 
         // display:contents elements don't get layout objects
-        if (style.Display == DisplayType.Contents)
+        if (style.Display == DisplayMode.Contents)
             return false;
 
         // Check if we're in a context that allows layout objects
@@ -160,7 +161,7 @@ public class LayoutTreeBuilder
 
             // display:contents parents are transparent to layout tree
             var parentStyle = parentLayout.GetComputedStyle();
-            if (parentStyle?.Display != DisplayType.Contents)
+            if (parentStyle?.Display != DisplayMode.Contents)
                 return false;
 
             parent = parent.ParentElement;
@@ -204,16 +205,16 @@ public class LayoutTreeBuilder
         // Simplified - in real implementation would create proper subclasses
         switch (style.Display)
         {
-            case DisplayType.Block:
+            case DisplayMode.Block:
                 return new LayoutBlockFlow { Node = element };
-            case DisplayType.Inline:
+            case DisplayMode.Inline:
                 return new LayoutInline { Node = element };
-            case DisplayType.InlineBlock:
+            case DisplayMode.InlineBlock:
                 return new LayoutInlineBlock { Node = element };
-            case DisplayType.Flex:
-            case DisplayType.Grid: // Simplified
-            case DisplayType.Table: // Simplified
-            case DisplayType.ListItem: // Simplified
+            case DisplayMode.Flex:
+            case DisplayMode.Grid: // Simplified
+            case DisplayMode.Table: // Simplified
+            case DisplayMode.ListItem: // Simplified
             default:
                 return new LayoutBlockFlow { Node = element }; // Simplified
         }
@@ -386,7 +387,7 @@ public class LayoutTreeBuilder
 
                 // Skip display:contents parents
                 var parentStyle = parentLayout.GetComputedStyle();
-                if (parentStyle?.Display != DisplayType.Contents)
+                if (parentStyle?.Display != DisplayMode.Contents)
                     return null;
             }
             parent = parent.Parent;
