@@ -81,19 +81,36 @@ public class LayoutBox : LayoutObject
     }
 
     /// <summary>
-    /// Creates a fragment for this box during layout.
-    /// In LayoutNG, this would be part of the layout algorithm's output.
+    /// Creates a physical fragment for this layout box.
     /// </summary>
-    public Fragment CreateFragment()
+    public virtual PhysicalFragment CreatePhysicalFragment()
     {
-        return new Fragment
-        {
-            LayoutObject = this,
-            Offset = Location,
-            Size = BorderBoxSize,
-            IsFragmented = false,
-            BreakToken = null
-        };
+        return PhysicalFragment.CreateBuilder()
+            .SetLayoutObject(this)
+            .SetOffset(Location)
+            .SetSize(BorderBoxSize)
+            .SetMargins(new PhysicalBoxStrut
+            {
+                InlineStart = Margin.Left,
+                InlineEnd = Margin.Right,
+                BlockStart = Margin.Top,
+                BlockEnd = Margin.Bottom
+            })
+            .SetBorders(new PhysicalBoxStrut
+            {
+                InlineStart = Border.Left,
+                InlineEnd = Border.Right,
+                BlockStart = Border.Top,
+                BlockEnd = Border.Bottom
+            })
+            .SetPadding(new PhysicalBoxStrut
+            {
+                InlineStart = Padding.Left,
+                InlineEnd = Padding.Right,
+                BlockStart = Padding.Top,
+                BlockEnd = Padding.Bottom
+            })
+            .Build();
     }
 
     public override LayoutObjectType GetLayoutObjectType()

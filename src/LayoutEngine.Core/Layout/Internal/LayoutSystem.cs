@@ -203,62 +203,27 @@ public class LayoutSystem : ILayoutSystem
         }
     }
 
-    private ILayoutFragment LayoutElement(IElement element, LayoutContext context, LayoutResult result)
+    // LayoutSystem.cs - Updated approach
+    private PhysicalFragment LayoutElement(IElement element, LayoutContext context, LayoutResult result)
     {
-        var style = _styleSystem.GetComputedStyle(element);
-        if (style == null)
-        {
-            style = _styleSystem.ComputeStyle(element);
-        }
-
-        var fragment = new LayoutFragment
-        {
-            Element = element,
-            VisualProperties = ExtractVisualProperties(style)
-        };
-
+        var style = _styleSystem.GetComputedStyle(element) ?? _styleSystem.ComputeStyle(element);
+        
         var displayValue = style.GetPropertyValue("display");
-        switch (displayValue)
+        return displayValue switch
         {
-            case "block":
-                LayoutBlockElement(element, style, fragment, context, result);
-                break;
-            case "flex":
-                LayoutFlexElement(element, style, fragment, context, result);
-                break;
-            case "inline":
-            case "inline-block":
-                LayoutInlineElement(element, style, fragment, context, result);
-                break;
-            case "none":
-                break;
-            default:
-                // Default to block layout for unknown display types
-                LayoutBlockElement(element, style, fragment, context, result);
-                break;
-        }
-
-        result.AddFragment(element, fragment);
-        return fragment;
+            "block" => LayoutBlockElement(element, style, context, result),
+            "flex" => LayoutFlexElement(element, style, context, result),
+            "inline" or "inline-block" => LayoutInlineElement(element, style, context, result),
+            "none" => CreateEmptyFragment(element),
+            _ => LayoutBlockElement(element, style, context, result) // Default to block
+        };
     }
 
-    private void LayoutBlockElement(IElement element, IComputedStyle style, LayoutFragment fragment,
-        LayoutContext context, LayoutResult result)
+    private PhysicalFragment LayoutBlockElement(IElement element, IComputedStyle style, LayoutContext context, LayoutResult result)
     {
         var boxModel = CalculateBoxModel(element, style, context);
-        fragment.Bounds = boxModel.ContentRect;
-
-        var layoutInfo = new LayoutInfo
-        {
-            ContentRect = boxModel.ContentRect,
-            PaddingRect = boxModel.PaddingRect,
-            BorderRect = boxModel.BorderRect,
-            MarginRect = boxModel.MarginRect,
-            Position = new Point(boxModel.ContentRect.X, boxModel.ContentRect.Y)
-        };
-        layoutInfo.AddFragment(fragment);
-        result.SetLayoutInfo(element, layoutInfo);
-
+        var childFragments = new List<PhysicalFragment>();
+        
         var childContext = new LayoutContext(
             boxModel.ContentRect.Width,
             boxModel.ContentRect.Height,
@@ -266,14 +231,36 @@ public class LayoutSystem : ILayoutSystem
             boxModel.ContentRect.Y
         );
 
-        var children = new List<ILayoutFragment>();
         foreach (var child in element.Children.OfType<IElement>())
         {
             var childFragment = LayoutElement(child, childContext, result);
-            children.Add(childFragment);
+            childFragments.Add(childFragment);
         }
 
-        fragment.Children = children;
+        // Create PhysicalFragment using builder pattern
+        var fragment = PhysicalFragment.CreateBuilder()
+            .SetLayoutObject(GetLayoutObject(element))
+            .SetSize(new PhysicalSize(boxModel.ContentRect.Width, boxModel.ContentRect.Height))
+            .SetOffset(new PhysicalOffset(boxModel.ContentRect.X, boxModel.ContentRect.Y))
+            .SetMargins(ConvertToPhysicalBoxStrut(boxModel.MarginRect, boxModel.BorderRect))
+            .SetBorders(ConvertToPhysicalBoxStrut(boxModel.BorderRect, boxModel.PaddingRect))
+            .SetPadding(ConvertToPhysicalBoxStrut(boxModel.PaddingRect, boxModel.ContentRect))
+            .AddChildren(childFragments)
+            .Build();
+
+        // Store layout info
+        var layoutInfo = new LayoutInfo
+        {
+            ContentRect = boxModel.ContentRect,
+            PaddingRect = boxModel.PaddingRect,
+            BorderRect = boxModel.BorderRect,
+            MarginRect = boxModel.MarginRect,
+            Position = new Point(boxModel.ContentRect.X, boxModel.ContentRect.Y),
+            PhysicalFragment = fragment
+        };
+        
+        result.SetLayoutInfo(element, layoutInfo);
+        return fragment;
     }
 
     private void LayoutFlexElement(IElement element, IComputedStyle style, LayoutFragment fragment,

@@ -6,8 +6,6 @@ using AngleSharp.Css.Values;
 
 /// <summary>
 /// Represents a block flow layout object.
-/// In LayoutNG, this handles normal block flow layout (not flex, grid, or table).
-/// This is the most common type of block layout and inherits from LayoutBlock.
 /// </summary>
 public class LayoutBlockFlow : LayoutBlock
 {
@@ -83,17 +81,14 @@ public class LayoutBlockFlow : LayoutBlock
 
     /// <summary>
     /// Performs block layout algorithm.
-    /// In LayoutNG, this is the core of block layout.
     /// </summary>
     public void LayoutBlock(LayoutConstraintSpace constraintSpace)
     {
-        // Apply box model properties from style
+        // Apply box model from style
         ApplyBoxModelFromStyle();
 
-        // Calculate content box width
+        // Calculate content dimensions
         float contentWidth = CalculateContentWidth(constraintSpace);
-
-        // Initialize position for children
         float currentY = Padding.Top;
 
         // Layout children
@@ -102,23 +97,14 @@ public class LayoutBlockFlow : LayoutBlock
         {
             if (child is LayoutBox childBox)
             {
-                // Create constraint space for child
-                var childConstraintSpace = new LayoutConstraintSpace
-                {
-                    AvailableWidth = contentWidth,
-                    AvailableHeight = float.MaxValue, // No height constraint for now
-                    IsFixedWidth = true,
-                    IsFixedHeight = false,
-                    IsNewFormattingContext = childBox.EstablishesFormattingContext()
-                };
-
                 // Position child
-                childBox.Location = new PhysicalOffset(Padding.Left, currentY);
+                childBox.Offset = new PhysicalOffset(Padding.Left, currentY);
 
-                // Layout child based on its type
-                if (childBox is LayoutBlockFlow childBlockFlow)
+                if (child is LayoutBlockFlow childBlock)
                 {
-                    childBlockFlow.LayoutBlock(childConstraintSpace);
+                    // Recursive block layout
+                    childBlock.LayoutBlock(constraintSpace);
+                    childBox.ContentSize = childBlock.ContentSize;
                 }
                 else
                 {
@@ -134,17 +120,14 @@ public class LayoutBlockFlow : LayoutBlock
                 // Clear child's needs layout flag
                 childBox.NeedsLayout = false;
 
-                // Create fragment for child
-                childBox.Fragment = childBox.CreateFragment();
+                // Create physical fragment for child
+                childBox.PhysicalFragment = childBox.CreatePhysicalFragment();
             }
             else if (child is LayoutInline childInline)
             {
                 // Handle inline layout
-                // Note: In BlinkNG, inline elements don't inherit from LayoutBox
                 LayoutInlineChild(childInline, constraintSpace);
-
-                // For now, we'll add a small amount to currentY for inline content
-                currentY += 20; // Simplified - in real LayoutNG this would be based on line boxes
+                currentY += 20; // Simplified
             }
             else if (child is LayoutText textChild)
             {
@@ -162,8 +145,8 @@ public class LayoutBlockFlow : LayoutBlock
         // Update baseline
         UpdateBaseline();
 
-        // Create fragment
-        Fragment = CreateFragment();
+        // Create physical fragment
+        PhysicalFragment = CreatePhysicalFragment();
     }
 
     /// <summary>
@@ -305,31 +288,6 @@ public class LayoutBlockFlow : LayoutBlock
     }
 
     /// <summary>
-    /// Layouts an inline child (simplified).
-    /// </summary>
-    private void LayoutInlineChild(LayoutInline inline, LayoutConstraintSpace constraintSpace)
-    {
-        // Simplified inline layout
-        // In real LayoutNG, this would create line boxes
-        inline.LineHeight = 20; // Default line height
-
-        // For now, treat as a single line
-        var inlineWidth = constraintSpace.AvailableWidth;
-        var inlineHeight = inline.LineHeight;
-
-        // Create a fragment for the inline
-        inline.Fragment = new Fragment
-        {
-            LayoutObject = inline,
-            Offset = new PhysicalOffset(Padding.Left, 0), // Simplified positioning
-            Size = new PhysicalSize(inlineWidth, inlineHeight)
-        };
-
-        // Note: In real implementation, we'd measure text and create line boxes
-        HasInlineContent = true;
-    }
-
-    /// <summary>
     /// Layouts a text child (simplified).
     /// </summary>
     private void LayoutTextChild(LayoutText text, float availableWidth, ref float currentY)
@@ -344,16 +302,37 @@ public class LayoutBlockFlow : LayoutBlock
         int lines = (text.Text.Length + estimatedCharsPerLine - 1) / estimatedCharsPerLine;
         float textHeight = lines * lineHeight;
 
-        // Create a fragment for the text
-        text.Fragment = new Fragment
-        {
-            LayoutObject = text,
-            Offset = new PhysicalOffset(Padding.Left, currentY),
-            Size = new PhysicalSize(availableWidth, textHeight)
-        };
+        // Create a physical fragment for the text
+        text.PhysicalFragment = PhysicalFragment.CreateBuilder()
+            .SetLayoutObject(text)
+            .SetOffset(new PhysicalOffset(Padding.Left, currentY))
+            .SetSize(new PhysicalSize(availableWidth, textHeight))
+            .SetBaseline(lineHeight * 0.8f)
+            .Build();
 
         currentY += textHeight;
         HasInlineContent = true;
+    }
+
+    /// <summary>
+    /// Layouts an inline child (simplified).
+    /// </summary>
+    private void LayoutInlineChild(LayoutInline inline, LayoutConstraintSpace constraintSpace)
+    {
+        // Simplified inline layout
+        inline.LineHeight = 20; // Default line height
+
+        // For now, treat as a single line
+        var inlineWidth = constraintSpace.AvailableWidth;
+        var inlineHeight = inline.LineHeight;
+
+        // Create a physical fragment for the inline
+        inline.PhysicalFragment = PhysicalFragment.CreateBuilder()
+            .SetLayoutObject(inline)
+            .SetOffset(new PhysicalOffset(Padding.Left, 0)) // Simplified positioning
+            .SetSize(new PhysicalSize(inlineWidth, inlineHeight))
+            .SetBaseline(inlineHeight * 0.8f)
+            .Build();
     }
 
     /// <summary>
@@ -394,26 +373,4 @@ public class LayoutBlockFlow : LayoutBlock
             _ => Overflow.Visible
         };
     }
-}
-
-/// <summary>
-/// Represents margin collapsing state in LayoutNG.
-/// </summary>
-public struct MarginStrut
-{
-    /// <summary>
-    /// The positive margin component.
-    /// </summary>
-    public float PositiveMargin { get; set; }
-
-    /// <summary>
-    /// The negative margin component.
-    /// </summary>
-    public float NegativeMargin { get; set; }
-
-    /// <summary>
-    /// Gets the sum of margins after collapsing.
-    /// In LayoutNG, this follows CSS margin collapsing rules.
-    /// </summary>
-    public float Sum => PositiveMargin + NegativeMargin;
 }

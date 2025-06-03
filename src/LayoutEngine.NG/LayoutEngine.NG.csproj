@@ -11,4 +11,8 @@
       <ProjectReference Include="..\LayoutEngine.Contracts.AngleSharp\LayoutEngine.Contracts.AngleSharp.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
+    </ItemGroup>
+
 </Project>
