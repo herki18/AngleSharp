@@ -1,5 +1,7 @@
 namespace LayoutEngine.NG.Layout;
 
+using System.Collections.Generic;
+using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using LayoutEngine.NG.Style;
 using LayoutEngine.NG.Layout.Dom;
