@@ -2,8 +2,8 @@
 using AngleSharp;
 using AngleSharp.Css;
 using AngleSharp.Css.Parser;
+using Dom;
 using Microsoft.Extensions.DependencyInjection;
-using LayoutEngine.NG.Layout.Dom;
 
 /// <summary>
 /// Extension methods for registering style system services with DI.

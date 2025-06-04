@@ -1,7 +1,6 @@
 ﻿namespace LayoutEngine.NG.Core;
 
 using LayoutEngine.NG.Layout;
-using LayoutEngine.NG.Layout.Dom;
 
 /// <summary>
 /// Responsible for advancing the lifecycle of its associated Frame.

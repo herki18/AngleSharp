@@ -4,7 +4,8 @@ using LayoutEngine.NG.Style;
 using System;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
-using LayoutEngine.NG.Layout.Dom;
+using Core;
+using NG.Dom;
 
 /// <summary>
 /// Manages layout tree building, attachment, and detachment following BlinkNG patterns.

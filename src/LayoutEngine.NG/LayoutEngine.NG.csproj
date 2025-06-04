@@ -15,4 +15,9 @@
       <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Layout\Stubs\" />
+      <Folder Include="Stubs\" />
+    </ItemGroup>
+
 </Project>

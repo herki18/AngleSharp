@@ -133,18 +133,19 @@ foreach ($task in $config.tasks) {
             Write-Host "  [INFO] Using task-specific filename pattern: $effectiveFileNamePattern"
         }
 
-        # Repomix Options (Merge global and task-specific)
-        $effectiveRepomixOptions = $null
+        # Repomix Options (Merge global and task-specific) - Use hashtables
+        $effectiveRepomixOptions = @{}
+
         if ($config.globalSettings.PSObject.Properties.Name -contains 'repomixOptions' -and $config.globalSettings.repomixOptions) {
-             try {
-                 $effectiveRepomixOptions = $config.globalSettings.repomixOptions | ConvertTo-Json -Depth 5 | ConvertFrom-Json
-             } catch { $effectiveRepomixOptions = $config.globalSettings.repomixOptions.PSObject.Copy() }
-        } else { $effectiveRepomixOptions = @{} }
+            $config.globalSettings.repomixOptions.PSObject.Properties | ForEach-Object {
+                $effectiveRepomixOptions[$_.Name] = $_.Value
+            }
+        }
 
         if ($task.PSObject.Properties.Name -contains 'repomixOptions' -and $task.repomixOptions) {
              Write-Host "  [INFO] Applying task-specific repomix option overrides..."
              $task.repomixOptions.PSObject.Properties | ForEach-Object {
-                 $effectiveRepomixOptions.($_.Name) = $_.Value
+                 $effectiveRepomixOptions[$_.Name] = $_.Value
                  Write-Host "    - $($_.Name) = $($_.Value)"
              }
         }
@@ -184,12 +185,12 @@ foreach ($task in $config.tasks) {
         # FIXED: Add explicit simple quotes around paths for Start-Process argument list
         $argumentList += "-o", "`"$outputFilePath`""
 
-        # Add repomix options dynamically from the effective options object
-        if ($effectiveRepomixOptions) {
-             $effectiveRepomixOptions.PSObject.Properties | ForEach-Object {
-                 $optionName = $_.Name
+        # Add repomix options dynamically from the effective options hashtable
+        if ($effectiveRepomixOptions -and $effectiveRepomixOptions.Count -gt 0) {
+             $effectiveRepomixOptions.GetEnumerator() | ForEach-Object {
+                 $optionName = $_.Key
                  $optionValue = $_.Value
-
+                 
                  # Robust camelCase to kebab-case conversion
                  $kebab = ""
                  $optionName.ToCharArray() | ForEach-Object {

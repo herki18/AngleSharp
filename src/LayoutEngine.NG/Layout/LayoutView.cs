@@ -59,6 +59,13 @@ public class LayoutView : LayoutBlockFlow
     /// </summary>
     public LocalFrame? OwnerFrame { get; set; }
 
+    /// <summary>
+    /// Whether this view is a fragmentation context root (for printing/pagination).
+    /// </summary>
+    private bool _isFragmentationContextRoot;
+
+    public override bool IsLayoutView() => true;
+
     public override LayoutObjectType GetLayoutObjectType()
     {
         return LayoutObjectType.View;
@@ -70,6 +77,30 @@ public class LayoutView : LayoutBlockFlow
     public override bool EstablishesFormattingContext()
     {
         return true;
+    }
+
+    /// <summary>
+    /// Returns whether this view is a fragmentation context root.
+    /// In LayoutNG, this is true for paginated media.
+    /// </summary>
+    public bool IsFragmentationContextRoot() => _isFragmentationContextRoot;
+
+    /// <summary>
+    /// Sets whether this view is a fragmentation context root.
+    /// </summary>
+    public void SetIsFragmentationContextRoot(bool value)
+    {
+        _isFragmentationContextRoot = value;
+    }
+
+    /// <summary>
+    /// Gets the layout size with optional scrollbar inclusion.
+    /// </summary>
+    public override PhysicalSize GetLayoutSize(IncludeScrollbarsOption option)
+    {
+        // For the view, this is the viewport size
+        // In real LayoutNG, this would account for scrollbars based on the option
+        return new PhysicalSize(ViewportWidth, ViewportHeight);
     }
 
     /// <summary>

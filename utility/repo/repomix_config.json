@@ -53,7 +53,8 @@
         "removeEmptyLines": true,
         "noFileSummary": false,
         "noDirectoryStructure": false
-      }
+      },
+      "skip": true
     },
     {
       "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\Core",
@@ -64,7 +65,8 @@
         "removeEmptyLines": true,
         "noFileSummary": false,
         "noDirectoryStructure": false
-      }
+      },
+      "skip": true
     },
     {
       "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\Events",
@@ -75,7 +77,8 @@
         "removeEmptyLines": true,
         "noFileSummary": false,
         "noDirectoryStructure": false
-      }
+      },
+      "skip": true
     },
     {
       "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\Layout",
@@ -86,7 +89,8 @@
         "removeEmptyLines": true,
         "noFileSummary": false,
         "noDirectoryStructure": false
-      }
+      },
+      "skip": true
     },
     {
       "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\Render",
@@ -97,7 +101,8 @@
         "removeEmptyLines": true,
         "noFileSummary": false,
         "noDirectoryStructure": false
-      }
+      },
+      "skip": true
     },
     {
       "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\Style",
@@ -108,7 +113,8 @@
         "removeEmptyLines": true,
         "noFileSummary": false,
         "noDirectoryStructure": false
-      }
+      },
+      "skip": true
     },
     {
       "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\Viewport",
@@ -119,7 +125,8 @@
         "removeEmptyLines": true,
         "noFileSummary": false,
         "noDirectoryStructure": false
-      }
+      },
+      "skip": true
     },
     {
       "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\LayoutNG",
@@ -130,7 +137,8 @@
         "removeEmptyLines": true,
         "noFileSummary": false,
         "noDirectoryStructure": false
-      }
+      },
+      "skip": true
     },
     {
       "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core\\StyleNG",
@@ -141,7 +149,8 @@
         "removeEmptyLines": true,
         "noFileSummary": false,
         "noDirectoryStructure": false
-      }
+      },
+      "skip": true
     },
     {
       "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.NG\\Core",
@@ -151,7 +160,8 @@
         "removeComments": false,
         "removeEmptyLines": true,
         "noFileSummary": false,
-        "noDirectoryStructure": false
+        "noDirectoryStructure": false,
+        "compress": true
       }
     },
     {
@@ -162,7 +172,8 @@
         "removeComments": false,
         "removeEmptyLines": true,
         "noFileSummary": false,
-        "noDirectoryStructure": false
+        "noDirectoryStructure": false,
+        "compress": true
       }
     },
     {
@@ -170,10 +181,116 @@
       "outputFileNamePattern": "LayoutEngine.NG.Layout.txt",
       "repomixOptions": {
         "style": "xml",
+        "removeComments": true,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false,
+        "compress": true
+      },
+      "additionalIgnorePatterns": [
+        "**/Inline",
+        "**/Stubs",
+        "**/Algorithms",
+        "**/Fragments",
+        "**/*.csproj",
+        "**/obj",
+        "**/bin"
+      ]
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.NG\\Layout\\Algorithms",
+      "outputFileNamePattern": "LayoutEngine.NG.Layout.Algorithms.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": true,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false,
+        "compress": true
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.NG\\Layout\\Core",
+      "outputFileNamePattern": "LayoutEngine.NG.Layout.Core.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": true,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false,
+        "compress": true
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.NG\\Layout\\Inputs",
+      "outputFileNamePattern": "LayoutEngine.NG.Layout.Inputs.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": true,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false,
+        "compress": true
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.NG\\Layout\\Process",
+      "outputFileNamePattern": "LayoutEngine.NG.Layout.Process.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": true,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false,
+        "compress": true
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.NG\\Layout\\Inline",
+      "outputFileNamePattern": "LayoutEngine.NG.Layout.Inline.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": true,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false,
+        "compress": true
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.NG\\Layout\\Fragments",
+      "outputFileNamePattern": "LayoutEngine.NG.Layout.Fragments.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": true,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false,
+        "compress": true
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.NG\\Layout\\Stubs",
+      "outputFileNamePattern": "LayoutEngine.NG.Layout.Stubs.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": true,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false,
+        "compress": true
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.NG\\Dom",
+      "outputFileNamePattern": "LayoutEngine.NG.Dom.txt",
+      "repomixOptions": {
+        "style": "xml",
         "removeComments": false,
         "removeEmptyLines": true,
         "noFileSummary": false,
-        "noDirectoryStructure": false
+        "noDirectoryStructure": false,
+        "compress": true
       }
     },
     {
@@ -184,15 +301,18 @@
         "removeComments": false,
         "removeEmptyLines": true,
         "noFileSummary": false,
-        "noDirectoryStructure": false
+        "noDirectoryStructure": false,
+        "compress": true
       }
     },
     {
-      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core.Tests"
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LayoutEngine.Core.Tests",
+      "skip": true
     },
     {
       "targetDirectory": "C:\\dev\\Git\\Training\\JSXEngine\\src\\JSXEngine4\\Assets\\V3\\Code",
-      "outputFileNamePattern": "Unity.V3.txt"
+      "outputFileNamePattern": "Unity.V3.txt",
+      "skip": true
     } 
   ]
 }

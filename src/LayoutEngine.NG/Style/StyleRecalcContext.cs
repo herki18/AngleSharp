@@ -1,7 +1,7 @@
 ﻿namespace LayoutEngine.NG.Style;
 
 using AngleSharp.Dom;
-using LayoutEngine.NG.Layout.Dom;
+using Dom;
 
 /// <summary>
 /// Context for style recalculation, following BlinkNG's style recalc architecture.

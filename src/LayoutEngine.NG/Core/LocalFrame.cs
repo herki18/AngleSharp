@@ -2,9 +2,9 @@
 
 using AngleSharp.Dom;
 using LayoutEngine.NG.Layout;
-using LayoutEngine.NG.Layout.Dom;
 using LayoutEngine.NG.Paint;
 using System;
+using Dom;
 
 /// <summary>
 /// Represents a local browsing context (e.g., top-level frame or iframe) with a local document.

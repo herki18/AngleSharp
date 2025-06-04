@@ -6,8 +6,8 @@ using System.Linq;
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
+using Dom;
 using LayoutEngine.NG.Layout;
-using LayoutEngine.NG.Layout.Dom;
 using Microsoft.Extensions.DependencyInjection;
 
 /// <summary>

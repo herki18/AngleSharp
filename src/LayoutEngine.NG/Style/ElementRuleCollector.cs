@@ -6,7 +6,7 @@ using System.Linq;
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
-using LayoutEngine.NG.Layout.Dom;
+using Dom;
 
 /// <summary>
 /// Collects CSS rules that match a given element from all active stylesheets.

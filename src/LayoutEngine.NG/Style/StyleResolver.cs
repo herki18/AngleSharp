@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Css.Dom;
-using LayoutEngine.NG.Layout.Dom;
+using Dom;
 
 /// <summary>
 /// StyleResolver computes the immutable ComputedStyle for a DOM element.

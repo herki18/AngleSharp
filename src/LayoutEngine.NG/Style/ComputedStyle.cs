@@ -4,6 +4,8 @@ using System;
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Values;
+using Layout;
+using ScrollSnapAlign = AngleSharp.Css.Dom.ScrollSnapAlign;
 
 /// <summary>
 /// ComputedStyle is an immutable, typed, read-only wrapper around AngleSharp's ICssStyleDeclaration.
@@ -149,6 +151,36 @@ public class ComputedStyle
     /// Gets a raw property object by name.
     /// </summary>
     public ICssProperty? GetProperty(string propertyName) => _declaration.GetProperty(propertyName);
+
+    public bool HasStickyConstrainedPosition()
+    {
+        // TODO: Implement HasStickyConstrainedPosition
+        return false;
+    }
+
+    public ScrollSnapAlign GetScrollSnapAlign()
+    {
+        // TODO: Implement GetScrollSnapAlign
+        return ScrollSnapAlign.None;
+    }
+
+    public string? AnchorName()
+    {
+        // TODO: Implement AnchorName
+        return null;
+    }
+
+    public bool IsHorizontalWritingMode()
+    {
+        // TODO: Implement IsHorizontalWritingMode
+        return true;
+    }
+
+    public WritingDirection GetWritingDirection()
+    {
+        // TODO: Implement GetWritingDirection
+        return new WritingDirection();
+    }
 }
 
 // Example LengthBox and BorderBox structs (adjust as needed for your codebase)

@@ -3,7 +3,7 @@
 using System;
 using System.Text;
 using AngleSharp.Dom;
-using LayoutEngine.NG.Layout.Dom;
+using Dom;
 
 /// <summary>
 /// Flags used to track what kind of style recalc or layout tree reattachment is needed.
