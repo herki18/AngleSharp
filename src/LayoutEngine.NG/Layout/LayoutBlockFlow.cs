@@ -1,5 +1,7 @@
 ﻿namespace LayoutEngine.NG.Layout;
 
+using System;
+using System.Collections.Generic;
 using AngleSharp.Css.Dom;
 using Style;
 using AngleSharp.Css.Values;
@@ -80,16 +82,18 @@ public class LayoutBlockFlow : LayoutBlock
     }
 
     /// <summary>
-    /// Performs block layout algorithm.
+    /// Performs block layout algorithm using PhysicalFragment.
     /// </summary>
     public void LayoutBlock(LayoutConstraintSpace constraintSpace)
     {
-        // Apply box model from style
+        // Apply box model from computed style
         ApplyBoxModelFromStyle();
 
-        // Calculate content dimensions
+        // Calculate content width
         float contentWidth = CalculateContentWidth(constraintSpace);
         float currentY = Padding.Top;
+
+        var childFragments = new List<PhysicalFragment>();
 
         // Layout children
         var child = FirstChild;
@@ -97,42 +101,52 @@ public class LayoutBlockFlow : LayoutBlock
         {
             if (child is LayoutBox childBox)
             {
-                // Position child
-                childBox.Offset = new PhysicalOffset(Padding.Left, currentY);
+                // Layout child box
+                childBox.Layout();
 
-                if (child is LayoutBlockFlow childBlock)
-                {
-                    // Recursive block layout
-                    childBlock.LayoutBlock(constraintSpace);
-                    childBox.ContentSize = childBlock.ContentSize;
-                }
-                else
-                {
-                    // Generic box layout
-                    childBox.ContentSize = new PhysicalSize(contentWidth, 50); // Default height
-                }
+                // Position child
+                var childOffset = new PhysicalOffset(
+                    Padding.Left + childBox.Margin.Left,
+                    currentY + childBox.Margin.Top
+                );
+
+                // Create child fragment using builder
+                var childFragment = PhysicalFragment.CreateBuilder()
+                    .SetLayoutObject(childBox)
+                    .SetSize(childBox.BorderBoxSize)
+                    .SetOffset(childOffset)
+                    .SetMargins(new PhysicalBoxStrut(
+                        childBox.Margin.Top,
+                        childBox.Margin.Right,
+                        childBox.Margin.Bottom,
+                        childBox.Margin.Left))
+                    .SetBorders(new PhysicalBoxStrut(
+                        childBox.Border.Top,
+                        childBox.Border.Right,
+                        childBox.Border.Bottom,
+                        childBox.Border.Left))
+                    .SetPadding(new PhysicalBoxStrut(
+                        childBox.Padding.Top,
+                        childBox.Padding.Right,
+                        childBox.Padding.Bottom,
+                        childBox.Padding.Left))
+                    .Build();
+
+                childFragments.Add(childFragment);
 
                 // Update position for next child
-                currentY += childBox.Margin.Top;
-                currentY += childBox.BorderBoxSize.Height;
-                currentY += childBox.Margin.Bottom;
-
-                // Clear child's needs layout flag
+                currentY += childBox.Margin.Top + childBox.BorderBoxSize.Height + childBox.Margin.Bottom;
                 childBox.NeedsLayout = false;
-
-                // Create physical fragment for child
-                childBox.PhysicalFragment = childBox.CreatePhysicalFragment();
-            }
-            else if (child is LayoutInline childInline)
-            {
-                // Handle inline layout
-                LayoutInlineChild(childInline, constraintSpace);
-                currentY += 20; // Simplified
             }
             else if (child is LayoutText textChild)
             {
-                // Text layout - simplified
-                LayoutTextChild(textChild, contentWidth, ref currentY);
+                // Layout text child
+                var textFragment = LayoutTextChild(textChild, contentWidth, currentY);
+                if (textFragment != null)
+                {
+                    childFragments.Add(textFragment);
+                    currentY += textFragment.Size.Height;
+                }
             }
 
             child = child.NextSibling;
@@ -145,8 +159,19 @@ public class LayoutBlockFlow : LayoutBlock
         // Update baseline
         UpdateBaseline();
 
-        // Create physical fragment
-        PhysicalFragment = CreatePhysicalFragment();
+        // Create physical fragment for this block using builder
+        PhysicalFragment = PhysicalFragment.CreateBuilder()
+            .SetLayoutObject(this)
+            .SetSize(new PhysicalSize(
+                contentWidth + Padding.Left + Padding.Right + Border.Left + Border.Right,
+                contentHeight + Border.Top + Border.Bottom))
+            .SetOffset(PhysicalOffset.Zero)
+            .SetMargins(new PhysicalBoxStrut(Margin.Top, Margin.Right, Margin.Bottom, Margin.Left))
+            .SetBorders(new PhysicalBoxStrut(Border.Top, Border.Right, Border.Bottom, Border.Left))
+            .SetPadding(new PhysicalBoxStrut(Padding.Top, Padding.Right, Padding.Bottom, Padding.Left))
+            .AddChildren(childFragments)
+            .SetBaseline(BaselinePosition)
+            .Build();
     }
 
     /// <summary>
@@ -159,7 +184,8 @@ public class LayoutBlockFlow : LayoutBlock
             return;
 
         // Convert margin values from CssLengthValue to pixels
-        Margin = ConvertLengthBoxToPixels(Style.Margin, 0); // TODO: Pass containing block size for percentage resolution
+        Margin = ConvertLengthBoxToPixels(Style.Margin,
+            0); // TODO: Pass containing block size for percentage resolution
 
         // Convert padding values
         Padding = ConvertLengthBoxToPixels(Style.Padding, 0);
@@ -280,58 +306,33 @@ public class LayoutBlockFlow : LayoutBlock
 
         // Subtract margins, borders, and padding from available width
         float contentWidth = availableWidth -
-            (Margin.Left + Margin.Right +
-             Border.Left + Border.Right +
-             Padding.Left + Padding.Right);
+                             (Margin.Left + Margin.Right +
+                              Border.Left + Border.Right +
+                              Padding.Left + Padding.Right);
 
         return System.Math.Max(0, contentWidth);
     }
 
     /// <summary>
-    /// Layouts a text child (simplified).
+    /// Layouts a text child and returns a PhysicalFragment.
     /// </summary>
-    private void LayoutTextChild(LayoutText text, float availableWidth, ref float currentY)
+    private PhysicalFragment? LayoutTextChild(LayoutText text, float availableWidth, float currentY)
     {
         if (string.IsNullOrWhiteSpace(text.Text))
-            return;
+            return null;
 
         // Simplified text layout
-        // In real LayoutNG, this would use text shaping and line breaking
         float lineHeight = 20; // Default line height
         int estimatedCharsPerLine = (int)(availableWidth / 8); // Rough estimate
-        int lines = (text.Text.Length + estimatedCharsPerLine - 1) / estimatedCharsPerLine;
+        int lines = Math.Max(1, (text.Text.Length + estimatedCharsPerLine - 1) / estimatedCharsPerLine);
         float textHeight = lines * lineHeight;
 
-        // Create a physical fragment for the text
-        text.PhysicalFragment = PhysicalFragment.CreateBuilder()
+        // Create physical fragment for the text using builder
+        return PhysicalFragment.CreateBuilder()
             .SetLayoutObject(text)
             .SetOffset(new PhysicalOffset(Padding.Left, currentY))
             .SetSize(new PhysicalSize(availableWidth, textHeight))
-            .SetBaseline(lineHeight * 0.8f)
-            .Build();
-
-        currentY += textHeight;
-        HasInlineContent = true;
-    }
-
-    /// <summary>
-    /// Layouts an inline child (simplified).
-    /// </summary>
-    private void LayoutInlineChild(LayoutInline inline, LayoutConstraintSpace constraintSpace)
-    {
-        // Simplified inline layout
-        inline.LineHeight = 20; // Default line height
-
-        // For now, treat as a single line
-        var inlineWidth = constraintSpace.AvailableWidth;
-        var inlineHeight = inline.LineHeight;
-
-        // Create a physical fragment for the inline
-        inline.PhysicalFragment = PhysicalFragment.CreateBuilder()
-            .SetLayoutObject(inline)
-            .SetOffset(new PhysicalOffset(Padding.Left, 0)) // Simplified positioning
-            .SetSize(new PhysicalSize(inlineWidth, inlineHeight))
-            .SetBaseline(inlineHeight * 0.8f)
+            .SetBaseline(lineHeight * 0.8f) // Simplified baseline
             .Build();
     }
 

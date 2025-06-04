@@ -129,7 +129,8 @@ public class LayoutTreeBuilder
     /// Determines if an element needs a layout object.
     /// In BlinkNG: Element::LayoutObjectIsNeeded()
     /// </summary>
-    public static bool ShouldCreateLayoutObject(IElement element, ComputedStyle style, LayoutDataManager layoutDataManager)
+    public static bool ShouldCreateLayoutObject(IElement element, ComputedStyle style,
+        LayoutDataManager layoutDataManager)
     {
         // display:none elements don't get layout objects
         if (style.Display == DisplayMode.None)
@@ -202,22 +203,21 @@ public class LayoutTreeBuilder
     /// </summary>
     private LayoutObject CreateLayoutObject(IElement element, ComputedStyle style)
     {
-        // Simplified - in real implementation would create proper subclasses
-        switch (style.Display)
+        // Create layout object based on display type
+        LayoutObject layoutObject = style.Display switch
         {
-            case DisplayMode.Block:
-                return new LayoutBlockFlow { Node = element };
-            case DisplayMode.Inline:
-                return new LayoutInline { Node = element };
-            case DisplayMode.InlineBlock:
-                return new LayoutInlineBlock { Node = element };
-            case DisplayMode.Flex:
-            case DisplayMode.Grid: // Simplified
-            case DisplayMode.Table: // Simplified
-            case DisplayMode.ListItem: // Simplified
-            default:
-                return new LayoutBlockFlow { Node = element }; // Simplified
-        }
+            DisplayMode.Block => new LayoutBlockFlow { Node = element },
+            DisplayMode.Inline => new LayoutInline { Node = element },
+            DisplayMode.InlineBlock => new LayoutInlineBlock { Node = element },
+            DisplayMode.Flex or DisplayMode.Grid or DisplayMode.Table or DisplayMode.ListItem =>
+                new LayoutBlockFlow { Node = element }, // Simplified
+            _ => new LayoutBlockFlow { Node = element }
+        };
+
+        // Set style
+        layoutObject.Style = style;
+
+        return layoutObject;
     }
 
     /// <summary>
@@ -234,7 +234,10 @@ public class LayoutTreeBuilder
         DetachChildLayoutObjects(element, context);
 
         // Remove from parent
-        RemoveChild(layoutObject.Parent, layoutObject);
+        if (layoutObject.Parent != null)
+        {
+            RemoveChild(layoutObject.Parent, layoutObject);
+        }
 
         // Clear the layout object
         elementLayout.LayoutObject = null;
@@ -339,20 +342,20 @@ public class LayoutTreeBuilder
     /// </summary>
     private void AttachTextLayoutObject(IText textNode, AttachmentContext context)
     {
+        var textLayout = _layoutDataManager.GetOrCreate(textNode);
         var layoutText = new LayoutText
         {
             Node = textNode,
-            Text = textNode.TextContent
+            Text = textNode.TextContent ?? string.Empty
         };
 
-        _layoutDataManager.GetOrCreate(textNode).LayoutObject = layoutText;
+        textLayout.LayoutObject = layoutText;
 
-        // Attach to parent
-        var parentLayout = FindParentLayoutObject(textNode);
-        if (parentLayout != null)
+        // Find parent layout object and attach
+        var parent = FindParentLayoutObject(textNode);
+        if (parent != null)
         {
-            var beforeChild = FindNextLayoutObject(textNode);
-            AddChild(parentLayout, layoutText, beforeChild);
+            AttachChild(parent, layoutText);
         }
     }
 
@@ -363,15 +366,26 @@ public class LayoutTreeBuilder
     {
         var textLayout = _layoutDataManager.GetOrCreate(textNode);
         var layoutObject = textLayout.LayoutObject;
-        if (layoutObject == null)
-            return;
 
-        RemoveChild(layoutObject.Parent, layoutObject);
-        textLayout.LayoutObject = null;
+        if (layoutObject != null)
+        {
+            // Remove from parent
+            var parent = FindParentLayoutObject(textNode);
+            if (parent != null)
+            {
+                RemoveChild(parent, layoutObject);
+            }
+
+            // Clear the layout object
+            textLayout.LayoutObject = null;
+
+            context.WasDestroyed = true;
+        }
     }
 
     /// <summary>
-    /// Finds the parent layout object, handling display:contents.
+    /// Finds the parent layout object for a given node.
+    /// Walks up the DOM tree to find the nearest ancestor with a layout object.
     /// </summary>
     private LayoutObject? FindParentLayoutObject(INode node)
     {
@@ -384,93 +398,115 @@ public class LayoutTreeBuilder
                 var parentLayoutObject = parentLayout.LayoutObject;
                 if (parentLayoutObject != null)
                     return parentLayoutObject;
-
-                // Skip display:contents parents
+                
+                // Check if parent has display:contents - these are transparent to layout tree
                 var parentStyle = parentLayout.GetComputedStyle();
                 if (parentStyle?.Display != DisplayMode.Contents)
-                    return null;
+                    break;
             }
+            else if (parent is IDocument document)
+            {
+                // Document node - check for LayoutView
+                var docLayout = _layoutDataManager.GetOrCreate(document);
+                return docLayout.LayoutObject;
+            }
+            
             parent = parent.Parent;
         }
+        
         return null;
     }
 
     /// <summary>
-    /// Finds the next sibling's layout object for insertion order.
+    /// Finds the next sibling layout object for insertion ordering.
     /// </summary>
-    private LayoutObject? FindNextLayoutObject(INode node)
+    private LayoutObject? FindNextLayoutObject(IElement element)
     {
-        var sibling = node.NextSibling;
+        var sibling = element.NextSibling;
         while (sibling != null)
         {
-            var siblingLayout = _layoutDataManager.GetOrCreate(sibling);
-            var siblingLayoutObject = siblingLayout.LayoutObject;
-            if (siblingLayoutObject != null)
-                return siblingLayoutObject;
+            if (sibling is IElement siblingElement)
+            {
+                var siblingLayout = _layoutDataManager.GetOrCreate(siblingElement);
+                var siblingLayoutObject = siblingLayout.LayoutObject;
+                if (siblingLayoutObject != null)
+                    return siblingLayoutObject;
+            }
             sibling = sibling.NextSibling;
         }
         return null;
     }
 
     /// <summary>
-    /// Adds a child to a parent layout object.
+    /// Attaches a child layout object to its parent.
     /// </summary>
-    private void AddChild(LayoutObject parent, LayoutObject child, LayoutObject? beforeChild)
+    private void AttachChild(LayoutObject parent, LayoutObject child, LayoutObject? beforeChild = null)
     {
-        child.Parent = parent;
-
-        if (beforeChild != null)
-        {
-            // Insert before the specified child
-            child.NextSibling = beforeChild;
-            child.PreviousSibling = beforeChild.PreviousSibling;
-
-            if (beforeChild.PreviousSibling != null)
-                beforeChild.PreviousSibling.NextSibling = child;
-            else
-                parent.FirstChild = child;
-
-            beforeChild.PreviousSibling = child;
-        }
-        else
-        {
-            // Append to the end
-            if (parent.FirstChild == null)
-            {
-                parent.FirstChild = child;
-            }
-            else
-            {
-                var lastChild = parent.FirstChild;
-                while (lastChild.NextSibling != null)
-                    lastChild = lastChild.NextSibling;
-
-                lastChild.NextSibling = child;
-                child.PreviousSibling = lastChild;
-            }
-        }
+        AddChild(parent, child, beforeChild);
     }
 
     /// <summary>
-    /// Removes a child from its parent.
+    /// Removes a child from its parent layout object.
     /// </summary>
-    private void RemoveChild(LayoutObject? parent, LayoutObject child)
+    private void RemoveChild(LayoutObject parent, LayoutObject child)
     {
-        if (parent == null)
-            return;
-
         if (child.PreviousSibling != null)
             child.PreviousSibling.NextSibling = child.NextSibling;
-        else if (parent.FirstChild == child)
+        else
             parent.FirstChild = child.NextSibling;
 
         if (child.NextSibling != null)
             child.NextSibling.PreviousSibling = child.PreviousSibling;
 
         child.Parent = null;
-        child.NextSibling = null;
         child.PreviousSibling = null;
+        child.NextSibling = null;
     }
+
+    /// <summary>
+    /// Adds a child layout object to its parent, maintaining the linked list structure.
+/// </summary>
+private void AddChild(LayoutObject parent, LayoutObject child, LayoutObject? beforeChild = null)
+{
+    child.Parent = parent;
+    
+    if (beforeChild == null)
+    {
+        // Add at the end
+        if (parent.FirstChild == null)
+        {
+            parent.FirstChild = child;
+        }
+        else
+        {
+            // Find last child
+            var lastChild = parent.FirstChild;
+            while (lastChild.NextSibling != null)
+            {
+                lastChild = lastChild.NextSibling;
+            }
+            lastChild.NextSibling = child;
+            child.PreviousSibling = lastChild;
+        }
+    }
+    else
+    {
+        // Insert before the specified child
+        child.NextSibling = beforeChild;
+        child.PreviousSibling = beforeChild.PreviousSibling;
+        
+        if (beforeChild.PreviousSibling != null)
+        {
+            beforeChild.PreviousSibling.NextSibling = child;
+        }
+        else
+        {
+            parent.FirstChild = child;
+        }
+        
+        beforeChild.PreviousSibling = child;
+    }
+}
 }
 
 /// <summary>
@@ -493,4 +529,9 @@ public class AttachmentContext
     /// Style recalc context if we're attaching during style recalc.
     /// </summary>
     public StyleRecalcContext? StyleRecalcContext { get; set; }
+
+    /// <summary>
+    /// Whether a layout object was destroyed during this operation.
+    /// </summary>
+    public bool WasDestroyed { get; set; }
 }

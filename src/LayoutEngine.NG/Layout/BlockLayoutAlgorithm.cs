@@ -44,7 +44,7 @@ public class BlockLayoutAlgorithm
     }
 
     /// <summary>
-    /// Performs block layout and returns the result.
+    /// Performs block layout and returns the result with PhysicalFragment.
     /// </summary>
     public LayoutResult Layout()
     {
@@ -66,7 +66,7 @@ public class BlockLayoutAlgorithm
         // Step 6: Calculate final block size
         CalculateFinalBlockSize();
 
-        // Step 7: Create and return the fragment
+        // Step 7: Create and return the fragment using builder
         return CreateLayoutResult();
     }
 
@@ -219,6 +219,38 @@ public class BlockLayoutAlgorithm
         _intrinsicBlockSize = currentBlockOffset + _padding.BlockEnd + _borders.BlockEnd;
     }
 
+    private LayoutResult CreateLayoutResult()
+    {
+        // Calculate final size
+        var borderBoxSize = new PhysicalSize(
+            _contentInlineSize + _borders.InlineSum + _padding.InlineSum,
+            _contentBlockSize + _borders.BlockSum + _padding.BlockSum
+        );
+
+        // Create fragment using modern builder pattern
+        var fragment = PhysicalFragment.CreateBuilder()
+            .SetSize(borderBoxSize)
+            .SetOffset(PhysicalOffset.Zero) // Parent will position
+            .SetLayoutObject(_node)
+            .SetMargins(_margins)
+            .SetBorders(_borders)
+            .SetPadding(_padding)
+            .AddChildren(_childFragments)
+            .SetIsFormattingContextRoot(_node.EstablishesFormattingContext())
+            .SetEndMarginStrut(_marginStrut)
+            .SetBaseline(CalculateBaseline())
+            .Build();
+
+        // Create result
+        return new LayoutResult(
+            fragment,
+            _intrinsicBlockSize,
+            _marginStrut,
+            0, // BFC offset
+            _isFixedBlockSize && HasPercentageHeight()
+        );
+    }
+
     private PhysicalFragment? LayoutBlockChild(
         LayoutBlockFlow child,
         float availableInlineSize,
@@ -234,7 +266,7 @@ public class BlockLayoutAlgorithm
             .SetMarginStrut(_marginStrut)
             .Build();
 
-        // Layout child
+        // Layout child using modern algorithm
         var childAlgorithm = new BlockLayoutAlgorithm(child, childConstraintSpace);
         var childResult = childAlgorithm.Layout();
         var childFragment = childResult.PhysicalFragment;
@@ -249,7 +281,7 @@ public class BlockLayoutAlgorithm
             blockOffset
         );
 
-        // Create positioned fragment
+        // Create positioned fragment using builder
         var positionedFragment = PhysicalFragment.CreateBuilder()
             .SetSize(childFragment.Size)
             .SetOffset(childOffset)
@@ -264,14 +296,12 @@ public class BlockLayoutAlgorithm
             .Build();
 
         // Update margin strut for next child
-        if (childFragment.IsSelfCollapsing)
+        if (childResult.PhysicalFragment.IsSelfCollapsing)
         {
-            // Self-collapsing blocks don't affect position
             _marginStrut.Merge(childResult.EndMarginStrut);
         }
         else
         {
-            // Regular block - end margin becomes new strut
             _marginStrut = childResult.EndMarginStrut;
         }
 
@@ -308,38 +338,6 @@ public class BlockLayoutAlgorithm
             _contentBlockSize = Math.Max(0,
                 _intrinsicBlockSize - _borders.BlockSum - _padding.BlockSum);
         }
-    }
-
-    private LayoutResult CreateLayoutResult()
-    {
-        // Calculate final size
-        var borderBoxSize = new PhysicalSize(
-            _contentInlineSize + _borders.InlineSum + _padding.InlineSum,
-            _contentBlockSize + _borders.BlockSum + _padding.BlockSum
-        );
-
-        // Create fragment
-        var fragment = PhysicalFragment.CreateBuilder()
-            .SetSize(borderBoxSize)
-            .SetOffset(PhysicalOffset.Zero) // Parent will position
-            .SetLayoutObject(_node)
-            .SetMargins(_margins)
-            .SetBorders(_borders)
-            .SetPadding(_padding)
-            .AddChildren(_childFragments)
-            .SetIsFormattingContextRoot(_node.EstablishesFormattingContext())
-            .SetEndMarginStrut(_marginStrut)
-            .SetBaseline(CalculateBaseline())
-            .Build();
-
-        // Create result
-        return new LayoutResult(
-            fragment,
-            _intrinsicBlockSize,
-            _marginStrut,
-            0, // BFC offset
-            _isFixedBlockSize && HasPercentageHeight()
-        );
     }
 
     private float CalculateBaseline()

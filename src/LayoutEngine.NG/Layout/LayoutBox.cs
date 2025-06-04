@@ -15,12 +15,6 @@ public class LayoutBox : LayoutObject
     public PhysicalOffset Location { get; set; }
 
     /// <summary>
-    /// The size of this box's content area.
-    /// In LayoutNG, this is the content box size (excludes padding and borders).
-    /// </summary>
-    public PhysicalSize ContentSize { get; set; }
-
-    /// <summary>
     /// The box's padding area.
     /// In LayoutNG, padding is part of the box model.
     /// </summary>
@@ -43,6 +37,7 @@ public class LayoutBox : LayoutObject
     /// In LayoutNG, determines clipping and scrolling.
     /// </summary>
     public Overflow OverflowX { get; set; } = Overflow.Visible;
+
     public Overflow OverflowY { get; set; } = Overflow.Visible;
 
     /// <summary>
@@ -83,34 +78,47 @@ public class LayoutBox : LayoutObject
     /// <summary>
     /// Creates a physical fragment for this layout box.
     /// </summary>
-    public virtual PhysicalFragment CreatePhysicalFragment()
+    public override PhysicalFragment CreatePhysicalFragment()
     {
         return PhysicalFragment.CreateBuilder()
             .SetLayoutObject(this)
             .SetOffset(Location)
             .SetSize(BorderBoxSize)
-            .SetMargins(new PhysicalBoxStrut
-            {
-                InlineStart = Margin.Left,
-                InlineEnd = Margin.Right,
-                BlockStart = Margin.Top,
-                BlockEnd = Margin.Bottom
-            })
-            .SetBorders(new PhysicalBoxStrut
-            {
-                InlineStart = Border.Left,
-                InlineEnd = Border.Right,
-                BlockStart = Border.Top,
-                BlockEnd = Border.Bottom
-            })
-            .SetPadding(new PhysicalBoxStrut
-            {
-                InlineStart = Padding.Left,
-                InlineEnd = Padding.Right,
-                BlockStart = Padding.Top,
-                BlockEnd = Padding.Bottom
-            })
+            .SetMargins(new PhysicalBoxStrut(
+                Margin.Top, // BlockStart
+                Margin.Right, // InlineEnd
+                Margin.Bottom, // BlockEnd
+                Margin.Left // InlineStart
+            ))
+            .SetBorders(new PhysicalBoxStrut(
+                Border.Top,
+                Border.Right,
+                Border.Bottom,
+                Border.Left
+            ))
+            .SetPadding(new PhysicalBoxStrut(
+                Padding.Top,
+                Padding.Right,
+                Padding.Bottom,
+                Padding.Left
+            ))
             .Build();
+    }
+
+    /// <summary>
+    /// Performs layout for this box.
+    /// In LayoutNG, this is typically overridden by specific layout algorithms.
+    /// </summary>
+    public virtual void Layout()
+    {
+        // Default implementation - mark as no longer needing layout
+        NeedsLayout = false;
+
+        // Update content size if not set
+        if (ContentSize.Width == 0 && ContentSize.Height == 0)
+        {
+            ContentSize = new PhysicalSize(100, 50); // Default size
+        }
     }
 
     public override LayoutObjectType GetLayoutObjectType()

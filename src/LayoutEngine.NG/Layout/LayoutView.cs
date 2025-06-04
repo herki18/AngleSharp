@@ -92,57 +92,6 @@ public class LayoutView : LayoutBlockFlow
     }
 
     /// <summary>
-    /// Performs layout starting from this LayoutView.
-    /// In LayoutNG, this is UpdateLayout() or similar.
-    /// This is the main entry point for layout calculation.
-    /// </summary>
-    public void Layout()
-    {
-        if (!NeedsLayout)
-            return;
-
-        if (IsInLayout)
-        {
-            // Prevent re-entrancy
-            return;
-        }
-
-        IsInLayout = true;
-        try
-        {
-            // Set the view's own size from viewport
-            ContentSize = new PhysicalSize(ViewportWidth, ViewportHeight);
-            Location = PhysicalOffset.Zero;
-
-            // Create initial constraint space
-            var constraintSpace = new LayoutConstraintSpace
-            {
-                AvailableWidth = ViewportWidth,
-                AvailableHeight = ViewportHeight,
-                IsFixedWidth = true,
-                IsFixedHeight = true,
-                IsNewFormattingContext = true
-            };
-
-            // Layout children
-            LayoutChildren(constraintSpace);
-
-            // Clear the needs layout flag
-            NeedsLayout = false;
-
-            // Update overflow after layout
-            UpdateLayoutOverflow();
-
-            // Create fragment for this view
-            Fragment = CreateFragment();
-        }
-        finally
-        {
-            IsInLayout = false;
-        }
-    }
-
-    /// <summary>
     /// Layouts the children of this view.
     /// </summary>
     private void LayoutChildren(LayoutConstraintSpace constraintSpace)
@@ -181,7 +130,7 @@ public class LayoutView : LayoutBlockFlow
                 box.NeedsLayout = false;
 
                 // Create fragment for child
-                box.Fragment = box.CreateFragment();
+                box.PhysicalFragment = box.CreatePhysicalFragment();
             }
 
             child = child.NextSibling;
@@ -210,9 +159,9 @@ public class LayoutView : LayoutBlockFlow
         var child = FirstChild;
         while (child != null)
         {
-            if (child.Fragment != null)
+            if (child.PhysicalFragment != null)
             {
-                var childBounds = child.Fragment;
+                var childBounds = child.PhysicalFragment;
                 LayoutOverflowSize = new PhysicalSize(
                     System.Math.Max(LayoutOverflowSize.Width,
                         childBounds.Offset.Left + childBounds.Size.Width),

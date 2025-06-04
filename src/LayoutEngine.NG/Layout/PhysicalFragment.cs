@@ -218,21 +218,6 @@ public class PhysicalFragment
             return new PhysicalFragment(this);
         }
     }
-
-    /// <summary>
-    /// Converts this physical fragment to a legacy Fragment for compatibility.
-    /// </summary>
-    public Fragment ToLegacyFragment()
-    {
-        return new Fragment
-        {
-            LayoutObject = LayoutObject,
-            Offset = new PhysicalOffset(Offset.Left, Offset.Top),
-            Size = new PhysicalSize(Size.Width, Size.Height),
-            IsFragmented = false,
-            BreakToken = BreakToken
-        };
-    }
 }
 
 /// <summary>
