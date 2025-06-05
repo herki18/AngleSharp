@@ -59,8 +59,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AngleSharp", "AngleSharp", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LayoutEngine.Contracts.AngleSharp", "LayoutEngine.Contracts.AngleSharp\LayoutEngine.Contracts.AngleSharp.csproj", "{CBC2AFC6-4781-4E77-845F-6AF435ED8E14}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LayoutEngine.NG", "LayoutEngine.NG\LayoutEngine.NG.csproj", "{BD4C2A9D-FDDD-409B-8A67-1CF42F0F5E62}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -141,10 +139,6 @@ Global
 		{CBC2AFC6-4781-4E77-845F-6AF435ED8E14}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CBC2AFC6-4781-4E77-845F-6AF435ED8E14}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CBC2AFC6-4781-4E77-845F-6AF435ED8E14}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BD4C2A9D-FDDD-409B-8A67-1CF42F0F5E62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BD4C2A9D-FDDD-409B-8A67-1CF42F0F5E62}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BD4C2A9D-FDDD-409B-8A67-1CF42F0F5E62}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BD4C2A9D-FDDD-409B-8A67-1CF42F0F5E62}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -170,6 +164,5 @@ Global
 		{0F54F0A0-B23E-427B-A7B3-F556901BB4EF} = {CD5BA6A4-8FC6-480B-B055-EA57875DF291}
 		{91F78C48-287E-41B5-9E49-44D6E1E31290} = {CD5BA6A4-8FC6-480B-B055-EA57875DF291}
 		{CBC2AFC6-4781-4E77-845F-6AF435ED8E14} = {8141EB56-BB5B-4B13-9F5C-A05A58A0E228}
-		{BD4C2A9D-FDDD-409B-8A67-1CF42F0F5E62} = {8141EB56-BB5B-4B13-9F5C-A05A58A0E228}
 	EndGlobalSection
 EndGlobal
