@@ -313,6 +313,18 @@
       "targetDirectory": "C:\\dev\\Git\\Training\\JSXEngine\\src\\JSXEngine4\\Assets\\V3\\Code",
       "outputFileNamePattern": "Unity.V3.txt",
       "skip": true
-    } 
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\ladybird\\Libraries\\LibDevTools",
+      "outputFileNamePattern": "LadyBird.Libraries.LibDevTools.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false,
+        "compress": false
+      }
+    }
   ]
 }

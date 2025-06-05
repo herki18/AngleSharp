@@ -59,6 +59,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AngleSharp", "AngleSharp", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LayoutEngine.Contracts.AngleSharp", "LayoutEngine.Contracts.AngleSharp\LayoutEngine.Contracts.AngleSharp.csproj", "{CBC2AFC6-4781-4E77-845F-6AF435ED8E14}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LadyBird", "LadyBird", "{F17869CB-3C95-4530-A3AE-C66B84E9BD95}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LadyBird.Libraries.LibDevTools", "LadyBird.Libraries.LibDevTools\LadyBird.Libraries.LibDevTools.csproj", "{8511FC7A-4990-4376-A3A4-B629AD494BC4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LadyBird.Libraries.LibWeb", "LadyBird.Libraries.LibWeb\LadyBird.Libraries.LibWeb.csproj", "{1C121731-FF02-41EA-8FD0-F38A22ED9ACE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LadyBird.Libraries.LibWebView", "LadyBird.Libraries.LibWebView\LadyBird.Libraries.LibWebView.csproj", "{042784C2-78B0-4AD9-B440-B6076F1D9C2D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -139,6 +147,18 @@ Global
 		{CBC2AFC6-4781-4E77-845F-6AF435ED8E14}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CBC2AFC6-4781-4E77-845F-6AF435ED8E14}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CBC2AFC6-4781-4E77-845F-6AF435ED8E14}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8511FC7A-4990-4376-A3A4-B629AD494BC4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8511FC7A-4990-4376-A3A4-B629AD494BC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8511FC7A-4990-4376-A3A4-B629AD494BC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8511FC7A-4990-4376-A3A4-B629AD494BC4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C121731-FF02-41EA-8FD0-F38A22ED9ACE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C121731-FF02-41EA-8FD0-F38A22ED9ACE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C121731-FF02-41EA-8FD0-F38A22ED9ACE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C121731-FF02-41EA-8FD0-F38A22ED9ACE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{042784C2-78B0-4AD9-B440-B6076F1D9C2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{042784C2-78B0-4AD9-B440-B6076F1D9C2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{042784C2-78B0-4AD9-B440-B6076F1D9C2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{042784C2-78B0-4AD9-B440-B6076F1D9C2D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -164,5 +184,8 @@ Global
 		{0F54F0A0-B23E-427B-A7B3-F556901BB4EF} = {CD5BA6A4-8FC6-480B-B055-EA57875DF291}
 		{91F78C48-287E-41B5-9E49-44D6E1E31290} = {CD5BA6A4-8FC6-480B-B055-EA57875DF291}
 		{CBC2AFC6-4781-4E77-845F-6AF435ED8E14} = {8141EB56-BB5B-4B13-9F5C-A05A58A0E228}
+		{8511FC7A-4990-4376-A3A4-B629AD494BC4} = {F17869CB-3C95-4530-A3AE-C66B84E9BD95}
+		{1C121731-FF02-41EA-8FD0-F38A22ED9ACE} = {F17869CB-3C95-4530-A3AE-C66B84E9BD95}
+		{042784C2-78B0-4AD9-B440-B6076F1D9C2D} = {F17869CB-3C95-4530-A3AE-C66B84E9BD95}
 	EndGlobalSection
 EndGlobal
