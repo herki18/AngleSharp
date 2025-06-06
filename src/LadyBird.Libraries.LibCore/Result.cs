@@ -1,4 +1,4 @@
-﻿namespace LadyBird.Libraries.LibDevTools;
+﻿namespace LadyBird.Libraries.LibCore;
 
 using System;
 

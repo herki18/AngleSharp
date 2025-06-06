@@ -67,6 +67,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LadyBird.Libraries.LibWeb",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LadyBird.Libraries.LibWebView", "LadyBird.Libraries.LibWebView\LadyBird.Libraries.LibWebView.csproj", "{042784C2-78B0-4AD9-B440-B6076F1D9C2D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LadyBird.Libraries.LibCore", "LadyBird.Libraries.LibCore\LadyBird.Libraries.LibCore.csproj", "{6C0C679E-789C-49BB-A832-1211C5B6CA34}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -159,6 +161,10 @@ Global
 		{042784C2-78B0-4AD9-B440-B6076F1D9C2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{042784C2-78B0-4AD9-B440-B6076F1D9C2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{042784C2-78B0-4AD9-B440-B6076F1D9C2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6C0C679E-789C-49BB-A832-1211C5B6CA34}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6C0C679E-789C-49BB-A832-1211C5B6CA34}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6C0C679E-789C-49BB-A832-1211C5B6CA34}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6C0C679E-789C-49BB-A832-1211C5B6CA34}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -187,5 +193,6 @@ Global
 		{8511FC7A-4990-4376-A3A4-B629AD494BC4} = {F17869CB-3C95-4530-A3AE-C66B84E9BD95}
 		{1C121731-FF02-41EA-8FD0-F38A22ED9ACE} = {F17869CB-3C95-4530-A3AE-C66B84E9BD95}
 		{042784C2-78B0-4AD9-B440-B6076F1D9C2D} = {F17869CB-3C95-4530-A3AE-C66B84E9BD95}
+		{6C0C679E-789C-49BB-A832-1211C5B6CA34} = {F17869CB-3C95-4530-A3AE-C66B84E9BD95}
 	EndGlobalSection
 EndGlobal

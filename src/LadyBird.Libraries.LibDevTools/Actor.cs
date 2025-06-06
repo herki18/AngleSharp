@@ -1,95 +1,81 @@
-﻿// Copyright (c) 2025, Tim Flynn <trflynn89@ladybird.org>
-// SPDX-License-Identifier: BSD-2-Clause
-
-namespace LadyBird.Libraries.LibDevTools;
+﻿namespace LadyBird.Libraries.LibDevTools;
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Text.Json.Nodes;
+using System.Threading.Tasks;
 
-// C# translation of C++ class Actor
 public abstract class Actor
 {
-    public class Message
+    public struct Message
     {
-        public string Type { get; set; } = string.Empty;
-        public JsonObject Data { get; set; } = new JsonObject();
-        public ulong Id { get; set; } = 0;
+        public string Type { get; set; }
+        public JsonObject Data { get; set; }
+        public ulong Id { get; set; }
     }
 
-    private DevToolsServer _devtools;
-    private string _name;
-    private List<PendingResponse> _pendingResponses = new List<PendingResponse>();
+    private readonly DevToolsServer _devtools;
+    private readonly string _name;
+    private readonly List<PendingResponse> _pendingResponses = new();
     private ulong _nextMessageId = 0;
 
     protected Actor(DevToolsServer devtools, string name)
     {
-        _devtools = devtools;
-        _name = name;
-    }
-
-    // C++: virtual ~Actor();
-    ~Actor()
-    {
-        // Destructor logic if needed
+        _devtools = devtools ?? throw new ArgumentNullException(nameof(devtools));
+        _name = name ?? throw new ArgumentNullException(nameof(name));
     }
 
     public string Name => _name;
 
-    // C++: void message_received(StringView type, JsonObject message)
+    // From C++: void message_received(StringView type, JsonObject message)
     public void MessageReceived(string type, JsonObject message)
     {
         var messageId = _nextMessageId++;
-        _pendingResponses.Add(new PendingResponse { Id = messageId, Response = null });
-
+        _pendingResponses.Add(new PendingResponse { Id = messageId });
         HandleMessage(new Message { Type = type, Data = message, Id = messageId });
     }
 
-    // C++: void send_response(Message const&, JsonObject)
+    // From C++: void send_response(Message const& message, JsonObject response)
     public void SendResponse(Message message, JsonObject response)
     {
-        var connection = Devtools().Connection();
+        var connection = Devtools.Connection;
         if (connection == null)
             return;
 
-        response.Set("from", Name);
+        response["from"] = Name;
 
-        for (int i = 0; i < _pendingResponses.Count; ++i)
+        for (int i = 0; i < _pendingResponses.Count; i++)
         {
             var pendingResponse = _pendingResponses[i];
             if (pendingResponse.Id != message.Id)
                 continue;
 
-            pendingResponse.Response = response;
-
+            _pendingResponses[i] = new PendingResponse { Id = pendingResponse.Id, Response = response };
             if (i != 0)
                 return;
         }
 
         int numberOfSentMessages = 0;
-
         foreach (var pendingResponse in _pendingResponses)
         {
             if (!pendingResponse.Response.HasValue)
                 break;
 
             connection.SendMessage(pendingResponse.Response.Value);
-            ++numberOfSentMessages;
+            numberOfSentMessages++;
         }
 
-        if (numberOfSentMessages > 0)
-            _pendingResponses.RemoveRange(0, numberOfSentMessages);
+        _pendingResponses.RemoveRange(0, numberOfSentMessages);
     }
 
-    // C++: void send_message(JsonObject)
+    // From C++: void send_message(JsonObject message)
     public void SendMessage(JsonObject message)
     {
-        var connection = Devtools().Connection();
+        var connection = Devtools.Connection;
         if (connection == null)
             return;
 
-        message.Set("from", Name);
+        message["from"] = Name;
 
         if (_pendingResponses.Count == 0)
         {
@@ -97,94 +83,125 @@ public abstract class Actor
             return;
         }
 
-        _pendingResponses.Add(new PendingResponse { Id = null, Response = message });
+        _pendingResponses.Add(new PendingResponse { Response = message });
     }
 
-    // C++: void send_missing_parameter_error(Optional<Message const&>, StringView parameter)
+    // From C++: void send_missing_parameter_error(Optional<Message const&> message, StringView parameter)
     public void SendMissingParameterError(Message? message, string parameter)
     {
-        var error = new JsonObject();
-        error.Set("error", "missingParameter");
-        error.Set("message", String.Format("Missing parameter: '{0}'", parameter));
+        var error = new JsonObject
+        {
+            ["error"] = "missingParameter",
+            ["message"] = $"Missing parameter: '{parameter}'"
+        };
 
-        if (message != null)
-            SendResponse(message, error);
+        if (message.HasValue)
+            SendResponse(message.Value, error);
         else
             SendMessage(error);
     }
 
-    // C++: void send_unrecognized_packet_type_error(Message const&)
+    // From C++: void send_unrecognized_packet_type_error(Message const& message)
     public void SendUnrecognizedPacketTypeError(Message message)
     {
-        var error = new JsonObject();
-        error.Set("error", "unrecognizedPacketType");
-        error.Set("message", String.Format("Unrecognized packet type: '{0}'", message.Type));
+        var error = new JsonObject
+        {
+            ["error"] = "unrecognizedPacketType",
+            ["message"] = $"Unrecognized packet type: '{message.Type}'"
+        };
+
         SendResponse(message, error);
     }
 
-    // C++: void send_unknown_actor_error(Optional<Message const&>, StringView actor)
+    // From C++: void send_unknown_actor_error(Optional<Message const&> message, StringView actor)
     public void SendUnknownActorError(Message? message, string actor)
     {
-        var error = new JsonObject();
-        error.Set("error", "unknownActor");
-        error.Set("message", String.Format("Unknown actor: '{0}'", actor));
+        var error = new JsonObject
+        {
+            ["error"] = "unknownActor",
+            ["message"] = $"Unknown actor: '{actor}'"
+        };
 
-        if (message != null)
-            SendResponse(message, error);
+        if (message.HasValue)
+            SendResponse(message.Value, error);
         else
             SendMessage(error);
     }
 
-    // C++: protected virtual void handle_message(Message const&) = 0;
     protected abstract void HandleMessage(Message message);
 
-    // C++: DevToolsServer& devtools()
-    protected DevToolsServer Devtools() => _devtools;
+    protected DevToolsServer Devtools => _devtools;
 
-    // C++: template<typename ParameterType> auto get_required_parameter(Message const& message, StringView parameter)
-    protected T? GetRequiredParameter<T>(Message message, string parameter)
+    // From C++: template<typename ParameterType> auto get_required_parameter(Message const& message, StringView parameter)
+    protected Result<T> GetRequiredParameter<T>(Message message, string parameter)
     {
-        object? result = null;
-        if (typeof(T) == typeof(int) || typeof(T) == typeof(long) || typeof(T) == typeof(ulong))
-            result = message.Data.GetInteger<T>(parameter);
-        else if (typeof(T) == typeof(bool))
-            result = message.Data.GetBool(parameter);
-        else if (typeof(T) == typeof(string))
-            result = message.Data.GetString(parameter);
-        else if (typeof(T) == typeof(JsonObject))
-            result = message.Data.GetObject(parameter);
-        else if (typeof(T) == typeof(JsonArray))
-            result = message.Data.GetArray(parameter);
-        else
-            throw new NotImplementedException("Type not supported in GetRequiredParameter");
+        try
+        {
+            if (!message.Data.ContainsKey(parameter))
+            {
+                SendMissingParameterError(message, parameter);
+                return Result<T>.Failure(new Exception($"Missing parameter: {parameter}"));
+            }
 
-        if (result == null)
+            var value = message.Data[parameter];
+
+            if (typeof(T) == typeof(string))
+            {
+                return Result<T>.Success((T)(object)value.GetValue<string>());
+            }
+            else if (typeof(T) == typeof(bool))
+            {
+                return Result<T>.Success((T)(object)value.GetValue<bool>());
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                return Result<T>.Success((T)(object)value.GetValue<int>());
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                return Result<T>.Success((T)(object)value.GetValue<ulong>());
+            }
+            else if (typeof(T) == typeof(JsonObject))
+            {
+                return Result<T>.Success((T)(object)value.AsObject());
+            }
+            else if (typeof(T) == typeof(JsonArray))
+            {
+                return Result<T>.Success((T)(object)value.AsArray());
+            }
+            else
+            {
+                throw new NotSupportedException($"Type {typeof(T)} is not supported");
+            }
+        }
+        catch (Exception ex)
+        {
             SendMissingParameterError(message, parameter);
-
-        return (T?)result;
+            return Result<T>.Failure(ex);
+        }
     }
 
-    // C++: template<typename ActorType = Actor, typename Handler> auto async_handler(Optional<Message const&> message, Handler&& handler)
-    protected Action<Result> AsyncHandler<TActor>(Message? message, Action<TActor, object, JsonObject> handler)
-        where TActor : Actor
+    // From C++: template<typename ActorType = Actor, typename Handler> auto async_handler(Optional<Message const&> message, Handler&& handler)
+    protected Func<Result<TResult>, Task> AsyncHandler<TActorType, TResult>(Message? message, Action<TActorType, TResult, JsonObject> handler)
+        where TActorType : Actor
     {
-        ulong? messageId = message?.Id;
+        var messageId = message?.Id;
+        var weakSelf = new WeakReference<TActorType>((TActorType)this); // Mapping from C++ WeakPtr
 
-        // Weak reference to self
-        var weakSelf = new WeakReference<TActor>((TActor)this);
-
-        return (result) =>
+        return async (result) =>
         {
-            if (result.IsError)
+            if (result.IsFailure)
             {
-                Debug.DbgLnIf(Debug.DevtoolsDebug, "Error performing async action: {0}", result.Error);
+                // C++ equivalent: dbgln_if(DEVTOOLS_DEBUG, "Error performing async action: {}", result.error());
+                Console.WriteLine($"Error performing async action: {result.Error}");
                 return;
             }
 
+            // Using WeakReference.TryGetTarget instead of C++ weak_ptr.strong_ref()
             if (weakSelf.TryGetTarget(out var self))
             {
                 var response = new JsonObject();
-                handler(self, result.ReleaseValue(), response);
+                handler(self, result.Value, response);
 
                 if (messageId.HasValue)
                     self.SendResponse(new Message { Id = messageId.Value }, response);
@@ -194,17 +211,16 @@ public abstract class Actor
         };
     }
 
-    // C++: auto default_async_handler(Message const& message)
-    protected Action<Result> DefaultAsyncHandler(Message message)
+    // From C++: auto default_async_handler(Message const& message)
+    protected Func<Result<object>, Task> DefaultAsyncHandler(Message message)
     {
-        return AsyncHandler<Actor>(message, (self, value, response) => { });
+        return AsyncHandler<Actor, object>(message, (self, result, response) => { });
     }
 
-    // C++: struct PendingResponse
-    private class PendingResponse
+    private struct PendingResponse
     {
-        public ulong? Id;
-        public JsonObject? Response;
+        public ulong? Id { get; set; }
+        public JsonObject? Response { get; set; }
 
         public bool HasValue => Response != null;
     }

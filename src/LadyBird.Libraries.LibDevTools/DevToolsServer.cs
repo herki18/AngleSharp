@@ -1,158 +1,136 @@
-﻿// Main implementation here, using file-scoped namespace and C# naming conventions
-
-namespace LadyBird.Libraries.LibDevTools;
+﻿namespace LadyBird.Libraries.LibDevTools;
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Text.Json.Nodes;
+using System.Threading.Tasks;
+using Actors;
 
 public class DevToolsServer
 {
-    private static ulong _serverCount = 0;
+    private static ulong s_serverCount = 0;
 
-    private readonly CoreTcpServer _server;
-    private Connection _connection;
-    private readonly IDevToolsDelegate _delegate;
-    private readonly Dictionary<string, Actor> _actorRegistry = new();
-    private RootActor _rootActor = null;
+    private readonly Core.TcpServer _server;
+    private readonly DevToolsDelegate _delegate;
     private readonly ulong _serverId;
+    private Connection _connection;
+    private readonly Dictionary<string, Actor> _actorRegistry = new();
+    private RootActor _rootActor;
     private ulong _actorCount = 0;
 
-    // C++: static ErrorOr<NonnullOwnPtr<DevToolsServer>> create(DevToolsDelegate&, u16 port);
-    public static Result<DevToolsServer> Create(IDevToolsDelegate devToolsDelegate, ushort port)
+    // From C++: static ErrorOr<NonnullOwnPtr<DevToolsServer>> create(DevToolsDelegate&, u16 port)
+    public static Result<DevToolsServer> Create(DevToolsDelegate devToolsDelegate, ushort port)
     {
-        // C++: auto address = IPv4Address::from_string("0.0.0.0"sv).release_value();
-        var address = IPv4Address.FromString("0.0.0.0"); // Stub
-
-        // C++: auto server = TRY(Core::TCPServer::try_create());
-        var serverResult = CoreTcpServer.TryCreate();
-        if (serverResult.IsFailure)
-            return Result<DevToolsServer>.Failure(serverResult.Error);
-
-        var server = serverResult.Value;
-
-        // C++: TRY(server->listen(address, port, Core::TCPServer::AllowAddressReuse::Yes));
-        var listenResult = server.Listen(address, port, allowAddressReuse: true);
-        if (listenResult.IsFailure)
-            return Result<DevToolsServer>.Failure(listenResult.Error);
-
-        return Result<DevToolsServer>.Success(new DevToolsServer(devToolsDelegate, server));
-    }
-
-    // C++: explicit DevToolsServer(DevToolsDelegate&, NonnullRefPtr<Core::TCPServer>);
-    private DevToolsServer(IDevToolsDelegate devToolsDelegate, CoreTcpServer server)
-    {
-        _server = server;
-        _delegate = devToolsDelegate;
-        _serverId = _serverCount++;
-
-        _server.OnReadyToAccept = () =>
+        try
         {
-            var result = OnNewClient();
-            if (result.IsFailure)
-            {
-                // C++: warnln("Failed to accept DevTools client: {}", result.error());
-                Console.WriteLine($"Failed to accept DevTools client: {result.Error}");
-            }
-        };
+            var address = IPAddress.Parse("0.0.0.0");
+            var server = Core.TcpServer.TryCreate();
+            server.Listen(address, port, Core.TcpServer.AllowAddressReuse.Yes);
+            return Result<DevToolsServer>.Success(new DevToolsServer(devToolsDelegate, server));
+        }
+        catch (Exception ex)
+        {
+            return Result<DevToolsServer>.Failure(ex);
+        }
     }
 
-    // C++: ~DevToolsServer()
-    ~DevToolsServer()
+    private DevToolsServer(DevToolsDelegate devToolsDelegate, Core.TcpServer server)
     {
-        // No explicit cleanup needed in C#
+        _server = server ?? throw new ArgumentNullException(nameof(server));
+        _delegate = devToolsDelegate ?? throw new ArgumentNullException(nameof(devToolsDelegate));
+        _serverId = s_serverCount++;
+
+        _server.ReadyToAccept += OnNewClient;
     }
 
-    // C++: RefPtr<Connection>& connection() { return m_connection; }
     public Connection Connection => _connection;
-
-    // C++: DevToolsDelegate const& delegate() const { return m_delegate; }
-    public IDevToolsDelegate Delegate => _delegate;
-
-    // C++: ActorRegistry const& actor_registry() const { return m_actor_registry; }
+    public DevToolsDelegate Delegate => _delegate;
     public IReadOnlyDictionary<string, Actor> ActorRegistry => _actorRegistry;
 
-    // C++: template<typename ActorType, typename... Args>
-    //       ActorType& register_actor(Args&&... args)
-    public T RegisterActor<T>(params object[] args) where T : Actor
-    {
-        string name;
-        var id = _actorCount++;
-
-        if (typeof(T) == typeof(RootActor))
-        {
-            // C++: name = String::from_utf8_without_validation(ActorType::base_name.bytes());
-            name = T.BaseName;
-        }
-        else
-        {
-            // C++: name = MUST(String::formatted("server{}-{}{}", m_server_id, ActorType::base_name, id));
-            name = $"server{_serverId}-{T.BaseName}{id}";
-        }
-
-        // C++: auto actor = ActorType::create(*this, name, forward<Args>(args)...);
-        var actor = (T)Activator.CreateInstance(typeof(T), this, name, args)!;
-        _actorRegistry[name] = actor;
-
-        return actor;
-    }
-
-    // C++: void refresh_tab_list()
+    // From C++: void refresh_tab_list()
     public void RefreshTabList()
     {
         if (_rootActor == null)
             return;
 
-        // Remove all TabActor entries from the registry
+        // Remove all TabActor instances
         var keysToRemove = new List<string>();
         foreach (var kvp in _actorRegistry)
         {
             if (kvp.Value is TabActor)
                 keysToRemove.Add(kvp.Key);
         }
+
         foreach (var key in keysToRemove)
             _actorRegistry.Remove(key);
 
         _rootActor.SendTabListChangedMessage();
     }
 
-    // C++: ErrorOr<void> on_new_client()
-    private Result<object> OnNewClient()
+    // From C++: template<typename ActorType, typename... Args> ActorType& register_actor(Args&&... args)
+    public TActorType RegisterActor<TActorType>(params object[] args) where TActorType : Actor
     {
-        if (_connection != null)
-            return Result<object>.Failure(new InvalidOperationException("Only one active DevTools connection is currently allowed"));
+        string name;
+        var id = _actorCount++;
 
-        var clientResult = _server.Accept();
-        if (clientResult.IsFailure)
-            return Result<object>.Failure(clientResult.Error);
+        if (typeof(TActorType) == typeof(RootActor))
+        {
+            name = RootActor.BaseName;
+        }
+        else
+        {
+            var baseName = typeof(TActorType).GetField("BaseName")?.GetValue(null) as string ?? "unknown";
+            name = $"server{_serverId}-{baseName}{id}";
+        }
 
-        var client = clientResult.Value;
+        // Create actor using reflection to call the static Create method
+        var createMethod = typeof(TActorType).GetMethod("Create", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+        if (createMethod == null)
+            throw new InvalidOperationException($"Actor type {typeof(TActorType)} must have a static Create method");
 
-        var bufferedSocketResult = CoreBufferedTcpSocket.Create(client);
-        if (bufferedSocketResult.IsFailure)
-            return Result<object>.Failure(bufferedSocketResult.Error);
+        var allArgs = new object[] { this, name }.Concat(args).ToArray();
+        var actor = (TActorType)createMethod.Invoke(null, allArgs);
 
-        var bufferedSocket = bufferedSocketResult.Value;
-
-        _connection = Connection.Create(bufferedSocket);
-
-        _connection.OnConnectionClosed = () => CloseConnection();
-
-        _connection.OnMessageReceived = message => OnMessageReceived(message);
-
-        _rootActor = RegisterActor<RootActor>();
-
-        RegisterActor<DeviceActor>();
-        RegisterActor<PreferenceActor>();
-        RegisterActor<ProcessActor>(new ProcessDescription { IsParent = true });
-
-        return Result<object>.Success(null);
+        _actorRegistry[name] = actor;
+        return actor;
     }
 
-    // C++: void on_message_received(JsonObject message)
+    // From C++: ErrorOr<void> on_new_client()
+    private void OnNewClient()
+    {
+        try
+        {
+            if (_connection != null)
+            {
+                Console.WriteLine("Only one active DevTools connection is currently allowed");
+                return;
+            }
+
+            var client = _server.Accept();
+            var bufferedSocket = Core.BufferedTcpSocket.Create(client);
+            _connection = this.Connection.Create(bufferedSocket);
+
+            _connection.ConnectionClosed += CloseConnection;
+            _connection.MessageReceived += OnMessageReceived;
+
+            _rootActor = RegisterActor<RootActor>();
+            RegisterActor<DeviceActor>();
+            RegisterActor<PreferenceActor>();
+            RegisterActor<ProcessActor>(new ProcessDescription { IsParent = true });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to accept DevTools client: {ex}");
+        }
+    }
+
+    // From C++: void on_message_received(JsonObject)
     private void OnMessageReceived(JsonObject message)
     {
-        var to = message.GetString("to");
-        if (to == null)
+        if (!message.TryGetPropertyValue("to", out var toValue) ||
+            toValue?.GetValue<string>() is not string to)
         {
             _rootActor?.SendMissingParameterError(null, "to");
             return;
@@ -164,8 +142,8 @@ public class DevToolsServer
             return;
         }
 
-        var type = message.GetString("type");
-        if (type == null)
+        if (!message.TryGetPropertyValue("type", out var typeValue) ||
+            typeValue?.GetValue<string>() is not string type)
         {
             actor.SendMissingParameterError(null, "type");
             return;
@@ -174,16 +152,27 @@ public class DevToolsServer
         actor.MessageReceived(type, message);
     }
 
-    // C++: void close_connection()
+    // From C++: void close_connection()
     private void CloseConnection()
     {
-        // C++: dbgln_if(DEVTOOLS_DEBUG, "Lost connection to the DevTools client");
+        // C++ equivalent: dbgln_if(DEVTOOLS_DEBUG, "Lost connection to the DevTools client")
         Console.WriteLine("Lost connection to the DevTools client");
 
-        // C++: Core::deferred_invoke([this]() { ... });
-        // In C#, just clear immediately (no event loop/deferred invoke)
-        _connection = null;
-        _actorRegistry.Clear();
-        _rootActor = null;
+        // Using Task.Run as equivalent to Core::deferred_invoke
+        Task.Run(() =>
+        {
+            _connection = null;
+            _actorRegistry.Clear();
+            _rootActor = null;
+        });
+    }
+
+    // Helper method to concatenate arrays
+    private static T[] Concat<T>(T[] first, T[] second)
+    {
+        var result = new T[first.Length + second.Length];
+        Array.Copy(first, 0, result, 0, first.Length);
+        Array.Copy(second, 0, result, first.Length, second.Length);
+        return result;
     }
 }

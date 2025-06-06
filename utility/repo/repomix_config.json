@@ -325,6 +325,22 @@
         "noDirectoryStructure": false,
         "compress": false
       }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\ladybird\\Libraries\\LibCore",
+      "outputFileNamePattern": "LadyBird.Libraries.LibCore.txt",
+      "additionalIncludePatterns": [
+        "**/Event*",
+        "**/event*"
+      ],
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false,
+        "compress": false
+      }
     }
   ]
 }

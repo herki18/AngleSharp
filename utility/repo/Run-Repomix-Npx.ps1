@@ -150,6 +150,16 @@ foreach ($task in $config.tasks) {
              }
         }
 
+        # Additional Include Patterns (Task overrides global completely if specified)
+        $effectiveIncludePatterns = $null
+        if ($config.globalSettings.PSObject.Properties.Name -contains 'additionalIncludePatterns') { 
+            $effectiveIncludePatterns = $config.globalSettings.additionalIncludePatterns 
+        }
+        if ($task.PSObject.Properties.Name -contains 'additionalIncludePatterns') {
+            $effectiveIncludePatterns = $task.additionalIncludePatterns
+            Write-Host "  [INFO] Using task-specific include patterns defined in config."
+        }
+
         # Additional Ignore Patterns (Task overrides global completely if specified)
         $effectiveIgnorePatterns = $null
         if ($config.globalSettings.PSObject.Properties.Name -contains 'additionalIgnorePatterns') { $effectiveIgnorePatterns = $config.globalSettings.additionalIgnorePatterns }
@@ -210,12 +220,17 @@ foreach ($task in $config.tasks) {
              }
         }
 
+        # Add include patterns if they exist and the array is not empty
+        if ($effectiveIncludePatterns -and $effectiveIncludePatterns.Count -gt 0) {
+            $includeString = $effectiveIncludePatterns -join ','
+            $argumentList += "--include"
+            $argumentList += $includeString
+        }
+
         # Add ignore patterns if they exist and the array is not empty
         if ($effectiveIgnorePatterns -and $effectiveIgnorePatterns.Count -gt 0) {
             $ignoreString = $effectiveIgnorePatterns -join ','
-            # Add -i flag and the joined string as separate arguments
             $argumentList += "-i"
-            # No explicit quotes needed here for ignore string based on previous logs? Test without first.
             $argumentList += $ignoreString
         }
 
