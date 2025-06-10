@@ -1,7 +1,10 @@
-﻿namespace LadyBird.Libraries.LibCore;
+﻿namespace AK;
 
 using System;
 
+/// <summary>
+/// Represents the result of an operation, which may be a value or an error.
+/// </summary>
 public sealed class Result<T>
 {
     private readonly T? _value;
@@ -111,4 +114,21 @@ public sealed class Result<T>
             ? $"Success({(_value == null ? "null" : _value.ToString())})"
             : $"Failure({Error.GetType().Name}: {Error.Message})";
     }
+}
+
+/// <summary>
+/// Represents a void value for use in generic contexts (like Result<Unit>).
+/// This is the idiomatic .NET/functional programming approach.
+/// </summary>
+public readonly struct Unit : IEquatable<Unit>
+{
+    /// <summary>
+    /// The single value of type Unit.
+    /// </summary>
+    public static readonly Unit Default = new Unit();
+
+    public override string ToString() => "()";
+    public override int GetHashCode() => 0;
+    public override bool Equals(object? obj) => obj is Unit;
+    public bool Equals(Unit other) => true;
 }

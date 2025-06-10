@@ -1,25 +1,25 @@
-﻿// Main implementation of WatcherActor, converted from C++ to C#
-// File-scoped namespace and C# naming conventions are used
+﻿// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/WatcherActor.h
+// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/WatcherActor.cpp
+
+namespace LadyBird.Libraries.LibDevTools.Actors;
 
 using System;
-using System.Collections.Generic;
-
-namespace DevTools;
-
 using System.Text.Json.Nodes;
 using LadyBird.Libraries.LibDevTools;
-using LadyBird.Libraries.LibDevTools.Actors;
 
 public sealed class WatcherActor : Actor
 {
-    public static readonly string BaseName = "watcher";
+    public const string BaseName = "watcher";
 
     // Mapping C++ WeakPtr<TabActor> to C# WeakReference<TabActor>
     private readonly WeakReference<TabActor> _tab;
+
     // Mapping C++ WeakPtr<Actor> to C# WeakReference<Actor>
     private WeakReference<Actor>? _target;
+
     // Mapping C++ WeakPtr<TargetConfigurationActor> to C# WeakReference<TargetConfigurationActor>
     private WeakReference<TargetConfigurationActor>? _targetConfiguration;
+
     // Mapping C++ WeakPtr<ThreadConfigurationActor> to C# WeakReference<ThreadConfigurationActor>
     private WeakReference<ThreadConfigurationActor>? _threadConfiguration;
 
@@ -90,6 +90,7 @@ public sealed class WatcherActor : Actor
             {
                 if (resourceType is not string resourceTypeStr)
                     continue;
+
                 if (resourceTypeStr != "console-message")
                     DebugLogger.DbgLn($"Unrecognized `watchResources` resource type: '{resourceTypeStr}'");
             }
@@ -107,13 +108,20 @@ public sealed class WatcherActor : Actor
 
             if (targetType.Value == "frame")
             {
-                var cssProperties = Devtools.RegisterActor<CSSPropertiesActor>();
+                var cssProperties = Devtools.RegisterActor<CssPropertiesActor>();
                 var console = Devtools.RegisterActor<ConsoleActor>(_tab);
                 var inspector = Devtools.RegisterActor<InspectorActor>(_tab);
                 var styleSheets = Devtools.RegisterActor<StyleSheetsActor>(_tab);
                 var thread = Devtools.RegisterActor<ThreadActor>();
 
-                var target = Devtools.RegisterActor<FrameActor>(_tab, cssProperties, console, inspector, styleSheets, thread);
+                var target = Devtools.RegisterActor<FrameActor>(
+                    _tab,
+                    new WeakReference<CssPropertiesActor>(cssProperties),
+                    new WeakReference<ConsoleActor>(console),
+                    new WeakReference<InspectorActor>(inspector),
+                    new WeakReference<StyleSheetsActor>(styleSheets),
+                    new WeakReference<ThreadActor>(thread));
+
                 _target = new WeakReference<Actor>(target);
 
                 response["type"] = "target-available-form";
@@ -122,7 +130,7 @@ public sealed class WatcherActor : Actor
 
                 target.SendFrameUpdateMessage();
 
-                SendMessage(new Message()); // Empty message as in C++
+                SendMessage(new JsonObject()); // Empty message as in C++
                 return;
             }
         }

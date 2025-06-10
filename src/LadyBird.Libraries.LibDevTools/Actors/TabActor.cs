@@ -1,4 +1,6 @@
-﻿// Main namespace and classes translated from C++
+﻿// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/TabActor.h
+// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/TabActor.cpp
+
 namespace LadyBird.Libraries.LibDevTools.Actors;
 
 using System.Text.Json.Nodes;

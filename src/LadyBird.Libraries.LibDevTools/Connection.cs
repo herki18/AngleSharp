@@ -1,10 +1,14 @@
-﻿namespace LadyBird.Libraries.LibDevTools;
+﻿// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Connection.h
+// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Connection.cpp
+
+namespace LadyBird.Libraries.LibDevTools;
 
 using System;
 using System.IO;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using AK;
 
 public class Connection
 {

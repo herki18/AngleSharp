@@ -1,4 +1,7 @@
-﻿namespace LadyBird.Libraries.LibDevTools.Actors;
+﻿// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/PreferenceActor.h
+// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/PreferenceActor.cpp
+
+namespace LadyBird.Libraries.LibDevTools.Actors;
 
 using System.Text.Json.Nodes;
 

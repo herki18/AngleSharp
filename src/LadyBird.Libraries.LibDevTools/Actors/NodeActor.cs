@@ -1,4 +1,7 @@
-﻿namespace LadyBird.Libraries.LibDevTools.Actors;
+﻿// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/NodeActor.h
+// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/NodeActor.cpp
+
+namespace LadyBird.Libraries.LibDevTools.Actors;
 
 using System;
 using System.Collections.Generic;
@@ -61,7 +64,6 @@ public struct NodeIdentifier : IEquatable<NodeIdentifier>
 public sealed class NodeActor : Actor
 {
     public const string BaseName = "node";
-
     private readonly NodeIdentifier _nodeIdentifier;
     private readonly WeakReference<WalkerActor> _walker; // From C++ WeakPtr
 

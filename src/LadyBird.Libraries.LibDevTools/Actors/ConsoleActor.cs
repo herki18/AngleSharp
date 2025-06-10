@@ -1,4 +1,7 @@
-﻿namespace LadyBird.Libraries.LibDevTools.Actors;
+﻿// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/ConsoleActor.h
+// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/ConsoleActor.cpp
+
+namespace LadyBird.Libraries.LibDevTools.Actors;
 
 using System;
 using System.Text.Json.Nodes;
@@ -6,7 +9,6 @@ using System.Text.Json.Nodes;
 public sealed class ConsoleActor : Actor
 {
     public const string BaseName = "console";
-
     private readonly WeakReference<TabActor> _tab; // From C++ WeakPtr<TabActor>
     private ulong _executionId = 0;
 

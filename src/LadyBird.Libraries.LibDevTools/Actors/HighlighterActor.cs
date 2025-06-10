@@ -1,4 +1,7 @@
-﻿namespace LadyBird.Libraries.LibDevTools.Actors;
+﻿// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/HighlighterActor.h
+// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/HighlighterActor.cpp
+
+namespace LadyBird.Libraries.LibDevTools.Actors;
 
 using System;
 using System.Text.Json.Nodes;
@@ -7,7 +10,6 @@ using LadyBird.Libraries.LibDevTools;
 public sealed class HighlighterActor : Actor
 {
     public const string BaseName = "highlighter";
-
     private readonly WeakReference<InspectorActor> _inspector; // From C++ WeakPtr
 
     // From C++: static NonnullRefPtr<HighlighterActor> create(DevToolsServer&, String name, WeakPtr<InspectorActor>)
@@ -34,8 +36,8 @@ public sealed class HighlighterActor : Actor
                 return;
 
             response["value"] = false;
-
             var domNode = WalkerActor.DomNodeFor(InspectorActor.WalkerFor(_inspector), nodeResult.Value);
+
             if (domNode != null)
             {
                 Devtools.Delegate.HighlightDomNode(domNode.Tab.Description, domNode.Identifier.Id, domNode.Identifier.PseudoElement);
@@ -66,6 +68,7 @@ public sealed class HighlighterActor : Actor
         {
             ["actor"] = Name
         };
+
         return highlighter;
     }
 }

@@ -1,4 +1,7 @@
-﻿namespace LadyBird.Libraries.LibDevTools.Actors;
+﻿// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/FrameActor.h
+// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/FrameActor.cpp
+
+namespace LadyBird.Libraries.LibDevTools.Actors;
 
 using System;
 using System.Collections.Generic;
@@ -8,14 +11,12 @@ using LadyBird.Libraries.LibDevTools;
 public sealed class FrameActor : Actor
 {
     public const string BaseName = "frame";
-
     private readonly WeakReference<TabActor> _tab; // From C++ WeakPtr
     private readonly WeakReference<CssPropertiesActor> _cssProperties; // From C++ WeakPtr
     private readonly WeakReference<ConsoleActor> _console; // From C++ WeakPtr
     private readonly WeakReference<InspectorActor> _inspector; // From C++ WeakPtr
     private readonly WeakReference<StyleSheetsActor> _styleSheets; // From C++ WeakPtr
     private readonly WeakReference<ThreadActor> _thread; // From C++ WeakPtr
-
     private int _highestNotifiedMessageIndex = -1;
     private int _highestReceivedMessageIndex = -1;
     private bool _waitingForMessages = false;
@@ -107,6 +108,7 @@ public sealed class FrameActor : Actor
     public void SendFrameUpdateMessage()
     {
         var frames = new JsonArray();
+
         // Using WeakReference.TryGetTarget instead of C++ weak_ptr.strong_ref()
         if (_tab.TryGetTarget(out var tabActor))
         {
@@ -124,6 +126,7 @@ public sealed class FrameActor : Actor
             ["type"] = "frameUpdate",
             ["frames"] = frames
         };
+
         SendMessage(message);
     }
 
@@ -158,12 +161,16 @@ public sealed class FrameActor : Actor
 
         if (_cssProperties.TryGetTarget(out var cssProperties))
             target["cssPropertiesActor"] = cssProperties.Name;
+
         if (_console.TryGetTarget(out var console))
             target["consoleActor"] = console.Name;
+
         if (_inspector.TryGetTarget(out var inspector))
             target["inspectorActor"] = inspector.Name;
+
         if (_styleSheets.TryGetTarget(out var styleSheets))
             target["styleSheetsActor"] = styleSheets.Name;
+
         if (_thread.TryGetTarget(out var thread))
             target["threadActor"] = thread.Name;
 
@@ -226,6 +233,7 @@ public sealed class FrameActor : Actor
                 ["system"] = false,
                 ["title"] = title
             };
+
             sheets.Add(sheet);
         }
 
@@ -267,6 +275,7 @@ public sealed class FrameActor : Actor
     private void ConsoleMessagesReceived(int startIndex, List<WebView.ConsoleOutput> consoleOutput)
     {
         var endIndex = startIndex + consoleOutput.Count - 1;
+
         if (endIndex <= _highestReceivedMessageIndex)
         {
             Console.WriteLine("Received old console messages");
@@ -302,6 +311,7 @@ public sealed class FrameActor : Actor
                     message["columnNumber"] = 1;
                     message["timeStamp"] = output.Timestamp.ToUnixTimeMilliseconds();
                     message["arguments"] = new JsonArray { log.Arguments };
+
                     consoleMessages.Add(message);
                 },
                 (WebView.ConsoleError error) =>
@@ -348,6 +358,7 @@ public sealed class FrameActor : Actor
         }
 
         var array = new JsonArray();
+
         if (consoleMessages.Count > 0)
         {
             var consoleMessage = new JsonArray();
@@ -369,6 +380,7 @@ public sealed class FrameActor : Actor
             ["type"] = "resources-available-array",
             ["array"] = array
         };
+
         SendMessage(msg);
 
         _highestReceivedMessageIndex = endIndex;

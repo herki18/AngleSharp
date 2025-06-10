@@ -1,9 +1,13 @@
-﻿namespace LadyBird.Libraries.LibDevTools;
+﻿// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actor.h
+// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actor.cpp
+
+namespace LadyBird.Libraries.LibDevTools;
 
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using AK;
 
 public abstract class Actor
 {
@@ -51,6 +55,7 @@ public abstract class Actor
                 continue;
 
             _pendingResponses[i] = new PendingResponse { Id = pendingResponse.Id, Response = response };
+
             if (i != 0)
                 return;
         }

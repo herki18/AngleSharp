@@ -3,6 +3,15 @@
     <PropertyGroup>
         <TargetFramework>netstandard2.1</TargetFramework>
         <Nullable>enable</Nullable>
+        <RootNamespace>LadyBird.Libraries.WebView</RootNamespace>
     </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\AK\AK.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="System.Text.Json" Version="10.0.0-preview.4.25258.110" />
+    </ItemGroup>
 
 </Project>

@@ -1,4 +1,7 @@
-﻿namespace LadyBird.Libraries.LibDevTools.Actors;
+﻿// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/InspectorActor.h
+// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/InspectorActor.cpp
+
+namespace LadyBird.Libraries.LibDevTools.Actors;
 
 using System;
 using System.Collections.Generic;
@@ -7,7 +10,6 @@ using System.Text.Json.Nodes;
 public sealed class InspectorActor : Actor
 {
     public const string BaseName = "inspector";
-
     private readonly WeakReference<TabActor> _tab; // From C++ WeakPtr
     private WeakReference<WalkerActor> _walker; // From C++ WeakPtr
     private WeakReference<PageStyleActor> _pageStyle; // From C++ WeakPtr
@@ -52,6 +54,7 @@ public sealed class InspectorActor : Actor
                 return;
 
             var typeName = typeNameResult.Value;
+
             if (!_highlighters.TryGetValue(typeName, out var highlighterRef) ||
                 !highlighterRef.TryGetTarget(out var highlighter))
             {
@@ -78,6 +81,7 @@ public sealed class InspectorActor : Actor
                             Console.WriteLine($"Did not receive a suitable DOM tree: {domTree}");
                             return;
                         }
+
                         self.ReceivedDomTree(resp, domTree.AsObject());
                     }));
             }

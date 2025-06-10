@@ -1,4 +1,7 @@
-﻿namespace LadyBird.Libraries.LibDevTools.Actors;
+﻿// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/ProcessActor.h
+// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/ProcessActor.cpp
+
+namespace LadyBird.Libraries.LibDevTools.Actors;
 
 using System.Text.Json.Nodes;
 
@@ -12,7 +15,6 @@ public struct ProcessDescription
 public sealed class ProcessActor : Actor
 {
     public const string BaseName = "process";
-
     private readonly ProcessDescription _description;
 
     // From C++: static NonnullRefPtr<ProcessActor> create(DevToolsServer&, String name, ProcessDescription)

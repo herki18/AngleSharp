@@ -1,4 +1,7 @@
-﻿namespace LadyBird.Libraries.LibDevTools;
+﻿// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/DevToolsServer.h
+// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/DevToolsServer.cpp
+
+namespace LadyBird.Libraries.LibDevTools;
 
 using System;
 using System.Collections.Generic;
@@ -7,11 +10,11 @@ using System.Net;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Actors;
+using AK;
 
 public class DevToolsServer
 {
     private static ulong s_serverCount = 0;
-
     private readonly Core.TcpServer _server;
     private readonly DevToolsDelegate _delegate;
     private readonly ulong _serverId;
@@ -110,7 +113,7 @@ public class DevToolsServer
 
             var client = _server.Accept();
             var bufferedSocket = Core.BufferedTcpSocket.Create(client);
-            _connection = this.Connection.Create(bufferedSocket);
+            _connection = Connection.Create(bufferedSocket);
 
             _connection.ConnectionClosed += CloseConnection;
             _connection.MessageReceived += OnMessageReceived;
@@ -165,14 +168,5 @@ public class DevToolsServer
             _actorRegistry.Clear();
             _rootActor = null;
         });
-    }
-
-    // Helper method to concatenate arrays
-    private static T[] Concat<T>(T[] first, T[] second)
-    {
-        var result = new T[first.Length + second.Length];
-        Array.Copy(first, 0, result, 0, first.Length);
-        Array.Copy(second, 0, result, first.Length, second.Length);
-        return result;
     }
 }

@@ -316,7 +316,7 @@
     },
     {
       "targetDirectory": "C:\\dev\\Git\\Training\\ladybird\\Libraries\\LibDevTools",
-      "outputFileNamePattern": "LadyBird.Libraries.LibDevTools.txt",
+      "outputFileNamePattern": "LadyBird.Libraries.LibDevTools.CPP.txt",
       "repomixOptions": {
         "style": "xml",
         "removeComments": false,
@@ -328,11 +328,47 @@
     },
     {
       "targetDirectory": "C:\\dev\\Git\\Training\\ladybird\\Libraries\\LibCore",
-      "outputFileNamePattern": "LadyBird.Libraries.LibCore.txt",
+      "outputFileNamePattern": "LadyBird.Libraries.LibCore.CPP.txt",
       "additionalIncludePatterns": [
         "**/Event*",
         "**/event*"
       ],
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false,
+        "compress": false
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LadyBird.Libraries.LibDevTools",
+      "outputFileNamePattern": "LadyBird.Libraries.LibDevTools.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false,
+        "compress": false
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\LadyBird.Libraries.LibCore",
+      "outputFileNamePattern": "LadyBird.Libraries.LibCore.txt",
+      "repomixOptions": {
+        "style": "xml",
+        "removeComments": false,
+        "removeEmptyLines": true,
+        "noFileSummary": false,
+        "noDirectoryStructure": false,
+        "compress": false
+      }
+    },
+    {
+      "targetDirectory": "C:\\dev\\Git\\Training\\AngleSharp\\src\\AK",
+      "outputFileNamePattern": "AK.txt",
       "repomixOptions": {
         "style": "xml",
         "removeComments": false,

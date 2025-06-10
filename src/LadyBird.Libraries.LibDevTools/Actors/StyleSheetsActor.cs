@@ -1,4 +1,7 @@
-﻿namespace LadyBird.Libraries.LibDevTools.Actors;
+﻿// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/StyleSheetsActor.h
+// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/StyleSheetsActor.cpp
+
+namespace LadyBird.Libraries.LibDevTools.Actors;
 
 using System;
 using System.Collections.Generic;
@@ -7,7 +10,6 @@ using System.Text.Json.Nodes;
 public sealed class StyleSheetsActor : Actor
 {
     public const string BaseName = "style-sheets";
-
     private readonly WeakReference<TabActor> _tab; // From C++ WeakPtr
     private List<Web.Css.StyleSheetIdentifier> _styleSheets = new();
     private readonly Dictionary<int, Message> _pendingStyleSheetSourceRequests = new();
@@ -98,6 +100,7 @@ public sealed class StyleSheetsActor : Actor
         {
             ["text"] = source
         };
+
         SendResponse(pendingMessage, response);
     }
 }

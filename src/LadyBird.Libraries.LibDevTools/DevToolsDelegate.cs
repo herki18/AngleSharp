@@ -1,9 +1,12 @@
-﻿namespace LadyBird.Libraries.LibDevTools;
+﻿// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/DevToolsDelegate.h
+
+namespace LadyBird.Libraries.LibDevTools;
 
 using System.Collections.Generic;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Actors;
+using AK;
 
 public abstract class DevToolsDelegate
 {
@@ -20,7 +23,7 @@ public abstract class DevToolsDelegate
     public virtual void InspectTab(TabDescription tab, OnTabInspectionComplete onComplete) { }
 
     // From C++: using OnDOMNodePropertiesReceived = Function<void(WebView::DOMNodeProperties)>
-    public delegate void OnDomNodePropertiesReceived(WebView.DomNodeProperties properties);
+    public delegate void OnDomNodePropertiesReceived(WebView.DOMNodeProperties properties);
 
     // From C++: virtual void listen_for_dom_properties(TabDescription const&, OnDOMNodePropertiesReceived) const
     public virtual void ListenForDomProperties(TabDescription tab, OnDomNodePropertiesReceived onReceived) { }
@@ -29,7 +32,7 @@ public abstract class DevToolsDelegate
     public virtual void StopListeningForDomProperties(TabDescription tab) { }
 
     // From C++: virtual void inspect_dom_node(TabDescription const&, WebView::DOMNodeProperties::Type, Web::UniqueNodeID, Optional<Web::CSS::PseudoElement>) const
-    public virtual void InspectDomNode(TabDescription tab, WebView.DomNodeProperties.PropertyType type, Web.UniqueNodeId nodeId, Web.Css.PseudoElement? pseudoElement) { }
+    public virtual void InspectDomNode(TabDescription tab, WebView.DOMNodeProperties.Type type, Web.UniqueNodeId nodeId, Web.Css.PseudoElement? pseudoElement) { }
 
     // From C++: virtual void clear_inspected_dom_node(TabDescription const&) const
     public virtual void ClearInspectedDomNode(TabDescription tab) { }

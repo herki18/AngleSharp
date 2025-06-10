@@ -1,4 +1,7 @@
-﻿namespace LadyBird.Libraries.LibDevTools.Actors;
+﻿// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/WalkerActor.h
+// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/WalkerActor.cpp
+
+namespace LadyBird.Libraries.LibDevTools.Actors;
 
 using System;
 using System.Collections.Generic;
@@ -38,7 +41,6 @@ public sealed class WalkerActor : Actor
     {
         _tab = tab;
         _domTree = domTree;
-
         PopulateDomTreeCache();
 
         // Using WeakReference.TryGetTarget instead of C++ weak_ptr.strong_ref()
@@ -212,11 +214,13 @@ public sealed class WalkerActor : Actor
                 AsyncHandler<WalkerActor, Web.UniqueNodeId>(message, (self, nodeId, resp) =>
                 {
                     var nodes = new JsonArray();
+
                     if (self._domNodeIdToActorMap.TryGetValue(nodeId, out var actor) &&
                         self.DomNode(actor) is DomNode node)
                     {
                         nodes.Add(self.SerializeNode(node.Node));
                     }
+
                     resp["newParents"] = new JsonArray();
                     resp["nodes"] = nodes;
                 }));
@@ -341,6 +345,7 @@ public sealed class WalkerActor : Actor
             if (selectedNode != null)
             {
                 response["node"] = SerializeNode(selectedNode);
+
                 if (_domNodeToParentMap.TryGetValue(selectedNode, out var parent) &&
                     !ReferenceEquals(parent, ancestorNode.Node))
                 {
@@ -350,6 +355,7 @@ public sealed class WalkerActor : Actor
                     response["newParents"] = newParents;
                 }
             }
+
             SendResponse(message, response);
             return;
         }
@@ -605,6 +611,7 @@ public sealed class WalkerActor : Actor
                 {
                     if (Matches(childObj))
                         return childObj;
+
                     var result = FindNodeBySelector(childObj, selector);
                     if (result != null)
                         return result;
@@ -662,6 +669,7 @@ public sealed class WalkerActor : Actor
     {
         if (!_domNodeToParentMap.TryGetValue(node, out var parent) || parent == null)
             return null;
+
         return SiblingForNode(parent, node, Direction.Previous);
     }
 
@@ -670,6 +678,7 @@ public sealed class WalkerActor : Actor
     {
         if (!_domNodeToParentMap.TryGetValue(node, out var parent) || parent == null)
             return null;
+
         return SiblingForNode(parent, node, Direction.Next);
     }
 
@@ -713,6 +722,7 @@ public sealed class WalkerActor : Actor
         }
 
         _domNodeMutations.Add(mutation);
+
         if (_hasNewMutationsSinceLastMutationsRequest)
             return;
 
@@ -720,6 +730,7 @@ public sealed class WalkerActor : Actor
         {
             ["type"] = "newMutations"
         };
+
         SendMessage(message);
         _hasNewMutationsSinceLastMutationsRequest = true;
     }
@@ -852,6 +863,7 @@ public sealed class WalkerActor : Actor
 
         nodeActor = Devtools.RegisterActor<NodeActor>(identifier, new WeakReference<WalkerActor>(this));
         _nodeActors[identifier] = new WeakReference<NodeActor>(nodeActor);
+
         return nodeActor;
     }
 }

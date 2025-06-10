@@ -1,4 +1,7 @@
-﻿namespace LadyBird.Libraries.LibDevTools.Actors;
+﻿// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/RootActor.h
+// Base: https://github.com/LadybirdBrowser/ladybird/blob/master/Libraries/LibDevTools/Actors/RootActor.cpp
+
+namespace LadyBird.Libraries.LibDevTools.Actors;
 
 using System.Text.Json.Nodes;
 
@@ -168,8 +171,8 @@ public sealed class RootActor : Actor
         {
             ["type"] = "tabListChanged"
         };
-        SendMessage(message);
 
+        SendMessage(message);
         _hasSentTabListChangedSinceLastListTabsRequest = true;
     }
 }
